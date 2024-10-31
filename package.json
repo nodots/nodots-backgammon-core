@@ -1,0 +1,22 @@
+{
+  "name": "nodots-backgammon",
+  "version": "1.0.0",
+  "description": "Backgammon types and logic",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nodots/nodots-backgammon.git"
+  },
+  "keywords": [
+    "backgammon"
+  ],
+  "author": "Ken Riley <kenr@nodots.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nodots/nodots-backgammon/issues"
+  },
+  "homepage": "https://github.com/nodots/nodots-backgammon#readme"
+}
