@@ -1,13 +1,13 @@
-import { NodotsColor, PlayerCheckers } from './game'
+import { BackgammonColor, BackgammonPlayerCheckers } from './game'
 
-export interface NodotsChecker {
+export interface BackgammonChecker {
   id: string
-  color: NodotsColor
+  color: BackgammonColor
   checkercontainerId: string
   highlight?: boolean
 }
 
-export interface NodotsGameCheckers {
-  white: PlayerCheckers
-  black: PlayerCheckers
+export interface BackgammonCheckers {
+  white: BackgammonPlayerCheckers
+  black: BackgammonPlayerCheckers
 }

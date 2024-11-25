@@ -1,7 +1,7 @@
-export { v4 as generateId } from 'uuid'
-export const randomBoolean = () => (Math.random() > 0.5 ? true : false)
+import { BackgammonColor, BackgammonMoveDirection } from '../types'
 
-export type NodotsBackgammonEntity =
+export { v4 as generateId } from 'uuid'
+export type BackgammonEntity =
   | 'board'
   | 'checker'
   | 'cube'
@@ -11,7 +11,22 @@ export type NodotsBackgammonEntity =
   | 'game'
   | 'offer'
 
-export interface NodotsBackgammonError extends Error {
-  entity: NodotsBackgammonEntity
+export const randomBoolean = (): boolean => Math.random() > 0.5
+
+export const randomBackgammonColor = (): BackgammonColor =>
+  randomBoolean() ? 'black' : 'white'
+
+export const randomBackgammonDirection = (): BackgammonMoveDirection =>
+  randomBoolean() ? 'clockwise' : 'counterclockwise'
+
+export interface BackgammonError extends Error {
+  entity: BackgammonEntity
   message: string
 }
+
+export * from './Board'
+export * from './Checker'
+export * from './Cube'
+export * from './Dice'
+export * from './Game'
+export * from './Player'

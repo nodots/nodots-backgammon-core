@@ -1,6 +1,6 @@
-import { NodotsBackgammonError } from '..'
+import { BackgammonError } from '..'
 
-export const PlayDbError = (message: string): NodotsBackgammonError => {
+export const PlayDbError = (message: string): BackgammonError => {
   return {
     name: 'PlayDbError',
     entity: 'play',

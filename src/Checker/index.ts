@@ -1,8 +1,16 @@
 import { generateId } from '..'
-import { NodotsBoard, NodotsChecker, NodotsColor } from '../../@types'
+import {
+  BackgammonBoard,
+  BackgammonChecker,
+  BackgammonColor,
+  CheckercontainerCheckers,
+} from '../../types'
 import { getCheckers } from '../Board'
 
-export const getChecker = (board: NodotsBoard, id: string): NodotsChecker => {
+export const getChecker = (
+  board: BackgammonBoard,
+  id: string
+): BackgammonChecker => {
   const checker = getCheckers(board).find((checker) => checker.id === id)
   if (!checker) {
     throw Error(`No checker found for ${id}`)
@@ -11,26 +19,26 @@ export const getChecker = (board: NodotsBoard, id: string): NodotsChecker => {
 }
 
 export const buildChecker = (
-  color: NodotsColor,
+  color: BackgammonColor,
   checkercontainerId: string
-): NodotsChecker => {
+): BackgammonChecker => {
   return { id: generateId(), color, checkercontainerId }
 }
 
 export const buildCheckersForCheckercontainerId = (
-  color: NodotsColor,
+  color: BackgammonColor,
   checkercontainerId: string,
   count: number
-): NodotsChecker[] => {
-  const checkers: NodotsChecker[] = []
+): CheckercontainerCheckers => {
+  const tempCheckers: BackgammonChecker[] = []
 
   for (let i = 0; i < count; i++) {
-    const checker: NodotsChecker = {
+    const checker: BackgammonChecker = {
       id: generateId(),
       color,
       checkercontainerId,
     }
-    checkers.push(checker)
+    tempCheckers.push(checker)
   }
-  return checkers
+  return tempCheckers as CheckercontainerCheckers // FIXME: typeguard
 }

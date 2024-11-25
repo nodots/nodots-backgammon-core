@@ -1,8 +1,9 @@
-/node_modules
-
-# Ignore test-related files
-/coverage.data
-/coverage/
-
-# Build files
-/dist
+node_modules/
+npm-debug.log
+.DS_Store
+.env
+dist/
+coverage/
+.idea/
+.vscode/
+*.log

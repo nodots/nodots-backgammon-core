@@ -1,7 +1,7 @@
-import { NodotsColor } from './game'
-import { NodotsPlayerPlayingMoving, NodotsPlayerPlayingRolling } from './player'
+import { BackgammonColor } from './game'
+import { PlayerPlayingMoving, PlayerPlayingRolling } from './player'
 
-export interface NodotsPlay {
+export interface Play {
   id: string
   kind:
     | 'play-initializing'
@@ -13,25 +13,25 @@ export interface NodotsPlay {
     | 'play-dice-switched'
     | 'play-doubling'
 
-  activeColor: NodotsColor
-  player: NodotsPlayerPlayingRolling | NodotsPlayerPlayingMoving
+  activeColor: BackgammonColor
+  player: PlayerPlayingRolling | PlayerPlayingMoving
 }
 
-export interface PlayInitializing extends NodotsPlay {
+export interface PlayInitializing extends Play {
   kind: 'play-initializing'
 }
 
-export interface PlayRolling extends NodotsPlay {
+export interface PlayRolling extends Play {
   kind: 'play-rolling'
 }
 
-// export interface PlayDoubling extends NodotsPlay {
+// export interface PlayDoubling extends Play {
 //   kind: 'play-rolling'
-//   activeColor: NodotsColor
+//   activeColor: BackgammonColor
 //   player: PlayerPlayingRolling
 // }
 
-// export interface PlayMoving extends NodotsPlay {
+// export interface PlayMoving extends Play {
 //   kind: 'play-moving'
 //   player: PlayerPlayingMoving
 //   roll: Roll
@@ -39,10 +39,10 @@ export interface PlayRolling extends NodotsPlay {
 //   analysis: {
 //     options: []
 //   }
-//   moves: NodotsMove[]
+//   moves: Move[]
 // }
 
-// export interface PlayDiceSwitched extends NodotsPlay {
+// export interface PlayDiceSwitched extends Play {
 //   kind: 'play-dice-switched'
 //   player: PlayerMoving | PlayerRolling
 //   roll: Roll
@@ -50,34 +50,34 @@ export interface PlayRolling extends NodotsPlay {
 //   analysis: {
 //     options: []
 //   }
-//   moves: NodotsMove[]
+//   moves: Move[]
 // }
 
 // // Transition to this state when the destination of the final move is set,
 // // i.e., second checker clicked.
-// export interface PlayMoved extends NodotsPlay {
+// export interface PlayMoved extends Play {
 //   kind: 'play-moved'
-//   activeColor: NodotsColor
+//   activeColor: BackgammonColor
 //   roll: Roll
 //   isForced: boolean
 //   analysis: {
 //     options: []
 //   }
-//   moves: NodotsMove[]
+//   moves: Move[]
 // }
 
-// export interface PlayConfirming extends NodotsPlay {
+// export interface PlayConfirming extends Play {
 //   kind: 'play-confirming'
-//   activeColor: NodotsColor
+//   activeColor: BackgammonColor
 //   roll: Roll
 //   isForced: boolean
 //   analysis: {
 //     options: []
 //   }
-//   moves: NodotsMove[]
+//   moves: Move[]
 // }
 
-// export type NodotsPlayState =
+// export type PlayState =
 //   | PlayInitializing
 //   | PlayRolling
 //   | PlayDiceSwitched

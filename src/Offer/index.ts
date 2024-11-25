@@ -5,13 +5,13 @@ import {
   dbGetPlayOffersForPlayerId,
   dbRespondPlayOffer,
 } from './db'
-import { NodotsOfferPlay } from '../../backgammon-types'
+import { OfferPlay } from '../../backgammon-types'
 
 export const createPlayOffer = async (
   playerId: string,
   opponentId: string,
   db: NodePgDatabase
-): Promise<NodotsOfferPlay> => await dbCreatePlayOffer(playerId, opponentId, db)
+): Promise<OfferPlay> => await dbCreatePlayOffer(playerId, opponentId, db)
 
 export const getPlayOffersForPlayerId = async (
   playerId: string,

@@ -1,15 +1,185 @@
-import { NodotsBoard } from './board'
-import { NodotsChecker } from './checker'
-import { NodotsCube } from './cube'
-import { NodotsRoll, NodotsDice } from './dice'
-import { NodotsPlay } from './play'
-import { NodotsPlayersPlaying } from './players'
+import { BackgammonBoard } from './board'
+import { BackgammonChecker } from './checker'
+import { BackgammonCube } from './cube'
+import { BackgammonRoll, BackgammonDice } from './dice'
+import { Play } from './play'
+import { BackgammonPlayers } from './player'
 
-export type NodotsColor = 'black' | 'white'
-export type NodotsMoveDirection = 'clockwise' | 'counterclockwise'
+export type BackgammonColor = 'black' | 'white'
+export type BackgammonMoveDirection = 'clockwise' | 'counterclockwise'
+
+export const MAX_PIP_COUNT = 167
+export type BackgammonPips =
+  | 1
+  | 2
+  | 3
+  | 4
+  | 5
+  | 6
+  | 7
+  | 8
+  | 9
+  | 10
+  | 11
+  | 12
+  | 13
+  | 14
+  | 15
+  | 16
+  | 17
+  | 18
+  | 19
+  | 20
+  | 21
+  | 22
+  | 23
+  | 24
+  | 25
+  | 26
+  | 27
+  | 28
+  | 29
+  | 30
+  | 31
+  | 32
+  | 33
+  | 34
+  | 35
+  | 36
+  | 37
+  | 38
+  | 39
+  | 40
+  | 41
+  | 42
+  | 43
+  | 44
+  | 45
+  | 46
+  | 47
+  | 48
+  | 49
+  | 50
+  | 51
+  | 52
+  | 53
+  | 54
+  | 55
+  | 56
+  | 57
+  | 58
+  | 59
+  | 60
+  | 61
+  | 62
+  | 63
+  | 64
+  | 65
+  | 66
+  | 67
+  | 68
+  | 69
+  | 70
+  | 71
+  | 72
+  | 73
+  | 74
+  | 75
+  | 76
+  | 77
+  | 78
+  | 79
+  | 80
+  | 81
+  | 82
+  | 83
+  | 84
+  | 85
+  | 86
+  | 87
+  | 88
+  | 89
+  | 90
+  | 91
+  | 92
+  | 93
+  | 94
+  | 95
+  | 96
+  | 97
+  | 98
+  | 99
+  | 100
+  | 101
+  | 102
+  | 103
+  | 104
+  | 105
+  | 106
+  | 107
+  | 108
+  | 109
+  | 110
+  | 111
+  | 112
+  | 113
+  | 114
+  | 115
+  | 116
+  | 117
+  | 118
+  | 119
+  | 120
+  | 121
+  | 122
+  | 123
+  | 124
+  | 125
+  | 126
+  | 127
+  | 128
+  | 129
+  | 130
+  | 131
+  | 132
+  | 133
+  | 134
+  | 135
+  | 136
+  | 137
+  | 138
+  | 139
+  | 140
+  | 141
+  | 142
+  | 143
+  | 144
+  | 145
+  | 146
+  | 147
+  | 148
+  | 149
+  | 150
+  | 151
+  | 152
+  | 153
+  | 154
+  | 155
+  | 156
+  | 157
+  | 158
+  | 159
+  | 160
+  | 161
+  | 162
+  | 163
+  | 164
+  | 165
+  | 166
+  | 167
 
 export const CHECKERS_PER_PLAYER = 15
-export type PointPosition =
+export type BackgammonPointValue =
   | 1
   | 2
   | 3
@@ -35,125 +205,88 @@ export type PointPosition =
   | 23
   | 24
 
-export type PlayerCheckers = [
-  NodotsChecker,
-  NodotsChecker,
-  NodotsChecker,
-  NodotsChecker,
-  NodotsChecker,
-  NodotsChecker,
-  NodotsChecker,
-  NodotsChecker,
-  NodotsChecker,
-  NodotsChecker,
-  NodotsChecker,
-  NodotsChecker,
-  NodotsChecker,
-  NodotsChecker,
-  NodotsChecker
+export type BackgammonPlayerCheckers = [
+  BackgammonChecker,
+  BackgammonChecker,
+  BackgammonChecker,
+  BackgammonChecker,
+  BackgammonChecker,
+  BackgammonChecker,
+  BackgammonChecker,
+  BackgammonChecker,
+  BackgammonChecker,
+  BackgammonChecker,
+  BackgammonChecker,
+  BackgammonChecker,
+  BackgammonChecker,
+  BackgammonChecker,
+  BackgammonChecker
 ]
 
-export type CheckercontainerPosition = PointPosition | 'bar' | 'off'
-export type OriginPosition = PointPosition | 'bar'
-export type DestinationPosition = PointPosition | 'off'
+export type BackgammonGameState =
+  | 'rolling-for-start'
+  | 'rolling'
+  | 'moving'
+  | 'double-proposed'
+  | 'resignation-proposed'
+  | 'completed'
 
-export interface NodotsGamePlayer {
-  playerId: string
-  color: NodotsColor
-  direction: NodotsMoveDirection
-  pipCount: number
-}
-
-export type NodotsPlayers = [NodotsGamePlayer, NodotsGamePlayer]
-
-// GameInitializing should never hit the db. Check the db.ts file for the actual db schema
 type _Game = {
-  kind: 'initializing' | 'proposed' | 'rolling-for-start' | 'rolling' | 'moving'
-  players: NodotsPlayersPlaying
+  kind: BackgammonGameState
+  players: BackgammonPlayers
+  board: BackgammonBoard
+  dice: BackgammonDice
+  cube: BackgammonCube
 }
 
-export interface NodotsGameInitializing {
-  kind: 'initializing'
-  players: NodotsPlayers
-  board: NodotsBoard
-  dice: NodotsDice
-  cube: NodotsCube
-}
-
-export interface NodotsGameRollingForStart {
+export interface GameRollingForStart extends _Game {
   id: string
   kind: 'rolling-for-start'
-  players: NodotsPlayers
-  board: NodotsBoard
-  dice: NodotsDice
-  cube: NodotsCube
 }
 
-export interface NodotsGameRolling {
+export interface GameRolling extends _Game {
   id: string
   kind: 'rolling'
-  players: NodotsPlayers
-  dice: NodotsDice
-  board: NodotsBoard
-  cube: NodotsCube
-  activeColor: NodotsColor
-  activePlay?: NodotsPlay
+  activeColor: BackgammonColor
 }
 
-export interface NodotsGameDoubleProposed {
+export interface GameDoubleProposed extends _Game {
   id: string
   kind: 'double-proposed'
-  players: NodotsPlayers
-  dice: NodotsDice
-  board: NodotsBoard
-  cube: NodotsCube
-  activeColor: NodotsColor
-  activePlay?: NodotsPlay
+  activeColor: BackgammonColor
 }
 
-export interface NodotsGameResignationProposed {
+export interface GameResignationProposed extends _Game {
   id: string
   kind: 'rolling'
-  players: NodotsPlayers
-  dice: NodotsDice
-  board: NodotsBoard
-  cube: NodotsCube
-  activeColor: NodotsColor
-  activePlay?: NodotsPlay
+  activeColor: BackgammonColor
 }
-export interface NodotsGameMoving {
+
+export interface GameMoving extends _Game {
   id: string
   kind: 'moving'
-  players: NodotsPlayers
-  dice: NodotsDice
-  board: NodotsBoard
-  cube: NodotsCube
-  activeColor: NodotsColor
-  activeRoll: NodotsRoll
-  activePlay?: NodotsPlay
+  activeColor: BackgammonColor
+  activeRoll: BackgammonRoll
+  activePlay: Play
 }
 
-export interface NodotsGameOver {
+export interface GameOver extends _Game {
   id: string
   kind: 'over'
-  players: NodotsPlayers
-  board: NodotsBoard
-  cube: NodotsCube
-  winningPlayerId: string
 }
 
-export type NodotsGame =
-  | NodotsGameInitializing
-  | NodotsGameRollingForStart
-  | NodotsGameRolling
-  | NodotsGameMoving
-  | NodotsGameDoubleProposed
-  | NodotsGameResignationProposed
-  | NodotsGameOver
+export type BackgammonGame =
+  | GameInitializing
+  | GameRollingForStart
+  | GameRolling
+  | GameMoving
+  | GameDoubleProposed
+  | GameResignationProposed
+  | GameOver
 
-export type NodotsGameActive =
-  | NodotsGameRollingForStart
-  | NodotsGameRolling
-  | NodotsGameMoving
-  | NodotsGameDoubleProposed
-  | NodotsGameResignationProposed
+export type BackgammonGameActive =
+  | GameRollingForStart
+  | GameRolling
+  | GameMoving
+  | GameDoubleProposed
+  | GameResignationProposed

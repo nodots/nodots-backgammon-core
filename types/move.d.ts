@@ -1,31 +1,31 @@
-import { NodotsCheckercontainer } from './checkercontainer'
-import { DieValue } from './dice'
-import { NodotsMoveDirection } from './game'
-import { NodotsPlayerPlayingRolling, NodotsPlayerPlayingMoving } from './player'
+import { BackgammonCheckercontainer } from './checkercontainer'
+import { BackgammonDieValue } from './dice'
+import { BackgammonMoveDirection } from './game'
+import { PlayerPlayingRolling, PlayerPlayingMoving } from './player'
 
-export interface NodotsMove {
+export interface Move {
   id: string
   playId: string
-  player: NodotsPlayerPlayingRolling | NodotsPlayerPlayingMoving
+  player: PlayerPlayingRolling | PlayerPlayingMoving
   isAuto: boolean
   isForced: boolean
-  dieValue: DieValue
-  direction: NodotsMoveDirection
-  origin: NodotsCheckercontainer | undefined
-  destination: NodotsCheckercontainer | undefined
+  dieValue: BackgammonDieValue
+  direction: BackgammonMoveDirection
+  origin: BackgammonCheckercontainer | undefined
+  destination: BackgammonCheckercontainer | undefined
 }
 
-export interface MoveInitializing extends NodotsMove {
+export interface MoveInitializing extends Move {
   kind: 'move-initializing'
 }
 
-export interface MoveMoving extends NodotsMove {
+export interface MoveMoving extends Move {
   kind: 'move-moving'
-  origin: NodotsCheckercontainer
+  origin: BackgammonCheckercontainer
 }
 
-export interface MoveMoved extends NodotsMove {
+export interface MoveMoved extends Move {
   kind: 'move-moved'
-  origin: NodotsCheckercontainer
-  destination: NodotsCheckercontainer
+  origin: BackgammonCheckercontainer
+  destination: BackgammonCheckercontainer
 }

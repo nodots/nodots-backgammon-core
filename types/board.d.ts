@@ -1,165 +1,49 @@
-import { CheckercontainerPosition } from './game'
-import { NodotsChecker } from './checker'
-import { Bar, Off, Point } from './checkercontainer'
+import { BackgammonCheckercontainerPosition } from './game'
+import { BackgammonChecker } from './checker'
+import {
+  BackgammonBar,
+  BackgammonOff,
+  BackgammonPoint,
+} from './checkercontainer'
 
 export type Latitude = 'north' | 'south'
 export type Longitude = 'east' | 'west'
 
-export type Points = [
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point,
-  Point
+export type BackgammonPoints = [
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint,
+  BackgammonPoint
 ]
 
-export type CheckercontainerCheckers =
-  | []
-  | [NodotsChecker]
-  | [NodotsChecker, NodotsChecker]
-  | [NodotsChecker, NodotsChecker, NodotsChecker]
-  | [NodotsChecker, NodotsChecker, NodotsChecker, NodotsChecker]
-  | [NodotsChecker, NodotsChecker, NodotsChecker, NodotsChecker, NodotsChecker]
-  | [
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker
-    ]
-  | [
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker
-    ]
-  | [
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker
-    ]
-  | [
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker
-    ]
-  | [
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker
-    ]
-  | [
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker
-    ]
-  | [
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker
-    ]
-  | [
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker
-    ]
-  | [
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker,
-      NodotsChecker
-    ]
-
-export interface NodotsBoard {
-  points: Points
+export interface BackgammonBoard {
+  points: BackgammonPoints
   bar: {
-    white: Bar
-    black: Bar
+    clockwise: BackgammonBar
+    counterclockwise: BackgammonBar
   }
   off: {
-    white: Off
-    black: Off
+    clockwise: BackgammonOff
+    counterclockwise: BackgammonOff
   }
 }

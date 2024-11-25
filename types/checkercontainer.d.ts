@@ -1,28 +1,179 @@
-import { NodotsChecker } from './checker'
-import { NodotsColor, PointPosition } from './game'
+import { BackgammonChecker } from './checker'
+import { BackgammonColor, BackgammonPointValue } from './game'
 
-export type NodotsCheckercontainer = {
-  id: string
-  kind: string
-  checkers: NodotsChecker[]
+type BarPosition = 'bar'
+type OffPosition = 'off'
+
+interface BackgammonPointPosition {
+  clockwise: BackgammonPointValue
+  counterclockwise: BackgammonPointValue
 }
 
-export interface Point extends NodotsCheckercontainer {
+export type CheckercontainerCheckers =
+  | []
+  | [BackgammonChecker]
+  | [BackgammonChecker, BackgammonChecker]
+  | [BackgammonChecker, BackgammonChecker, BackgammonChecker]
+  | [BackgammonChecker, BackgammonChecker, BackgammonChecker, BackgammonChecker]
+  | [
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker
+    ]
+  | [
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker
+    ]
+  | [
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker
+    ]
+  | [
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker
+    ]
+  | [
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker
+    ]
+  | [
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker
+    ]
+  | [
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker
+    ]
+  | [
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker
+    ]
+  | [
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker
+    ]
+  | [
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker,
+      BackgammonChecker
+    ]
+
+export type CheckercontainerPosition =
+  | BackgammonPointPosition
+  | BarPosition
+  | OffPosition
+
+type CheckerContainerKind = 'point' | 'bar' | 'off'
+export type BackgammonCheckercontainer = {
+  id: string
+  kind: CheckerContainerKind
+  position: CheckercontainerPosition
+  checkers: CheckercontainerCheckers
+}
+
+export interface BackgammonPoint extends BackgammonCheckercontainer {
   kind: 'point'
   position: {
-    clockwise: PointPosition
-    counterclockwise: PointPosition
+    clockwise: BackgammonPointValue
+    counterclockwise: BackgammonPointValue
   }
 }
 
-export interface Bar extends NodotsCheckercontainer {
+export interface BackgammonBar extends BackgammonCheckercontainer {
   kind: 'bar'
-  color: NodotsColor
-  position: 'bar'
+  direction: BackgammonDirection
+  position: BarPosition
 }
 
-export interface Off extends NodotsCheckercontainer {
+export interface BackgammonBarContainer {
+  clockwise: BackgammonBar
+  counterclockwise: BackgammonBar
+}
+
+export interface BackgammonOff extends BackgammonCheckercontainer {
   kind: 'off'
-  color: NodotsColor
-  position: 'off'
+  direction: BackgammonDirection
+  position: OffPosition
+}
+
+export interface BackgammonOffContainer {
+  clockwise: BackgammonOff
+  counterclockwise: BackgammonOff
 }

@@ -1,4 +1,4 @@
-import { NodotsPlayerReady } from './player'
+import { PlayerReady } from './player'
 
 interface Offer {
   offeringPlayerId: string
@@ -6,22 +6,19 @@ interface Offer {
   kind: 'play' | 'double' | 'resign'
 }
 
-export interface NodotsOfferPlay extends Offer {
+export interface OfferPlay extends Offer {
   kind: 'play'
   accepted: boolean
 }
 
-export interface NodotsOfferDouble extends Offer {
+export interface OfferDouble extends Offer {
   kind: 'double'
   accepted: boolean
 }
 
-export interface NodotsOfferResign extends Offer {
+export interface OfferResign extends Offer {
   kind: 'resign'
   accepted: boolean
 }
 
-export type NodotsOffer =
-  | NodotsOfferPlay
-  | NodotsOfferDouble
-  | NodotsOfferResign
+export type Offer = OfferPlay | OfferDouble | OfferResign

@@ -1,13 +1,9 @@
 import { generateId } from '..'
-import {
-  PlayRolling,
-  NodotsRoll,
-  NodotsPlayerPlayingRolling,
-} from '../../backgammon-types'
+import { PlayRolling, Roll, PlayerPlayingRolling } from '../../backgammon-types'
 
 export const initializing = (
-  player: NodotsPlayerPlayingRolling,
-  roll: NodotsRoll
+  player: PlayerPlayingRolling,
+  roll: Roll
 ): PlayRolling => {
   return {
     id: generateId(),
@@ -19,8 +15,8 @@ export const initializing = (
 
 // const buildMove = (
 //   dieValue: DieValue,
-//   play: NodotsPlay,
-//   player: INodotsPlayer
+//   play: Play,
+//   player: IPlayer
 // ): MoveInitializing => {
 //   return {
 //     id: generateId(),
@@ -34,8 +30,8 @@ export const initializing = (
 //   }
 // }
 
-// const buildMovesForRoll = (roll: Roll, player: INodotsPlayer): NodotsMove[] => {
-//   const moves: NodotsMove[] = [
+// const buildMovesForRoll = (roll: Roll, player: IPlayer): Move[] => {
+//   const moves: Move[] = [
 //     buildMove(roll[0], player),
 //     buildMove(roll[1], player),
 //   ]

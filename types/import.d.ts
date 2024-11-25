@@ -1,11 +1,17 @@
-import { CheckercontainerPosition } from './game'
+import {
+  BackgammonCheckercontainerPosition,
+  BackgammonPlayerCheckers,
+} from './game'
 
-export interface NodotsCheckercontainerImport {
-  position: CheckercontainerPosition
-  checkercount: number
+export interface BackgammonCheckercontainerImport {
+  position: BackgammonCheckercontainerPosition
+  checkers: {
+    qty: number
+    color: BackgammonColor
+  }
 }
 
-export interface NodotsBoardImports {
-  clockwise: NodotsCheckercontainerImport[]
-  counterclockwise: NodotsCheckercontainerImport[]
+export interface BackgammonBoardImports {
+  clockwise: BackgammonCheckercontainerImport[]
+  counterclockwise: BackgammonCheckercontainerImport[]
 }

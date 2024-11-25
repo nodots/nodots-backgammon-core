@@ -1,22 +1,22 @@
-/*
-Note: Purposefully not doing anything with the database for dice. 
-Rolls matter for the model, dice don't except if we want to allow for things 
-like players "bringing their own dice" or roll analytics based on randomization 
-algorithms?
-*/
-import { NodotsDice } from '../../@types'
+import { BackgammonDice, BackgammonDieValue, BackgammonRoll } from '../../types'
 
-export const buildDice = (): NodotsDice => {
+export const buildDice = (): BackgammonDice => {
   return {
     white: {
       kind: 'inactive',
       color: 'white',
-      roll: [1, 1],
+      roll: [undefined, undefined],
     },
     black: {
       kind: 'inactive',
       color: 'black',
-      roll: [1, 1],
+      roll: [undefined, undefined],
     },
   }
 }
+
+export const roll = (): BackgammonDieValue =>
+  (Math.floor(Math.random() * 6) + 1) as BackgammonDieValue
+
+export const rollDice = (): BackgammonRoll => [roll(), roll()]
+export const isDoubles = (roll: BackgammonRoll) => roll[0] === roll[1]
