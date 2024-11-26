@@ -237,6 +237,7 @@ type _Game = {
   board: BackgammonBoard
   dice: BackgammonDice
   cube: BackgammonCube
+  rollForStart: () => void
 }
 
 export interface GameRollingForStart extends _Game {

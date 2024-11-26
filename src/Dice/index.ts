@@ -1,22 +1,34 @@
-import { BackgammonDice, BackgammonDieValue, BackgammonRoll } from '../../types'
+import {
+  BackgammonColor,
+  BackgammonDice,
+  BackgammonDieValue,
+  BackgammonRoll,
+  PlayerDice,
+} from '../../types'
 
-export const buildDice = (): BackgammonDice => {
-  return {
-    white: {
+export class Dice implements BackgammonDice {
+  white: PlayerDice
+  black: PlayerDice
+  constructor() {
+    this.white = {
       kind: 'inactive',
       color: 'white',
-      roll: [undefined, undefined],
-    },
-    black: {
+      roll: () => this.rollDice('white'),
+    }
+    this.black = {
       kind: 'inactive',
       color: 'black',
-      roll: [undefined, undefined],
-    },
+      roll: () => this.rollDice('black'),
+    }
   }
+
+  roll = (): BackgammonDieValue =>
+    (Math.floor(Math.random() * 6) + 1) as BackgammonDieValue
+
+  rollDice = (activeColor: BackgammonColor): BackgammonRoll => {
+    const activeDice = activeColor === 'white' ? this.white : this.black
+    return activeDice.roll()
+  }
+
+  isDoubles = (roll: BackgammonRoll) => roll[0] === roll[1]
 }
-
-export const roll = (): BackgammonDieValue =>
-  (Math.floor(Math.random() * 6) + 1) as BackgammonDieValue
-
-export const rollDice = (): BackgammonRoll => [roll(), roll()]
-export const isDoubles = (roll: BackgammonRoll) => roll[0] === roll[1]

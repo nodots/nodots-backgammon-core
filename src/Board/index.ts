@@ -17,370 +17,206 @@ import {
   OffPosition,
 } from '../../types'
 import { buildCheckersForCheckercontainerId } from '../Checker'
+import { BOARD_IMPORT_DEFAULT } from './BOARD_IMPORT_DEFAULT'
 
-const buildBar = (
-  barImport: [
-    BackgammonCheckercontainerImport,
-    BackgammonCheckercontainerImport
-  ],
-  players: BackgammonPlayers
-): { clockwise: BackgammonBar; counterclockwise: BackgammonBar } => {
-  const clockwiseId = generateId()
-  const counterclockwiseId = generateId()
-
-  const clockwiseCheckerSpec = barImport.find(
-    (b) => b.position === 'bar'
-  )?.checkers
-  const counterclockwiseCheckerSpec = barImport.find(
-    (b) => b.position === 'bar'
-  )?.checkers
-
-  const clockwiseCheckers = buildCheckersForCheckercontainerId(
-    clockwiseCheckerSpec
-      ? clockwiseCheckerSpec.color
-      : players.find((p) => p.direction === 'clockwise')?.color,
-    clockwiseId,
-    clockwiseCheckerSpec ? clockwiseCheckerSpec.qty : 0
-  )
-
-  const counterclockwiseCheckers = buildCheckersForCheckercontainerId(
-    counterclockwiseCheckerSpec?.color
-      ? clockwiseCheckerSpec?.color
-      : players.find((p) => p.direction === 'counterclockwise')?.color,
-    counterclockwiseId,
-    counterclockwiseCheckerSpec?.qty ? counterclockwiseCheckerSpec.qty : 0
-  )
-
-  const position: BarPosition = 'bar'
-
-  const clockwise: BackgammonBar = {
-    id: clockwiseId,
-    kind: 'bar',
-    position,
-    direction: 'clockwise',
-    checkers: clockwiseCheckers ? clockwiseCheckers : [],
-  }
-
-  const counterclockwise: BackgammonBar = {
-    id: counterclockwiseId,
-    kind: 'bar',
-    position,
-    direction: 'counterclockwise',
-    checkers: counterclockwiseCheckers ? counterclockwiseCheckers : [],
-  }
-
-  return {
-    clockwise,
-    counterclockwise,
-  }
-}
-
-const buildOff = (
-  barImport: [
-    BackgammonCheckercontainerImport,
-    BackgammonCheckercontainerImport
-  ],
-  players: BackgammonPlayers
-): { clockwise: BackgammonOff; counterclockwise: BackgammonOff } => {
-  const clockwiseId = generateId()
-  const counterclockwiseId = generateId()
-
-  const clockwiseCheckerSpec = barImport.find(
-    (b) => b.position === 'bar'
-  )?.checkers
-  const counterclockwiseCheckerSpec = barImport.find(
-    (b) => b.position === 'bar'
-  )?.checkers
-
-  const clockwiseCheckers = buildCheckersForCheckercontainerId(
-    clockwiseCheckerSpec
-      ? clockwiseCheckerSpec.color
-      : players.find((p) => p.direction === 'clockwise')?.color,
-    clockwiseId,
-    clockwiseCheckerSpec ? clockwiseCheckerSpec.qty : 0
-  )
-
-  const counterclockwiseCheckers = buildCheckersForCheckercontainerId(
-    counterclockwiseCheckerSpec?.color
-      ? clockwiseCheckerSpec?.color
-      : players.find((p) => p.direction === 'counterclockwise')?.color,
-    counterclockwiseId,
-    counterclockwiseCheckerSpec?.qty ? counterclockwiseCheckerSpec.qty : 0
-  )
-
-  const position: OffPosition = 'off'
-
-  const clockwise: BackgammonOff = {
-    id: clockwiseId,
-    kind: 'off',
-    position,
-    direction: 'clockwise',
-    checkers: clockwiseCheckers ? clockwiseCheckers : [],
-  }
-
-  const counterclockwise: BackgammonOff = {
-    id: counterclockwiseId,
-    kind: 'off',
-    position,
-    direction: 'counterclockwise',
-    checkers: counterclockwiseCheckers ? counterclockwiseCheckers : [],
-  }
-
-  return {
-    clockwise,
-    counterclockwise,
-  }
-}
-
-const defaultClockwiseColor = randomBackgammonColor()
-const defaultCounterclockwiseColor =
+export const defaultClockwiseColor = randomBackgammonColor()
+export const defaultCounterclockwiseColor =
   defaultClockwiseColor === 'black' ? 'white' : 'black'
 
-const BOARD_IMPORT_DEFAULT: BackgammonCheckercontainerImport[] = [
-  {
-    position: {
-      clockwise: 1,
-      counterclockwise: 24,
-    },
-    checkers: {
-      qty: 2,
-      color: defaultCounterclockwiseColor,
-    },
-  },
-  {
-    position: {
-      clockwise: 24,
-      counterclockwise: 1,
-    },
-    checkers: {
-      qty: 2,
-      color: defaultClockwiseColor,
-    },
-  },
-  {
-    position: {
-      clockwise: 13,
-      counterclockwise: 12,
-    },
-    checkers: {
-      qty: 5,
-      color: defaultCounterclockwiseColor,
-    },
-  },
-  {
-    position: {
-      clockwise: 12,
-      counterclockwise: 13,
-    },
-    checkers: {
-      qty: 5,
-      color: defaultClockwiseColor,
-    },
-  },
-  {
-    position: {
-      clockwise: 8,
-      counterclockwise: 17,
-    },
-    checkers: {
-      qty: 3,
-      color: defaultCounterclockwiseColor,
-    },
-  },
-  {
-    position: {
-      clockwise: 17,
-      counterclockwise: 8,
-    },
-    checkers: {
-      qty: 3,
-      color: defaultClockwiseColor,
-    },
-  },
-  {
-    position: {
-      clockwise: 6,
-      counterclockwise: 19,
-    },
-    checkers: {
-      qty: 5,
-      color: defaultCounterclockwiseColor,
-    },
-  },
-  {
-    position: {
-      clockwise: 19,
-      counterclockwise: 6,
-    },
-    checkers: {
-      qty: 5,
-      color: defaultClockwiseColor,
-    },
-  },
-  {
-    position: {
-      clockwise: 24,
-      counterclockwise: 1,
-    },
-    checkers: {
-      qty: 2,
-      color: defaultCounterclockwiseColor,
-    },
-  },
-  {
-    position: {
-      clockwise: 1,
-      counterclockwise: 24,
-    },
-    checkers: {
-      qty: 2,
-      color: defaultClockwiseColor,
-    },
-  },
-  {
-    position: {
-      clockwise: 13,
-      counterclockwise: 12,
-    },
-    checkers: {
-      qty: 5,
-      color: defaultCounterclockwiseColor,
-    },
-  },
-  {
-    position: {
-      clockwise: 12,
-      counterclockwise: 13,
-    },
-    checkers: {
-      qty: 5,
-      color: defaultClockwiseColor,
-    },
-  },
-  {
-    position: {
-      clockwise: 8,
-      counterclockwise: 17,
-    },
-    checkers: {
-      qty: 3,
-      color: defaultCounterclockwiseColor,
-    },
-  },
-]
+export class Board implements BackgammonBoard {
+  points: BackgammonPoints
+  bar: {
+    clockwise: BackgammonBar
+    counterclockwise: BackgammonBar
+  }
+  off: {
+    clockwise: BackgammonOff
+    counterclockwise: BackgammonOff
+  }
+  constructor(players: BackgammonPlayers) {
+    const board = this.buildBoard(players)
+    this.points = board.points
+    this.off = board.off
+    this.bar = board.bar
+  }
 
-export const buildBoard = (players: BackgammonPlayers): BackgammonBoard => {
-  let boardImport: BackgammonCheckercontainerImport[] = BOARD_IMPORT_DEFAULT
-
-  const tempPoints: BackgammonPoint[] = []
-  // console.log('[Board] buildBoard boardImport:', boardImport)
-  const clockwiseColor = players.find((p) => p.direction === 'clockwise')?.color
-  const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
-
-  for (let i = 0; i < 24; i++) {
-    const pointId = generateId()
-    const checkers: BackgammonChecker[] = []
-
-    const clockwisePosition = (i + 1) as BackgammonPointValue
-    const counterclockwisePosition = (25 -
-      clockwisePosition) as BackgammonPointValue
-
+  private buildBoard = (players: BackgammonPlayers): BackgammonBoard => {
+    let boardImport: BackgammonCheckercontainerImport[] = BOARD_IMPORT_DEFAULT
     const clockwiseColor = players.find(
       (p) => p.direction === 'clockwise'
     )?.color
     const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
+    const tempPoints: BackgammonPoint[] = []
 
-    boardImport.map((checkerbox) => {
-      if (
-        checkerbox.position.clockwise === clockwisePosition &&
-        checkerbox.checkers.color === clockwiseColor
-      ) {
-        const checkercount = checkerbox.checkers.qty
-        checkers.push(
-          ...buildCheckersForCheckercontainerId(
-            clockwiseColor,
-            pointId,
-            checkercount
-          )
+    for (let i = 0; i < 24; i++) {
+      const pointId = generateId()
+      const checkers: BackgammonChecker[] = []
+
+      const clockwisePosition = (i + 1) as BackgammonPointValue
+      const counterclockwisePosition = (25 -
+        clockwisePosition) as BackgammonPointValue
+
+      const point: BackgammonPoint = {
+        id: pointId,
+        kind: 'point',
+        position: {
+          clockwise: clockwisePosition,
+          counterclockwise: counterclockwisePosition,
+        },
+        checkers: checkers as CheckercontainerCheckers,
+      }
+      tempPoints.push(point)
+    }
+
+    if (tempPoints.length !== 24) throw Error('Invalid tempPoints length')
+
+    const points: BackgammonPoints = tempPoints as BackgammonPoints
+
+    const bar = this.buildBar()
+    const clockwiseBarSpec = boardImport.find(
+      (cc) => cc.position === 'bar' && cc.direction === 'clockwise'
+    )
+    if (clockwiseBarSpec) {
+      if (clockwiseBarSpec.checkers) {
+        const checkers = buildCheckersForCheckercontainerId(
+          bar.clockwise.id,
+          clockwiseBarSpec.checkers.color,
+          clockwiseBarSpec.checkers.qty
         )
-      } else if (
-        checkerbox.position.counterclockwise === counterclockwisePosition &&
-        checkerbox.checkers.color === counterclockwiseColor
-      ) {
-        const checkercount = checkerbox.checkers.qty
-        checkers.push(
-          ...buildCheckersForCheckercontainerId(
-            counterclockwiseColor,
-            pointId,
-            checkercount
-          )
+        bar.clockwise.checkers = checkers
+      }
+    }
+
+    const counterclockwiseBarSpec = boardImport.find(
+      (cc) => cc.position === 'bar' && cc.direction === 'counterclockwise'
+    )
+    if (counterclockwiseBarSpec) {
+      if (counterclockwiseBarSpec.checkers) {
+        const checkers = buildCheckersForCheckercontainerId(
+          bar.clockwise.id,
+          counterclockwiseBarSpec.checkers.color,
+          counterclockwiseBarSpec.checkers.qty
         )
+        bar.clockwise.checkers = checkers
+      }
+    }
+    const off = this.buildOff()
+    const clockwiseOffSpec = boardImport.find(
+      (cc) => cc.position === 'off' && cc.direction === 'clockwise'
+    )
+    if (clockwiseOffSpec) {
+      if (clockwiseOffSpec.checkers) {
+        const checkers = buildCheckersForCheckercontainerId(
+          off.clockwise.id,
+          clockwiseOffSpec.checkers.color,
+          clockwiseOffSpec.checkers.qty
+        )
+        off.clockwise.checkers = checkers
+      }
+    }
+
+    const counterclockwiseOffSpec = boardImport.find(
+      (cc) => cc.position === 'off' && cc.direction === 'counterclockwise'
+    )
+    if (counterclockwiseOffSpec) {
+      if (counterclockwiseOffSpec.checkers) {
+        const checkers = buildCheckersForCheckercontainerId(
+          off.clockwise.id,
+          counterclockwiseOffSpec.checkers.color,
+          counterclockwiseOffSpec.checkers.qty
+        )
+        off.clockwise.checkers = checkers
+      }
+    }
+    points.map((point) => {
+      // console.log('[buildBoard] point.position', point.position)
+      const pointSpec = boardImport.find(
+        (cc) =>
+          cc.position.clockwise === point.position.clockwise &&
+          cc.position.counterclockwise === point.position.counterclockwise
+      )
+      if (pointSpec) {
+        // console.log('[buildBoard] pointSpec:', pointSpec)
+        if (pointSpec.checkers) {
+          const checkers = buildCheckersForCheckercontainerId(
+            point.id,
+            pointSpec.checkers.color,
+            pointSpec.checkers.qty
+          )
+          point.checkers = checkers
+        }
       }
     })
 
-    const point: BackgammonPoint = {
-      id: pointId,
-      kind: 'point',
-      position: {
-        clockwise: clockwisePosition,
-        counterclockwise: counterclockwisePosition,
-      },
-      checkers: checkers as CheckercontainerCheckers,
-    }
-    tempPoints.push(point)
-  }
-
-  if (tempPoints.length === 24) {
-    const points: BackgammonPoints = tempPoints as BackgammonPoints
-
-    const barImports: [
-      BackgammonCheckercontainerImport,
-      BackgammonCheckercontainerImport
-    ] = [
-      {
-        position: 'bar',
-        checkers: {
-          qty: 0,
-          color: clockwiseColor,
-        },
-      },
-      {
-        position: 'bar',
-        checkers: {
-          qty: 0,
-          color: counterclockwiseColor,
-        },
-      },
-    ]
-
-    const offImports: [
-      BackgammonCheckercontainerImport,
-      BackgammonCheckercontainerImport
-    ] = [
-      {
-        position: 'off',
-        checkers: {
-          qty: 0,
-          color: clockwiseColor,
-        },
-      },
-      {
-        position: 'off',
-        checkers: {
-          qty: 0,
-          color: counterclockwiseColor,
-        },
-      },
-    ]
-    const bar = buildBar(barImports, players)
-    const off = buildOff(offImports, players)
-    return {
+    const board: BackgammonBoard = {
       points,
       bar,
       off,
     }
-  } else {
-    throw Error(`invalid tempPoints length ${tempPoints.length}`)
+
+    return board
+  }
+
+  buildBar = (): {
+    clockwise: BackgammonBar
+    counterclockwise: BackgammonBar
+  } => {
+    const clockwiseId = generateId()
+    const counterclockwiseId = generateId()
+
+    const position: BarPosition = 'bar'
+
+    const clockwise: BackgammonBar = {
+      id: clockwiseId,
+      kind: 'bar',
+      position,
+      direction: 'clockwise',
+      checkers: [],
+    }
+
+    const counterclockwise: BackgammonBar = {
+      id: counterclockwiseId,
+      kind: 'bar',
+      position,
+      direction: 'counterclockwise',
+      checkers: [],
+    }
+
+    return {
+      clockwise,
+      counterclockwise,
+    }
+  }
+
+  buildOff = (): {
+    clockwise: BackgammonOff
+    counterclockwise: BackgammonOff
+  } => {
+    const clockwiseId = generateId()
+    const counterclockwiseId = generateId()
+
+    const position: OffPosition = 'off'
+
+    const clockwise: BackgammonOff = {
+      id: clockwiseId,
+      kind: 'off',
+      position,
+      direction: 'clockwise',
+      checkers: [],
+    }
+
+    const counterclockwise: BackgammonOff = {
+      id: counterclockwiseId,
+      kind: 'off',
+      position,
+      direction: 'counterclockwise',
+      checkers: [],
+    }
+
+    return {
+      clockwise,
+      counterclockwise,
+    }
   }
 }
 

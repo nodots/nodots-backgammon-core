@@ -5,6 +5,7 @@ import {
 
 export interface BackgammonCheckercontainerImport {
   position: BackgammonCheckercontainerPosition
+  direction?: 'clockwise' | 'counterclockwise'
   checkers: {
     qty: number
     color: BackgammonColor

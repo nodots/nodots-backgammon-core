@@ -9,7 +9,7 @@ export type DiceKind = 'inactive' | 'ready' | 'rolled'
 export type PlayerDice = {
   kind: DiceKind
   color: BackgammonColor
-  roll: BackgammonRoll
+  roll: () => BackgammonRoll
 }
 
 export type BackgammonDice = {

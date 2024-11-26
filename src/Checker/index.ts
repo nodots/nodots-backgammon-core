@@ -26,8 +26,8 @@ export const buildChecker = (
 }
 
 export const buildCheckersForCheckercontainerId = (
-  color: BackgammonColor,
   checkercontainerId: string,
+  color: BackgammonColor,
   count: number
 ): CheckercontainerCheckers => {
   const tempCheckers: BackgammonChecker[] = []
