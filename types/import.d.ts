@@ -1,7 +1,5 @@
-import {
-  BackgammonCheckercontainerPosition,
-  BackgammonPlayerCheckers,
-} from './game'
+import { BackgammonCheckercontainerPosition } from './game'
+import { BackgammonPlayerCheckers } from './player'
 
 export interface BackgammonCheckercontainerImport {
   position: BackgammonCheckercontainerPosition

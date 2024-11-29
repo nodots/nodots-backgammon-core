@@ -1,4 +1,5 @@
-import { BackgammonColor, BackgammonPlayerCheckers } from './game'
+import { BackgammonColor } from './game'
+import { BackgammonPlayerCheckers } from './player'
 
 export interface BackgammonChecker {
   id: string

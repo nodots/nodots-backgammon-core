@@ -3,29 +3,34 @@ import { BackgammonDieValue } from './dice'
 import { BackgammonMoveDirection } from './game'
 import { PlayerPlayingRolling, PlayerPlayingMoving } from './player'
 
-export interface Move {
-  id: string
-  playId: string
-  player: PlayerPlayingRolling | PlayerPlayingMoving
+export type BackgammonMoveStateKind = 'initializing' | 'moving' | 'moved'
+
+export type _BaseBgMove = {
+  player: PlayerMoving
   isAuto: boolean
   isForced: boolean
   dieValue: BackgammonDieValue
   direction: BackgammonMoveDirection
-  origin: BackgammonCheckercontainer | undefined
-  destination: BackgammonCheckercontainer | undefined
+  origin?: BackgammonCheckercontainer
+  destination?: BackgammonCheckercontainer
 }
 
-export interface MoveInitializing extends Move {
-  kind: 'move-initializing'
+export type BackgammonMove = _BaseBgMove & {
+  id: string
+  stateKind: BackgammonMoveStateKind
 }
 
-export interface MoveMoving extends Move {
-  kind: 'move-moving'
-  origin: BackgammonCheckercontainer
+export interface MoveMoving extends BackgammonMove {
+  kind: 'moving'
+  dieValue: BackgammonDieValue
 }
 
-export interface MoveMoved extends Move {
-  kind: 'move-moved'
+export interface MoveMoved extends BackgammonMove {
+  kind: 'moved'
   origin: BackgammonCheckercontainer
   destination: BackgammonCheckercontainer
 }
+
+export type BackgammonMoves =
+  | [BackgammonMove, BackgammonMove]
+  | [BackgammonMove, BackgammonMove, BackgammonMove, BackgammonMove]

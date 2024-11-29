@@ -3,38 +3,8 @@ import { BackgammonChecker } from './checker'
 import {
   BackgammonBar,
   BackgammonOff,
-  BackgammonPoint,
+  BackgammonPoints,
 } from './checkercontainer'
-
-export type Latitude = 'north' | 'south'
-export type Longitude = 'east' | 'west'
-
-export type BackgammonPoints = [
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint,
-  BackgammonPoint
-]
 
 export interface BackgammonBoard {
   points: BackgammonPoints

@@ -1,34 +1,32 @@
 import {
   BackgammonColor,
   BackgammonDice,
+  BackgammonDiceReady,
+  BackgammonDiceRolled,
   BackgammonDieValue,
   BackgammonRoll,
-  PlayerDice,
+  DiceKind,
 } from '../../types'
 
 export class Dice implements BackgammonDice {
-  white: PlayerDice
-  black: PlayerDice
-  constructor() {
-    this.white = {
-      kind: 'inactive',
-      color: 'white',
-      roll: () => this.rollDice('white'),
-    }
-    this.black = {
-      kind: 'inactive',
-      color: 'black',
-      roll: () => this.rollDice('black'),
-    }
+  color: BackgammonColor
+  kind: DiceKind
+
+  constructor(color: BackgammonColor) {
+    this.color = color
+    this.kind = 'ready'
   }
 
-  roll = (): BackgammonDieValue =>
-    (Math.floor(Math.random() * 6) + 1) as BackgammonDieValue
-
-  rollDice = (activeColor: BackgammonColor): BackgammonRoll => {
-    const activeDice = activeColor === 'white' ? this.white : this.black
-    return activeDice.roll()
+  roll = (dice: BackgammonDiceReady): BackgammonDiceRolled => {
+    return {
+      ...dice,
+      kind: 'rolled',
+      roll: [this._roll(), this._roll()],
+    }
   }
 
   isDoubles = (roll: BackgammonRoll) => roll[0] === roll[1]
+
+  private _roll = (): BackgammonDieValue =>
+    (Math.floor(Math.random() * 6) + 1) as BackgammonDieValue
 }
