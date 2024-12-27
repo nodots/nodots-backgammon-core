@@ -4,19 +4,17 @@ import {
   BackgammonChecker,
   BackgammonCheckercontainer,
   BackgammonColor,
-  BackgammonDieValue,
-  BackgammonMove,
   BackgammonMoves,
   BackgammonMoveStateKind,
   BackgammonOff,
   BackgammonPoint,
   BackgammonRoll,
   MoveMoving,
-  PlayerReady,
+  BackgammonPlayerReady,
 } from '../../types'
 
 export const _buildMoves = (
-  player: PlayerReady,
+  player: BackgammonPlayerReady,
   roll: BackgammonRoll
 ): BackgammonMoves => {
   const move1 = {

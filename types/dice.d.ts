@@ -1,31 +1,27 @@
 import { BackgammonColor } from './game'
-import { BackgammonPlayer } from './player'
-
 export type BackgammonDieValue = undefined | 1 | 2 | 3 | 4 | 5 | 6
 export type BackgammonDieOrder = 0 | 1
 export type BackgammonRoll = [BackgammonDieValue, BackgammonDieValue]
 
-export type DiceKind = 'ready' | 'rolled'
+export type BackgammonDiceStateKind = 'ready' | 'rolled'
 
-type _Dice = {
-  kind: DiceKind
+type _BaseBgDice = {
   color: BackgammonColor
-  roll?: BackgammonRoll
-  roll: () => BackgammonRoll
+  currentRoll: BackgammonRoll | undefined
+  roll: (dice: BackgammonDiceReady) => BackgammonRoll
+  switchDice: (dice: BackgammonDiceRolled) => BackgammonRoll
+  isDoubles: (dice: BackgammonRolled) => boolean
 }
 
-export interface BackgammonDiceReady extends _Dice {
-  kind: 'ready'
-  roll: () => BackgammonRoll
+export type BackgammonDice = _BaseBgDice & {
+  id: string
+  stateKind: BackgammonDiceStateKind
 }
 
-export interface BackgammonDiceRolled extends _Dice {
-  kind: 'rolled'
-  roll: BackgammonRoll
+export interface BackgammonDiceReady extends BackgammonDice {
+  stateKind: 'ready'
 }
-export interface BackgammonDice {
-  color: BackgammonColor
-  kind: DiceKind
-  roll(): BackgammonRoll
-  isDoubles(roll: BackgammonRoll): boolean
+
+export interface RolledDiceState extends BackgammonDice {
+  stateKind: 'rolled'
 }

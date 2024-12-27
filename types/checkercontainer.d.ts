@@ -155,7 +155,6 @@ export interface BackgammonPoint extends BackgammonCheckercontainer {
     clockwise: BackgammonPointValue
     counterclockwise: BackgammonPointValue
   }
-  isOpenForColor: (color: BackgammonColor) => boolean
 }
 
 export interface BackgammonBar extends BackgammonCheckercontainer {

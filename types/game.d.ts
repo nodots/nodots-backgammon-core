@@ -22,41 +22,35 @@ export type BackgammonGameStateKind =
   | 'rolling'
   | 'moving'
 
-type _BaseBgGame = {
+export type BaseBgGame = {
+  id?: string
+  stateKind?: BackgammonGameStateKind
   players: BackgammonPlayers
   board: BackgammonBoard
   cube: BackgammonCube
   activeColor?: BackgammonColor
   activePlay?: BackgammonPlay
-  initialize?: (players: BackgammonPlayers) => void
-  rollForStart?: (game: GameInitializing) => GameRolling
-  roll?: (game: GameRolling) => GameMoving
-  move?: (
-    game: GameMoving,
-    checker: BackgammonChecker,
-    dieValue: BackgammonDieValue
-  ) => GameMoving | GameRolling //
-}
-
-export type _Game = _BaseBgGame & {
-  id: string
-  stateKind: BackgammonGameStateKind
-}
-
-export interface GameInitializing extends _Game {
-  stateKind: 'initializing'
-}
-export interface GameRollingForStart extends _Game {
-  stateKind: 'rolling-for-start'
+  initialize: (players: BackgammonPlayers) => void
   rollForStart: (game: GameInitializing) => GameRolling
 }
 
-export interface GameRolling extends _Game {
+export interface GameInitializing extends BaseBgGame {
+  id: string
+  stateKind: 'initializing'
+}
+export interface GameRollingForStart extends BaseBgGame {
+  id: string
+  stateKind: 'rolling-for-start'
+}
+
+export interface GameRolling extends BaseBgGame {
+  id: string
   stateKind: 'rolling'
   activeColor: BackgammonColor
 }
 
-export interface GameMoving extends _Game {
+export interface GameMoving extends BaseBgGame {
+  id: string
   stateKind: 'moving'
   activeColor: BackgammonColor
   activePlay: BackgammonPlay
@@ -72,20 +66,3 @@ export type BackgammonGameActive =
   | GameRollingForStart
   | GameRolling
   | GameMoving
-
-// export interface GameOver extends _Game {
-//   id: string
-//   kind: 'over'
-// }
-
-// export interface GameDoubleProposed extends _Game {
-//   id: string
-//   kind: 'double-proposed'
-//   activeColor: BackgammonColor
-// }
-
-// export interface GameResignationProposed extends _Game {
-//   id: string
-//   kind: 'resignation-proposed'
-//   activeColor: BackgammonColor
-// }
