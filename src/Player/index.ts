@@ -4,24 +4,23 @@ import {
   BackgammonDice,
   BackgammonDieValue,
   BackgammonMoveDirection,
-  BackgammonPips,
   BackgammonPlayer,
-  BackgammonPlayerStateKind,
   BackgammonRoll,
-  GameMoving,
-  BackgammonPlayerReady,
-  BackgammonDiceReady,
 } from '../../types'
+import { BackgammonPips } from '../../types/pip'
 
-export interface Player extends BackgammonPlayer {
-
-  roll: function (dice: Dice): BackgammonRoll = {
-    if (this.stateKind !== 'ready') {
-      throw new Error('Player is not in ready state')
-    }
-    const roll: BackgammonRoll = dice.roll()
-    this.stateKind = 'moving'
-    return roll
+export class Player implements BackgammonPlayer {
+  id: string
+  stateKind: 'ready' = 'ready'
+  dice: BackgammonDice
+  pipCount: BackgammonPips = 167
+  constructor(
+    public color: BackgammonColor,
+    public direction: BackgammonMoveDirection
+  ) {
+    this.id = generateId()
+    this.color = color
+    this.dice = new Dice(color)
   }
 }
 

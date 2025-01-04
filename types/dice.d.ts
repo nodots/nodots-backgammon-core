@@ -22,6 +22,6 @@ export interface BackgammonDiceReady extends BackgammonDice {
   stateKind: 'ready'
 }
 
-export interface RolledDiceState extends BackgammonDice {
+export interface BackgammonDiceRolled extends BackgammonDice {
   stateKind: 'rolled'
 }

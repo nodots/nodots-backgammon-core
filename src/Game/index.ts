@@ -23,11 +23,11 @@ export class Game implements BaseBgGame {
   board!: Board
   cube!: Cube
 
-  initialize(players: BackgammonPlayers): void {
+  constructor(players: BackgammonPlayers) {
     this.id = generateId()
     this.stateKind = 'initializing'
     this.players = players
-    this.board = new Board(players)
+    this.board = new Board()
     this.cube = new Cube()
   }
 

@@ -23,6 +23,7 @@ export const defaultClockwiseColor = randomBackgammonColor()
 export const defaultCounterclockwiseColor =
   defaultClockwiseColor === 'black' ? 'white' : 'black'
 
+export const BOARD_POINT_COUNT = 24
 export class Board implements BackgammonBoard {
   points: BackgammonPoints
   bar: {
@@ -33,22 +34,18 @@ export class Board implements BackgammonBoard {
     clockwise: BackgammonOff
     counterclockwise: BackgammonOff
   }
-  constructor(players: BackgammonPlayers) {
-    const board = this.buildBoard(players)
+  constructor() {
+    const board = this.buildBoard()
     this.points = board.points
     this.off = board.off
     this.bar = board.bar
   }
 
-  private buildBoard = (players: BackgammonPlayers): BackgammonBoard => {
+  private buildBoard = (): BackgammonBoard => {
     let boardImport: BackgammonCheckercontainerImport[] = BOARD_IMPORT_DEFAULT
-    const clockwiseColor = players.find(
-      (p) => p.direction === 'clockwise'
-    )?.color
-    const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
     const tempPoints: BackgammonPoint[] = []
 
-    for (let i = 0; i < 24; i++) {
+    for (let i = 0; i < BOARD_POINT_COUNT; i++) {
       const pointId = generateId()
       const checkers: BackgammonChecker[] = []
 
@@ -68,7 +65,8 @@ export class Board implements BackgammonBoard {
       tempPoints.push(point)
     }
 
-    if (tempPoints.length !== 24) throw Error('Invalid tempPoints length')
+    if (tempPoints.length !== BOARD_POINT_COUNT)
+      throw Error('Invalid tempPoints length')
 
     const points: BackgammonPoints = tempPoints as BackgammonPoints
 

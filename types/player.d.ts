@@ -10,8 +10,6 @@ export type BaseBgPlayer = {
   direction: BackgammonMoveDirection
   dice: BackgammonDice
   pipCount: BackgammonPips
-  roll: () => BackgammonRoll
-  switchDice: () => BackgammonRoll
   move?: (
     gameState: GameMoving,
     checkerId: string,

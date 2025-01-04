@@ -30,7 +30,6 @@ export type BaseBgGame = {
   cube: BackgammonCube
   activeColor?: BackgammonColor
   activePlay?: BackgammonPlay
-  initialize: (players: BackgammonPlayers) => void
   rollForStart: (game: GameInitializing) => GameRolling
 }
 
