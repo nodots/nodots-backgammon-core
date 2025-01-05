@@ -8,7 +8,6 @@ import {
   BackgammonColor,
   BackgammonGameActive,
   BackgammonOff,
-  BackgammonPlayers,
   BackgammonPoint,
   BackgammonPoints,
   BackgammonPointValue,
@@ -18,10 +17,6 @@ import {
 } from '../../types'
 import { buildCheckersForCheckercontainerId } from '../Checker'
 import { BOARD_IMPORT_DEFAULT } from './BOARD_IMPORT_DEFAULT'
-
-export const defaultClockwiseColor = randomBackgammonColor()
-export const defaultCounterclockwiseColor =
-  defaultClockwiseColor === 'black' ? 'white' : 'black'
 
 export const BOARD_POINT_COUNT = 24
 export class Board implements BackgammonBoard {
@@ -34,11 +29,70 @@ export class Board implements BackgammonBoard {
     clockwise: BackgammonOff
     counterclockwise: BackgammonOff
   }
+
   constructor() {
     const board = this.buildBoard()
     this.points = board.points
     this.off = board.off
     this.bar = board.bar
+  }
+
+  static getCheckers(board: BackgammonBoard): BackgammonChecker[] {
+    const checkercontainers = Board.getCheckercontainers(board)
+    const checkers: BackgammonChecker[] = []
+
+    checkercontainers.map((checkercontainer) =>
+      checkers.push(...checkercontainer.checkers)
+    )
+    return checkers
+  }
+
+  static getCheckersForColor(
+    board: BackgammonBoard,
+    color: BackgammonColor
+  ): BackgammonChecker[] {
+    return Board.getCheckers(board).filter((checker) => checker.color === color)
+  }
+
+  static getPoints = (board: BackgammonBoard): BackgammonPoint[] => board.points
+  static getBars = (board: BackgammonBoard): BackgammonBar[] => [
+    board.bar.clockwise,
+    board.bar.counterclockwise,
+  ]
+
+  static getOffs = (board: BackgammonBoard): BackgammonOff[] => [
+    board.off.clockwise,
+    board.off.counterclockwise,
+  ]
+
+  static getCheckercontainers = (
+    board: BackgammonBoard
+  ): BackgammonCheckercontainer[] => {
+    const points = Board.getPoints(board) as BackgammonCheckercontainer[]
+    const bar = Board.getBars(board) as BackgammonCheckercontainer[]
+    const off = Board.getOffs(board) as BackgammonCheckercontainer[]
+    return points.concat(...bar).concat(...off)
+  }
+
+  static getCheckercontainer = (
+    board: BackgammonBoard,
+    id: string
+  ): BackgammonCheckercontainer => {
+    const container = Board.getCheckercontainers(board).find((c) => c.id === id)
+    if (!container) {
+      throw Error(`No checkercontainer found for ${id}`)
+    }
+    return container
+  }
+
+  static getPipCounts = (game: BackgammonGameActive) => {
+    const { board, players } = game
+    const pipCounts = {
+      black: 167,
+      white: 167,
+    }
+
+    return pipCounts
   }
 
   private buildBoard = (): BackgammonBoard => {
@@ -155,7 +209,7 @@ export class Board implements BackgammonBoard {
     return board
   }
 
-  buildBar = (): {
+  private buildBar = (): {
     clockwise: BackgammonBar
     counterclockwise: BackgammonBar
   } => {
@@ -186,7 +240,7 @@ export class Board implements BackgammonBoard {
     }
   }
 
-  buildOff = (): {
+  private buildOff = (): {
     clockwise: BackgammonOff
     counterclockwise: BackgammonOff
   } => {
@@ -216,62 +270,4 @@ export class Board implements BackgammonBoard {
       counterclockwise,
     }
   }
-}
-
-export const getCheckers = (board: BackgammonBoard): BackgammonChecker[] => {
-  const checkercontainers = getCheckercontainers(board)
-  const checkers: BackgammonChecker[] = []
-
-  checkercontainers.map((checkercontainer) =>
-    checkers.push(...checkercontainer.checkers)
-  )
-  return checkers
-}
-
-export const getCheckersForColor = (
-  board: BackgammonBoard,
-  color: BackgammonColor
-): BackgammonChecker[] =>
-  getCheckers(board).filter((checker) => checker.color === color)
-
-export const getPoints = (board: BackgammonBoard): BackgammonPoint[] =>
-  board.points
-export const getBars = (board: BackgammonBoard): BackgammonBar[] => [
-  board.bar.clockwise,
-  board.bar.counterclockwise,
-]
-
-export const getOffs = (board: BackgammonBoard): BackgammonOff[] => [
-  board.off.clockwise,
-  board.off.counterclockwise,
-]
-
-export const getCheckercontainers = (
-  board: BackgammonBoard
-): BackgammonCheckercontainer[] => {
-  const points = getPoints(board) as BackgammonCheckercontainer[]
-  const bar = getBars(board) as BackgammonCheckercontainer[]
-  const off = getOffs(board) as BackgammonCheckercontainer[]
-  return points.concat(...bar).concat(...off)
-}
-
-export const getCheckercontainer = (
-  board: BackgammonBoard,
-  id: string
-): BackgammonCheckercontainer => {
-  const container = getCheckercontainers(board).find((c) => c.id === id)
-  if (!container) {
-    throw Error(`No checkercontainer found for ${id}`)
-  }
-  return container
-}
-
-export const getPipCounts = (game: BackgammonGameActive) => {
-  const { board, players } = game
-  const pipCounts = {
-    black: 167,
-    white: 167,
-  }
-
-  return pipCounts
 }

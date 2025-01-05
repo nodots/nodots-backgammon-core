@@ -3,25 +3,27 @@ import { BackgammonColor } from './game'
 import { BackgammonMove } from './move'
 import { BackgammonPlayerMoving } from './player'
 
-export type BackgammonPlayStateKind = 'moving' | 'dice-switching' | 'doubling'
+export type BackgammonPlayStateKind = 'initializing' | 'moving'
 
-type _BaseBgPlay = {
-  roll: BackgammonRoll
-  moves: BackgammonMove[]
+type BaseBgPlay = {
+  id?: string
+  player?: BackgammonPlayerMoving
+  roll?: BackgammonRoll
+  moves?: BackgammonMove[]
 }
 
-export interface PlayInitializing extends _BaseBgPlay {
+export interface PlayInitializing extends BaseBgPlay {
+  id: string
   stateKind: 'initializing'
   player: BackgammonPlayerMoving
-}
-
-export interface PlayMoving extends _BaseBgPlay {
-  stateKind: 'moving'
-  player: BackgammonPlayerMoving
+  roll: BackgammonRoll
   moves: BackgammonMoves
 }
 
-export interface PlayDiceSwitching extends _BaseBgPlay {
-  stateKind: 'dice-switching'
+export interface PlayMoving extends BaseBgPlay {
+  id: string
+  stateKind: 'moving'
   player: BackgammonPlayerMoving
+  roll: BackgammonRoll
+  moves: BackgammonMoves
 }

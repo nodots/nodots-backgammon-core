@@ -1,17 +1,16 @@
-import { generateId } from '..'
+import { Board, generateId } from '..'
 import {
   BackgammonBoard,
   BackgammonChecker,
   BackgammonColor,
   CheckercontainerCheckers,
 } from '../../types'
-import { getCheckers } from '../Board'
 
 export const getChecker = (
   board: BackgammonBoard,
   id: string
 ): BackgammonChecker => {
-  const checker = getCheckers(board).find((checker) => checker.id === id)
+  const checker = Board.getCheckers(board).find((checker) => checker.id === id)
   if (!checker) {
     throw Error(`No checker found for ${id}`)
   }

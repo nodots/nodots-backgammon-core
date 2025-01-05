@@ -10,23 +10,45 @@ import {
 
 export class Dice implements BackgammonDice {
   id: string = generateId()
+  color: BackgammonColor | undefined = undefined
   stateKind: 'ready' = 'ready'
   currentRoll: BackgammonRoll | undefined = undefined
 
-  constructor(public color: BackgammonColor) {
-    this.color = color
+  public static initialize(color: BackgammonColor) {
+    return {
+      id: generateId(),
+      stateKind: 'ready',
+      color,
+      currentRoll: undefined,
+    }
   }
 
-  roll: (dice: BackgammonDiceReady) => BackgammonRoll = (dice) => {
-    this.currentRoll = [_rollDie(), _rollDie()]
-    return this.currentRoll
+  public static roll: (dice: BackgammonDiceReady) => BackgammonDiceRolled =
+    (): BackgammonDiceRolled => {
+      const currentRoll: BackgammonRoll = [
+        _rollDie() as BackgammonDieValue,
+        _rollDie() as BackgammonDieValue,
+      ]
+      return {
+        ...this,
+        stateKind: 'rolled',
+        currentRoll,
+      }
+    }
+
+  switchDice: (dice: BackgammonDiceRolled) => BackgammonDiceRolled = (
+    dice: BackgammonDiceRolled
+  ) => {
+    return {
+      ...dice,
+      currentRoll: [
+        dice.currentRoll![1],
+        dice.currentRoll![0],
+      ] as BackgammonRoll,
+    }
   }
 
-  switchDice: (dice: BackgammonDiceRolled) => BackgammonRoll = (dice) => {
-    return [this.currentRoll![1], this.currentRoll![0]]
-  }
-
-  isDoubles: (dice: BackgammonDiceRolled) => boolean = (dice) => {
+  isDoubles: () => boolean = () => {
     return this.currentRoll![0] === this.currentRoll![1]
   }
 }

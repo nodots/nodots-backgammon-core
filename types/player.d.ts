@@ -3,13 +3,14 @@ import { BackgammonDice, BackgammonDieValue } from './dice'
 import { GameMoving } from './game'
 import { BackgammonPips } from './pip'
 
-export type BackgammonPlayerStateKind = 'ready' | 'moving'
+export type BackgammonPlayerStateKind = 'initializing' | 'ready' | 'moving'
 
 export type BaseBgPlayer = {
-  color: BackgammonColor
-  direction: BackgammonMoveDirection
-  dice: BackgammonDice
-  pipCount: BackgammonPips
+  id?: string
+  color?: BackgammonColor
+  direction?: BackgammonMoveDirection
+  dice?: BackgammonDice
+  pipCount?: BackgammonPips
   move?: (
     gameState: GameMoving,
     checkerId: string,
@@ -18,12 +19,20 @@ export type BaseBgPlayer = {
 }
 
 export type BackgammonPlayer = BaseBgPlayer & {
-  id: string
   stateKind: BackgammonPlayerStateKind
 }
 
+export interface BackgammonPlayerInitializing extends BackgammonPlayer {
+  id: string
+  stateKind: 'initializing'
+}
 export interface BackgammonPlayerReady extends BackgammonPlayer {
+  id: string
   stateKind: 'ready'
+  color: BackgammonColor
+  direction: BackgammonMoveDirection
+  dice: BackgammonDice
+  pipCount: BackgammonPips
 }
 
 export interface BackgammonPlayerMoving extends BackgammonPlayer {

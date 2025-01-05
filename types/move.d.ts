@@ -5,28 +5,37 @@ import { PlayerPlayingRolling, PlayerPlayingMoving } from './player'
 
 export type BackgammonMoveStateKind = 'initializing' | 'moving' | 'moved'
 
-export type _BaseBgMove = {
-  player: PlayerMoving
-  isAuto: boolean
-  isForced: boolean
-  dieValue: BackgammonDieValue
-  direction: BackgammonMoveDirection
+type BaseBgMove = {
+  id?: string
+  player?: PlayerMoving
+  isAuto?: boolean
+  isForced?: boolean
+  dieValue?: BackgammonDieValue
+  direction?: BackgammonMoveDirection
   origin?: BackgammonCheckercontainer
   destination?: BackgammonCheckercontainer
 }
 
-export type BackgammonMove = _BaseBgMove & {
+export interface BackgammonMove extends BaseBgMove {
   id: string
   stateKind: BackgammonMoveStateKind
 }
 
-export interface MoveMoving extends BackgammonMove {
-  kind: 'moving'
+export interface MoveInitializing extends BackgammonMove {
+  stateKind: 'initializing'
+  player: PlayerPlayingMoving
   dieValue: BackgammonDieValue
+}
+export interface MoveMoving extends BackgammonMove {
+  stateKind: 'moving'
+  player: PlayerPlayingMoving
+  dieValue: BackgammonDieValue
+  origin: BackgammonCheckercontainer
+  destination: BackgammonCheckercontainer | undefined
 }
 
 export interface MoveMoved extends BackgammonMove {
-  kind: 'moved'
+  stateKind: 'moved'
   origin: BackgammonCheckercontainer
   destination: BackgammonCheckercontainer
 }

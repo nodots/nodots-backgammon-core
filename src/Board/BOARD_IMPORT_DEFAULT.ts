@@ -1,5 +1,9 @@
-import { defaultCounterclockwiseColor, defaultClockwiseColor } from '.'
+import { randomBackgammonColor } from '..'
 import { BackgammonCheckercontainerImport } from '../../types'
+
+const defaultClockwiseColor = randomBackgammonColor()
+const defaultCounterclockwiseColor =
+  defaultClockwiseColor === 'white' ? 'black' : 'white'
 
 export const BOARD_IMPORT_DEFAULT: BackgammonCheckercontainerImport[] = [
   {

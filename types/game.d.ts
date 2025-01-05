@@ -1,7 +1,5 @@
 import { BackgammonBoard } from './board'
-import { BackgammonChecker } from './checker'
 import { BackgammonCube } from './cube'
-import { BackgammonDieValue } from './dice'
 import { IntegerRange } from './generics'
 import { BackgammonPlay } from './play'
 import { BackgammonPlayers } from './player'
@@ -25,12 +23,11 @@ export type BackgammonGameStateKind =
 export type BaseBgGame = {
   id?: string
   stateKind?: BackgammonGameStateKind
-  players: BackgammonPlayers
-  board: BackgammonBoard
-  cube: BackgammonCube
+  players?: BackgammonPlayers
+  board?: BackgammonBoard
+  cube?: BackgammonCube
   activeColor?: BackgammonColor
   activePlay?: BackgammonPlay
-  rollForStart: (game: GameInitializing) => GameRolling
 }
 
 export interface GameInitializing extends BaseBgGame {
@@ -40,17 +37,26 @@ export interface GameInitializing extends BaseBgGame {
 export interface GameRollingForStart extends BaseBgGame {
   id: string
   stateKind: 'rolling-for-start'
+  players: BackgammonPlayers
+  board: BackgammonBoard
+  cube: BackgammonCube
 }
 
 export interface GameRolling extends BaseBgGame {
   id: string
   stateKind: 'rolling'
   activeColor: BackgammonColor
+  players: BackgammonPlayers
+  board: BackgammonBoard
+  cube: BackgammonCube
 }
 
 export interface GameMoving extends BaseBgGame {
   id: string
   stateKind: 'moving'
+  players: BackgammonPlayers
+  board: BackgammonBoard
+  cube: BackgammonCube
   activeColor: BackgammonColor
   activePlay: BackgammonPlay
 }
