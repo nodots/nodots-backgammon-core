@@ -7,6 +7,7 @@ import {
 import { randomBackgammonColor, Dice, Player } from '..'
 import { BackgammonDiceReady, GameInitializing } from '../../types'
 import { Play } from '../Play'
+import { Move } from '../Move'
 
 describe('Game', () => {
   const clockwiseColor = randomBackgammonColor()
@@ -85,6 +86,11 @@ describe('Game', () => {
       ? expect(play.moves.length).toBe(4)
       : expect(play.moves.length).toBe(2)
 
-    console.log(play)
+    const validMoves = Move.getValidMoves(
+      rollingGame.board,
+      activePlayer as BackgammonPlayerMoving,
+      currentRoll
+    )
+    // console.log('validMoves', validMoves)
   })
 })
