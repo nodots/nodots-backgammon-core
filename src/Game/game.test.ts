@@ -1,13 +1,13 @@
-import { Game } from './index'
+import { Dice, Player, randomBackgammonColor } from '..'
+import { BackgammonDiceReady } from '../../types'
 import {
   BackgammonPlayerMoving,
   BackgammonPlayerReady,
   BackgammonPlayers,
 } from '../../types/player'
-import { randomBackgammonColor, Dice, Player } from '..'
-import { BackgammonDiceReady, GameInitializing } from '../../types'
-import { Play } from '../Play'
 import { Move } from '../Move'
+import { Play } from '../Play'
+import { Game } from './index'
 
 describe('Game', () => {
   const clockwiseColor = randomBackgammonColor()

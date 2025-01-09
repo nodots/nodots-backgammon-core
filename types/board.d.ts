@@ -1,5 +1,3 @@
-import { BackgammonCheckercontainerPosition } from './game'
-import { BackgammonChecker } from './checker'
 import {
   BackgammonBar,
   BackgammonOff,

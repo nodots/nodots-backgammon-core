@@ -1,6 +1,5 @@
 import { BackgammonChecker } from './checker'
-import { BackgammonDice, BackgammonDieValue } from './dice'
-import { GameMoving } from './game'
+import { BackgammonDice } from './dice'
 import { BackgammonPips } from './pip'
 
 export type BackgammonPlayerStateKind = 'initializing' | 'ready' | 'moving'

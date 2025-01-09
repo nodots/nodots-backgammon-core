@@ -4,7 +4,6 @@ import {
   BackgammonCheckercontainer,
   BackgammonDieValue,
   BackgammonMove,
-  BackgammonMoveDirection,
   BackgammonMoveStateKind,
   BackgammonPlay,
   BackgammonPlayerMoving,
@@ -35,6 +34,35 @@ export class Move implements BackgammonMove {
       player,
       dieValue,
     }
+  }
+
+  private static isBearOff(
+    board: BackgammonBoard,
+    player: BackgammonPlayerMoving
+  ): boolean {
+    const homeBoard = Player.getHomeBoard(board, player)
+    const awayBoard = board.points.filter((point) => !homeBoard.includes(point))
+    console.warn('isBearOff is not properly implemented')
+    return awayBoard.every((point) => point.checkers.length === 0)
+      ? true
+      : false
+  }
+
+  private static isReenter(
+    board: BackgammonBoard,
+    player: BackgammonPlayerMoving
+  ): boolean {
+    const bar = board.bar[player.direction as keyof typeof board.bar]
+    console.warn('isReenter is not properly implemented')
+    return bar.checkers.length > 0
+  }
+
+  private static isPointToPoint(board: BackgammonBoard, play: BackgammonPlay) {
+    console.warn('isPointToPoint not implemented')
+    // const destinations = this.getValidMoves(board, play)
+    // console.log('destination', destinations)
+    // return destinations.length > 0 ? true : false
+    return true
   }
 
   // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?open_point
@@ -97,7 +125,7 @@ export class Move implements BackgammonMove {
         }
       }
     })
-    console.log('reenter implementation in progress')
+    console.warn('reenter is not properly implemented')
 
     return move
   }
@@ -152,13 +180,11 @@ export class Move implements BackgammonMove {
     play: BackgammonPlay
   ): 'reenter' | 'bear-off' | 'point-to-point' | 'no-move' {
     const { player } = play
-    const direction = player.direction as BackgammonMoveDirection // FIXME
-    const type = 'point-to-point'
-    const bar = board.bar[direction]
-    const off = board.off[direction]
-    const points = board.points
-    if (bar.checkers.length > 0) return 'reenter'
-    if (off.checkers.length === 15) return 'no-move'
+    const type = 'no-move'
+    if (this.isReenter(board, player)) return 'reenter'
+    if (this.isBearOff(board, player)) return 'bear-off'
+    if (this.isPointToPoint(board, play)) return 'point-to-point'
+    console.log('[Move] getMoveType type:', type)
     return type
   }
 

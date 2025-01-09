@@ -1,15 +1,13 @@
-import { Dice, generateId } from '..'
+import { generateId } from '..'
 import {
   BackgammonBoard,
   BackgammonColor,
   BackgammonDice,
   BackgammonDiceStateKind,
-  BackgammonDieValue,
   BackgammonMoveDirection,
   BackgammonPlayer,
   BackgammonPlayerReady,
   BackgammonPlayerStateKind,
-  BackgammonRoll,
 } from '../../types'
 import { BackgammonPips } from '../../types/pip'
 
