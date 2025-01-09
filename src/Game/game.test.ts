@@ -86,11 +86,9 @@ describe('Game', () => {
       ? expect(play.moves.length).toBe(4)
       : expect(play.moves.length).toBe(2)
 
-    const validMoves = Move.getValidMoves(
-      rollingGame.board,
-      activePlayer as BackgammonPlayerMoving,
-      currentRoll
-    )
+    const validMoves = Move.getValidMoves(rollingGame.board, play)
+    expect(validMoves).toBeDefined()
+    expect(validMoves.length).toBeGreaterThan(0) // There should always be at least one valid move
     // console.log('validMoves', validMoves)
   })
 })

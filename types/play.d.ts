@@ -27,3 +27,5 @@ export interface PlayMoving extends BaseBgPlay {
   roll: BackgammonRoll
   moves: BackgammonMoves
 }
+
+export type BackgammonPlay = PlayInitializing | PlayMoving

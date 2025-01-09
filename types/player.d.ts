@@ -11,11 +11,6 @@ export type BaseBgPlayer = {
   direction?: BackgammonMoveDirection
   dice?: BackgammonDice
   pipCount?: BackgammonPips
-  move?: (
-    gameState: GameMoving,
-    checkerId: string,
-    dieValue: BackgammonDieValue
-  ) => GameMoving
 }
 
 export type BackgammonPlayer = BaseBgPlayer & {
@@ -25,6 +20,7 @@ export type BackgammonPlayer = BaseBgPlayer & {
 export interface BackgammonPlayerInitializing extends BackgammonPlayer {
   id: string
   stateKind: 'initializing'
+  direction: BackgammonMoveDirection
 }
 export interface BackgammonPlayerReady extends BackgammonPlayer {
   id: string
@@ -36,12 +32,12 @@ export interface BackgammonPlayerReady extends BackgammonPlayer {
 }
 
 export interface BackgammonPlayerMoving extends BackgammonPlayer {
+  id: string
   stateKind: 'moving'
-  move: (
-    gameState: GameMoving,
-    checkerId: string,
-    dieValue: BackgammonDieValue
-  ) => GameMoving
+  color: BackgammonColor
+  direction: BackgammonMoveDirection
+  dice: BackgammonDice
+  pipCount: BackgammonPips
 }
 
 export type BackgammonPlayers = [BackgammonPlayer, BackgammonPlayer]

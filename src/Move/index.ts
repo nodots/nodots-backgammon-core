@@ -6,9 +6,17 @@ import {
   BackgammonMove,
   BackgammonMoveDirection,
   BackgammonMoveStateKind,
+  BackgammonPlay,
   BackgammonPlayerMoving,
-  BackgammonRoll,
+  BackgammonPoint,
 } from '../../types'
+
+export interface BackgammonMoveNoMove {
+  id: string
+  stateKind: 'no-move'
+  origin: BackgammonCheckercontainer
+  dieValue: BackgammonDieValue
+}
 
 export class Move implements BackgammonMove {
   id: string = generateId()
@@ -29,79 +37,111 @@ export class Move implements BackgammonMove {
     }
   }
 
+  // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?open_point
+  private static isPointOpen(
+    point: BackgammonPoint,
+    player: BackgammonPlayerMoving
+  ) {
+    if (point.checkers.length < 2) return true
+    if (
+      point.checkers.length >= 2 &&
+      point.checkers[0] &&
+      point.checkers[0].color === player.color
+    )
+      return true
+  }
+
+  private static pointToPoint(
+    board: BackgammonBoard,
+    play: BackgammonPlay
+  ): BackgammonMove {
+    const { player } = play
+    let move: BackgammonMove = {
+      id: generateId(),
+      stateKind: 'no-move',
+      player,
+    }
+    console.warn('pointToPoint not implemented')
+    return move
+  }
+
+  // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?enter
+  private static reenter(
+    board: BackgammonBoard,
+    play: BackgammonPlay
+  ): BackgammonMove {
+    const { player } = play
+    let move: BackgammonMove = {
+      id: generateId(),
+      stateKind: 'no-move',
+      player,
+    }
+    console.warn('reenter not implemented')
+    return move
+  }
+
+  // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?bear_off
+  private static bearOff(
+    board: BackgammonBoard,
+    play: BackgammonPlay
+  ): BackgammonMove {
+    const { player } = play
+    let move: BackgammonMove = {
+      id: generateId(),
+      stateKind: 'no-move',
+      player,
+    }
+    console.warn('reenter not implemented')
+    return move
+  }
+
+  private static noMove(
+    board: BackgammonBoard,
+    play: BackgammonPlay
+  ): BackgammonMove {
+    const { player } = play
+    return {
+      id: generateId(),
+      stateKind: 'no-move',
+      player,
+    }
+  }
+
+  private static getMoveType(
+    board: BackgammonBoard,
+    play: BackgammonPlay
+  ): 'reenter' | 'bear-off' | 'point-to-point' | 'no-move' {
+    const { player } = play
+    const direction = player.direction as BackgammonMoveDirection // FIXME
+    const type = 'point-to-point'
+    const bar = board.bar[direction]
+    const off = board.off[direction]
+    const points = board.points
+    if (bar.checkers.length > 0) return 'reenter'
+    if (off.checkers.length === 15) return 'no-move'
+    return type
+  }
+
   public static getValidMoves(
     board: BackgammonBoard,
-    player: BackgammonPlayerMoving,
-    roll: BackgammonRoll
+    play: BackgammonPlay
   ): BackgammonMove[] {
+    const { player, roll } = play
     const origins: BackgammonCheckercontainer[] = []
     const moves: BackgammonMove[] = []
     const direction: BackgammonMoveDirection = player.direction
 
-    const bar = board.bar[direction]
+    const kind = this.getMoveType(board, play)
 
-    if (bar.checkers.length > 0) console.warn('bar checkers not implemented')
-
-    board.points.forEach((point, index) => {
-      if (
-        point &&
-        point.checkers[0] &&
-        point.checkers[0].color === player.color
-      ) {
-        origins.push(point)
-      }
-    })
-
-    origins.forEach((origin) => {
-      console.log('origin.position:', origin.position)
-
-      const position =
-        origin.position[direction as keyof typeof origin.position]
-      const destinationPosition = position + roll[0]
-      console.log('destinationPosition:', destinationPosition)
-      // const destinationIndex = origin.index + direction * roll.currentRoll[0]
-      // const destination = board.points[destinationIndex]
-
-      // if (destination) {
-      //   if (
-      //     destination.checkers.length < 2 ||
-      //     destination.checkers[0].color === player.color
-      //   ) {
-      //     moves.push({
-      //       id: generateId(),
-      //       stateKind: 'valid',
-      //       player,
-      //       origin,
-      //       destination,
-      //     })
-      //   }
-      // }
-    })
-    // for (let i = 0; i < board.length; i++) {
-    //   const container = board[i]
-    //   if (container.color === playerColor) {
-    //     const destinationIndex = i + playerDirection * dieValue
-    //     if (destinationIndex >= 0 && destinationIndex < board.length) {
-    //       const destinationContainer = board[destinationIndex]
-    //       if (
-    //         destinationContainer.color === playerColor ||
-    //         destinationContainer.color === null ||
-    //         (destinationContainer.color !== playerColor &&
-    //           destinationContainer.checkers.length === 1)
-    //       ) {
-    //         moves.push({
-    //           id: generateId(),
-    //           stateKind: 'valid',
-    //           player,
-    //           origin: container,
-    //           destination: destinationContainer,
-    //           dieValue,
-    //         })
-    //       }
-    //     }
-    //   }
-    // }
-
-    return moves
+    switch (kind) {
+      case 'reenter':
+        return [this.reenter(board, play)]
+      case 'bear-off':
+        return [this.bearOff(board, play)]
+      case 'point-to-point':
+        return [this.pointToPoint(board, play)]
+      case 'no-move':
+        return [this.noMove(board, play)]
+    }
   }
 }

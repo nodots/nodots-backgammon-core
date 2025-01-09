@@ -3,7 +3,11 @@ import { BackgammonDieValue } from './dice'
 import { BackgammonMoveDirection } from './game'
 import { PlayerPlayingRolling, PlayerPlayingMoving } from './player'
 
-export type BackgammonMoveStateKind = 'initializing' | 'moving' | 'moved'
+export type BackgammonMoveStateKind =
+  | 'initializing'
+  | 'moving'
+  | 'moved'
+  | 'no-move'
 
 type BaseBgMove = {
   id?: string
