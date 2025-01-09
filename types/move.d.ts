@@ -8,7 +8,7 @@ export type BackgammonMoveStateKind =
   | 'moving'
   | 'moved'
   | 'no-move'
-  | 'hit' // This is an odd state. It's basically a pause and I need to think this through.
+  | 'hit'
 
 type BaseBgMove = {
   id?: string

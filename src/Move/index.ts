@@ -59,9 +59,6 @@ export class Move implements BackgammonMove {
 
   private static isPointToPoint(board: BackgammonBoard, play: BackgammonPlay) {
     console.warn('isPointToPoint not implemented')
-    // const destinations = this.getValidMoves(board, play)
-    // console.log('destination', destinations)
-    // return destinations.length > 0 ? true : false
     return true
   }
 
@@ -175,12 +172,22 @@ export class Move implements BackgammonMove {
     }
   }
 
+  private static isHit(
+    board: BackgammonBoard,
+    player: BackgammonPlayerMoving
+  ): boolean {
+    console.warn('isHit is not properly implemented')
+    return false
+  }
+
   private static getMoveType(
     board: BackgammonBoard,
     play: BackgammonPlay
-  ): 'reenter' | 'bear-off' | 'point-to-point' | 'no-move' {
+  ): 'hit' | 'reenter' | 'bear-off' | 'point-to-point' | 'no-move' {
+    // FIXME: Needs to work with definitions from MoveStateKind
     const { player } = play
     const type = 'no-move'
+    if (this.isHit(board, player)) return 'hit'
     if (this.isReenter(board, player)) return 'reenter'
     if (this.isBearOff(board, player)) return 'bear-off'
     if (this.isPointToPoint(board, play)) return 'point-to-point'
@@ -197,14 +204,22 @@ export class Move implements BackgammonMove {
     const kind = this.getMoveType(board, play)
 
     switch (kind) {
+      // I think this structure works well: if you hit, get a new board, then recursively call getValidMoves
+      case 'hit':
+        console.warn('hit not implemented')
+        this.hit(board, play.moves[0], play.moves[0])
       case 'reenter':
         return [this.reenter(board, play)]
+        break
       case 'bear-off':
         return [this.bearOff(board, play)]
+        break
       case 'point-to-point':
         return [this.pointToPoint(board, player, board.points[0], roll[0])]
+        break
       case 'no-move':
         return [this.noMove(board, play)]
+      // No default because of the union type
     }
   }
 }
