@@ -1,13 +1,14 @@
 import { BackgammonCheckercontainer } from './checkercontainer'
 import { BackgammonDieValue } from './dice'
 import { BackgammonMoveDirection } from './game'
-import { PlayerPlayingRolling, PlayerPlayingMoving } from './player'
+import { PlayerPlayingMoving } from './player'
 
 export type BackgammonMoveStateKind =
   | 'initializing'
   | 'moving'
   | 'moved'
   | 'no-move'
+  | 'hit' // This is an odd state. It's basically a pause and I need to think this through.
 
 type BaseBgMove = {
   id?: string

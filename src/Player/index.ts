@@ -1,5 +1,6 @@
 import { Dice, generateId } from '..'
 import {
+  BackgammonBoard,
   BackgammonColor,
   BackgammonDice,
   BackgammonDiceStateKind,
@@ -35,5 +36,11 @@ export class Player implements BackgammonPlayer {
       dice,
       pipCount: 167,
     }
+  }
+
+  public static getHomeBoard(board: BackgammonBoard, player: BackgammonPlayer) {
+    return player.direction === 'clockwise'
+      ? board.points.slice(0, 6)
+      : board.points.slice(18, 24)
   }
 }

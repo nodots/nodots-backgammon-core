@@ -1,4 +1,4 @@
-import { generateId } from '..'
+import { generateId, Player } from '..'
 import {
   BackgammonBoard,
   BackgammonCheckercontainer,
@@ -53,15 +53,16 @@ export class Move implements BackgammonMove {
 
   private static pointToPoint(
     board: BackgammonBoard,
-    play: BackgammonPlay
+    player: BackgammonPlayerMoving,
+    origin: BackgammonPoint,
+    dieValue: BackgammonDieValue
   ): BackgammonMove {
-    const { player } = play
     let move: BackgammonMove = {
       id: generateId(),
       stateKind: 'no-move',
       player,
     }
-    console.warn('pointToPoint not implemented')
+    console.log('pointToPoint implementation in progress')
     return move
   }
 
@@ -76,7 +77,28 @@ export class Move implements BackgammonMove {
       stateKind: 'no-move',
       player,
     }
-    console.warn('reenter not implemented')
+    const origin = board.bar[player.direction as keyof typeof board.bar]
+    const checker = origin.checkers[origin.checkers.length - 1]
+    const opponentHomeBoard = Player.getHomeBoard(board, player)
+    opponentHomeBoard.forEach((point) => {
+      if (this.isPointOpen(point, player)) {
+        move = {
+          id: generateId(),
+          stateKind: 'moving',
+          player,
+          origin: origin,
+          destination: point,
+        }
+      } else {
+        move = {
+          id: generateId(),
+          stateKind: 'no-move',
+          player,
+        }
+      }
+    })
+    console.log('reenter implementation in progress')
+
     return move
   }
 
@@ -93,6 +115,24 @@ export class Move implements BackgammonMove {
     }
     console.warn('reenter not implemented')
     return move
+  }
+
+  // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?hit
+  private static hit(
+    board: BackgammonBoard,
+    play: BackgammonPlay,
+    move: BackgammonMove
+  ): BackgammonBoard {
+    const { player } = play
+
+    let hit: BackgammonMove = {
+      id: generateId(),
+      stateKind: 'hit',
+      player,
+    }
+    // Implement hit logic. I *think* this should return a new board
+    console.warn('hit not implemented')
+    return board
   }
 
   private static noMove(
@@ -127,9 +167,6 @@ export class Move implements BackgammonMove {
     play: BackgammonPlay
   ): BackgammonMove[] {
     const { player, roll } = play
-    const origins: BackgammonCheckercontainer[] = []
-    const moves: BackgammonMove[] = []
-    const direction: BackgammonMoveDirection = player.direction
 
     const kind = this.getMoveType(board, play)
 
@@ -139,7 +176,7 @@ export class Move implements BackgammonMove {
       case 'bear-off':
         return [this.bearOff(board, play)]
       case 'point-to-point':
-        return [this.pointToPoint(board, play)]
+        return [this.pointToPoint(board, player, board.points[0], roll[0])]
       case 'no-move':
         return [this.noMove(board, play)]
     }
