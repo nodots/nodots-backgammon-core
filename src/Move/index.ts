@@ -102,12 +102,12 @@ export class Move implements BackgammonMove {
 
     console.log(`${dieValue}: ${originPosition} => ${destinationPosition}`)
     // console.log('points', points)
-    destination = points.find(
-      (p) =>
-        p.kind === 'point' &&
-        p.position[player.direction] === destinationPosition
-    )
-    console.log('destination.position', destination?.position)
+    // destination = points.find(
+    //   (p) =>
+    //     p.kind === 'point' &&
+    //     p.position[player.direction] === destinationPosition
+    // )
+    console.log('destination', destination)
     // destination = board.points.find(
     //   (p) =>
     //     p.position[player.direction as BackgammonMoveDirection] ===
