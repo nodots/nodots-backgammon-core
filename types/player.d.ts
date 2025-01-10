@@ -1,8 +1,13 @@
 import { BackgammonChecker } from './checker'
 import { BackgammonDice } from './dice'
 import { BackgammonPips } from './pip'
+import { BackgammonMoveDirection } from './game'
 
-export type BackgammonPlayerStateKind = 'initializing' | 'ready' | 'moving'
+export type BackgammonPlayerStateKind =
+  | 'initializing'
+  | 'ready'
+  | 'rolling'
+  | 'moving'
 
 export type BaseBgPlayer = {
   id?: string

@@ -9,6 +9,7 @@ import {
   GameRolling,
   GameRollingForStart,
   PlayInitializing,
+  PlayMoving,
 } from '../../types'
 import { Board } from '../Board'
 import { Cube } from '../Cube'
@@ -25,7 +26,7 @@ export class Play implements BaseBgPlay {
   public static initialize(
     player: BackgammonPlayerMoving,
     roll: BackgammonRoll
-  ): PlayInitializing {
+  ): PlayMoving {
     const moves: BackgammonMove[] = []
     const move1 = Move.initialize(player, roll[0])
     const move2 = Move.initialize(player, roll[1])
@@ -38,7 +39,7 @@ export class Play implements BaseBgPlay {
 
     return {
       id: generateId(),
-      stateKind: 'initializing',
+      stateKind: 'moving',
       player,
       roll,
       moves,

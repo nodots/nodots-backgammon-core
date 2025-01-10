@@ -9,7 +9,7 @@ type BaseBgPlay = {
   id?: string
   player?: BackgammonPlayerMoving
   roll?: BackgammonRoll
-  moves?: BackgammonMove[]
+  moves?: BackgammonMoves
 }
 
 export interface PlayInitializing extends BaseBgPlay {

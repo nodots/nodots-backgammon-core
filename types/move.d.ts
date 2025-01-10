@@ -1,7 +1,7 @@
 import { BackgammonCheckercontainer } from './checkercontainer'
 import { BackgammonDieValue } from './dice'
 import { BackgammonMoveDirection } from './game'
-import { PlayerPlayingMoving } from './player'
+import { PlayerMoving, PlayerPlayingMoving } from './player'
 
 export type BackgammonMoveStateKind =
   | 'initializing'

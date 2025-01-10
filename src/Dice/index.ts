@@ -36,9 +36,9 @@ export class Dice implements BackgammonDice {
       }
     }
 
-  switchDice: (dice: BackgammonDiceRolled) => BackgammonDiceRolled = (
+  public static switchDice: (
     dice: BackgammonDiceRolled
-  ) => {
+  ) => BackgammonDiceRolled = (dice: BackgammonDiceRolled) => {
     return {
       ...dice,
       currentRoll: [
@@ -48,11 +48,12 @@ export class Dice implements BackgammonDice {
     }
   }
 
-  isDoubles: () => boolean = () => {
-    return this.currentRoll![0] === this.currentRoll![1]
+  public static isDouble: (dice: BackgammonDiceRolled) => boolean = (
+    dice: BackgammonDiceRolled
+  ) => {
+    return dice.currentRoll![0] === dice.currentRoll![1] ? true : false
   }
 }
-
 function _rollDie(): BackgammonDieValue {
   return (Math.floor(Math.random() * 6) + 1) as BackgammonDieValue
 }

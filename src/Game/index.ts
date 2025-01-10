@@ -36,6 +36,7 @@ export class Game implements BaseBgGame {
     if (!activePlayer.dice) {
       throw new Error('Active player dice not found')
     }
+    activePlayer.stateKind = 'rolling'
     activePlayer.dice.stateKind === 'ready'
     const inactivePlayer = game.players.find((p) => p.color !== activeColor)
     if (!inactivePlayer) {
