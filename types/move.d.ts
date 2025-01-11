@@ -45,6 +45,17 @@ export interface MoveMoved extends BackgammonMove {
   destination: BackgammonCheckercontainer
 }
 
+export interface MoveNoMove extends BackgammonMove {
+  stateKind: 'no-move'
+  origin: BackgammonCheckercontainer
+}
+
 export type BackgammonMoves =
   | [BackgammonMove, BackgammonMove]
   | [BackgammonMove, BackgammonMove, BackgammonMove, BackgammonMove]
+
+// FIXME: Move to types
+export type BackgammonMoveResult = {
+  board: BackgammonBoard
+  move: BackgammonMove
+}

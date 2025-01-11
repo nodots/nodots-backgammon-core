@@ -1,4 +1,4 @@
-import { generateId, Player } from '..'
+import { Board, generateId, Player } from '..'
 import {
   BackgammonBoard,
   BackgammonChecker,
@@ -6,26 +6,16 @@ import {
   BackgammonDieValue,
   BackgammonMove,
   BackgammonMoveDirection,
+  BackgammonMoveResult,
   BackgammonMoveStateKind,
   BackgammonPlay,
   BackgammonPlayerMoving,
   BackgammonPoint,
+  MoveMoved,
   MoveMoving,
+  MoveNoMove,
   PlayMoving,
 } from '../../types'
-
-// FIXME: Move to types
-export type BackgammonMoveResult = {
-  board: BackgammonBoard
-  move: BackgammonMove
-}
-
-export interface BackgammonMoveNoMove {
-  id: string
-  stateKind: 'no-move'
-  origin: BackgammonCheckercontainer
-  dieValue: BackgammonDieValue
-}
 
 export class Move implements BackgammonMove {
   id: string = generateId()
@@ -113,15 +103,16 @@ export class Move implements BackgammonMove {
         destinationPosition
     )
 
-    if (!destination) {
-      let pointToPoint: BackgammonMove = {
+    if (!destination || !this.isPointOpen(destination, player)) {
+      let pointToPoint: MoveNoMove = {
         ...move,
         stateKind: 'no-move',
       }
       return { board, move: pointToPoint }
     }
-    let pointToPoint: BackgammonMove = {
+    let pointToPoint: MoveMoved = {
       ...move,
+      stateKind: 'moved',
       destination,
     }
 
@@ -132,13 +123,25 @@ export class Move implements BackgammonMove {
     )
     origin.checkers = newOriginCheckers
     destination.checkers.push(checkerToMove)
+    pointToPoint.stateKind = 'moved'
 
+    const nb = Board.update(board, pointToPoint)
+    const newOrigin = board.points.find((p) => p.id === origin.id)
+    const newDestination = board.points.find((p) => p.id === destination.id)
+    if (!newOrigin || !newDestination) throw new Error('Point not found')
+    console.log('New Checkercontainers:')
+    console.log(' Direction:', player.direction)
+    console.log(' Roll:', play.roll)
+    console.log(' DieValue:', dieValue)
     console.log(
-      `${dieValue}: origin checkers ${JSON.stringify(origin.position)} for ${
-        player.color
-      }/${player.direction}:`,
-      origin.checkers
+      'newOrigin',
+      newOrigin.position[player.direction as BackgammonMoveDirection]
     )
+    console.log(
+      'newDestination',
+      newDestination.position[player.direction as BackgammonMoveDirection]
+    )
+
     const newBoard = { ...board, points }
 
     return { board: newBoard, move: pointToPoint }
@@ -288,10 +291,11 @@ export class Move implements BackgammonMove {
         }
       })
     })
-    validMoves.forEach((move) => {
-      console.log('valid move origin:', move.origin)
-      console.log('valid move destination:', move.destination)
-    })
+
+    // validMoves.forEach((move) => {
+    //   console.log('valid move origin:', move.origin)
+    //   console.log('valid move destination:', move.destination)
+    // })
 
     return validMoves
   }

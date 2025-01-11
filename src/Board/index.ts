@@ -12,6 +12,7 @@ import {
   BackgammonPoints,
   BackgammonPointValue,
   BarPosition,
+  MoveMoved,
   OffPosition,
 } from '../../types'
 import { buildCheckersForCheckercontainerId } from '../Checker'
@@ -34,6 +35,13 @@ export class Board implements BackgammonBoard {
     this.points = board.points
     this.off = board.off
     this.bar = board.bar
+  }
+
+  public static update(
+    board: BackgammonBoard,
+    move: MoveMoved
+  ): BackgammonBoard {
+    return Object.assign({}, board, move)
   }
 
   static getCheckers(board: BackgammonBoard): BackgammonChecker[] {
