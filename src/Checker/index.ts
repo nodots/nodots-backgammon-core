@@ -3,7 +3,6 @@ import {
   BackgammonBoard,
   BackgammonChecker,
   BackgammonColor,
-  CheckercontainerCheckers,
 } from '../../types'
 
 export const getChecker = (
@@ -28,7 +27,7 @@ export const buildCheckersForCheckercontainerId = (
   checkercontainerId: string,
   color: BackgammonColor,
   count: number
-): CheckercontainerCheckers => {
+): BackgammonChecker[] => {
   const tempCheckers: BackgammonChecker[] = []
 
   for (let i = 0; i < count; i++) {
@@ -39,5 +38,5 @@ export const buildCheckersForCheckercontainerId = (
     }
     tempCheckers.push(checker)
   }
-  return tempCheckers as CheckercontainerCheckers // FIXME: typeguard
+  return tempCheckers
 }

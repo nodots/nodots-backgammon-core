@@ -12,7 +12,6 @@ import {
   BackgammonPoints,
   BackgammonPointValue,
   BarPosition,
-  CheckercontainerCheckers,
   OffPosition,
 } from '../../types'
 import { buildCheckersForCheckercontainerId } from '../Checker'
@@ -114,7 +113,7 @@ export class Board implements BackgammonBoard {
           clockwise: clockwisePosition,
           counterclockwise: counterclockwisePosition,
         },
-        checkers: checkers as CheckercontainerCheckers,
+        checkers: checkers,
       }
       tempPoints.push(point)
     }

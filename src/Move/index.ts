@@ -1,6 +1,7 @@
 import { generateId, Player } from '..'
 import {
   BackgammonBoard,
+  BackgammonChecker,
   BackgammonCheckercontainer,
   BackgammonDieValue,
   BackgammonMove,
@@ -92,35 +93,55 @@ export class Move implements BackgammonMove {
   ): BackgammonMoveResult {
     const { player, dieValue } = move
     const { points } = board
-
     const origin = move.origin as BackgammonPoint
     let destination: BackgammonPoint | undefined = undefined
+    let checkerToMove: BackgammonChecker | undefined = undefined
+
     if (!move.origin) throw new Error('Origin not found')
+
     const originPosition =
       origin.position[player.direction as BackgammonMoveDirection]
-    const destinationPosition = originPosition + dieValue
 
-    console.log(`${dieValue}: ${originPosition} => ${destinationPosition}`)
-    // console.log('points', points)
-    // destination = points.find(
-    //   (p) =>
-    //     p.kind === 'point' &&
-    //     p.position[player.direction] === destinationPosition
-    // )
-    console.log('destination', destination)
-    // destination = board.points.find(
-    //   (p) =>
-    //     p.position[player.direction as BackgammonMoveDirection] ===
-    //     destinationPosition
-    // )
-    // if (!destination) throw new Error('Destination not found')
-    // console.log(origin.checkers, destination?.checkers)
+    const destinationPosition =
+      player.direction === 'clockwise'
+        ? originPosition - dieValue
+        : originPosition + dieValue
+
+    destination = points.find(
+      (p) =>
+        p.position[player.direction as BackgammonMoveDirection] ===
+        destinationPosition
+    )
+
+    if (!destination) {
+      let pointToPoint: BackgammonMove = {
+        ...move,
+        stateKind: 'no-move',
+      }
+      return { board, move: pointToPoint }
+    }
     let pointToPoint: BackgammonMove = {
       ...move,
       destination,
     }
 
-    return { board, move: pointToPoint }
+    checkerToMove = origin.checkers.pop()
+    if (!checkerToMove) throw new Error('Checker not found')
+    const newOriginCheckers = origin.checkers.filter(
+      (c) => c.id !== checkerToMove.id
+    )
+    origin.checkers = newOriginCheckers
+    destination.checkers.push(checkerToMove)
+
+    console.log(
+      `${dieValue}: origin checkers ${JSON.stringify(origin.position)} for ${
+        player.color
+      }/${player.direction}:`,
+      origin.checkers
+    )
+    const newBoard = { ...board, points }
+
+    return { board: newBoard, move: pointToPoint }
   }
 
   // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?enter
@@ -243,24 +264,35 @@ export class Move implements BackgammonMove {
           ...move,
           origin,
         }
-        if (kind === 'hit') {
-          validMoves.add(this.hit(board, play, newMove).move)
-        }
-        if (kind === 'reenter') {
-          validMoves.add(this.reenter(board, play, newMove).move)
-        }
-        if (kind === 'bear-off') {
-          validMoves.add(this.bearOff(board, play, newMove).move)
-        }
-        if (kind === 'point-to-point') {
-          validMoves.add(this.pointToPoint(board, play, newMove).move)
-        }
-        if (kind === 'no-move') {
-          validMoves.add(this.noMove(board, play, newMove).move)
+        switch (kind) {
+          case 'hit':
+            const hitResult = this.hit(board, play, newMove)
+            validMoves.add(hitResult.move)
+            break
+          case 'reenter':
+            const reenterResult = this.reenter(board, play, newMove)
+            validMoves.add(reenterResult.move)
+            break
+          case 'bear-off':
+            const bearOffResult = this.bearOff(board, play, newMove)
+            validMoves.add(bearOffResult.move)
+            break
+          case 'point-to-point':
+            const pointToPointResult = this.pointToPoint(board, play, newMove)
+            validMoves.add(pointToPointResult.move)
+            break
+          case 'no-move':
+            const noMoveResult = this.noMove(board, play, newMove)
+            validMoves.add(noMoveResult.move)
+            break
         }
       })
     })
-    // console.log('validMoves', validMoves)
+    validMoves.forEach((move) => {
+      console.log('valid move origin:', move.origin)
+      console.log('valid move destination:', move.destination)
+    })
+
     return validMoves
   }
 }

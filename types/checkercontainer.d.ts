@@ -10,131 +10,131 @@ interface BackgammonPointPosition {
   counterclockwise: BackgammonPointValue
 }
 
-export type CheckercontainerCheckers =
-  | []
-  | [BackgammonChecker]
-  | [BackgammonChecker, BackgammonChecker]
-  | [BackgammonChecker, BackgammonChecker, BackgammonChecker]
-  | [BackgammonChecker, BackgammonChecker, BackgammonChecker, BackgammonChecker]
-  | [
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker
-    ]
-  | [
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker
-    ]
-  | [
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker
-    ]
-  | [
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker
-    ]
-  | [
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker
-    ]
-  | [
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker
-    ]
-  | [
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker
-    ]
-  | [
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker
-    ]
-  | [
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker
-    ]
-  | [
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker,
-      BackgammonChecker
-    ]
+// export type CheckercontainerCheckers =
+//   | []
+//   | [BackgammonChecker]
+//   | [BackgammonChecker, BackgammonChecker]
+//   | [BackgammonChecker, BackgammonChecker, BackgammonChecker]
+//   | [BackgammonChecker, BackgammonChecker, BackgammonChecker, BackgammonChecker]
+//   | [
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker
+//     ]
+//   | [
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker
+//     ]
+//   | [
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker
+//     ]
+//   | [
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker
+//     ]
+//   | [
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker
+//     ]
+//   | [
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker
+//     ]
+//   | [
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker
+//     ]
+//   | [
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker
+//     ]
+//   | [
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker
+//     ]
+//   | [
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker,
+//       BackgammonChecker
+//     ]
 
 export type CheckercontainerPosition =
   | BackgammonPointPosition
@@ -146,7 +146,7 @@ export type BackgammonCheckercontainer = {
   id: string
   kind: CheckerContainerKind
   position: CheckercontainerPosition
-  checkers: CheckercontainerCheckers
+  checkers: BackgammonChecker[]
 }
 
 export interface BackgammonPoint extends BackgammonCheckercontainer {
