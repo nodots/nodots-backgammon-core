@@ -85,7 +85,6 @@ describe('Game', () => {
     const validMoves = Move.getValidMoves(rollingGame.board, play)
     expect(validMoves).toBeDefined()
     // expect(validMoves.size).toBeGreaterThan(0)
-
-    console.log('validMoves', validMoves)
+    //console.log('validMoves', validMoves)
   })
 })

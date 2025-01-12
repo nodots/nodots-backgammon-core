@@ -17,7 +17,7 @@ export type BackgammonMoveKind =
 
 type BaseBgMove = {
   id?: string
-  kind?: BackgammonMoveKind
+  moveKind?: BackgammonMoveKind
   player?: PlayerMoving
   isHit?: boolean
   isAuto?: boolean
@@ -56,7 +56,7 @@ export interface MoveMoved extends BackgammonMove {
 
 export interface MoveNoMove extends BackgammonMove {
   stateKind: 'no-move'
-  moveKind: BackgammonMoveKind
+  moveKind: 'no-move'
   origin: BackgammonCheckercontainer
   destination: undefined
 }

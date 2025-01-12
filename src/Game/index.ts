@@ -22,7 +22,7 @@ export class Game implements BaseBgGame {
       id: generateId(),
       stateKind: 'rolling-for-start',
       players,
-      board: new Board(),
+      board: Board.initialize(),
       cube: new Cube(),
     }
   }

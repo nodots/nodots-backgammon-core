@@ -16,6 +16,7 @@ export function getDestination(
   dieValue: BackgammonDieValue
 ): BackgammonPoint | BackgammonOff | undefined {
   const direction: BackgammonMoveDirection = player.direction
+  console.log('getDestination', { origin, board, player, dieValue })
   switch (origin.kind) {
     case 'point':
       const point = origin as BackgammonPoint
@@ -28,7 +29,7 @@ export function getDestination(
     case 'bar':
     // return this.getBarDestination(origin, player, dieValue)
     case 'off':
-      // return this.getOffDestination(origin, player, dieValue)
-      console.log('Bar and off not implemented')
+    // return this.getOffDestination(origin, player, dieValue)
+    // console.log('Bar and off not implemented')
   }
 }

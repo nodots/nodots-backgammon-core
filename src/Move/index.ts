@@ -4,11 +4,9 @@ import {
   BackgammonCheckercontainer,
   BackgammonDieValue,
   BackgammonMove,
-  BackgammonMoveDirection,
   BackgammonMoveKind,
   BackgammonMoveResult,
   BackgammonMoveStateKind,
-  BackgammonOff,
   BackgammonPlay,
   BackgammonPlayerMoving,
   BackgammonPoint,
@@ -18,6 +16,18 @@ import {
   PlayMoving,
 } from '../../types'
 import { getDestination } from './utils'
+
+export const MOVE_NO_MOVE = (
+  origin: BackgammonCheckercontainer
+): MoveNoMove => {
+  return {
+    id: generateId(),
+    stateKind: 'no-move',
+    moveKind: 'no-move',
+    origin,
+    destination: undefined,
+  }
+}
 
 export class Move implements BackgammonMove {
   id: string = generateId()
@@ -69,7 +79,7 @@ export class Move implements BackgammonMove {
 
   // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?open_point
   static isPointOpen(point: BackgammonPoint, player: BackgammonPlayerMoving) {
-    console.log('isPointOpen', point, player)
+    // console.log('isPointOpen', point, player)
     if (point.checkers.length < 2) return true
     if (
       point.checkers.length >= 2 &&
@@ -89,12 +99,12 @@ export class Move implements BackgammonMove {
     const origin = move.origin as BackgammonPoint // FIXME: Better type check
     if (!move.origin) throw new Error('Origin not found')
     const destination = getDestination(origin, board, player, dieValue)
-
+    this.log('pointToPoint', { origin, destination })
     if (destination) {
       newMove = {
         ...move,
         stateKind: 'moved',
-        kind: 'point-to-point',
+        moveKind: 'point-to-point',
         destination,
       }
       newBoard = Board.moveChecker(newBoard, origin, destination)
@@ -104,8 +114,8 @@ export class Move implements BackgammonMove {
     const updatedDestination = destination
       ? newBoard.points.find((p) => p.id === destination.id)
       : undefined
-    console.log('updatedOrigin', updatedOrigin)
-    console.log('updatedDestination', updatedDestination)
+    // console.log('updatedOrigin', updatedOrigin)
+    // console.log('updatedDestination', updatedDestination)
     return {
       board: newBoard,
       move: newMove,
@@ -120,7 +130,7 @@ export class Move implements BackgammonMove {
     const { player } = move
     let reenter: BackgammonMove = {
       ...move,
-      kind: 'no-move',
+      moveKind: 'no-move',
     }
     const origin = board.bar[player.direction as keyof typeof board.bar]
     const opponentHomeBoard = Player.getHomeBoard(board, player)
@@ -147,7 +157,7 @@ export class Move implements BackgammonMove {
     const { player } = move
     let bearOff: BackgammonMove = {
       ...move,
-      kind: 'no-move',
+      moveKind: 'no-move',
     }
     // console.warn('reenter not implemented')
     return bearOff
@@ -176,7 +186,7 @@ export class Move implements BackgammonMove {
   ): BackgammonMove {
     let noMove: BackgammonMove = {
       ...move,
-      kind: 'no-move',
+      moveKind: 'no-move',
     }
     // Implement no move logic. I *think* this should return a new board
     return noMove
@@ -186,7 +196,7 @@ export class Move implements BackgammonMove {
     return false
   }
 
-  private static getMoveType(
+  private static getMoveKind(
     board: BackgammonBoard,
     play: BackgammonPlay
   ): BackgammonMoveKind {
@@ -202,10 +212,17 @@ export class Move implements BackgammonMove {
     board: BackgammonBoard,
     move: BackgammonMove
   ): BackgammonMove | void {
-    const { kind } = move
-    switch (kind) {
+    const moveKind = this.getMoveKind(board, move as PlayMoving)
+    const { dieValue, direction, origin, player } = move
+    if (!player) throw new Error('Player not found')
+    if (!origin) throw new Error('Origin not found')
+    if (!dieValue) throw new Error('Die value not found')
+    // if (!direction) throw new Error('Direction not found')
+    switch (moveKind) {
       case 'point-to-point':
+        this.log('point-to-point', move)
         const p2p = this.pointToPoint(board, move as MoveMoving).move
+        this.log('point-to-point', p2p)
         if (p2p) {
           return p2p
         }
@@ -227,44 +244,34 @@ export class Move implements BackgammonMove {
     const isDoubles = roll[0] === roll[1]
     let validMoves = new Set<BackgammonMove>()
     let newBoard = board
-    const moveNoMove: MoveNoMove = {
-      id: generateId(),
-      stateKind: 'no-move',
-      moveKind: 'no-move',
-      player,
-      origin: board.bar[player.direction as keyof typeof board.bar],
-      destination: undefined,
-    }
 
     const origins = board.points.filter(
       (p) => p.checkers.length > 0 && p.checkers[0]?.color === player.color
     )
 
-    if (origins.length === 0) {
-      validMoves.add(moveNoMove)
-      return validMoves
-    }
-
     play.moves.forEach((m: MoveMoving) => {
-      const newM = this.move(newBoard, m)
-      newM && validMoves.add(newM)
+      origins.map((o) => {
+        m.origin = o
+        const newM = this.move(newBoard, m)
+        newM && validMoves.add(newM)
+      })
     })
 
     if (!isDoubles) {
       const reversedMoves = [...play.moves].reverse()
       reversedMoves.forEach((m: MoveMoving) => {
-        const newM = this.move(newBoard, m)
-        newM && validMoves.add(newM)
+        origins.map((o) => {
+          m.origin = o
+          const newM = this.move(newBoard, m)
+          newM && validMoves.add(newM)
+        })
       })
     }
+    if (validMoves.size === 0) throw new Error('No valid moves found')
     return validMoves
   }
 
-  private static log(
-    message?: string | object,
-    move?: BackgammonMove,
-    play?: BackgammonPlay
-  ) {
-    console.log(`[Move] ${message ? message : ''}`, move, play)
+  private static log(message?: string, object: any = {}) {
+    console.log(`[Move] ${message ? message : ''}`, object)
   }
 }

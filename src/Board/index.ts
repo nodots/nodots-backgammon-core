@@ -21,21 +21,18 @@ import { BOARD_IMPORT_DEFAULT } from './BOARD_IMPORT_DEFAULT'
 
 export const BOARD_POINT_COUNT = 24
 export class Board implements BackgammonBoard {
-  points: BackgammonPoints
-  bar: {
+  points!: BackgammonPoints
+  bar!: {
     clockwise: BackgammonBar
     counterclockwise: BackgammonBar
   }
-  off: {
+  off!: {
     clockwise: BackgammonOff
     counterclockwise: BackgammonOff
   }
 
-  constructor() {
-    const board = this.buildBoard()
-    this.points = board.points
-    this.off = board.off
-    this.bar = board.bar
+  public static initialize() {
+    return Board.buildBoard()
   }
 
   // Note that this does NOT actually update the board. Separate action.
@@ -126,7 +123,10 @@ export class Board implements BackgammonBoard {
     return pipCounts
   }
 
-  private buildBoard = (): BackgammonBoard => {
+  // public static generateRandomBoard = (): BackgammonBoard => Board.buildBoard()
+
+  // private buildBoard = (): BackgammonBoard => {
+  public static buildBoard = (): BackgammonBoard => {
     let boardImport: BackgammonCheckercontainerImport[] = BOARD_IMPORT_DEFAULT
     const tempPoints: BackgammonPoint[] = []
 
@@ -240,19 +240,14 @@ export class Board implements BackgammonBoard {
     return board
   }
 
-  private buildBar = (): {
-    clockwise: BackgammonBar
-    counterclockwise: BackgammonBar
-  } => {
+  private static buildBar() {
     const clockwiseId = generateId()
     const counterclockwiseId = generateId()
-
-    const position: BarPosition = 'bar'
 
     const clockwise: BackgammonBar = {
       id: clockwiseId,
       kind: 'bar',
-      position,
+      position: 'bar',
       direction: 'clockwise',
       checkers: [],
     }
@@ -260,7 +255,7 @@ export class Board implements BackgammonBoard {
     const counterclockwise: BackgammonBar = {
       id: counterclockwiseId,
       kind: 'bar',
-      position,
+      position: 'bar',
       direction: 'counterclockwise',
       checkers: [],
     }
@@ -271,10 +266,7 @@ export class Board implements BackgammonBoard {
     }
   }
 
-  private buildOff = (): {
-    clockwise: BackgammonOff
-    counterclockwise: BackgammonOff
-  } => {
+  private static buildOff() {
     const clockwiseId = generateId()
     const counterclockwiseId = generateId()
 
