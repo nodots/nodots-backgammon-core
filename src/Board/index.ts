@@ -7,6 +7,7 @@ import {
   BackgammonCheckercontainerImport,
   BackgammonColor,
   BackgammonGameActive,
+  BackgammonMoveDirection,
   BackgammonOff,
   BackgammonPoint,
   BackgammonPoints,
@@ -37,11 +38,34 @@ export class Board implements BackgammonBoard {
     this.bar = board.bar
   }
 
-  public static update(
+  // Note that this does NOT actually update the board. Separate action.
+  public static moveChecker(
     board: BackgammonBoard,
-    move: MoveMoved
+    origin: BackgammonPoint | BackgammonBar,
+    destination: BackgammonPoint | BackgammonOff // Note that this means that hit has to be a different function
   ): BackgammonBoard {
-    return Object.assign({}, board, move)
+    const boardClone: BackgammonBoard = JSON.parse(JSON.stringify(board))
+    const originClone: BackgammonCheckercontainer = JSON.parse(
+      JSON.stringify(origin)
+    )
+    const destinationClone: BackgammonCheckercontainer = JSON.parse(
+      JSON.stringify(destination)
+    )
+
+    const checker = originClone.checkers.pop()
+    if (!checker) throw Error('No checker found')
+    destinationClone.checkers.push(checker)
+
+    this.getCheckercontainers(boardClone).map((cc) => {
+      if (cc.id === originClone.id) {
+        cc.checkers = originClone.checkers
+      }
+      if (cc.id === destinationClone.id) {
+        cc.checkers = destinationClone.checkers
+      }
+    })
+
+    return boardClone
   }
 
   static getCheckers(board: BackgammonBoard): BackgammonChecker[] {

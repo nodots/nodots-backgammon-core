@@ -8,11 +8,18 @@ export type BackgammonMoveStateKind =
   | 'moving'
   | 'moved'
   | 'no-move'
-  | 'hit'
+
+export type BackgammonMoveKind =
+  | 'no-move'
+  | 'point-to-point'
+  | 'reenter'
+  | 'bear-off'
 
 type BaseBgMove = {
   id?: string
+  kind?: BackgammonMoveKind
   player?: PlayerMoving
+  isHit?: boolean
   isAuto?: boolean
   isForced?: boolean
   dieValue?: BackgammonDieValue
@@ -33,6 +40,7 @@ export interface MoveInitializing extends BackgammonMove {
 }
 export interface MoveMoving extends BackgammonMove {
   stateKind: 'moving'
+  moveKind: BackgammonMoveKind
   player: PlayerPlayingMoving
   dieValue: BackgammonDieValue
   origin: BackgammonCheckercontainer
@@ -41,21 +49,23 @@ export interface MoveMoving extends BackgammonMove {
 
 export interface MoveMoved extends BackgammonMove {
   stateKind: 'moved'
+  moveKind: BackgammonMoveKind
   origin: BackgammonCheckercontainer
   destination: BackgammonCheckercontainer
 }
 
 export interface MoveNoMove extends BackgammonMove {
   stateKind: 'no-move'
+  moveKind: BackgammonMoveKind
   origin: BackgammonCheckercontainer
+  destination: undefined
 }
 
 export type BackgammonMoves =
   | [BackgammonMove, BackgammonMove]
   | [BackgammonMove, BackgammonMove, BackgammonMove, BackgammonMove]
 
-// FIXME: Move to types
 export type BackgammonMoveResult = {
   board: BackgammonBoard
-  move: BackgammonMove
+  move: MoveMoved | void
 }
