@@ -58,6 +58,8 @@ describe('Move', () => {
     const validMoves = Move.getValidMoves(board, play)
     expect(validMoves).toBeDefined()
     expect(validMoves.size).toBeGreaterThan(0)
+    const randomMove = validMoves.values().next().value
+    console.log('randomMove', randomMove)
     // const point = board.points[0]
     // point.checkers = [{ id: '1', color: player.color }]
 

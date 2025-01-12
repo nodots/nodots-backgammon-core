@@ -67,5 +67,5 @@ export type BackgammonMoves =
 
 export type BackgammonMoveResult = {
   board: BackgammonBoard
-  move: MoveMoved | void
+  move: BackgammonMove
 }

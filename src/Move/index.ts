@@ -17,6 +17,7 @@ import {
 } from '../../types'
 import { getDestination } from './utils'
 
+export type MOVE_MODE = 'dry-run' | 'commit'
 export const MOVE_NO_MOVE = (
   origin: BackgammonCheckercontainer
 ): MoveNoMove => {
@@ -45,6 +46,33 @@ export class Move implements BackgammonMove {
       stateKind: 'initializing',
       player,
       dieValue,
+    }
+  }
+
+  private static move(
+    board: BackgammonBoard,
+    move: BackgammonMove,
+    mode: 'dry-run' | 'commit' = 'dry-run'
+  ): BackgammonMove | void {
+    const moveKind = this.getMoveKind(board, move as PlayMoving)
+    const { dieValue, direction, origin, player } = move
+    if (!player) throw new Error('Player not found')
+    if (!origin) throw new Error('Origin not found')
+    if (!dieValue) throw new Error('Die value not found')
+    // if (!direction) throw new Error('Direction not found')
+    switch (moveKind) {
+      case 'point-to-point':
+        const p2p = this.pointToPoint(board, move as MoveMoving).move
+        if (p2p) {
+          return p2p
+        }
+        break
+      case 'reenter':
+        return this.reenter(board, move)
+      case 'bear-off':
+        return this.bearOff(board, move)
+      case 'no-move':
+        return this.noMove(board, move)
     }
   }
 
@@ -94,28 +122,26 @@ export class Move implements BackgammonMove {
     move: MoveMoving
   ): BackgammonMoveResult {
     const { player, dieValue } = move
-    let newMove: MoveMoved | undefined = undefined
+    let newMove: BackgammonMove | MoveNoMove = {
+      ...move,
+      moveKind: 'no-move',
+    }
     let newBoard = board
     const origin = move.origin as BackgammonPoint // FIXME: Better type check
     if (!move.origin) throw new Error('Origin not found')
     const destination = getDestination(origin, board, player, dieValue)
     this.log('pointToPoint', { origin, destination })
+
     if (destination) {
       newMove = {
         ...move,
-        stateKind: 'moved',
+        stateKind: 'moving',
         moveKind: 'point-to-point',
         destination,
       }
       newBoard = Board.moveChecker(newBoard, origin, destination)
     }
 
-    const updatedOrigin = newBoard.points.find((p) => p.id === origin.id)
-    const updatedDestination = destination
-      ? newBoard.points.find((p) => p.id === destination.id)
-      : undefined
-    // console.log('updatedOrigin', updatedOrigin)
-    // console.log('updatedDestination', updatedDestination)
     return {
       board: newBoard,
       move: newMove,
@@ -208,34 +234,6 @@ export class Move implements BackgammonMove {
     return type
   }
 
-  private static move(
-    board: BackgammonBoard,
-    move: BackgammonMove
-  ): BackgammonMove | void {
-    const moveKind = this.getMoveKind(board, move as PlayMoving)
-    const { dieValue, direction, origin, player } = move
-    if (!player) throw new Error('Player not found')
-    if (!origin) throw new Error('Origin not found')
-    if (!dieValue) throw new Error('Die value not found')
-    // if (!direction) throw new Error('Direction not found')
-    switch (moveKind) {
-      case 'point-to-point':
-        this.log('point-to-point', move)
-        const p2p = this.pointToPoint(board, move as MoveMoving).move
-        this.log('point-to-point', p2p)
-        if (p2p) {
-          return p2p
-        }
-        break
-      case 'reenter':
-        return this.reenter(board, move)
-      case 'bear-off':
-        return this.bearOff(board, move)
-      case 'no-move':
-        return this.noMove(board, move)
-    }
-  }
-
   public static getValidMoves(
     board: BackgammonBoard,
     play: PlayMoving
@@ -252,7 +250,7 @@ export class Move implements BackgammonMove {
     play.moves.forEach((m: MoveMoving) => {
       origins.map((o) => {
         m.origin = o
-        const newM = this.move(newBoard, m)
+        const newM = this.move(newBoard, m, 'dry-run')
         newM && validMoves.add(newM)
       })
     })
@@ -262,7 +260,7 @@ export class Move implements BackgammonMove {
       reversedMoves.forEach((m: MoveMoving) => {
         origins.map((o) => {
           m.origin = o
-          const newM = this.move(newBoard, m)
+          const newM = this.move(newBoard, m, 'dry-run')
           newM && validMoves.add(newM)
         })
       })
