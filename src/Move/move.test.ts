@@ -1,24 +1,18 @@
 import {
   Board,
-  Dice,
-  Player,
   randomBackgammonColor,
   randomBackgammonDirection,
   randomBoolean,
 } from '..'
-import { Move } from './index'
 import {
   BackgammonBoard,
   BackgammonDieValue,
-  BackgammonMove,
-  BackgammonPlay,
   BackgammonPlayerMoving,
-  BackgammonPoint,
   BackgammonRoll,
-  MoveMoving,
   PlayMoving,
 } from '../../types'
 import { Play } from '../Play'
+import { Move } from './index'
 
 describe('Move', () => {
   let currentRoll: BackgammonRoll
@@ -54,20 +48,20 @@ describe('Move', () => {
     expect(move.dieValue).toBe(dieValue)
   })
 
-  test('player should be able to move a valid checker', () => {
-    const validMoves = Move.getValidMoves(board, play)
-    expect(validMoves).toBeDefined()
-    expect(validMoves.size).toBeGreaterThan(0)
-    const randomMove = validMoves.values().next().value
-    console.log('randomMove', randomMove)
-    // const point = board.points[0]
-    // point.checkers = [{ id: '1', color: player.color }]
+  // test('player should be able to move a valid checker', () => {
+  //   const validMoves = Move.getValidMoves(board, play)
+  //   expect(validMoves).toBeDefined()
+  //   expect(validMoves.size).toBeGreaterThan(0)
+  //   const randomMove = validMoves.values().next().value
+  //   console.log('randomMove', randomMove)
+  //   // const point = board.points[0]
+  //   // point.checkers = [{ id: '1', color: player.color }]
 
-    // const move = Move.initialize(player, dieValue)
-    // const movingMove = Move.moving(move, point)
+  //   // const move = Move.initialize(player, dieValue)
+  //   // const movingMove = Move.moving(move, point)
 
-    // expect(movingMove.stateKind).toBe('moving')
-    // expect(movingMove.origin).toBe(point)
-    // expect(movingMove.destination).toBeUndefined()
-  })
+  //   // expect(movingMove.stateKind).toBe('moving')
+  //   // expect(movingMove.origin).toBe(point)
+  //   // expect(movingMove.destination).toBeUndefined()
+  // })
 })

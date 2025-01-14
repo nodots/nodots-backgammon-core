@@ -1,21 +1,21 @@
-import { Board, generateId, Player } from '..'
+import { generateId, Player } from '..'
 import {
   BackgammonBoard,
   BackgammonCheckercontainer,
   BackgammonDieValue,
   BackgammonMove,
   BackgammonMoveKind,
-  BackgammonMoveResult,
   BackgammonMoveStateKind,
   BackgammonPlay,
   BackgammonPlayerMoving,
   BackgammonPoint,
-  MoveMoved,
   MoveMoving,
   MoveNoMove,
   PlayMoving,
 } from '../../types'
-import { getDestination } from './utils'
+import { BearOff } from './MoveKinds/BearOff'
+import { PointToPoint } from './MoveKinds/PointToPoint'
+import { Reenter } from './MoveKinds/Reenter'
 
 export type MOVE_MODE = 'dry-run' | 'commit'
 export const MOVE_NO_MOVE = (
@@ -62,45 +62,25 @@ export class Move implements BackgammonMove {
     // if (!direction) throw new Error('Direction not found')
     switch (moveKind) {
       case 'point-to-point':
-        const p2p = this.pointToPoint(board, move as MoveMoving).move
+        const p2p = PointToPoint.move(board, move as MoveMoving).move
         if (p2p) {
           return p2p
         }
         break
       case 'reenter':
-        return this.reenter(board, move)
+      // return this.reenter(board, move)
       case 'bear-off':
-        return this.bearOff(board, move)
+        // return this.bearOff(board, move)
+        console.log('Not implemented', moveKind)
+        break
       case 'no-move':
         return this.noMove(board, move)
     }
   }
 
-  private static isBearOff(
-    board: BackgammonBoard,
-    player: BackgammonPlayerMoving
-  ): boolean {
-    const homeBoard = Player.getHomeBoard(board, player)
-    const awayBoard = board.points.filter((point) => !homeBoard.includes(point))
-    // console.warn('isBearOff is not properly implemented')
-    return awayBoard.every((point) => point.checkers.length === 0)
-      ? true
-      : false
-  }
-
-  private static isReenter(
-    board: BackgammonBoard,
-    player: BackgammonPlayerMoving
-  ): boolean {
-    const bar = board.bar[player.direction as keyof typeof board.bar]
-    // console.warn('isReenter is not properly implemented')
-    return bar.checkers.length > 0
-  }
-
   private static isPointToPoint(board: BackgammonBoard, play: BackgammonPlay) {
     // console.warn('isPointToPoint not implemented')
-    return this.isBearOff(board, play.player) ||
-      this.isReenter(board, play.player)
+    return BearOff.isA(board, play.player) || Reenter.isA(board, play.player)
       ? false
       : true
   }
@@ -115,37 +95,6 @@ export class Move implements BackgammonMove {
       point.checkers[0].color === player.color
     )
       return true
-  }
-
-  private static pointToPoint(
-    board: BackgammonBoard,
-    move: MoveMoving
-  ): BackgammonMoveResult {
-    const { player, dieValue } = move
-    let newMove: BackgammonMove | MoveNoMove = {
-      ...move,
-      moveKind: 'no-move',
-    }
-    let newBoard = board
-    const origin = move.origin as BackgammonPoint // FIXME: Better type check
-    if (!move.origin) throw new Error('Origin not found')
-    const destination = getDestination(origin, board, player, dieValue)
-    this.log('pointToPoint', { origin, destination })
-
-    if (destination) {
-      newMove = {
-        ...move,
-        stateKind: 'moving',
-        moveKind: 'point-to-point',
-        destination,
-      }
-      newBoard = Board.moveChecker(newBoard, origin, destination)
-    }
-
-    return {
-      board: newBoard,
-      move: newMove,
-    }
   }
 
   // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?enter
@@ -173,20 +122,6 @@ export class Move implements BackgammonMove {
     })
 
     return reenter
-  }
-
-  // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?bear_off
-  private static bearOff(
-    board: BackgammonBoard,
-    move: BackgammonMove
-  ): BackgammonMove {
-    const { player } = move
-    let bearOff: BackgammonMove = {
-      ...move,
-      moveKind: 'no-move',
-    }
-    // console.warn('reenter not implemented')
-    return bearOff
   }
 
   // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?hit
@@ -228,9 +163,9 @@ export class Move implements BackgammonMove {
   ): BackgammonMoveKind {
     const { player } = play
     let type: BackgammonMoveKind = 'no-move'
-    if (this.isReenter(board, player)) return 'reenter'
-    if (this.isBearOff(board, player)) return 'bear-off'
-    if (this.isPointToPoint(board, play)) return 'point-to-point'
+    if (Reenter.isA(board, player)) return 'reenter'
+    if (BearOff.isA(board, player)) return 'bear-off'
+    if (PointToPoint.isA(board, player)) return 'point-to-point'
     return type
   }
 
