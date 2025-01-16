@@ -2,6 +2,7 @@ import { Dice, generateId, randomBackgammonColor } from '..'
 import {
   BackgammonMove,
   BackgammonPlayerMoving,
+  BackgammonPlayerRolling,
   BackgammonPlayers,
   BackgammonPlayStateKind,
   BackgammonRoll,
@@ -10,6 +11,7 @@ import {
   GameRollingForStart,
   PlayInitializing,
   PlayMoving,
+  PlayRolling,
 } from '../../types'
 import { Board } from '../Board'
 import { Cube } from '../Cube'
@@ -24,9 +26,9 @@ export class Play implements BaseBgPlay {
   rollForStart!: (game: GameRollingForStart) => GameRolling
 
   public static initialize(
-    player: BackgammonPlayerMoving,
+    player: BackgammonPlayerRolling,
     roll: BackgammonRoll
-  ): PlayMoving {
+  ): PlayRolling {
     const moves: BackgammonMove[] = []
     const move1 = Move.initialize(player, roll[0])
     const move2 = Move.initialize(player, roll[1])
@@ -39,7 +41,7 @@ export class Play implements BaseBgPlay {
 
     return {
       id: generateId(),
-      stateKind: 'moving',
+      stateKind: 'rolling',
       player,
       roll,
       moves,
@@ -60,11 +62,16 @@ export class Play implements BaseBgPlay {
     if (!inactivePlayer) {
       throw new Error('Inactive player not found')
     }
+
+    // FIXME spreader for ...game not working here.
     return {
-      ...game,
+      id: game.id,
+      board: game.board,
+      cube: game.cube,
       players: [activePlayer, inactivePlayer],
       stateKind: 'rolling',
       activeColor,
+      activePlay: undefined,
     }
   }
 }

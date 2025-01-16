@@ -8,6 +8,7 @@ import {
   BackgammonMoveStateKind,
   BackgammonPlay,
   BackgammonPlayerMoving,
+  BackgammonPlayerRolling,
   BackgammonPoint,
   MoveMoving,
   MoveNoMove,
@@ -38,7 +39,7 @@ export class Move implements BackgammonMove {
   destination?: BackgammonCheckercontainer | undefined = undefined
 
   public static initialize(
-    player: BackgammonPlayerMoving,
+    player: BackgammonPlayerRolling,
     dieValue: BackgammonDieValue
   ): BackgammonMove {
     return {
@@ -167,6 +168,27 @@ export class Move implements BackgammonMove {
     if (BearOff.isA(board, player)) return 'bear-off'
     if (PointToPoint.isA(board, player)) return 'point-to-point'
     return type
+  }
+
+  public static move(
+    board: BackgammonBoard,
+    move: BackgammonMove
+  ): BackgammonMove | void {
+    const { kind } = move
+    switch (kind) {
+      case 'point-to-point':
+        const p2p = this.pointToPoint(board, move as MoveMoving).move
+        if (p2p) {
+          return p2p
+        }
+        break
+      case 'reenter':
+        return this.reenter(board, move)
+      case 'bear-off':
+        return this.bearOff(board, move)
+      case 'no-move':
+        return this.noMove(board, move)
+    }
   }
 
   public static getValidMoves(

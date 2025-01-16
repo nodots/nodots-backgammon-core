@@ -31,7 +31,16 @@ export interface BackgammonPlayerReady extends BackgammonPlayer {
   stateKind: 'ready'
   color: BackgammonColor
   direction: BackgammonMoveDirection
-  dice: BackgammonDice
+  dice: BackgammonDiceReady
+  pipCount: BackgammonPips
+}
+
+export interface BackgammonPlayerRolling extends BackgammonPlayer {
+  id: string
+  stateKind: 'rolling'
+  color: BackgammonColor
+  direction: BackgammonMoveDirection
+  dice: BackgammonDiceReady
   pipCount: BackgammonPips
 }
 
@@ -40,7 +49,7 @@ export interface BackgammonPlayerMoving extends BackgammonPlayer {
   stateKind: 'moving'
   color: BackgammonColor
   direction: BackgammonMoveDirection
-  dice: BackgammonDice
+  dice: BackgammonDiceRolled
   pipCount: BackgammonPips
 }
 
