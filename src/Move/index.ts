@@ -11,6 +11,7 @@ import {
   BackgammonOff,
   BackgammonPlay,
   BackgammonPlayerMoving,
+  BackgammonPlayerRolling,
   BackgammonPoint,
   MoveMoved,
   MoveMoving,
@@ -27,7 +28,7 @@ export class Move implements BackgammonMove {
   destination?: BackgammonCheckercontainer | undefined = undefined
 
   public static initialize(
-    player: BackgammonPlayerMoving,
+    player: BackgammonPlayerRolling,
     dieValue: BackgammonDieValue
   ): BackgammonMove {
     return {
@@ -198,7 +199,7 @@ export class Move implements BackgammonMove {
     return type
   }
 
-  private static move(
+  public static move(
     board: BackgammonBoard,
     move: BackgammonMove
   ): BackgammonMove | void {

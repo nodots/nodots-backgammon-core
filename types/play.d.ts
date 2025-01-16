@@ -20,6 +20,22 @@ export interface PlayInitializing extends BaseBgPlay {
   moves: BackgammonMoves
 }
 
+export interface PlayRolling extends BaseBgPlay {
+  id: string
+  stateKind: 'rolling'
+  player: BackgammonPlayerRolling
+  roll?: BackgammonRoll
+  moves?: BackgammonMoves
+}
+
+export interface PlayRolled extends BaseBgPlay {
+  id: string
+  stateKind: 'rolled'
+  player: BackgammonPlayerRolled
+  roll: BackgammonRoll
+  moves: BackgammonMoves
+}
+
 export interface PlayMoving extends BaseBgPlay {
   id: string
   stateKind: 'moving'
