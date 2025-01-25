@@ -5,9 +5,8 @@ import { PlayerMoving, PlayerPlayingMoving } from './player'
 
 export type BackgammonMoveStateKind =
   | 'initializing'
-  | 'moving'
-  | 'moved'
-  | 'no-move'
+  | 'in-progress'
+  | 'completed'
 
 export type BackgammonMoveKind =
   | 'no-move'
@@ -16,7 +15,7 @@ export type BackgammonMoveKind =
   | 'bear-off'
 
 type BaseBgMove = {
-  id?: string
+  id: string
   moveKind?: BackgammonMoveKind
   player?: PlayerMoving
   isHit?: boolean
@@ -29,7 +28,6 @@ type BaseBgMove = {
 }
 
 export interface BackgammonMove extends BaseBgMove {
-  id: string
   stateKind: BackgammonMoveStateKind
 }
 
@@ -39,7 +37,7 @@ export interface MoveInitializing extends BackgammonMove {
   dieValue: BackgammonDieValue
 }
 export interface MoveMoving extends BackgammonMove {
-  stateKind: 'moving'
+  stateKind: 'in-progress'
   moveKind: BackgammonMoveKind
   player: PlayerPlayingMoving
   dieValue: BackgammonDieValue
@@ -48,15 +46,15 @@ export interface MoveMoving extends BackgammonMove {
 }
 
 export interface MoveMoved extends BackgammonMove {
-  stateKind: 'moved'
+  stateKind: 'completed'
   moveKind: BackgammonMoveKind
   origin: BackgammonCheckercontainer
   destination: BackgammonCheckercontainer
 }
 
 export interface MoveNoMove extends BackgammonMove {
-  stateKind: 'no-move'
-  moveKind: 'no-move'
+  stateKind: 'completed'
+  moveKind: undefined
   origin: BackgammonCheckercontainer
   destination: undefined
 }

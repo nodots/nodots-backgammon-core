@@ -1,17 +1,18 @@
-import { generateId, Player } from '..'
+import { generateId } from '..'
 import {
   BackgammonBoard,
   BackgammonCheckercontainer,
   BackgammonDieValue,
   BackgammonMove,
   BackgammonMoveKind,
+  BackgammonMoveResult,
   BackgammonMoveStateKind,
   BackgammonPlay,
   BackgammonPlayerMoving,
+  BackgammonPlayerRolled,
   BackgammonPlayerRolling,
   BackgammonPoint,
   MoveMoving,
-  MoveNoMove,
   PlayMoving,
 } from '../../types'
 import { BearOff } from './MoveKinds/BearOff'
@@ -21,11 +22,11 @@ import { Reenter } from './MoveKinds/Reenter'
 export type MOVE_MODE = 'dry-run' | 'commit'
 export const MOVE_NO_MOVE = (
   origin: BackgammonCheckercontainer
-): MoveNoMove => {
+): BackgammonMove => {
   return {
     id: generateId(),
-    stateKind: 'no-move',
-    moveKind: 'no-move',
+    stateKind: 'completed',
+    moveKind: undefined,
     origin,
     destination: undefined,
   }
@@ -50,44 +51,11 @@ export class Move implements BackgammonMove {
     }
   }
 
-  private static move(
-    board: BackgammonBoard,
-    move: BackgammonMove,
-    mode: 'dry-run' | 'commit' = 'dry-run'
-  ): BackgammonMove | void {
-    const moveKind = this.getMoveKind(board, move as PlayMoving)
-    const { dieValue, direction, origin, player } = move
-    if (!player) throw new Error('Player not found')
-    if (!origin) throw new Error('Origin not found')
-    if (!dieValue) throw new Error('Die value not found')
-    // if (!direction) throw new Error('Direction not found')
-    switch (moveKind) {
-      case 'point-to-point':
-        const p2p = PointToPoint.move(board, move as MoveMoving).move
-        if (p2p) {
-          return p2p
-        }
-        break
-      case 'reenter':
-      // return this.reenter(board, move)
-      case 'bear-off':
-        // return this.bearOff(board, move)
-        console.log('Not implemented', moveKind)
-        break
-      case 'no-move':
-        return this.noMove(board, move)
-    }
-  }
-
-  private static isPointToPoint(board: BackgammonBoard, play: BackgammonPlay) {
-    // console.warn('isPointToPoint not implemented')
-    return BearOff.isA(board, play.player) || Reenter.isA(board, play.player)
-      ? false
-      : true
-  }
-
   // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?open_point
-  static isPointOpen(point: BackgammonPoint, player: BackgammonPlayerMoving) {
+  public static isPointOpen(
+    point: BackgammonPoint,
+    player: BackgammonPlayerMoving | BackgammonPlayerRolled
+  ) {
     // console.log('isPointOpen', point, player)
     if (point.checkers.length < 2) return true
     if (
@@ -96,33 +64,6 @@ export class Move implements BackgammonMove {
       point.checkers[0].color === player.color
     )
       return true
-  }
-
-  // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?enter
-  private static reenter(
-    board: BackgammonBoard,
-    move: BackgammonMove
-  ): BackgammonMove {
-    const { player } = move
-    let reenter: BackgammonMove = {
-      ...move,
-      moveKind: 'no-move',
-    }
-    const origin = board.bar[player.direction as keyof typeof board.bar]
-    const opponentHomeBoard = Player.getHomeBoard(board, player)
-    opponentHomeBoard.forEach((point) => {
-      if (this.isPointOpen(point, player)) {
-        reenter = {
-          id: generateId(),
-          stateKind: 'moving',
-          player,
-          origin: origin,
-          destination: point,
-        }
-      }
-    })
-
-    return reenter
   }
 
   // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?hit
@@ -140,18 +81,6 @@ export class Move implements BackgammonMove {
     // console.warn('hit not implemented')
     // return hit
     return move
-  }
-
-  private static noMove(
-    board: BackgammonBoard,
-    move: BackgammonMove
-  ): BackgammonMove {
-    let noMove: BackgammonMove = {
-      ...move,
-      moveKind: 'no-move',
-    }
-    // Implement no move logic. I *think* this should return a new board
-    return noMove
   }
 
   private static isHit(board: BackgammonBoard, move: BackgammonMove): boolean {
@@ -172,22 +101,29 @@ export class Move implements BackgammonMove {
 
   public static move(
     board: BackgammonBoard,
-    move: BackgammonMove
-  ): BackgammonMove | void {
-    const { kind } = move
-    switch (kind) {
+    move: BackgammonMove,
+    isDryRun: boolean = false
+  ): BackgammonMoveResult {
+    const { moveKind } = move
+
+    switch (moveKind) {
       case 'point-to-point':
-        const p2p = this.pointToPoint(board, move as MoveMoving).move
-        if (p2p) {
-          return p2p
-        }
-        break
+        return PointToPoint.move(board, move as MoveMoving, isDryRun)
       case 'reenter':
-        return this.reenter(board, move)
+        return Reenter.move(board, move as MoveMoving)
       case 'bear-off':
-        return this.bearOff(board, move)
+        return BearOff.move(board, move as MoveMoving)
       case 'no-move':
-        return this.noMove(board, move)
+        return {
+          board: board,
+          move: {
+            ...move,
+            moveKind: 'no-move',
+            destination: undefined,
+          },
+        }
+      case undefined:
+        throw Error('Undefined backgammon moveKind')
     }
   }
 
@@ -207,8 +143,8 @@ export class Move implements BackgammonMove {
     play.moves.forEach((m: MoveMoving) => {
       origins.map((o) => {
         m.origin = o
-        const newM = this.move(newBoard, m, 'dry-run')
-        newM && validMoves.add(newM)
+        const newM = this.move(newBoard, m, false)
+        newM && validMoves.add(newM.move)
       })
     })
 
@@ -217,8 +153,8 @@ export class Move implements BackgammonMove {
       reversedMoves.forEach((m: MoveMoving) => {
         origins.map((o) => {
           m.origin = o
-          const newM = this.move(newBoard, m, 'dry-run')
-          newM && validMoves.add(newM)
+          const newM = this.move(newBoard, m, false)
+          newM && validMoves.add(newM.move)
         })
       })
     }

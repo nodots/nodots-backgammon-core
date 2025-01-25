@@ -1,29 +1,35 @@
-import { Dice, generateId, randomBackgammonColor } from '..'
+import { generateId, randomBackgammonColor } from '..'
 import {
+  BackgammonCheckercontainer,
   BackgammonMove,
+  BackgammonMoves,
+  BackgammonPlay,
   BackgammonPlayerMoving,
+  BackgammonPlayerRolled,
   BackgammonPlayerRolling,
   BackgammonPlayers,
   BackgammonPlayStateKind,
   BackgammonRoll,
-  BaseBgPlay,
   GameRolling,
   GameRollingForStart,
-  PlayInitializing,
-  PlayMoving,
   PlayRolling,
 } from '../../types'
 import { Board } from '../Board'
 import { Cube } from '../Cube'
 import { Move } from '../Move'
 
-export class Play implements BaseBgPlay {
-  id: string | undefined
-  stateKind: BackgammonPlayStateKind | undefined = undefined
-  players: BackgammonPlayers | undefined = undefined
-  board: Board | undefined = undefined
-  cube: Cube | undefined = undefined
-  rollForStart!: (game: GameRollingForStart) => GameRolling
+export class Play implements BackgammonPlay {
+  id: string = generateId()
+  stateKind: BackgammonPlayStateKind = 'initializing'
+  moves: BackgammonMoves[] = []
+  player!: BackgammonPlayerMoving | BackgammonPlayerRolled
+
+  // id: string
+  // stateKind: BackgammonPlayStateKind | undefined = undefined
+  // players: BackgammonPlayers | undefined = undefined
+  // board: Board | undefined = undefined
+  // cube: Cube | undefined = undefined
+  // rollForStart!: (game: GameRollingForStart) => GameRolling
 
   public static initialize(
     player: BackgammonPlayerRolling,

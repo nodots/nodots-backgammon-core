@@ -3,6 +3,7 @@ import {
   BackgammonMove,
   BackgammonMoveResult,
   BackgammonPlayerMoving,
+  BackgammonPlayerRolled,
   BackgammonPoint,
   MoveMoving,
   MoveNoMove,
@@ -15,14 +16,15 @@ import { Reenter } from '../Reenter'
 export class PointToPoint {
   public static isA(
     board: BackgammonBoard,
-    player: BackgammonPlayerMoving
+    player: BackgammonPlayerMoving | BackgammonPlayerRolled
   ): boolean {
     return Reenter.isA(board, player) || BearOff.isA(board, player)
   }
 
   public static move(
     board: BackgammonBoard,
-    move: MoveMoving
+    move: MoveMoving,
+    isDryRun: boolean = false;
   ): BackgammonMoveResult {
     const { player, dieValue } = move
     let newMove: BackgammonMove | MoveNoMove = {
@@ -33,16 +35,16 @@ export class PointToPoint {
     const origin = move.origin as BackgammonPoint // FIXME: Better type check
     if (!move.origin) throw new Error('Origin not found')
     const destination = getDestination(origin, board, player, dieValue)
-    console.log('pointToPoint', { origin, destination })
 
     if (destination) {
       newMove = {
         ...move,
-        stateKind: 'moving',
+        stateKind: 'in-progress',
         moveKind: 'point-to-point',
         destination,
       }
-      newBoard = Board.moveChecker(newBoard, origin, destination)
+      
+      if (!isDryRun) newBoard = Board.moveChecker(newBoard, origin, destination)
     }
 
     return {

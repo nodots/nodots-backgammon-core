@@ -8,6 +8,7 @@ import {
   BackgammonBoard,
   BackgammonDieValue,
   BackgammonPlayerMoving,
+  BackgammonPlayerRolled,
   BackgammonRoll,
   PlayMoving,
 } from '../../types'
@@ -17,7 +18,7 @@ import { Move } from './index'
 describe('Move', () => {
   let currentRoll: BackgammonRoll
   let board: BackgammonBoard
-  let player: BackgammonPlayerMoving
+  let player: BackgammonPlayerRolled
   let dieValue: BackgammonDieValue
   let play: PlayMoving
 
@@ -30,7 +31,7 @@ describe('Move', () => {
     board = Board.initialize()
     player = {
       id: '1',
-      stateKind: 'moving',
+      stateKind: 'rolled',
       dice: { stateKind: 'rolled', currentRoll },
       color: randomBackgammonColor(),
       direction: randomBackgammonDirection(),

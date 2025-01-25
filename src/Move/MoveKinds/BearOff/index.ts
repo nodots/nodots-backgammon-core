@@ -2,13 +2,15 @@ import { Player } from '../../..'
 import {
   BackgammonBoard,
   BackgammonMove,
+  BackgammonMoveResult,
   BackgammonPlayerMoving,
+  BackgammonPlayerRolled,
 } from '../../../../types'
 
 export class BearOff {
   public static isA(
     board: BackgammonBoard,
-    player: BackgammonPlayerMoving
+    player: BackgammonPlayerMoving | BackgammonPlayerRolled
   ): boolean {
     const homeboard = Player.getHomeBoard(board, player)
     const off = board.off[player.direction]
@@ -25,13 +27,13 @@ export class BearOff {
   public static move(
     board: BackgammonBoard,
     move: BackgammonMove
-  ): BackgammonMove {
+  ): BackgammonMoveResult {
     const { player } = move
     let bearOff: BackgammonMove = {
       ...move,
       moveKind: 'no-move',
     }
     // console.warn('reenter not implemented')
-    return bearOff
+    return { board, move: bearOff }
   }
 }

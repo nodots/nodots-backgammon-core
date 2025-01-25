@@ -10,132 +10,6 @@ interface BackgammonPointPosition {
   counterclockwise: BackgammonPointValue
 }
 
-// export type CheckercontainerCheckers =
-//   | []
-//   | [BackgammonChecker]
-//   | [BackgammonChecker, BackgammonChecker]
-//   | [BackgammonChecker, BackgammonChecker, BackgammonChecker]
-//   | [BackgammonChecker, BackgammonChecker, BackgammonChecker, BackgammonChecker]
-//   | [
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker
-//     ]
-//   | [
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker
-//     ]
-//   | [
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker
-//     ]
-//   | [
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker
-//     ]
-//   | [
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker
-//     ]
-//   | [
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker
-//     ]
-//   | [
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker
-//     ]
-//   | [
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker
-//     ]
-//   | [
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker
-//     ]
-//   | [
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker,
-//       BackgammonChecker
-//     ]
-
 export type CheckercontainerPosition =
   | BackgammonPointPosition
   | BarPosition
@@ -159,25 +33,23 @@ export interface BackgammonPoint extends BackgammonCheckercontainer {
 
 export interface BackgammonBar extends BackgammonCheckercontainer {
   kind: 'bar'
-  direction: BackgammonDirection
+  direction: BackgammonMoveDirection
   position: BarPosition
 }
 
-export interface BackgammonBarContainer {
-  clockwise: BackgammonBar
-  counterclockwise: BackgammonBar
+export type BackgammonBarContainer = {
+  [direction in BackgammonMoveDirection]: BackgammonBar
 }
-
 export interface BackgammonOff extends BackgammonCheckercontainer {
   kind: 'off'
-  direction: BackgammonDirection
+  direction: BackgammonMoveDirection
   position: OffPosition
 }
 
-export interface BackgammonOffContainer {
-  clockwise: BackgammonOff
-  counterclockwise: BackgammonOff
+export type BackgammonOffContainer = {
+  [direction in BackgammonMoveDirection]: BackgammonOff
 }
+
 export type BackgammonPointValue =
   | 1
   | 2

@@ -15,3 +15,9 @@ export interface BackgammonBoard {
     counterclockwise: BackgammonOff
   }
 }
+
+export type Quadrant = [Point, Point, Point, Point, Point, Point]
+
+export interface HomeBoard {
+  points: Quadrant
+}
