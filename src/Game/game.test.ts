@@ -1,11 +1,6 @@
 import { Dice, Player, randomBackgammonColor } from '..'
 import { BackgammonDiceReady } from '../../types'
-import {
-  BackgammonPlayerMoving,
-  BackgammonPlayerReady,
-  BackgammonPlayers,
-} from '../../types/player'
-import { Move } from '../Move'
+import { BackgammonPlayerRolling, BackgammonPlayers } from '../../types/player'
 import { Play } from '../Play'
 import { Game } from './index'
 
@@ -64,19 +59,21 @@ describe('Game', () => {
     const rollingGame = Game.rollForStart(game)
     const activePlayer = rollingGame.players.find(
       (p) => p.color === rollingGame.activeColor
-    ) as BackgammonPlayerMoving
+    ) as BackgammonPlayerRolling
 
     expect(activePlayer).toBeDefined()
     const activeDice = activePlayer!.dice
     expect(activeDice).toBeDefined()
     expect(activeDice!.stateKind).toBe('ready')
-    // const rolledDice = Dice.roll(activeDice as BackgammonDiceReady)
-    // expect(rolledDice.currentRoll).toBeDefined()
-    // expect(rolledDice.stateKind).toBe('rolled')
+    const rolledPlayer = Player.roll(activePlayer)
+    expect(rolledPlayer.dice.currentRoll).toBeDefined()
+
+    // expect(rolledPlayer.dice.currentRoll).toBeDefined()
+    // expect(rolledPlayer.dice.stateKind).toBe('rolled')
 
     // if (!activePlayer) throw new Error('Active player not found')
 
-    // const play = Play.initialize(activePlayer, rolledDice.currentRoll!)
+    // const play = Play.initialize(rolledPlayer)
     // expect(play.stateKind).toBe('moving')
     // Dice.isDouble(rolledDice)
     //   ? expect(play.moves.length).toBe(4)

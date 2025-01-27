@@ -1,66 +1,56 @@
 import { BackgammonChecker } from './checker'
-import { BackgammonDice } from './dice'
+import {
+  BackgammonDice,
+  BackgammonDiceInactive,
+  BackgammonDiceRolled,
+} from './dice'
 import { BackgammonPips } from './pip'
 import { BackgammonMoveDirection } from './game'
 
-export type BackgammonPlayerStateKind =
-  | 'initializing'
-  | 'ready'
-  | 'rolling'
-  | 'moving'
+export type BackgammonPlayerStateKind = 'inactive' | 'rolling' | 'moving'
 
-export type BaseBgPlayer = {
-  id?: string
-  color?: BackgammonColor
-  direction?: BackgammonMoveDirection
-  dice?: BackgammonDice
-  pipCount?: BackgammonPips
+type BasePlayer = {
+  id: string
+  color: BackgammonColor
+  direction: BackgammonMoveDirection
+  dice: BackgammonDice
+  pipCount: BackgammonPips
 }
 
-export type BackgammonPlayer = BaseBgPlayer & {
+type Player = BasePlayer & {
   stateKind: BackgammonPlayerStateKind
 }
 
-export interface BackgammonPlayerInitializing extends BackgammonPlayer {
-  id: string
-  stateKind: 'initializing'
-  direction: BackgammonMoveDirection
-}
-export interface BackgammonPlayerReady extends BackgammonPlayer {
-  id: string
-  stateKind: 'ready'
-  color: BackgammonColor
-  direction: BackgammonMoveDirection
-  dice: BackgammonDiceReady
-  pipCount: BackgammonPips
+export type BackgammonPlayerInactive = Player & {
+  stateKind: 'inactive'
+  dice: BackgammonDiceInactive
 }
 
-export interface BackgammonPlayerRolling extends BackgammonPlayer {
-  id: string
+export type BackgammonPlayerRolling = Player & {
   stateKind: 'rolling'
-  color: BackgammonColor
-  direction: BackgammonMoveDirection
   dice: BackgammonDiceReady
-  pipCount: BackgammonPips
 }
 
-export interface BackgammonPlayerRolled extends BackgammonPlayer {
-  id: string
+export type BackgammonPlayerRolled = Player & {
   stateKind: 'rolled'
-  color: BackgammonColor
-  direction: BackgammonMoveDirection
-  dice: BackgammonDiceReady
-  pipCount: BackgammonPips
+  dice: BackgammonDiceRolled
 }
 
-export interface BackgammonPlayerMoving extends BackgammonPlayer {
-  id: string
+export type BackgammonPlayerMoving = Player & {
   stateKind: 'moving'
-  color: BackgammonColor
-  direction: BackgammonMoveDirection
   dice: BackgammonDiceRolled
-  pipCount: BackgammonPips
 }
+
+export type BackgammonPlayer =
+  | BackgammonPlayerInactive
+  | BackgammonPlayerRolling
+  | BackgammonPlayerRolled
+  | BackgammonPlayerMoving
+
+export type BackgammonPlayerActive =
+  | BackgammonPlayerRolling
+  | BackgammonPlayerRolled
+  | BackgammonPlayerMoving
 
 export type BackgammonPlayers = [BackgammonPlayer, BackgammonPlayer]
 

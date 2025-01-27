@@ -4,14 +4,15 @@ import {
   BackgammonDice,
   BackgammonDiceReady,
   BackgammonDiceRolled,
+  BackgammonDiceStateKind,
   BackgammonDieValue,
   BackgammonRoll,
 } from '../../types'
 
-export class Dice implements BackgammonDice {
-  id: string = generateId()
+export class Dice {
+  id!: string
+  stateKind!: BackgammonDiceStateKind
   color: BackgammonColor | undefined = undefined
-  stateKind: 'ready' = 'ready'
   currentRoll: BackgammonRoll | undefined = undefined
 
   public static initialize(color: BackgammonColor) {
@@ -23,18 +24,17 @@ export class Dice implements BackgammonDice {
     }
   }
 
-  public static roll: (dice: BackgammonDiceReady) => BackgammonDiceRolled =
-    (): BackgammonDiceRolled => {
-      const currentRoll: BackgammonRoll = [
-        _rollDie() as BackgammonDieValue,
-        _rollDie() as BackgammonDieValue,
-      ]
-      return {
-        ...this,
-        stateKind: 'rolled',
-        currentRoll,
-      }
+  public static roll(dice: BackgammonDiceReady): BackgammonDiceRolled {
+    const currentRoll: BackgammonRoll = [
+      _rollDie() as BackgammonDieValue,
+      _rollDie() as BackgammonDieValue,
+    ]
+    return {
+      ...dice,
+      stateKind: 'rolled',
+      currentRoll,
     }
+  }
 
   public static switchDice: (
     dice: BackgammonDiceRolled

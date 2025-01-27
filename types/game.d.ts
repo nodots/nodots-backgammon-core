@@ -1,8 +1,8 @@
 import { BackgammonBoard } from './board'
 import { BackgammonCube } from './cube'
 import { IntegerRange } from './generics'
-import { BackgammonPlay, PlayRolling } from './play'
-import { BackgammonPlayers } from './player'
+import { BackgammonPlay } from './play'
+import { BackgammonPlayerActive, BackgammonPlayers } from './player'
 
 export type BackgammonColor = 'black' | 'white'
 export type BackgammonMoveDirection = 'clockwise' | 'counterclockwise'
@@ -11,75 +11,55 @@ export type BackgammonPips = IntegerRange<1, 167>
 export const MAX_PIP_COUNT = 167
 export const CHECKERS_PER_PLAYER = 15
 
-// FIXME This is a horrible type name because it doesn't describe
-// a kind of game but rather the state of the game. Complication of
-// informal pattern in this library for all classes to have a `kind`.
 export type BackgammonGameStateKind =
-  | 'initializing'
   | 'rolling-for-start'
   | 'rolling'
   | 'rolled'
   | 'moving'
+  | 'completed'
 
-export type BaseBgGame = {
-  id?: string
-  stateKind?: BackgammonGameStateKind
-  players?: BackgammonPlayers
-  board?: BackgammonBoard
-  cube?: BackgammonCube
+type BaseGame = {
+  id: string
+  players: BackgammonPlayers
+  board: BackgammonBoard
+  cube: BackgammonCube
+  winner?: BackgammonPlayer
   activeColor?: BackgammonColor
   activePlay?: BackgammonPlay
 }
 
-export interface GameInitializing extends BaseBgGame {
-  id: string
-  stateKind: 'initializing'
-}
-export interface GameRollingForStart extends BaseBgGame {
-  id: string
-  stateKind: 'rolling-for-start'
-  players: BackgammonPlayers
-  board: BackgammonBoard
-  cube: BackgammonCube
+type BackgammonGame = BaseGame & {
+  stateKind: BackgammonGameStateKind
 }
 
-export interface GameRolling extends BaseBgGame {
-  id: string
+export type BackgammonGameRollingForStart = BackgammonGame & {
+  stateKind: 'rolling-for-start'
+}
+
+export type BackgammonGameRolling = BackgammonGame & {
   stateKind: 'rolling'
   activeColor: BackgammonColor
-  players: BackgammonPlayers
-  board: BackgammonBoard
-  cube: BackgammonCube
-  activePlay?: PlayRolling
 }
 
-export interface GameRolled extends BaseBgGame {
-  id: string
+export type BackgammonGameRolled = BackgammonGame & {
   stateKind: 'rolled'
   activeColor: BackgammonColor
-  players: BackgammonPlayers
-  board: BackgammonBoard
-  cube: BackgammonCube
   activePlay: PlayRolled
 }
 
-export interface GameMoving extends BaseBgGame {
-  id: string
+export type BackgammonGameMoving = BackgammonGame & {
   stateKind: 'moving'
-  players: BackgammonPlayers
-  board: BackgammonBoard
-  cube: BackgammonCube
   activeColor: BackgammonColor
-  activePlay: BackgammonPlay
+  activePlay: BackgammonPlayerActive
+}
+
+export type BackgammonGameCompleted = BackgammonGame & {
+  stateKind: 'completed'
+  winner: BackgammonPlayer // FIXME: Should probably be BackgammonPlayerWinner
 }
 
 export type BackgammonGame =
-  | GameInitializing
-  | GameRollingForStart
-  | GameRolling
-  | GameMoving
-
-export type BackgammonGameActive =
-  | GameRollingForStart
-  | GameRolling
-  | GameMoving
+  | BackgammonGameRollingForStart
+  | BackgammonGameRolling
+  | BackgammonGameMoving
+  | BackgammonGameCompleted

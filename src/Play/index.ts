@@ -1,48 +1,50 @@
 import { generateId, randomBackgammonColor } from '..'
 import {
-  BackgammonCheckercontainer,
+  BackgammonBoard,
+  BackgammonDiceRolled,
+  BackgammonGameRolling,
+  BackgammonGameRollingForStart,
   BackgammonMove,
   BackgammonMoves,
   BackgammonPlay,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
-  BackgammonPlayerRolling,
-  BackgammonPlayers,
+  BackgammonPlayMoving,
+  BackgammonPlayRolling,
   BackgammonPlayStateKind,
-  BackgammonRoll,
-  GameRolling,
-  GameRollingForStart,
-  PlayRolling,
 } from '../../types'
-import { Board } from '../Board'
-import { Cube } from '../Cube'
 import { Move } from '../Move'
 
-export class Play implements BackgammonPlay {
+export interface PlayProps {
+  id: string
+  stateKind: BackgammonPlayStateKind
+  moves: BackgammonMoves
+  player: BackgammonPlayerRolled | BackgammonPlayerMoving
+}
+
+export class Play {
   id: string = generateId()
   stateKind: BackgammonPlayStateKind = 'initializing'
   moves: BackgammonMoves[] = []
   player!: BackgammonPlayerMoving | BackgammonPlayerRolled
 
-  // id: string
-  // stateKind: BackgammonPlayStateKind | undefined = undefined
-  // players: BackgammonPlayers | undefined = undefined
-  // board: Board | undefined = undefined
-  // cube: Cube | undefined = undefined
-  // rollForStart!: (game: GameRollingForStart) => GameRolling
-
-  public static initialize(
-    player: BackgammonPlayerRolling,
-    roll: BackgammonRoll
-  ): PlayRolling {
+  public static initialize({ player }: PlayProps): BackgammonPlayRolling {
     const moves: BackgammonMove[] = []
-    const move1 = Move.initialize(player, roll[0])
-    const move2 = Move.initialize(player, roll[1])
+    const dice = player.dice as BackgammonDiceRolled
+    const roll = dice.currentRoll
+    const move1 = Move.initialize({
+      player,
+      dieValue: roll[0],
+    })
+    const move2 = Move.initialize({
+      player,
+      dieValue: roll[1],
+    })
     moves.push(move1, move2)
     if (roll[0] === roll[1])
       moves.push(
-        Move.initialize(player, roll[0]),
-        Move.initialize(player, roll[1])
+        Move.initialize({ player, dieValue: roll[0] }),
+        Move.initialize({ player, dieValue: roll[1] })
       )
 
     return {
@@ -54,7 +56,9 @@ export class Play implements BackgammonPlay {
     }
   }
 
-  public static rollForStart(game: GameRollingForStart): GameRolling {
+  public static rollForStart(
+    game: BackgammonGameRollingForStart
+  ): BackgammonGameRolling {
     const activeColor = randomBackgammonColor()
     const activePlayer = game.players.find((p) => p.color === activeColor)
     if (!activePlayer) {
@@ -80,4 +84,6 @@ export class Play implements BackgammonPlay {
       activePlay: undefined,
     }
   }
+
+  public static move(board: BackgammonBoard, play: BackgammonPlayMoving) {}
 }

@@ -6,48 +6,57 @@ import {
   BackgammonMove,
   BackgammonMoveKind,
   BackgammonMoveResult,
-  BackgammonMoveStateKind,
-  BackgammonPlay,
+  BackgammonMoveState,
+  BackgammonPlayerActive,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
-  BackgammonPlayerRolling,
+  BackgammonPlayMoving,
+  BackgammonPlayRolled,
   BackgammonPoint,
-  MoveMoving,
-  PlayMoving,
 } from '../../types'
 import { BearOff } from './MoveKinds/BearOff'
 import { PointToPoint } from './MoveKinds/PointToPoint'
 import { Reenter } from './MoveKinds/Reenter'
 
 export type MOVE_MODE = 'dry-run' | 'commit'
-export const MOVE_NO_MOVE = (
-  origin: BackgammonCheckercontainer
-): BackgammonMove => {
-  return {
-    id: generateId(),
-    stateKind: 'completed',
-    moveKind: undefined,
-    origin,
-    destination: undefined,
-  }
+
+export interface MoveProps {
+  player: BackgammonPlayerMoving
+  dieValue: BackgammonDieValue
+  stateKind: BackgammonMoveState
+  moveKind?: BackgammonMoveKind
+  id?: string
+  origin?: BackgammonCheckercontainer
+  destination?: BackgammonCheckercontainer
+  isAuto?: boolean
+  isForced?: false
 }
 
-export class Move implements BackgammonMove {
-  id: string = generateId()
-  stateKind: BackgammonMoveStateKind = 'initializing'
-  player: BackgammonPlayerMoving | undefined = undefined
+export class Move {
+  player!: BackgammonPlayerActive
+  id!: string
+  dieValue!: BackgammonDieValue
+  stateKind!: BackgammonMoveKind
   origin: BackgammonCheckercontainer | undefined = undefined
-  destination?: BackgammonCheckercontainer | undefined = undefined
+  destination: BackgammonCheckercontainer | undefined = undefined
 
-  public static initialize(
-    player: BackgammonPlayerRolling,
-    dieValue: BackgammonDieValue
-  ): BackgammonMove {
+  public static initialize({
+    player,
+    id,
+    dieValue,
+    origin,
+    destination,
+    isAuto,
+    isForced,
+  }: MoveProps): BackgammonMove {
     return {
-      id: generateId(),
-      stateKind: 'initializing',
+      id: id ? id : generateId(),
       player,
       dieValue,
+      origin,
+      destination,
+      isAuto: isAuto ? isAuto : false,
+      isForced: isForced ? isForced : false,
     }
   }
 
@@ -89,7 +98,7 @@ export class Move implements BackgammonMove {
 
   private static getMoveKind(
     board: BackgammonBoard,
-    play: BackgammonPlay
+    play: BackgammonPlayMoving
   ): BackgammonMoveKind {
     const { player } = play
     let type: BackgammonMoveKind = 'no-move'
@@ -108,11 +117,11 @@ export class Move implements BackgammonMove {
 
     switch (moveKind) {
       case 'point-to-point':
-        return PointToPoint.move(board, move as MoveMoving, isDryRun)
+        return PointToPoint.move(board, move, isDryRun)
       case 'reenter':
-        return Reenter.move(board, move as MoveMoving)
+        return Reenter.move(board, move)
       case 'bear-off':
-        return BearOff.move(board, move as MoveMoving)
+        return BearOff.move(board, move)
       case 'no-move':
         return {
           board: board,
@@ -129,9 +138,10 @@ export class Move implements BackgammonMove {
 
   public static getValidMoves(
     board: BackgammonBoard,
-    play: PlayMoving
+    play: BackgammonPlayRolled
   ): Set<BackgammonMove> {
-    const { player, roll } = play
+    const player = play.player as BackgammonPlayerActive
+    const roll = player.dice.currentRoll
     const isDoubles = roll[0] === roll[1]
     let validMoves = new Set<BackgammonMove>()
     let newBoard = board
@@ -140,7 +150,7 @@ export class Move implements BackgammonMove {
       (p) => p.checkers.length > 0 && p.checkers[0]?.color === player.color
     )
 
-    play.moves.forEach((m: MoveMoving) => {
+    play.moves.forEach((m: BackgammonMove) => {
       origins.map((o) => {
         m.origin = o
         const newM = this.move(newBoard, m, false)
@@ -150,7 +160,7 @@ export class Move implements BackgammonMove {
 
     if (!isDoubles) {
       const reversedMoves = [...play.moves].reverse()
-      reversedMoves.forEach((m: MoveMoving) => {
+      reversedMoves.forEach((m: BackgammonMove) => {
         origins.map((o) => {
           m.origin = o
           const newM = this.move(newBoard, m, false)

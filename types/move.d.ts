@@ -1,12 +1,13 @@
 import { BackgammonCheckercontainer } from './checkercontainer'
 import { BackgammonDieValue } from './dice'
 import { BackgammonMoveDirection } from './game'
-import { PlayerMoving, PlayerPlayingMoving } from './player'
+import { BackgammonPlayerActive } from './player'
 
-export type BackgammonMoveStateKind =
-  | 'initializing'
+export type BackgammonMoveState =
+  | 'ready'
   | 'in-progress'
   | 'completed'
+  | 'confirmed'
 
 export type BackgammonMoveKind =
   | 'no-move'
@@ -14,50 +15,65 @@ export type BackgammonMoveKind =
   | 'reenter'
   | 'bear-off'
 
-type BaseBgMove = {
+type BaseMove = {
   id: string
+  player: BackgammonPlayerActive
+  isAuto: boolean = false
+  isForced: boolean = false
+  stateKind: BackgammonMoveState
+  dieValue: BackgammonDieValue
+  direction: BackgammonMoveDirection
   moveKind?: BackgammonMoveKind
-  player?: PlayerMoving
   isHit?: boolean
-  isAuto?: boolean
-  isForced?: boolean
-  dieValue?: BackgammonDieValue
-  direction?: BackgammonMoveDirection
   origin?: BackgammonCheckercontainer
   destination?: BackgammonCheckercontainer
 }
 
-export interface BackgammonMove extends BaseBgMove {
+type Move = BaseMove & {
   stateKind: BackgammonMoveStateKind
 }
 
-export interface MoveInitializing extends BackgammonMove {
-  stateKind: 'initializing'
-  player: PlayerPlayingMoving
+export type BackgammonMoveReady = Move & {
+  stateKind: 'ready'
+  player: BackgammonPlayerActive
   dieValue: BackgammonDieValue
 }
-export interface MoveMoving extends BackgammonMove {
+export type BackgammonMoveInProgress = Move & {
   stateKind: 'in-progress'
   moveKind: BackgammonMoveKind
-  player: PlayerPlayingMoving
+  player: BackgammonPlayerMoving
   dieValue: BackgammonDieValue
   origin: BackgammonCheckercontainer
   destination: BackgammonCheckercontainer | undefined
 }
 
-export interface MoveMoved extends BackgammonMove {
+export type BackgammonMoveCompleted = Move & {
   stateKind: 'completed'
   moveKind: BackgammonMoveKind
   origin: BackgammonCheckercontainer
   destination: BackgammonCheckercontainer
 }
 
-export interface MoveNoMove extends BackgammonMove {
-  stateKind: 'completed'
-  moveKind: undefined
+export type BackgammonMoveConfirmed = Move & {
+  stateKind: 'confirmed'
+  moveKind: BackgammonMoveKind
   origin: BackgammonCheckercontainer
+  destination: BackgammonCheckercontainer
+}
+
+export type BackgammonMoveNoMove = Move & {
+  stateKind: 'confirmed'
+  moveKind: undefined
+  origin: undefined
   destination: undefined
 }
+
+export type BackgammonMove =
+  | BackgammonMoveReady
+  | BackgammonMoveInProgress
+  | BackgammonMoveCompleted
+  | BackgammonMoveConfirmed
+  | BackgammonMoveNoMove
 
 export type BackgammonMoves =
   | [BackgammonMove, BackgammonMove]

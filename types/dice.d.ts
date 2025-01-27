@@ -3,25 +3,32 @@ export type BackgammonDieValue = 1 | 2 | 3 | 4 | 5 | 6
 export type BackgammonDieOrder = 0 | 1
 export type BackgammonRoll = [BackgammonDieValue, BackgammonDieValue]
 
-export type BackgammonDiceStateKind = 'ready' | 'rolled'
+export type BackgammonDiceStateKind = 'inactive' | 'ready' | 'rolled'
 
-type _BaseBgDice = {
-  color?: BackgammonColor
+type BaseDice = {
+  id: string
+  color: BackgammonColor
   currentRoll?: BackgammonRoll | undefined
-  roll?: (dice: BackgammonDiceReady) => BackgammonDiceRolled
-  switchDice?: (dice: BackgammonDiceRolled) => BackgammonDiceRolled
-  isDoubles?: (dice: BackgammonDiceRolled) => boolean
 }
 
-export type BackgammonDice = _BaseBgDice & {
-  id?: string
+type Dice = BaseDice & {
   stateKind: BackgammonDiceStateKind
 }
 
-export interface BackgammonDiceReady extends BackgammonDice {
+export type BackgammonDiceInactive = Dice & {
+  stateKind: 'inactive'
+}
+
+export type BackgammonDiceReady = Dice & {
   stateKind: 'ready'
 }
 
-export interface BackgammonDiceRolled extends BackgammonDice {
+export type BackgammonDiceRolled = Dice & {
   stateKind: 'rolled'
+  currentRoll: BackgammonRoll
 }
+
+export type BackgammonDice =
+  | BackgammonDiceInactive
+  | BackgammonDiceReady
+  | BackgammonDiceRolled

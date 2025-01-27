@@ -1,5 +1,9 @@
 import { BackgammonRoll } from './dice'
-import { BackgammonPlayerMoving } from './player'
+import {
+  BackgammonPlayer,
+  BackgammonPlayerMoving,
+  BackgammonPlayerRolled,
+} from './player'
 
 export type BackgammonPlayStateKind =
   | 'initializing'
@@ -9,70 +13,50 @@ export type BackgammonPlayStateKind =
   | 'doubled'
   | 'completed'
 
-type BaseBgPlay = {
+type BasePlay = {
   id: string
-  player?: BackgammonPlayerMoving | BackgammonPlayerRolled
-  roll?: BackgammonRoll
-  moves?: BackgammonMoves
+  player: BackgammonPlayer
+  roll: BackgammonRoll
+  moves: BackgammonMoves
 }
 
-export interface BackgammonPlay extends BaseBgPlay {
+type Play = BasePlay & {
   stateKind: BackgammonPlayStateKind
 }
-export interface PlayInitializing extends BackgammonPlay {
-  stateKind: 'initializing'
-  player: BackgammonPlayerMoving
-  roll: BackgammonRoll
-  moves: BackgammonMoves
-}
 
-export interface PlayRolling extends BackgammonPlay {
+export type BackgammonPlayRolling = Play & {
   stateKind: 'rolling'
   player: BackgammonPlayerRolling
-  roll?: BackgammonRoll
-  moves?: BackgammonMoves
 }
 
-export interface PlayRolled extends BackgammonPlay {
+export type BackgammonPlayRolled = Play & {
   stateKind: 'rolled'
   player: BackgammonPlayerRolled
-  roll: BackgammonRoll
-  moves: BackgammonMoves
 }
 
-export interface PlayDoubled extends BackgammonPlay {
+export type BackgammonPlayDoubled = Play & {
   stateKind: 'doubled'
-  player: BackgammonPlayerRolled
-  roll: BackgammonRoll
-  moves: BackgammonMoves
 }
 
-export interface PlayMoving extends BackgammonPlay {
+export type BackgammonPlayMoving = Play & {
   stateKind: 'moving'
   player: BackgammonPlayerMoving
-  roll: BackgammonRoll
-  moves: BackgammonMoves
 }
 
-export interface PlayMoved extends BackgammonPlay {
+export type BackgammonPlayMoved = Play & {
   stateKind: 'moved'
-  player: BackgammonPlayerMoving
-  roll: BackgammonRoll
-  moves: BackgammonMoves
+  player: BackgammonPlayerMoved
 }
 
-export interface PlayCompleted extends BackgammonPlay {
+export type BackgammonPlayCompleted = Play & {
   stateKind: 'completed'
   player: BackgammonPlayerMoved
-  roll: BackgammonRoll
-  moves: BackgammonMoves
 }
 
 export type BackgammonPlay =
-  | PlayInitializing
-  | PlayRolling
-  | PlayRolled
-  | PlayDoubled
-  | PlayMoving
-  | PlayMoved
-  | PlayCompleted
+  | BackgammonPlayRolling
+  | BackgammonPlayRolled
+  | BackgammonPlayDoubled
+  | BackgammonPlayMoving
+  | BackgammonPlayMoved
+  | BackgammonPlayCompleted

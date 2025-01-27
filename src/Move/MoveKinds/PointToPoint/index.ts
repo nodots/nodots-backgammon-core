@@ -24,7 +24,7 @@ export class PointToPoint {
   public static move(
     board: BackgammonBoard,
     move: MoveMoving,
-    isDryRun: boolean = false;
+    isDryRun: boolean = false
   ): BackgammonMoveResult {
     const { player, dieValue } = move
     let newMove: BackgammonMove | MoveNoMove = {
@@ -43,7 +43,7 @@ export class PointToPoint {
         moveKind: 'point-to-point',
         destination,
       }
-      
+
       if (!isDryRun) newBoard = Board.moveChecker(newBoard, origin, destination)
     }
 
