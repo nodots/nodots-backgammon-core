@@ -7,7 +7,12 @@ import {
 import { BackgammonPips } from './pip'
 import { BackgammonMoveDirection } from './game'
 
-export type BackgammonPlayerStateKind = 'inactive' | 'rolling' | 'moving'
+export type BackgammonPlayerStateKind =
+  | 'inactive'
+  | 'rolling'
+  | 'rolled'
+  | 'moving'
+  | 'moved'
 
 type BasePlayer = {
   id: string

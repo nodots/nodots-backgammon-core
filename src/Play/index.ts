@@ -7,16 +7,18 @@ import {
   BackgammonMove,
   BackgammonMoves,
   BackgammonPlay,
+  BackgammonPlayer,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
   BackgammonPlayMoving,
+  BackgammonPlayRolled,
   BackgammonPlayRolling,
   BackgammonPlayStateKind,
 } from '../../types'
 import { Move } from '../Move'
 
 export interface PlayProps {
-  id: string
+  id?: string
   stateKind: BackgammonPlayStateKind
   moves: BackgammonMoves
   player: BackgammonPlayerRolled | BackgammonPlayerMoving
@@ -28,31 +30,34 @@ export class Play {
   moves: BackgammonMoves[] = []
   player!: BackgammonPlayerMoving | BackgammonPlayerRolled
 
-  public static initialize({ player }: PlayProps): BackgammonPlayRolling {
+  public static initialize({
+    player,
+  }: PlayProps): BackgammonPlayRolled | BackgammonPlayMoving {
     const moves: BackgammonMove[] = []
-    const dice = player.dice as BackgammonDiceRolled
+    const dice = player.dice
     const roll = dice.currentRoll
-    const move1 = Move.initialize({
-      player,
-      dieValue: roll[0],
-    })
-    const move2 = Move.initialize({
-      player,
-      dieValue: roll[1],
-    })
-    moves.push(move1, move2)
-    if (roll[0] === roll[1])
-      moves.push(
-        Move.initialize({ player, dieValue: roll[0] }),
-        Move.initialize({ player, dieValue: roll[1] })
-      )
 
-    return {
-      id: generateId(),
-      stateKind: 'rolling',
-      player,
-      roll,
-      moves,
+    switch (player.stateKind) {
+      case 'moving':
+        if (moves.length !== 2 && moves.length !== 4)
+          throw Error('Moves must be length 2 or 4')
+        return {
+          id: generateId(),
+          stateKind: 'moving',
+          moves,
+          player,
+          roll,
+        }
+      case 'rolled':
+        const playerRolled = player as BackgammonPlayerRolled
+        const m1 = Move.initialize({ player: playerRolled, dieValue: roll[0] })
+        return {
+          id: generateId(),
+          stateKind: 'rolled',
+          moves,
+          player,
+          roll,
+        }
     }
   }
 
@@ -85,5 +90,10 @@ export class Play {
     }
   }
 
-  public static move(board: BackgammonBoard, play: BackgammonPlayMoving) {}
+  public static move(board: BackgammonBoard, play: BackgammonPlayMoving) {
+    return {
+      ...play,
+      stateKind: 'moving',
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import { generateId, randomBackgammonColor } from '..'
+import { generateId } from '..'
 import {
   BackgammonBar,
   BackgammonBoard,
@@ -6,14 +6,11 @@ import {
   BackgammonCheckercontainer,
   BackgammonCheckercontainerImport,
   BackgammonColor,
-  BackgammonGameActive,
-  BackgammonMoveDirection,
+  BackgammonGame,
   BackgammonOff,
   BackgammonPoint,
   BackgammonPoints,
   BackgammonPointValue,
-  BarPosition,
-  MoveMoved,
   OffPosition,
 } from '../../types'
 import { buildCheckersForCheckercontainerId } from '../Checker'
@@ -113,7 +110,7 @@ export class Board implements BackgammonBoard {
     return container
   }
 
-  static getPipCounts = (game: BackgammonGameActive) => {
+  static getPipCounts = (game: BackgammonGame) => {
     const { board, players } = game
     const pipCounts = {
       black: 167,

@@ -8,6 +8,7 @@ import {
   BackgammonGameRollingForStart,
   BackgammonGameStateKind,
   BackgammonMoveInProgress,
+  BackgammonPlayerRolled,
   BackgammonPlayerRolling,
   BackgammonPlayers,
 } from '../../types'
@@ -131,14 +132,18 @@ export class Game {
   ): BackgammonGameMoving {
     let { board, activePlay } = game
     const activePlayer = game.players.find(
-      (p) => p.color === game.activeColor && p.stateKind === 'rolling'
-    )
+      (p) => p.color === game.activeColor && p.stateKind === 'rolled'
+    ) as BackgammonPlayerRolled
+
     if (!activePlayer) {
       throw new Error('Active player not found')
     }
+
     if (!activePlayer.dice) {
       throw new Error('Active player dice not found')
     }
+
+    const player = activePlayer as BackgammonPlayerRolling
     const inactivePlayer = game.players.find(
       (p) => p.color !== game.activeColor
     )
@@ -147,7 +152,9 @@ export class Game {
       throw new Error('Inactive player not found')
     }
 
-    activePlay = Play.move(board, move)
+    if (!activePlay) {
+      activePlay = Play.initialize({ player })
+    }
 
     return {
       ...game,

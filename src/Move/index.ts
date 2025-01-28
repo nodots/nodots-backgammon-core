@@ -7,6 +7,7 @@ import {
   BackgammonMoveKind,
   BackgammonMoveResult,
   BackgammonMoveState,
+  BackgammonPlayer,
   BackgammonPlayerActive,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
@@ -23,7 +24,7 @@ export type MOVE_MODE = 'dry-run' | 'commit'
 export interface MoveProps {
   player: BackgammonPlayerMoving
   dieValue: BackgammonDieValue
-  stateKind: BackgammonMoveState
+  stateKind?: BackgammonMoveState
   moveKind?: BackgammonMoveKind
   id?: string
   origin?: BackgammonCheckercontainer
@@ -33,10 +34,11 @@ export interface MoveProps {
 }
 
 export class Move {
-  player!: BackgammonPlayerActive
+  player!: BackgammonPlayer
   id!: string
   dieValue!: BackgammonDieValue
   stateKind!: BackgammonMoveKind
+  moveKind!: BackgammonMoveKind
   origin: BackgammonCheckercontainer | undefined = undefined
   destination: BackgammonCheckercontainer | undefined = undefined
 
@@ -44,15 +46,25 @@ export class Move {
     player,
     id,
     dieValue,
+    stateKind,
+    moveKind,
     origin,
     destination,
     isAuto,
     isForced,
   }: MoveProps): BackgammonMove {
+    id = id ? id : generateId()
+    stateKind = stateKind ?? ('no-move' as BackgammonMoveState)
+    moveKind = moveKind ? moveKind : 'no-move'
+    const { direction } = player
+
     return {
-      id: id ? id : generateId(),
       player,
+      id: id ? id : generateId(),
       dieValue,
+      direction,
+      stateKind,
+      moveKind,
       origin,
       destination,
       isAuto: isAuto ? isAuto : false,
