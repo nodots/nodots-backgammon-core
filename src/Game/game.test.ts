@@ -1,24 +1,44 @@
-import { Dice, Player, randomBackgammonColor } from '..'
-import { BackgammonDiceReady } from '../../types'
-import { BackgammonPlayerRolling, BackgammonPlayers } from '../../types/player'
-import { Play } from '../Play'
-import { Game } from './index'
+import { Dice, Game, generateId, Player, randomBackgammonColor } from '..'
+import {
+  BackgammonDiceReady,
+  BackgammonPlayerInactive,
+  BackgammonPlayerRolling,
+  BackgammonPlayers,
+} from '../../types'
 
 describe('Game', () => {
   const clockwiseColor = randomBackgammonColor()
-  const counterClockwiseColor = clockwiseColor === 'white' ? 'black' : 'white'
-  const clockwisePlayer: BackgammonPlayerReady = Player.initialize(
-    clockwiseColor,
-    'clockwise'
-  )
-  const counterClockwisePlayer: BackgammonPlayerReady = Player.initialize(
-    counterClockwiseColor,
-    'counterclockwise'
-  )
+  const counterclockwiseColor = clockwiseColor === 'white' ? 'black' : 'white'
+  const clockwisePlayer: BackgammonPlayerInactive = {
+    id: generateId(),
+    stateKind: 'inactive',
+    color: clockwiseColor,
+    direction: 'clockwise',
+    dice: {
+      id: generateId(),
+      color: clockwiseColor,
+      stateKind: 'inactive',
+      currentRoll: undefined,
+    },
+    pipCount: 167,
+  }
+  const counterclockwisePlayer: BackgammonPlayerInactive = {
+    id: generateId(),
+    stateKind: 'inactive',
+    color: counterclockwiseColor,
+    direction: 'clockwise',
+    dice: {
+      id: generateId(),
+      color: counterclockwiseColor,
+      stateKind: 'inactive',
+      currentRoll: undefined,
+    },
+    pipCount: 167,
+  }
 
   const mockPlayers: BackgammonPlayers = [
     clockwisePlayer,
-    counterClockwisePlayer,
+    counterclockwisePlayer,
   ]
 
   it('should initialize the game with players', () => {
@@ -34,7 +54,7 @@ describe('Game', () => {
     const game = Game.initialize(mockPlayers)
     const rollingGame = Game.rollForStart(game)
 
-    expect(rollingGame.stateKind).toBe('rolling')
+    expect(rollingGame.stateKind).toBe('in-progress')
     expect(rollingGame.activeColor).toBeDefined()
   })
 
@@ -67,22 +87,5 @@ describe('Game', () => {
     expect(activeDice!.stateKind).toBe('ready')
     const rolledPlayer = Player.roll(activePlayer)
     expect(rolledPlayer.dice.currentRoll).toBeDefined()
-
-    // expect(rolledPlayer.dice.currentRoll).toBeDefined()
-    // expect(rolledPlayer.dice.stateKind).toBe('rolled')
-
-    // if (!activePlayer) throw new Error('Active player not found')
-
-    // const play = Play.initialize(rolledPlayer)
-    // expect(play.stateKind).toBe('moving')
-    // Dice.isDouble(rolledDice)
-    //   ? expect(play.moves.length).toBe(4)
-    //   : expect(play.moves.length).toBe(2)
-
-    // const validMoves = Move.getValidMoves(rollingGame.board, play)
-    // expect(validMoves).toBeDefined()
-    // // expect(validMoves.size).toBeGreaterThan(0)
-
-    // console.log('validMoves', validMoves)
   })
 })

@@ -22,7 +22,7 @@ import { Reenter } from './MoveKinds/Reenter'
 export type MOVE_MODE = 'dry-run' | 'commit'
 
 export interface MoveProps {
-  player: BackgammonPlayerMoving
+  player: BackgammonPlayerMoving | BackgammonPlayerRolled
   dieValue: BackgammonDieValue
   stateKind?: BackgammonMoveState
   moveKind?: BackgammonMoveKind

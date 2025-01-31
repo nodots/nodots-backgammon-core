@@ -1,92 +1,94 @@
-import { generateId, randomBackgammonColor } from '..'
+import { generateId } from '..'
 import {
   BackgammonBoard,
-  BackgammonDiceRolled,
-  BackgammonGameRolling,
-  BackgammonGameRollingForStart,
-  BackgammonMove,
   BackgammonMoves,
-  BackgammonPlay,
-  BackgammonPlayer,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
   BackgammonPlayMoving,
   BackgammonPlayRolled,
-  BackgammonPlayRolling,
   BackgammonPlayStateKind,
 } from '../../types'
 import { Move } from '../Move'
 
+/*
+ | 'rolling'
+  | 'rolled'
+  | 'moving'
+  | 'moved'
+  | 'confirmed'
+  */
 export interface PlayProps {
   id?: string
   stateKind: BackgammonPlayStateKind
-  moves: BackgammonMoves
+  moves?: BackgammonMoves
   player: BackgammonPlayerRolled | BackgammonPlayerMoving
 }
 
 export class Play {
-  id: string = generateId()
-  stateKind: BackgammonPlayStateKind = 'initializing'
+  id?: string = generateId()
+  stateKind: BackgammonPlayStateKind = 'rolling'
   moves: BackgammonMoves[] = []
-  player!: BackgammonPlayerMoving | BackgammonPlayerRolled
+  player!: BackgammonPlayerMoving
 
   public static initialize({
+    id,
+    stateKind,
+    moves,
     player,
-  }: PlayProps): BackgammonPlayRolled | BackgammonPlayMoving {
-    const moves: BackgammonMove[] = []
+  }: PlayProps): BackgammonPlayRolled {
+    if (!id) {
+      id = generateId()
+    }
+    if (!stateKind) {
+      stateKind = 'rolling'
+    }
     const dice = player.dice
     const roll = dice.currentRoll
 
-    switch (player.stateKind) {
-      case 'moving':
-        if (moves.length !== 2 && moves.length !== 4)
-          throw Error('Moves must be length 2 or 4')
-        return {
-          id: generateId(),
-          stateKind: 'moving',
-          moves,
-          player,
-          roll,
-        }
-      case 'rolled':
-        const playerRolled = player as BackgammonPlayerRolled
-        const m1 = Move.initialize({ player: playerRolled, dieValue: roll[0] })
-        return {
-          id: generateId(),
-          stateKind: 'rolled',
-          moves,
-          player,
-          roll,
-        }
-    }
-  }
+    if (!moves) {
+      const move1 = Move.initialize({
+        player,
+        dieValue: roll[0],
+      })
+      const move2 = Move.initialize({
+        player,
+        dieValue: roll[1],
+      })
 
-  public static rollForStart(
-    game: BackgammonGameRollingForStart
-  ): BackgammonGameRolling {
-    const activeColor = randomBackgammonColor()
-    const activePlayer = game.players.find((p) => p.color === activeColor)
-    if (!activePlayer) {
-      throw new Error('Active player not found')
-    }
-    if (!activePlayer.dice) {
-      throw new Error('Active player dice not found')
-    }
-    activePlayer.dice.stateKind === 'ready'
-    const inactivePlayer = game.players.find((p) => p.color !== activeColor)
-    if (!inactivePlayer) {
-      throw new Error('Inactive player not found')
+      const updatedMoves = [move1, move2]
+
+      if (roll[0] === roll[1]) {
+        const move3 = Move.initialize({
+          player,
+          dieValue: roll[0],
+        })
+        const move4 = Move.initialize({
+          player,
+          dieValue: roll[1],
+        })
+        updatedMoves.push(move3, move4)
+      }
+
+      if (updatedMoves.length !== 2 && updatedMoves.length !== 4)
+        throw Error('Invalid number of moves')
+
+      moves = updatedMoves as BackgammonMoves
     }
 
-    // FIXME spreader for ...game not working here.
+    player = {
+      ...player,
+      stateKind: 'rolled',
+      dice: {
+        ...dice,
+        stateKind: 'rolled',
+      },
+    }
+
     return {
-      id: game.id,
-      board: game.board,
-      cube: game.cube,
-      players: [activePlayer, inactivePlayer],
-      stateKind: 'rolling',
-      activeColor,
-      activePlay: undefined,
+      id: generateId(),
+      stateKind: 'rolled',
+      moves,
+      player,
     }
   }
 

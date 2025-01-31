@@ -5,8 +5,6 @@ import {
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
   BackgammonPoint,
-  MoveMoving,
-  MoveNoMove,
 } from '../../../../types'
 import { Board } from '../../../Board'
 import { getDestination } from '../../utils'
@@ -23,11 +21,11 @@ export class PointToPoint {
 
   public static move(
     board: BackgammonBoard,
-    move: MoveMoving,
+    move: BackgammonMove,
     isDryRun: boolean = false
   ): BackgammonMoveResult {
     const { player, dieValue } = move
-    let newMove: BackgammonMove | MoveNoMove = {
+    let newMove: BackgammonMove = {
       ...move,
       moveKind: 'no-move',
     }

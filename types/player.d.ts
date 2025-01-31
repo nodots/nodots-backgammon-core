@@ -46,16 +46,23 @@ export type BackgammonPlayerMoving = Player & {
   dice: BackgammonDiceRolled
 }
 
+export type BackgammonPlayerMoved = Player & {
+  stateKind: 'moved'
+  dice: BackgammonDiceRolled
+}
+
 export type BackgammonPlayer =
   | BackgammonPlayerInactive
   | BackgammonPlayerRolling
   | BackgammonPlayerRolled
   | BackgammonPlayerMoving
+  | BackgammonPlayerMoved
 
 export type BackgammonPlayerActive =
   | BackgammonPlayerRolling
   | BackgammonPlayerRolled
   | BackgammonPlayerMoving
+  | BackgammonPlayerMoved
 
 export type BackgammonPlayers = [BackgammonPlayer, BackgammonPlayer]
 

@@ -10,6 +10,7 @@ import { Move } from './index'
 
 describe('Move', () => {
   let board: BackgammonBoard
+  let play: Play
   const playerInitializing = Player.initialize(
     randomBackgammonColor(),
     randomBackgammonDirection()
@@ -18,8 +19,10 @@ describe('Move', () => {
   beforeEach(() => {
     board = Board.initialize()
     let dieValue: BackgammonDieValue
-    let play = Play.initialize()
-    const rolledPlayer = Player.roll(playerInitializing)
+    const rolledPlayer = Player.roll({
+      ...playerInitializing,
+      stateKind: 'rolled',
+    })
     play = Play.initialize(rolledPlayer)
   })
 

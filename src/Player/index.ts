@@ -1,33 +1,32 @@
 import { Dice, generateId } from '..'
 import {
-  BackgammonBoard,
-  BackgammonColor,
+  BackgammonPlayerStateKind,
   BackgammonDice,
+  BackgammonColor,
   BackgammonMoveDirection,
   BackgammonPlayer,
   BackgammonPlayerInactive,
-  BackgammonPlayerMoving,
-  BackgammonPlayerRolled,
   BackgammonPlayerRolling,
-  BackgammonPlayerStateKind,
+  BackgammonPlayerRolled,
+  BackgammonPlayerMoving,
+  BackgammonPlayerMoved,
+  BackgammonBoard,
   HomeBoard,
-  MAX_PIP_COUNT,
   Quadrant,
 } from '../../types'
-import { BackgammonPips } from '../../types/pip'
 
 export class Player {
   id: string = generateId()
   stateKind: BackgammonPlayerStateKind = 'inactive'
   dice!: BackgammonDice
-  pipCount: BackgammonPips = 167
+  pipCount = 167
 
   public static initialize(
     color: BackgammonColor,
     direction: BackgammonMoveDirection,
     id?: string,
     stateKind?: BackgammonPlayerStateKind,
-    pipCount?: BackgammonPips,
+    pipCount?: number,
     dice?: BackgammonDice
   ): BackgammonPlayer {
     if (!id) {
@@ -45,7 +44,7 @@ export class Player {
       stateKind = 'inactive'
     }
     if (!pipCount) {
-      pipCount = MAX_PIP_COUNT
+      pipCount = 167
     }
 
     const player = {
@@ -67,11 +66,23 @@ export class Player {
           ...player,
           stateKind: 'rolling',
         } as BackgammonPlayerRolling
+      case 'rolled':
+        return {
+          ...player,
+          stateKind: 'rolled',
+        } as BackgammonPlayerRolled
+
       case 'moving':
         return {
           ...player,
           stateKind: 'moving',
         } as BackgammonPlayerMoving
+
+      case 'moved':
+        return {
+          ...player,
+          stateKind: 'moved',
+        } as BackgammonPlayerMoved
     }
   }
 

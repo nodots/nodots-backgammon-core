@@ -1,11 +1,12 @@
 import { generateId } from '..'
 import {
   BackgammonCube,
+  BackgammonCubeDoubled,
+  BackgammonCubeInitialized,
+  BackgammonCubeMaxxed,
   BackgammonCubeStateKind,
   BackgammonCubeValue,
   BackgammonPlayer,
-  BackgammonPlayerInactive,
-  BackgammonPlayerRolled,
   BackgammonPlayers,
 } from '../../types'
 
@@ -37,18 +38,15 @@ export class Cube {
       id,
       stateKind,
       value,
-      owner,
+      owner: owner ?? undefined,
     }
   }
 
   public static double(
-    cube: BackgammonCube,
+    cube: BackgammonCubeInitialized | BackgammonCubeDoubled,
     player: BackgammonPlayer,
     players: BackgammonPlayers
-  ): BackgammonCube {
-    let value = cube.value ? cube.value : 2
-    value = value < 64 ? value : 64
-    const stateKind = value < 64 ? 'doubled' : 'maxxed'
+  ): BackgammonCubeDoubled | BackgammonCubeMaxxed {
     if (cube.owner !== undefined && cube.owner !== player)
       throw Error(
         `Player ${JSON.stringify(player)} does not own Cube ${JSON.stringify(
@@ -57,12 +55,21 @@ export class Cube {
       )
 
     const owner = players.find((p) => p !== player)
+    const newValue = cube.value ? ((cube.value * 2) as BackgammonCubeValue) : 2
+    const stateKind = newValue === 64 ? 'maxxed' : 'doubled'
 
-    return {
-      ...cube,
-      stateKind,
-      owner,
-      value,
-    }
+    return stateKind === 'doubled'
+      ? ({
+          ...cube,
+          value: newValue,
+          stateKind,
+          owner,
+        } as BackgammonCubeDoubled)
+      : ({
+          ...cube,
+          value: 64,
+          stateKind,
+          owner: undefined,
+        } as BackgammonCubeMaxxed)
   }
 }

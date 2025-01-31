@@ -4,9 +4,10 @@ import { BackgammonMoveDirection } from './game'
 import { BackgammonPlayerActive } from './player'
 
 export type BackgammonMoveState =
-  | 'ready'
-  | 'in-progress'
-  | 'completed'
+  | 'rolling'
+  | 'rolled'
+  | 'moving'
+  | 'moved'
   | 'confirmed'
 
 export type BackgammonMoveKind =

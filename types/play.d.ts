@@ -1,4 +1,5 @@
 import { BackgammonRoll } from './dice'
+import { BackgammonMoves } from './move'
 import {
   BackgammonPlayer,
   BackgammonPlayerMoving,
@@ -6,18 +7,16 @@ import {
 } from './player'
 
 export type BackgammonPlayStateKind =
-  | 'initializing'
   | 'rolling'
   | 'rolled'
   | 'moving'
-  | 'doubled'
-  | 'completed'
+  | 'moved'
+  | 'confirmed'
 
 type BasePlay = {
   id: string
   player: BackgammonPlayer
-  roll: BackgammonRoll
-  moves: BackgammonMoves
+  moves?: BackgammonMoves
 }
 
 type Play = BasePlay & {
@@ -32,6 +31,7 @@ export type BackgammonPlayRolling = Play & {
 export type BackgammonPlayRolled = Play & {
   stateKind: 'rolled'
   player: BackgammonPlayerRolled
+  moves: BackgammonMoves
 }
 
 export type BackgammonPlayDoubled = Play & {
@@ -48,8 +48,8 @@ export type BackgammonPlayMoved = Play & {
   player: BackgammonPlayerMoved
 }
 
-export type BackgammonPlayCompleted = Play & {
-  stateKind: 'completed'
+export type BackgammonPlayConfirmed = Play & {
+  stateKind: 'confirmed'
   player: BackgammonPlayerMoved
 }
 
