@@ -28,6 +28,7 @@ describe('Cube', () => {
         color: clockwiseColor,
         stateKind: 'rolled',
         currentRoll: [1, 2],
+        total: 3,
       },
       pipCount: 167,
     }
@@ -69,6 +70,7 @@ describe('Cube', () => {
         color: clockwiseColor,
         stateKind: 'rolled',
         currentRoll: [1, 2],
+        total: 3,
       },
       pipCount: 167,
     }
@@ -105,6 +107,7 @@ describe('Cube', () => {
         color: clockwiseColor,
         stateKind: 'rolled',
         currentRoll: [1, 2],
+        total: 3,
       },
       pipCount: 167,
     }

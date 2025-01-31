@@ -7,7 +7,7 @@
   "author": "Ken Riley <kenr@nodots.com>",
   "license": "MIT",
   "scripts": {
-    "test": "jest"
+    "test": "jest --coverage"
   },
   "devDependencies": {
     "@types/fabric": "^5.3.9",

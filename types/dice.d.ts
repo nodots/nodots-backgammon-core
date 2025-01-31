@@ -9,6 +9,7 @@ type BaseDice = {
   id: string
   color: BackgammonColor
   currentRoll?: BackgammonRoll | undefined
+  total?: number
 }
 
 type Dice = BaseDice & {
@@ -26,6 +27,7 @@ export type BackgammonDiceReady = Dice & {
 export type BackgammonDiceRolled = Dice & {
   stateKind: 'rolled'
   currentRoll: BackgammonRoll
+  total: number
 }
 
 export type BackgammonDice =

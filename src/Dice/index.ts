@@ -1,7 +1,6 @@
 import { generateId } from '..'
 import {
   BackgammonColor,
-  BackgammonDice,
   BackgammonDiceReady,
   BackgammonDiceRolled,
   BackgammonDiceStateKind,
@@ -15,12 +14,13 @@ export class Dice {
   color: BackgammonColor | undefined = undefined
   currentRoll: BackgammonRoll | undefined = undefined
 
-  public static initialize(color: BackgammonColor) {
+  public static initialize(color: BackgammonColor): BackgammonDiceReady {
     return {
       id: generateId(),
       stateKind: 'ready',
       color,
       currentRoll: undefined,
+      total: 0,
     }
   }
 
@@ -33,6 +33,7 @@ export class Dice {
       ...dice,
       stateKind: 'rolled',
       currentRoll,
+      total: currentRoll[0] + currentRoll[1],
     }
   }
 
