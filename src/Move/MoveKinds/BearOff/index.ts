@@ -33,6 +33,12 @@ export class BearOff {
       ...move,
       moveKind: 'no-move',
     }
+    if (BearOff.isA(board, player)) {
+      bearOff = {
+        ...move,
+        moveKind: 'bear-off',
+      }
+    }
     // console.warn('reenter not implemented')
     return { board, move: bearOff }
   }

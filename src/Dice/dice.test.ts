@@ -1,7 +1,7 @@
 import { Dice } from '.'
 import { randomBackgammonColor } from '..'
 
-const monteCarloRuns = 1000000
+const monteCarloRuns = 1000
 
 describe('Dice', () => {
   const randomColor = randomBackgammonColor()

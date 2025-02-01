@@ -29,25 +29,25 @@ export class PointToPoint {
       ...move,
       moveKind: 'no-move',
     }
-    let newBoard = board
-    const origin = move.origin as BackgammonPoint // FIXME: Better type check
-    if (!move.origin) throw new Error('Origin not found')
-    const destination = getDestination(origin, board, player, dieValue)
+    // let newBoard = board
+    // const origin = move.origin as BackgammonPoint // FIXME: Better type check
+    // if (!move.origin) throw new Error('Origin not found')
+    // const destination = getDestination(origin, board, player, dieValue)
 
-    if (destination) {
-      newMove = {
-        ...move,
-        stateKind: 'in-progress',
-        moveKind: 'point-to-point',
-        destination,
-      }
+    // if (destination) {
+    //   newMove = {
+    //     ...move,
+    //     stateKind: 'in-progress',
+    //     moveKind: 'point-to-point',
+    //     destination,
+    //   }
 
-      if (!isDryRun) newBoard = Board.moveChecker(newBoard, origin, destination)
-    }
+    //   if (!isDryRun) newBoard = Board.moveChecker(newBoard, origin, destination)
+    // }
 
     return {
-      board: newBoard,
       move: newMove,
+      board,
     }
   }
 }

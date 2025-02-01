@@ -5,6 +5,7 @@ import {
 } from './checkercontainer'
 
 export interface BackgammonBoard {
+  id: string
   points: BackgammonPoints
   bar: {
     clockwise: BackgammonBar

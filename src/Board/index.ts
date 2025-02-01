@@ -14,10 +14,12 @@ import {
   OffPosition,
 } from '../../types'
 import { buildCheckersForCheckercontainerId } from '../Checker'
-import { BOARD_IMPORT_DEFAULT } from './BOARD_IMPORT_DEFAULT'
+import { BOARD_IMPORT_DEFAULT } from './imports'
 
 export const BOARD_POINT_COUNT = 24
+
 export class Board implements BackgammonBoard {
+  id!: string
   points!: BackgammonPoints
   bar!: {
     clockwise: BackgammonBar
@@ -28,8 +30,11 @@ export class Board implements BackgammonBoard {
     counterclockwise: BackgammonOff
   }
 
-  public static initialize() {
-    return Board.buildBoard()
+  public static initialize(
+    boardImport?: BackgammonCheckercontainerImport[]
+  ): BackgammonBoard {
+    if (!boardImport) boardImport = BOARD_IMPORT_DEFAULT
+    return Board.buildBoard(boardImport)
   }
 
   // Note that this does NOT actually update the board. Separate action.
@@ -123,8 +128,11 @@ export class Board implements BackgammonBoard {
   // public static generateRandomBoard = (): BackgammonBoard => Board.buildBoard()
 
   // private buildBoard = (): BackgammonBoard => {
-  public static buildBoard = (): BackgammonBoard => {
-    let boardImport: BackgammonCheckercontainerImport[] = BOARD_IMPORT_DEFAULT
+
+  public static buildBoard(
+    boardImport: BackgammonCheckercontainerImport[]
+  ): BackgammonBoard {
+    if (!boardImport) boardImport = BOARD_IMPORT_DEFAULT
     const tempPoints: BackgammonPoint[] = []
 
     for (let i = 0; i < BOARD_POINT_COUNT; i++) {
@@ -229,6 +237,7 @@ export class Board implements BackgammonBoard {
     })
 
     const board: BackgammonBoard = {
+      id: generateId(),
       points,
       bar,
       off,
