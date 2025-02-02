@@ -22,7 +22,7 @@ jobs:
         run: npm install
 
       - name: Run
-        run: npm run test:coverage
+        run: npm run test
 
       - name: Display Node.js version
         run: node -v
