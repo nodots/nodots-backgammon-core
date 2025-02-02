@@ -21,8 +21,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run tests with coverage
-        run: npm run test --coverage
+      - name: Run
+        run: npm run test:coverage
 
       - name: Display Node.js version
         run: node -v
