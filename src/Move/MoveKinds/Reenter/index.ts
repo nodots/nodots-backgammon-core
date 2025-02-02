@@ -7,6 +7,7 @@ import {
   BackgammonMoveResult,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
+  BackgammonPoint,
 } from '../../../../types'
 
 export class Reenter {
@@ -17,9 +18,7 @@ export class Reenter {
     const bar = board.bar[player.direction]
     if (bar.checkers.length === 0) return false
     const opponentHomeBoard = Player.getOpponentHomeBoard(board, player)
-    opponentHomeBoard.points.map((p) => {
-      if (Move.isPointOpen(p, player)) return true
-    })
+    if (opponentHomeBoard.some((p) => p.checkers.length === 0)) return true
     return false
   }
 
@@ -27,22 +26,28 @@ export class Reenter {
     board: BackgammonBoard,
     move: BackgammonMove
   ): BackgammonMoveResult {
-    const { player, dieValue } = move
-    let reenter: BackgammonMove = {
+    if (!Reenter.isA(board, move.player)) throw Error('Invalid reenter move')
+    const dieValue = move.dieValue
+    const player = move.player as BackgammonPlayerMoving
+
+    move = {
       ...move,
       moveKind: 'no-move',
     }
 
     const direction = player.direction as BackgammonMoveDirection
     const origin = board.bar[direction]
-    if (this.isA(board, player)) {
-      const opponentsHomeBoard = Player.getOpponentHomeBoard(board, player)
-      const destination = opponentsHomeBoard.points.find(
-        (p) => p.position[player.direction] + dieValue
-      )
-      Board.moveChecker(board, origin, destination)
-    }
+    const opponentsHomeBoard = Player.getOpponentHomeBoard(board, player)
+    const destination = opponentsHomeBoard.find(
+      (p) => p.position[direction] + dieValue
+    )
+    if (!destination) throw Error('Invalid reenter move')
+    board = Board.moveChecker(board, origin, destination, direction)
+    if (!board) throw Error('Invalid board from moveChecker in Reenter')
 
-    return { board, move: reenter }
+    return {
+      board,
+      move,
+    }
   }
 }

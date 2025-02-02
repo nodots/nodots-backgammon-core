@@ -1,20 +1,17 @@
 import {
   Board,
   Dice,
-  Player,
   randomBackgammonColor,
   randomBackgammonDirection,
 } from '..'
 import {
   BackgammonBoard,
-  BackgammonDieValue,
   BackgammonMove,
-  BackgammonPlay,
   BackgammonPlayerMoving,
+  BackgammonPoint,
 } from '../../types'
-import { Play } from '../Play'
-import { Move } from './index'
 import { BOARD_IMPORT_DEFAULT } from '../Board/imports'
+import { Move } from './index'
 
 describe('Move', () => {
   let board: BackgammonBoard
@@ -40,21 +37,102 @@ describe('Move', () => {
     expect(move.player).toBe(player)
     expect(move.dieValue).toBe(player.dice.currentRoll[0])
   })
+})
 
-  // test('player should be able to move a valid checker', () => {
-  //   const validMoves = Move.getValidMoves(board, play)
-  //   expect(validMoves).toBeDefined()
-  //   expect(validMoves.size).toBeGreaterThan(0)
-  //   const randomMove = validMoves.values().next().value
-  //   console.log('randomMove', randomMove)
-  //   // const point = board.points[0]
-  //   // point.checkers = [{ id: '1', color: player.color }]
+describe('Move.isPointOpen', () => {
+  const checkercontainerId = 'checkercontainer1'
+  const color = randomBackgammonColor()
+  const opponentColor = color === 'white' ? 'black' : 'white'
+  const direction = randomBackgammonDirection()
+  const player: BackgammonPlayerMoving = {
+    id: 'player1',
+    color,
+    direction,
+    stateKind: 'moving',
+    pipCount: 167,
+    dice: {
+      id: '1',
+      color,
+      stateKind: 'rolled',
+      currentRoll: [4, 4],
+      total: 8,
+    },
+  }
+  let emptyPoint: BackgammonPoint = {
+    id: 'openPoint',
+    kind: 'point',
+    position: {
+      clockwise: 1,
+      counterclockwise: 24,
+    },
+    checkers: [],
+  }
+  let playerPoint: BackgammonPoint = {
+    id: 'openPoint',
+    kind: 'point',
+    position: {
+      clockwise: 1,
+      counterclockwise: 24,
+    },
+    checkers: [
+      {
+        id: 'checker1',
+        color,
+        checkercontainerId,
+      },
+      {
+        id: 'checker2',
+        color,
+        checkercontainerId,
+      },
+    ],
+  }
+  let closedPoint: BackgammonPoint = {
+    id: 'closedPoint',
+    kind: 'point',
+    position: {
+      clockwise: 2,
+      counterclockwise: 23,
+    },
+    checkers: [
+      {
+        id: 'checker1',
+        color: opponentColor,
+        checkercontainerId,
+      },
+      {
+        id: 'checker2',
+        color: opponentColor,
+        checkercontainerId,
+      },
+    ],
+  }
+  let hitPoint: BackgammonPoint = {
+    id: 'closedPoint',
+    kind: 'point',
+    position: {
+      clockwise: 2,
+      counterclockwise: 23,
+    },
+    checkers: [
+      {
+        id: 'checker1',
+        color: opponentColor,
+        checkercontainerId,
+      },
+    ],
+  }
 
-  //   // const move = Move.initialize(player, dieValue)
-  //   // const movingMove = Move.moving(move, point)
-
-  //   // expect(movingMove.stateKind).toBe('moving')
-  //   // expect(movingMove.origin).toBe(point)
-  //   // expect(movingMove.destination).toBeUndefined()
-  // })
+  test('should return true for an empty point', () => {
+    expect(Move.isPointOpen(emptyPoint, player)).toBe(true)
+  })
+  test('should return true for a point with just the player`s checkers', () => {
+    expect(Move.isPointOpen(playerPoint, player)).toBe(true)
+  })
+  test('should return false for a point with just the opponent`s checkers', () => {
+    expect(Move.isPointOpen(closedPoint, player)).toBe(false)
+  })
+  test('should return true for a point with one opponent checker', () => {
+    expect(Move.isPointOpen(hitPoint, player)).toBe(true)
+  })
 })

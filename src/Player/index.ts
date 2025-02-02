@@ -101,27 +101,16 @@ export class Player {
     player: BackgammonPlayerRolled | BackgammonPlayerMoving
   ) {
     return player.direction === 'clockwise'
-      ? board.points.slice(0, 6)
-      : board.points.slice(18, 24)
+      ? board.points.slice(18, 24)
+      : board.points.slice(0, 6)
   }
 
   public static getOpponentHomeBoard(
     board: BackgammonBoard,
     player: BackgammonPlayerRolled | BackgammonPlayerMoving
-  ): HomeBoard {
-    const { direction } = player
-    const opponentDirection =
-      direction === 'clockwise' ? 'counterclockwise' : 'clockwise'
-    const b = board.points.filter((p) => p.position[opponentDirection] <= 6)
-    if (b.length !== 6)
-      throw Error(
-        `Invalid home board for player ${JSON.stringify(
-          player
-        )} with board ${JSON.stringify(board)}`
-      )
-    const homeBoardPoints = b as Quadrant
-    return {
-      points: homeBoardPoints,
-    }
+  ) {
+    return player.direction === 'clockwise'
+      ? board.points.slice(0, 6)
+      : board.points.slice(18, 24)
   }
 }

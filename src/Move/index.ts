@@ -56,6 +56,7 @@ export class Move {
     id = id ? id : generateId()
     stateKind = stateKind ?? ('no-move' as BackgammonMoveState)
     moveKind = moveKind ? moveKind : 'no-move'
+
     const { direction } = player
 
     return {
@@ -85,26 +86,8 @@ export class Move {
       point.checkers[0].color === player.color
     )
       return true
-  }
-
-  // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?hit
-  private static hit(
-    board: BackgammonBoard,
-    move: BackgammonMove
-  ): BackgammonMove {
-    // const { player } = move
-
-    // let hit: BackgammonMove = {
-    //   ...move,
-    //   stateKind: 'hit',
-    // }
-    // // Implement hit logic. I *think* this should return a new board
-    // console.warn('hit not implemented')
-    // return hit
-    return move
-  }
-
-  private static isHit(board: BackgammonBoard, move: BackgammonMove): boolean {
+    if (point.checkers.length === 1 && point.checkers[0].color !== player.color)
+      return true
     return false
   }
 
@@ -129,11 +112,13 @@ export class Move {
 
     switch (moveKind) {
       case 'point-to-point':
+        if (!PointToPoint.isA(board, move.player))
+          throw Error('Invalid point-to-point move')
         return PointToPoint.move(board, move, isDryRun)
       case 'reenter':
-        return Reenter.move(board, move)
+        if (!Reenter.isA(board, move.player)) return Reenter.move(board, move)
       case 'bear-off':
-        return BearOff.move(board, move)
+        if (!BearOff.isA(board, move.player)) return BearOff.move(board, move)
       case 'no-move':
         return {
           board: board,
