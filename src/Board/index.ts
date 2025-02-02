@@ -14,7 +14,7 @@ import {
   BackgammonPointValue,
   OffPosition,
 } from '../../types'
-import { buildCheckersForCheckercontainerId } from '../Checker'
+import { Checker } from '..'
 import { BOARD_IMPORT_DEFAULT } from './imports'
 
 export const BOARD_POINT_COUNT = 24
@@ -184,7 +184,7 @@ export class Board implements BackgammonBoard {
       if (pointSpec) {
         // console.log('[buildBoard] pointSpec:', pointSpec)
         if (pointSpec.checkers) {
-          const checkers = buildCheckersForCheckercontainerId(
+          const checkers = Checker.buildCheckersForCheckercontainerId(
             point.id,
             pointSpec.checkers.color,
             pointSpec.checkers.qty
@@ -226,7 +226,7 @@ export class Board implements BackgammonBoard {
         clockwiseCheckerCount = clockwiseBarImport.checkers.qty
       }
       clockwiseCheckers.push(
-        ...buildCheckersForCheckercontainerId(
+        ...Checker.buildCheckersForCheckercontainerId(
           clockwiseId,
           clockwiseBarImport.checkers.color,
           clockwiseCheckerCount
@@ -246,7 +246,7 @@ export class Board implements BackgammonBoard {
         counterclockwiseCheckerCount = counterclockwiseBarImport.checkers.qty
       }
       counterclockwiseCheckers.push(
-        ...buildCheckersForCheckercontainerId(
+        ...Checker.buildCheckersForCheckercontainerId(
           counterclockwiseId,
           counterclockwiseBarImport.checkers.color,
           counterclockwiseCheckerCount
@@ -289,7 +289,7 @@ export class Board implements BackgammonBoard {
       if (clockwiseOffImport.checkers) {
         const checkerCount = clockwiseOffImport.checkers.qty
         clockwiseCheckers.push(
-          ...buildCheckersForCheckercontainerId(
+          ...Checker.buildCheckersForCheckercontainerId(
             generateId(),
             clockwiseOffImport.checkers.color,
             checkerCount
@@ -303,7 +303,7 @@ export class Board implements BackgammonBoard {
       if (counterclockwiseOffImport.checkers) {
         const checkerCount = counterclockwiseOffImport.checkers.qty
         counterclockwiseCheckers.push(
-          ...buildCheckersForCheckercontainerId(
+          ...Checker.buildCheckersForCheckercontainerId(
             generateId(),
             counterclockwiseOffImport.checkers.color,
             checkerCount

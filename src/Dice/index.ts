@@ -26,8 +26,8 @@ export class Dice {
 
   public static roll(dice: BackgammonDiceReady): BackgammonDiceRolled {
     const currentRoll: BackgammonRoll = [
-      _rollDie() as BackgammonDieValue,
-      _rollDie() as BackgammonDieValue,
+      this.rollDie() as BackgammonDieValue,
+      this.rollDie() as BackgammonDieValue,
     ]
     return {
       ...dice,
@@ -54,7 +54,8 @@ export class Dice {
   ) => {
     return dice.currentRoll![0] === dice.currentRoll![1] ? true : false
   }
-}
-function _rollDie(): BackgammonDieValue {
-  return (Math.floor(Math.random() * 6) + 1) as BackgammonDieValue
+
+  private static rollDie(): BackgammonDieValue {
+    return (Math.floor(Math.random() * 6) + 1) as BackgammonDieValue
+  }
 }

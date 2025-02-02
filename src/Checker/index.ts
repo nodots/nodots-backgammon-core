@@ -5,38 +5,51 @@ import {
   BackgammonColor,
 } from '../../types'
 
-export const getChecker = (
-  board: BackgammonBoard,
-  id: string
-): BackgammonChecker => {
-  const checker = Board.getCheckers(board).find((checker) => checker.id === id)
-  if (!checker) {
-    throw Error(`No checker found for ${id}`)
-  }
-  return checker
-}
-
-export const buildChecker = (
-  color: BackgammonColor,
-  checkercontainerId: string
-): BackgammonChecker => {
-  return { id: generateId(), color, checkercontainerId }
-}
-
-export const buildCheckersForCheckercontainerId = (
-  checkercontainerId: string,
-  color: BackgammonColor,
-  count: number
-): BackgammonChecker[] => {
-  const tempCheckers: BackgammonChecker[] = []
-
-  for (let i = 0; i < count; i++) {
-    const checker: BackgammonChecker = {
-      id: generateId(),
-      color,
-      checkercontainerId,
+export class Checker {
+  public static getCheckers(board: BackgammonBoard): BackgammonChecker[] {
+    const checkers: BackgammonChecker[] = []
+    for (const point of board.points) {
+      for (const checker of point.checkers) {
+        checkers.push(checker)
+      }
     }
-    tempCheckers.push(checker)
+    return checkers
   }
-  return tempCheckers
+
+  public static initialize = (
+    color: BackgammonColor,
+    checkercontainerId: string
+  ): BackgammonChecker => {
+    return { id: generateId(), color, checkercontainerId }
+  }
+
+  public static buildCheckersForCheckercontainerId = (
+    checkercontainerId: string,
+    color: BackgammonColor,
+    count: number
+  ): BackgammonChecker[] => {
+    const tempCheckers: BackgammonChecker[] = []
+
+    for (let i = 0; i < count; i++) {
+      const checker: BackgammonChecker = {
+        id: generateId(),
+        color,
+        checkercontainerId,
+      }
+      tempCheckers.push(checker)
+    }
+    return tempCheckers
+  }
+  public static getChecker = (
+    board: BackgammonBoard,
+    id: string
+  ): BackgammonChecker => {
+    const checker = Board.getCheckers(board).find(
+      (checker) => checker.id === id
+    )
+    if (!checker) {
+      throw Error(`No checker found for ${id}`)
+    }
+    return checker
+  }
 }

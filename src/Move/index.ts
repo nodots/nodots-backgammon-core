@@ -91,18 +91,6 @@ export class Move {
     return false
   }
 
-  private static getMoveKind(
-    board: BackgammonBoard,
-    play: BackgammonPlayMoving
-  ): BackgammonMoveKind {
-    const { player } = play
-    let type: BackgammonMoveKind = 'no-move'
-    if (Reenter.isA(board, player)) return 'reenter'
-    if (BearOff.isA(board, player)) return 'bear-off'
-    if (PointToPoint.isA(board, player)) return 'point-to-point'
-    return type
-  }
-
   public static move(
     board: BackgammonBoard,
     move: BackgammonMove,
