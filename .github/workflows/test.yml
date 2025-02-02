@@ -1,4 +1,4 @@
-name: CI
+name: 'Unit Tests with Coverage'
 
 on:
   push:
@@ -23,3 +23,12 @@ jobs:
 
       - name: Run tests with coverage
         run: npm run test -- --coverage
+
+      - name: Display Node.js version
+        run: node -v
+
+      - name: Display npm version
+        run: npm -v
+
+      - name: Debug environment variables
+        run: printenv
