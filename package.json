@@ -10,8 +10,8 @@
     "test": "jest"
   },
   "devDependencies": {
+    "@types/fabric": "^5.3.9",
     "@types/jest": "^29.5.14",
-    "@types/node": "^22.0.0",
     "@typescript-eslint/eslint-plugin": "^8.15.0",
     "@typescript-eslint/parser": "^8.15.0",
     "eslint": "^9.15.0",
