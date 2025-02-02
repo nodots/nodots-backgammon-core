@@ -42,11 +42,6 @@ describe('Player', () => {
       point.checkers.length > 0 && homeBoardCheckers.push(...point.checkers)
     })
     expect(homeBoardCheckers.length).toBe(7)
-    // expect(
-    //   homeBoardCheckers.filter((checker) => checker.color === player.color)
-    //     .length
-    // ).toBe(2)
-    // expect(homeBoardCheckers[0].color).toBe(player.color)
   })
 
   const opponentHomeBoard = Player.getOpponentHomeBoard(board, player)
