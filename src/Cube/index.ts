@@ -22,12 +22,11 @@ export class Cube {
   value: BackgammonCubeValue | undefined = undefined
   owner: BackgammonPlayer | undefined = undefined
 
-  public static initialize({
-    id,
-    stateKind,
-    value,
-    owner,
-  }: CubeProps): BackgammonCube {
+  public static initialize(cube?: CubeProps): BackgammonCube {
+    if (!cube) {
+      cube = {}
+    }
+    let { id, stateKind, value, owner } = cube
     if (!id) {
       id = generateId()
     }
@@ -43,7 +42,7 @@ export class Cube {
   }
 
   public static double(
-    cube: BackgammonCubeInitialized | BackgammonCubeDoubled,
+    cube: BackgammonCube,
     player: BackgammonPlayer,
     players: BackgammonPlayers
   ): BackgammonCubeDoubled | BackgammonCubeMaxxed {
@@ -54,7 +53,7 @@ export class Cube {
         )}`
       )
 
-    const owner = players.find((p) => p !== player)
+    const owner = players.find((p) => p.id !== player.id)
     const newValue = cube.value ? ((cube.value * 2) as BackgammonCubeValue) : 2
     const stateKind = newValue === 64 ? 'maxxed' : 'doubled'
 

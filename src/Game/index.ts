@@ -2,15 +2,15 @@ import { generateId, Player, randomBackgammonColor } from '..'
 import {
   BackgammonBoard,
   BackgammonCube,
-  BackgammonGameRollingForStart,
   BackgammonGameInProgress,
-  BackgammonGameCompleted,
+  BackgammonGameRollingForStart,
   BackgammonGameStateKind,
   BackgammonMoveInProgress,
   BackgammonPlayerActive,
   BackgammonPlayerRolled,
   BackgammonPlayerRolling,
   BackgammonPlayers,
+  BackgammonPlayRolling,
 } from '../../types'
 import { Board } from '../Board'
 import { Cube } from '../Cube'
@@ -31,22 +31,21 @@ export class Game {
   public static initialize(
     players: BackgammonPlayers
   ): BackgammonGameRollingForStart {
-    return {
+    const game: BackgammonGameRollingForStart = {
       id: generateId(),
       stateKind: 'rolling-for-start',
       players,
       board: Board.initialize(),
-      cube: Cube.initialize({}),
+      cube: Cube.initialize(),
     }
+    return game
   }
 
   public static rollForStart(
     game: BackgammonGameRollingForStart
   ): BackgammonGameInProgress {
     const activeColor = randomBackgammonColor()
-    let player = game.players.find(
-      (p) => p.color === activeColor && p.stateKind === 'inactive'
-    )
+    let player = game.players.find((p) => p.color === activeColor)
     if (!player) {
       throw new Error('Active player not found')
     }
@@ -94,19 +93,32 @@ export class Game {
       throw Error('Inactive player not found')
     }
 
-    const activePlay = Play.initialize({
-      player: {
-        ...player,
-        stateKind: 'moving',
-      },
-      stateKind: 'rolled',
-    })
+    const initialPlay: BackgammonPlayRolling = {
+      id: generateId(),
+      player,
+      stateKind: 'rolling',
+      moves: undefined,
+    }
+
+    const activePlay = Play.initialize(initialPlay)
 
     return {
       ...game,
       players: [player, inactivePlayer],
       stateKind: 'in-progress',
       activePlay,
+    }
+  }
+
+  public static double(
+    game: BackgammonGameInProgress,
+    player: BackgammonPlayerActive,
+    players: BackgammonPlayers
+  ): BackgammonGameInProgress {
+    const cube = Cube.double(game.cube, player, players)
+    return {
+      ...game,
+      cube,
     }
   }
 

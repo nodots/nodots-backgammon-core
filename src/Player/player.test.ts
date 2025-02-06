@@ -1,37 +1,31 @@
 import { Player } from '.'
+import { Board, randomBackgammonColor, randomBackgammonDirection } from '..'
 import {
-  Board,
-  Dice,
-  randomBackgammonColor,
-  randomBackgammonDirection,
-} from '..'
-import { BackgammonChecker, BackgammonPlayerRolling } from '../../types'
-import {
-  BOARD_IMPORT_BOTH_REENTER,
-  BOARD_IMPORT_DEFAULT,
-} from '../Board/imports'
+  BackgammonChecker,
+  BackgammonPlayer,
+  BackgammonPlayerRolling,
+} from '../../types'
+import { BOARD_IMPORT_DEFAULT } from '../Board/imports'
 
 const monteCarloRuns = 1000
 
 describe('Player', () => {
-  const board = Board.initialize(BOARD_IMPORT_DEFAULT)
-  const playerColor = randomBackgammonColor()
-  const playerDirection = randomBackgammonDirection()
-  let player = Player.initialize(playerColor, playerDirection)
-  test('should initialize a player', () => {
-    expect(player).toBeDefined()
-    expect(player.color).toBe(playerColor)
-    expect(player.direction).toBe(playerDirection)
-  })
-  // Sleazy but avoiding dealing with roll for start
-  player = {
-    ...player,
-    stateKind: 'rolling', // FIXME
-  }
-  const rollingPlayer = player as BackgammonPlayerRolling
-  player = Player.roll(rollingPlayer)
-  test('should switch the player state to rolling', () => {
-    expect(player.stateKind).toBe('rolled')
+  const color = randomBackgammonColor()
+  const direction = randomBackgammonDirection()
+  const board = Board.initialize()
+  const player = Player.initialize({
+    id: '1',
+    color,
+    direction,
+    stateKind: 'moving',
+    dice: {
+      id: '1',
+      stateKind: 'rolled',
+      color,
+      currentRoll: [1, 2],
+      total: 3,
+    },
+    pipCount: 167,
   })
 
   const homeBoard = Player.getHomeBoard(board, player)

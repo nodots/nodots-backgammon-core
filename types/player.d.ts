@@ -2,6 +2,7 @@ import { BackgammonChecker } from './checker'
 import {
   BackgammonDice,
   BackgammonDiceInactive,
+  BackgammonDiceReady,
   BackgammonDiceRolled,
 } from './dice'
 import { BackgammonPips } from './pip'
@@ -9,6 +10,8 @@ import { BackgammonMoveDirection } from './game'
 
 export type BackgammonPlayerStateKind =
   | 'inactive'
+  | 'rolling-for-start'
+  | 'rolled-for-start'
   | 'rolling'
   | 'rolled'
   | 'moving'
@@ -28,6 +31,16 @@ type Player = BasePlayer & {
 
 export type BackgammonPlayerInactive = Player & {
   stateKind: 'inactive'
+  dice: BackgammonDiceInactive
+}
+
+export type BackgammonPlayerRollingForStart = Player & {
+  stateKind: 'rolling-for-start'
+  dice: BackgammonDiceInactive
+}
+
+export type BackgammonPlayerRolledForStart = Player & {
+  stateKind: 'rolled-for-start'
   dice: BackgammonDiceInactive
 }
 
@@ -53,12 +66,16 @@ export type BackgammonPlayerMoved = Player & {
 
 export type BackgammonPlayer =
   | BackgammonPlayerInactive
+  | BackgammonPlayerRollingForStart
+  | BackgammonPlayerRolledForStart
   | BackgammonPlayerRolling
   | BackgammonPlayerRolled
   | BackgammonPlayerMoving
   | BackgammonPlayerMoved
 
 export type BackgammonPlayerActive =
+  | BackgammonPlayerRollingForStart
+  | BackgammonPlayerRolledForStart
   | BackgammonPlayerRolling
   | BackgammonPlayerRolled
   | BackgammonPlayerMoving

@@ -6,6 +6,12 @@ import {
   BackgammonPlayerRolled,
 } from './player'
 
+export type BackgammonPlayResult = {
+  board: BackgammonBoard
+  cube: BackgammonCube
+  play: BackgammonPlay
+}
+
 export type BackgammonPlayStateKind =
   | 'rolling'
   | 'rolled'

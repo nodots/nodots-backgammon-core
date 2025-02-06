@@ -1,18 +1,16 @@
 import { Dice, generateId } from '..'
 import {
-  BackgammonPlayerStateKind,
+  BackgammonBoard,
   BackgammonDice,
-  BackgammonColor,
-  BackgammonMoveDirection,
   BackgammonPlayer,
   BackgammonPlayerInactive,
-  BackgammonPlayerRolling,
-  BackgammonPlayerRolled,
-  BackgammonPlayerMoving,
   BackgammonPlayerMoved,
-  BackgammonBoard,
-  HomeBoard,
-  Quadrant,
+  BackgammonPlayerMoving,
+  BackgammonPlayerRolled,
+  BackgammonPlayerRolledForStart,
+  BackgammonPlayerRolling,
+  BackgammonPlayerRollingForStart,
+  BackgammonPlayerStateKind,
 } from '../../types'
 
 export class Player {
@@ -21,14 +19,14 @@ export class Player {
   dice!: BackgammonDice
   pipCount = 167
 
-  public static initialize(
-    color: BackgammonColor,
-    direction: BackgammonMoveDirection,
-    id?: string,
-    stateKind?: BackgammonPlayerStateKind,
-    pipCount?: number,
-    dice?: BackgammonDice
-  ): BackgammonPlayer {
+  public static initialize({
+    id,
+    color,
+    direction,
+    stateKind,
+    dice,
+    pipCount,
+  }: BackgammonPlayer): BackgammonPlayer {
     if (!id) {
       id = generateId()
     }
@@ -61,6 +59,16 @@ export class Player {
           ...player,
           stateKind: 'inactive',
         } as BackgammonPlayerInactive
+      case 'rolling-for-start':
+        return {
+          ...player,
+          stateKind: 'rolling-for-start',
+        } as BackgammonPlayerRollingForStart
+      case 'rolled-for-start':
+        return {
+          ...player,
+          stateKind: 'rolled-for-start',
+        } as BackgammonPlayerRolledForStart
       case 'rolling':
         return {
           ...player,
@@ -96,10 +104,7 @@ export class Player {
     return rolledPlayer
   }
 
-  public static getHomeBoard(
-    board: BackgammonBoard,
-    player: BackgammonPlayerRolled | BackgammonPlayerMoving
-  ) {
+  public static getHomeBoard(board: BackgammonBoard, player: BackgammonPlayer) {
     return player.direction === 'clockwise'
       ? board.points.slice(18, 24)
       : board.points.slice(0, 6)
@@ -107,7 +112,7 @@ export class Player {
 
   public static getOpponentHomeBoard(
     board: BackgammonBoard,
-    player: BackgammonPlayerRolled | BackgammonPlayerMoving
+    player: BackgammonPlayer
   ) {
     return player.direction === 'clockwise'
       ? board.points.slice(0, 6)

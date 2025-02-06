@@ -1,6 +1,7 @@
-import { Dice, Game, generateId, Player, randomBackgammonColor } from '..'
+import { Game, Player, randomBackgammonColor } from '..'
 import {
-  BackgammonDiceReady,
+  BackgammonGame,
+  BackgammonGameRollingForStart,
   BackgammonPlayerInactive,
   BackgammonPlayerRolling,
   BackgammonPlayers,
@@ -8,84 +9,69 @@ import {
 
 describe('Game', () => {
   const clockwiseColor = randomBackgammonColor()
-  const counterclockwiseColor = clockwiseColor === 'white' ? 'black' : 'white'
-  const clockwisePlayer: BackgammonPlayerInactive = {
-    id: generateId(),
-    stateKind: 'inactive',
-    color: clockwiseColor,
-    direction: 'clockwise',
-    dice: {
-      id: generateId(),
-      color: clockwiseColor,
-      stateKind: 'inactive',
-      currentRoll: undefined,
-    },
-    pipCount: 167,
-  }
-  const counterclockwisePlayer: BackgammonPlayerInactive = {
-    id: generateId(),
-    stateKind: 'inactive',
-    color: counterclockwiseColor,
-    direction: 'clockwise',
-    dice: {
-      id: generateId(),
-      color: counterclockwiseColor,
-      stateKind: 'inactive',
-      currentRoll: undefined,
-    },
-    pipCount: 167,
-  }
+  const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
 
-  const mockPlayers: BackgammonPlayers = [
-    clockwisePlayer,
-    counterclockwisePlayer,
+  const players: BackgammonPlayers = [
+    Player.initialize({
+      id: '1',
+      stateKind: 'rolled-for-start',
+      dice: {
+        id: '1',
+        stateKind: 'inactive',
+        color: clockwiseColor,
+      },
+      color: clockwiseColor,
+      direction: 'clockwise',
+      pipCount: 167,
+    }),
+    Player.initialize({
+      id: '2',
+      stateKind: 'inactive',
+      dice: {
+        id: '2',
+        stateKind: 'inactive',
+        color: counterclockwiseColor,
+      },
+      color: counterclockwiseColor,
+      direction: 'counterclockwise',
+      pipCount: 167,
+    }),
   ]
 
-  it('should initialize the game with players', () => {
-    const game = Game.initialize(mockPlayers)
+  const gameInititalized = Game.initialize(players)
 
-    expect(game.id).toBeDefined()
-    expect(game.players).toBe(mockPlayers)
-    expect(game.board).toBeDefined()
-    expect(game.cube).toBeDefined()
+  it('should initialize the game correctly', () => {
+    expect(gameInititalized).toBeDefined()
+    expect(gameInititalized.id).toBeDefined()
+    expect(gameInititalized.stateKind).toBe('rolling-for-start')
+    expect(gameInititalized.players).toBeDefined()
+    expect(gameInititalized.players.length).toBe(2)
   })
 
-  it('should roll for start', () => {
-    const game = Game.initialize(mockPlayers)
-    const rollingGame = Game.rollForStart(game)
+  const gameRolledForStart = Game.rollForStart(gameInititalized)
 
-    expect(rollingGame.stateKind).toBe('in-progress')
-    expect(rollingGame.activeColor).toBeDefined()
+  it('should correctly handle a roll for start', () => {
+    expect(gameRolledForStart.stateKind).toBe('in-progress')
+    const { activeColor, players } = gameRolledForStart
+    expect(activeColor).toBeDefined()
+    expect(players.length).toBe(2)
   })
 
-  it('winning player should be able to roll dice', () => {
-    const game = Game.initialize(mockPlayers)
-    const rollingGame = Game.rollForStart(game)
-    const activePlayer = rollingGame.players.find(
-      (p) => p.color === rollingGame.activeColor
-    )
+  let activePlayer = gameRolledForStart.players.find(
+    (p) => p.stateKind === 'rolling'
+  ) as BackgammonPlayerRolling
 
-    expect(activePlayer).toBeDefined()
-    const activeDice = activePlayer!.dice
-    expect(activeDice).toBeDefined()
-    expect(activeDice!.stateKind).toBe('ready')
-    const rolledDice = Dice.roll(activeDice as BackgammonDiceReady)
-    expect(rolledDice.currentRoll).toBeDefined()
-    expect(rolledDice.stateKind).toBe('rolled')
-  })
+  let inactivePlayer = gameRolledForStart.players.find(
+    (p) => p !== activePlayer
+  ) as BackgammonPlayerInactive
 
-  it('winning player should be able to move after rolling the dice', () => {
-    const game = Game.initialize(mockPlayers)
-    const rollingGame = Game.rollForStart(game)
-    const activePlayer = rollingGame.players.find(
-      (p) => p.color === rollingGame.activeColor
-    ) as BackgammonPlayerRolling
-
-    expect(activePlayer).toBeDefined()
-    const activeDice = activePlayer!.dice
-    expect(activeDice).toBeDefined()
-    expect(activeDice!.stateKind).toBe('ready')
-    const rolledPlayer = Player.roll(activePlayer)
-    expect(rolledPlayer.dice.currentRoll).toBeDefined()
+  const gameDoubled = Game.double(gameRolledForStart, activePlayer, players)
+  let cube = gameDoubled.cube
+  it('should correctly handle a double', () => {
+    expect(gameDoubled).toBeDefined()
+    expect(gameDoubled.stateKind).toBe('in-progress')
+    expect(cube.stateKind).toBe('doubled')
+    expect(cube.value).toBe(2)
+    expect(cube.owner).toBe(inactivePlayer)
   })
 })

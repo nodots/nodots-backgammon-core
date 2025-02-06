@@ -125,7 +125,7 @@ export class Move {
     board: BackgammonBoard,
     play: BackgammonPlayRolled
   ): Set<BackgammonMove> {
-    const player = play.player as BackgammonPlayerActive
+    const player = play.player
     const roll = player.dice.currentRoll
     const isDoubles = roll[0] === roll[1]
     let validMoves = new Set<BackgammonMove>()
