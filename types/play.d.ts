@@ -47,6 +47,7 @@ export type BackgammonPlayDoubled = Play & {
 export type BackgammonPlayMoving = Play & {
   stateKind: 'moving'
   player: BackgammonPlayerMoving
+  moves: BackgammonMoves
 }
 
 export type BackgammonPlayMoved = Play & {

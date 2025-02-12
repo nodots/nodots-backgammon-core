@@ -1,8 +1,10 @@
 import { Play } from '.'
 import { BackgammonPlay } from '../../types'
+import { Board } from '../Board'
 
 describe('Play', () => {
   let play: BackgammonPlay
+  const defaultBoard = Board.initialize()
 
   beforeAll(() => {
     play = Play.initialize({
@@ -33,7 +35,7 @@ describe('Play', () => {
   })
 
   it('should correctly handle a roll', () => {
-    play = Play.roll(play)
+    play = Play.roll(defaultBoard, play)
     expect(play.stateKind).toBe('rolled')
     expect(play.player.stateKind).toBe('rolled')
     expect(play.player.dice.stateKind).toBe('rolled')

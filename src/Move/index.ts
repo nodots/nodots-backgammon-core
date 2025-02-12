@@ -4,14 +4,14 @@ import {
   BackgammonCheckercontainer,
   BackgammonDieValue,
   BackgammonMove,
+  BackgammonMoveCompleted,
+  BackgammonMoveConfirmed,
   BackgammonMoveKind,
   BackgammonMoveResult,
   BackgammonMoveState,
   BackgammonPlayer,
-  BackgammonPlayerActive,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
-  BackgammonPlayMoving,
   BackgammonPlayRolled,
   BackgammonPoint,
 } from '../../types'
@@ -121,40 +121,13 @@ export class Move {
     }
   }
 
-  public static getValidMoves(
-    board: BackgammonBoard,
-    play: BackgammonPlayRolled
-  ): Set<BackgammonMove> {
-    const player = play.player
-    const roll = player.dice.currentRoll
-    const isDoubles = roll[0] === roll[1]
-    let validMoves = new Set<BackgammonMove>()
-    let newBoard = board
-
-    const origins = board.points.filter(
-      (p) => p.checkers.length > 0 && p.checkers[0]?.color === player.color
-    )
-
-    play.moves.forEach((m: BackgammonMove) => {
-      origins.map((o) => {
-        m.origin = o
-        const newM = this.move(newBoard, m, false)
-        newM && validMoves.add(newM.move)
-      })
-    })
-
-    if (!isDoubles) {
-      const reversedMoves = [...play.moves].reverse()
-      reversedMoves.forEach((m: BackgammonMove) => {
-        origins.map((o) => {
-          m.origin = o
-          const newM = this.move(newBoard, m, false)
-          newM && validMoves.add(newM.move)
-        })
-      })
+  public static confirmMove(
+    move: BackgammonMoveCompleted
+  ): BackgammonMoveConfirmed {
+    return {
+      ...move,
+      stateKind: 'confirmed',
     }
-    if (validMoves.size === 0) throw new Error('No valid moves found')
-    return validMoves
   }
 
   private static log(message?: string, object: any = {}) {

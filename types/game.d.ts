@@ -1,7 +1,7 @@
 import { BackgammonBoard } from './board'
 import { BackgammonCube } from './cube'
 import { IntegerRange } from './generics'
-import { BackgammonPlay } from './play'
+import { BackgammonPlay, BackgammonPlayMoving } from './play'
 import { BackgammonPlayerActive, BackgammonPlayers } from './player'
 
 export type BackgammonColor = 'black' | 'white'
@@ -37,7 +37,7 @@ export type BackgammonGameRollingForStart = BackgammonGame & {
 export type BackgammonGameInProgress = BackgammonGame & {
   stateKind: 'in-progress'
   activeColor: BackgammonColor
-  activePlay?: BackgammonPlay
+  activePlay: BackgammonPlay
 }
 
 export type BackgammonGameCompleted = BackgammonGame & {

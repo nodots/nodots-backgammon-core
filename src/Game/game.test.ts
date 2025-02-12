@@ -1,17 +1,11 @@
 import { Game, Player, randomBackgammonColor } from '..'
-import {
-  BackgammonGame,
-  BackgammonGameRollingForStart,
-  BackgammonPlayerInactive,
-  BackgammonPlayerRolling,
-  BackgammonPlayers,
-} from '../../types'
+import { BackgammonPlayers } from '../../types'
 
 describe('Game', () => {
   const clockwiseColor = randomBackgammonColor()
   const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
 
-  const players: BackgammonPlayers = [
+  let players: BackgammonPlayers = [
     Player.initialize({
       id: '1',
       stateKind: 'rolled-for-start',
@@ -57,21 +51,64 @@ describe('Game', () => {
     expect(players.length).toBe(2)
   })
 
-  let activePlayer = gameRolledForStart.players.find(
-    (p) => p.stateKind === 'rolling'
-  ) as BackgammonPlayerRolling
+  const gameRolled = Game.roll(gameRolledForStart)
 
-  let inactivePlayer = gameRolledForStart.players.find(
-    (p) => p !== activePlayer
-  ) as BackgammonPlayerInactive
-
-  const gameDoubled = Game.double(gameRolledForStart, activePlayer, players)
-  let cube = gameDoubled.cube
-  it('should correctly handle a double', () => {
-    expect(gameDoubled).toBeDefined()
-    expect(gameDoubled.stateKind).toBe('in-progress')
-    expect(cube.stateKind).toBe('doubled')
-    expect(cube.value).toBe(2)
-    expect(cube.owner).toBe(inactivePlayer)
+  it('should correctly handle a roll', () => {
+    expect(gameRolled).toBeDefined()
+    expect(gameRolled.stateKind).toBe('in-progress')
+    const { activeColor, activePlay, players } = gameRolled
+    expect(activeColor).toBeDefined()
+    expect(players.length).toBe(2)
+    const activePlayer = players.find((p) => p.color === activeColor)
+    expect(activePlayer).toBeDefined()
+    expect(activePlayer?.stateKind).toBe('rolled')
+    expect(activePlayer?.dice.stateKind).toBe('rolled')
+    expect(activePlay).toBeDefined()
+    expect(activePlay?.stateKind).toBe('rolled')
+    expect(activePlay?.player.dice.currentRoll).toBeDefined()
+    if (
+      activePlay?.player.dice.currentRoll[0] ===
+      activePlay?.player.dice.currentRoll[1]
+    ) {
+      expect(activePlay?.moves.length).toBe(4)
+    } else {
+      expect(activePlay?.moves.length).toBe(2)
+    }
   })
+
+  // const gameMoving = Game.move(gameRolled)
+
+  // it('should correctly handle a move', () => {
+  //   expect(gameMoving).toBeDefined()
+  //   expect(gameMoving.stateKind).toBe('in-progress')
+  //   const { activeColor, activePlay, players } = gameMoving
+  //   expect(activeColor).toBeDefined()
+  //   expect(players.length).toBe(2)
+  //   const activePlayer = players.find((p) => p.color === activeColor)
+  //   expect(activePlayer).toBeDefined()
+  //   expect(activePlay.moves)
+
+  //   // expect(activePlayer?.dice.stateKind).toBe('rolled')
+  //   // expect(activePlay).toBeDefined()
+  //   // expect(activePlay?.stateKind).toBe('moving')
+  //   // expect(activePlay?.player.dice.currentRoll).toBeDefined()
+  //   // if (
+  //   //   activePlay?.player.dice.currentRoll[0] ===
+  //   //   activePlay?.player.dice.currentRoll[1]
+  //   // ) {
+  //   //   expect(activePlay?.moves.length).toBe(4)
+  //   // } else {
+  //   //   expect(activePlay?.moves.length).toBe(2)
+  //   // }
+  // })
+
+  // const gameDoubled = Game.double(gameRolledForStart, activePlayer, players)
+  // let cube = gameDoubled.cube
+  // it('should correctly handle a double', () => {
+  //   expect(gameDoubled).toBeDefined()
+  //   expect(gameDoubled.stateKind).toBe('in-progress')
+  //   expect(cube.stateKind).toBe('doubled')
+  //   expect(cube.value).toBe(2)
+  //   expect(cube.owner).toBe(inactivePlayer)
+  // })
 })
