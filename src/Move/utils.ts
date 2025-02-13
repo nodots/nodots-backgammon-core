@@ -16,7 +16,7 @@ export function getDestination(
   dieValue: BackgammonDieValue
 ): BackgammonPoint | BackgammonOff | undefined {
   const direction: BackgammonMoveDirection = player.direction
-  console.log('getDestination', { origin, board, player, dieValue })
+  // console.log('getDestination', { origin, board, player, dieValue })
   switch (origin.kind) {
     case 'point':
       const point = origin as BackgammonPoint

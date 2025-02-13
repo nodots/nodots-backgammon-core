@@ -4,13 +4,18 @@ import {
   BackgammonBoard,
   BackgammonCube,
   BackgammonMove,
+  BackgammonMoveDestination,
+  BackgammonMoveDirection,
+  BackgammonMoveOrigin,
   BackgammonMoveReady,
+  BackgammonMoveResult,
   BackgammonMoves,
   BackgammonPlay,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
   BackgammonPlayerRolling,
   BackgammonPlayMoving,
+  BackgammonPlayResult,
   BackgammonPlayRolled,
   BackgammonPlayStateKind,
   BackgammonPoint,
@@ -112,8 +117,6 @@ export class Play {
 
     const moves = initializedMoves
 
-    this.getValidMoves(board, moves)
-
     return {
       ...play,
       stateKind: 'rolled',
@@ -122,23 +125,60 @@ export class Play {
     }
   }
 
-  // public static move(
-  //   board: BackgammonBoard,
-  //   play: BackgammonPlayRolled | BackgammonPlayMoving,
-  //   origin: BackgammonPoint | BackgammonBar
-  // ): BackgammonPlayMoving {
-  //   const { moves } = play
-  //   // const move = moves.find((m) => m.stateKind === 'moving')
-  //   // if (!move) {
-  //   //   throw new Error('Move not found')
-  //   // }
-  //   // moves
-  //   return {
-  //     ...play,
-  //     stateKind: 'moving',
-  //     moves,
-  //   }
-  // }
+  public static move(
+    board: BackgammonBoard,
+    play: BackgammonPlayMoving,
+    origin: BackgammonMoveOrigin
+  ): BackgammonPlayResult {
+    let moves = play.moves
+    let move = moves.find(
+      (m) => m.stateKind === 'ready' && m.origin === undefined
+    )
+    if (!move) throw new Error('Move not found. Is play finished?')
+
+    switch (origin.kind) {
+      case 'point':
+        const player = play.player as BackgammonPlayerMoving
+        console.log('Play.move -> player', player)
+        move.origin = origin as BackgammonPoint
+
+        console.log('Play.move -> move.origin', move.origin)
+        console.log('Play.move -> player', player)
+
+        // move.destination = board.points.find(
+        //   (p) => p.position[player.direction] === destinationPosition
+        // ) as BackgammonPoint
+
+        // const results = Move.move(board, move, false)
+        // move = results.move as BackgammonMove
+        // if (!move) throw new Error('Move not found')
+        // board = results.board
+        // moves = moves.map((m) =>
+        //   m.id === move!.id ? move : m
+        // ) as BackgammonMoves // FIXME: squirelly cast
+        play = {
+          ...play,
+          stateKind: 'moving',
+          player,
+          moves,
+        }
+
+        return {
+          play,
+          board,
+        }
+      case 'bar':
+        move.origin = origin as BackgammonBar
+        break
+      default:
+        throw new Error('Invalid origin')
+    }
+
+    return {
+      play,
+      board,
+    }
+  }
 
   public static getValidMoves(
     board: BackgammonBoard,

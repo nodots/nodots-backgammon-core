@@ -7,6 +7,7 @@ import {
   BackgammonGameRollingForStart,
   BackgammonGameStateKind,
   BackgammonMoveInProgress,
+  BackgammonMoveOrigin,
   BackgammonPlay,
   BackgammonPlayerActive,
   BackgammonPlayerRolled,
@@ -122,39 +123,27 @@ export class Game {
     }
   }
 
-  // public static move(
-  //   game: BackgammonGameInProgress,
-  //   origin: BackgammonPoint | BackgammonBar
-  // ): BackgammonGameInProgress {
-  //   let { activePlay, players } = game
-  //   const player = players.find(
-  //     (p) => p.color === game.activeColor && p.stateKind === 'rolled'
-  //   ) as BackgammonPlayerActive
+  public static move(
+    game: BackgammonGameInProgress,
+    origin: BackgammonMoveOrigin
+  ): BackgammonGameInProgress {
+    let activePlay = game.activePlay as BackgammonPlayMoving
+    let board = game.board
+    if (!activePlay) {
+      throw new Error('Active play not found')
+    }
+    let moves = activePlay.moves
+    const moveResults = Play.move(board, activePlay, origin)
+    moves = moveResults.play.moves
+    board = moveResults.board
+    activePlay = {
+      ...activePlay,
+      moves,
+    }
 
-  //   if (!player) {
-  //     throw new Error('Active player not found')
-  //   }
-
-  //   if (!player.dice) {
-  //     throw new Error('Active player dice not found')
-  //   }
-
-  //   const inactivePlayer = game.players.find((p) => p.color !== player.id)
-
-  //   if (!inactivePlayer) {
-  //     throw new Error('Inactive player not found')
-  //   }
-
-  //   if (!activePlay) {
-  //     throw new Error('Active play not found')
-  //   }
-
-  //   // activePlay = Play.move(game.board, activePlay, origin)
-
-  //   return {
-  //     ...game,
-  //     stateKind: 'in-progress',
-  //     activePlay,
-  //   }
-  // }
+    return {
+      ...game,
+      activePlay,
+    }
+  }
 }

@@ -45,6 +45,6 @@ describe('Player', () => {
   test('should get the opponent home board points', () => {
     expect(opponentHomeBoard).toBeDefined()
     expect(opponentHomeBoard.length).toBe(6)
-    console.log(opponentHomeBoard)
+    // console.log(opponentHomeBoard)
   })
 })

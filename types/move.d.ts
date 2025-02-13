@@ -77,8 +77,8 @@ export type BackgammonMove =
   | BackgammonMoveNoMove
 
 export type BackgammonMoves =
-  | (Array & [BackgammonMove, BackgammonMove])
-  | (Array & [BackgammonMove, BackgammonMove, BackgammonMove, BackgammonMove])
+  | [BackgammonMove, BackgammonMove]
+  | [BackgammonMove, BackgammonMove, BackgammonMove, BackgammonMove]
 
 export type BackgammonMoveResult = {
   board: BackgammonBoard

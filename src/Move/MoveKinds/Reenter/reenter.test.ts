@@ -29,6 +29,6 @@ describe('Reenter', () => {
     expect(Reenter.isA(board, move.player)).toBe(true)
     const reenter = Reenter.move(board, move)
     expect(reenter).toBeDefined()
-    console.log(reenter)
+    // console.log(reenter)
   })
 })

@@ -8,7 +8,6 @@ import {
 
 export type BackgammonPlayResult = {
   board: BackgammonBoard
-  cube: BackgammonCube
   play: BackgammonPlay
 }
 
@@ -67,3 +66,8 @@ export type BackgammonPlay =
   | BackgammonPlayMoving
   | BackgammonPlayMoved
   | BackgammonPlayCompleted
+
+export type BackgammonPlayResults = {
+  board: BackgammonBoard
+  play: BackgammonPlay
+}

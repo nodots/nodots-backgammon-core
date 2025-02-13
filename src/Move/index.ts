@@ -117,7 +117,15 @@ export class Move {
           },
         }
       case undefined:
-        throw Error('Undefined backgammon moveKind')
+        console.log('Move.move -> move undefined:', move)
+        return {
+          board: board,
+          move: {
+            ...move,
+            moveKind: 'no-move',
+            destination: undefined,
+          },
+        }
     }
   }
 
@@ -128,9 +136,5 @@ export class Move {
       ...move,
       stateKind: 'confirmed',
     }
-  }
-
-  private static log(message?: string, object: any = {}) {
-    console.log(`[Move] ${message ? message : ''}`, object)
   }
 }
