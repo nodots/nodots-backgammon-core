@@ -1,13 +1,11 @@
 import { Cube } from '.'
-import { randomBackgammonColor, generateId } from '..'
+import { generateId, randomBackgammonColor } from '..'
 import {
-  BackgammonPlayers,
-  BackgammonPlayerRolled,
-  BackgammonPlayerInactive,
-  BackgammonCubeValues,
-  BackgammonCubeInitialized,
   BackgammonCubeDoubled,
-  BackgammonCubeMaxxed,
+  BackgammonCubeInitialized,
+  BackgammonPlayerInactive,
+  BackgammonPlayerRolled,
+  BackgammonPlayers,
 } from '../../types'
 
 let cube: Cube

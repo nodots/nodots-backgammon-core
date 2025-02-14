@@ -11,7 +11,7 @@ import {
 } from '../../../../types'
 
 export class Reenter {
-  public static isA(
+  public static isA = function isAReenter(
     board: BackgammonBoard,
     player: BackgammonPlayerMoving | BackgammonPlayerRolled
   ): boolean {
@@ -22,7 +22,7 @@ export class Reenter {
     return false
   }
 
-  public static move(
+  public static move = function moveReenter(
     board: BackgammonBoard,
     move: BackgammonMove
   ): BackgammonMoveResult {

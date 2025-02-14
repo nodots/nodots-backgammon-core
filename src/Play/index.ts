@@ -32,7 +32,7 @@ export class Play {
     | BackgammonPlayerRolled
     | BackgammonPlayerMoving
 
-  public static initialize({
+  public static initialize = function initializePlay({
     id,
     stateKind,
     player,
@@ -58,7 +58,7 @@ export class Play {
     return play
   }
 
-  public static roll(
+  public static roll = function rollPlay(
     board: BackgammonBoard,
     play: BackgammonPlay
   ): BackgammonPlayRolled {
@@ -125,7 +125,7 @@ export class Play {
     }
   }
 
-  public static move(
+  public static move = function movePlay(
     board: BackgammonBoard,
     play: BackgammonPlayMoving,
     origin: BackgammonMoveOrigin
@@ -180,7 +180,7 @@ export class Play {
     }
   }
 
-  public static getValidMoves(
+  public static getValidMoves = function getValidMoves(
     board: BackgammonBoard,
     moves: BackgammonMoves
   ): Set<BackgammonMove> {
@@ -195,8 +195,8 @@ export class Play {
       (p) => p.checkers.length > 0 && p.checkers[0]?.color === player.color
     )
 
-    moves.forEach((m: BackgammonMove) => {
-      origins.map((o) => {
+    moves.forEach(function forEachMove(m: BackgammonMove) {
+      origins.map(function mapOrigins(o) {
         m.origin = o
         const newM = Move.move(newBoard, m, true)
         validMoves.add(newM.move)

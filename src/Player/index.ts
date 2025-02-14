@@ -19,7 +19,7 @@ export class Player {
   dice!: BackgammonDice
   pipCount = 167
 
-  public static initialize({
+  public static initialize = function initializePlayer({
     id,
     color,
     direction,
@@ -79,13 +79,11 @@ export class Player {
           ...player,
           stateKind: 'rolled',
         } as BackgammonPlayerRolled
-
       case 'moving':
         return {
           ...player,
           stateKind: 'moving',
         } as BackgammonPlayerMoving
-
       case 'moved':
         return {
           ...player,
@@ -94,7 +92,9 @@ export class Player {
     }
   }
 
-  public static roll(player: BackgammonPlayerRolling): BackgammonPlayerRolled {
+  public static roll = function rollPlayer(
+    player: BackgammonPlayerRolling
+  ): BackgammonPlayerRolled {
     const dice = Dice.roll(player.dice)
     const rolledPlayer = {
       ...player,
@@ -104,13 +104,16 @@ export class Player {
     return rolledPlayer
   }
 
-  public static getHomeBoard(board: BackgammonBoard, player: BackgammonPlayer) {
+  public static getHomeBoard = function getHomeBoard(
+    board: BackgammonBoard,
+    player: BackgammonPlayer
+  ) {
     return player.direction === 'clockwise'
       ? board.points.slice(18, 24)
       : board.points.slice(0, 6)
   }
 
-  public static getOpponentHomeBoard(
+  public static getOpponentHomeBoard = function getOpponentHomeBoard(
     board: BackgammonBoard,
     player: BackgammonPlayer
   ) {

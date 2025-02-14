@@ -12,14 +12,14 @@ import { BearOff } from '../BearOff'
 import { Reenter } from '../Reenter'
 
 export class PointToPoint {
-  public static isA(
+  public static isA = function isAPointToPoint(
     board: BackgammonBoard,
     player: BackgammonPlayerMoving | BackgammonPlayerRolled
   ): boolean {
     return Reenter.isA(board, player) || BearOff.isA(board, player)
   }
 
-  public static move(
+  public static move = function movePointToPoint(
     board: BackgammonBoard,
     move: BackgammonMove,
     isDryRun: boolean = false

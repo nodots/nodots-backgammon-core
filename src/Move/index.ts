@@ -42,7 +42,7 @@ export class Move {
   origin: BackgammonCheckercontainer | undefined = undefined
   destination: BackgammonCheckercontainer | undefined = undefined
 
-  public static initialize({
+  public static initialize = function initializeMove({
     player,
     id,
     dieValue,
@@ -74,7 +74,7 @@ export class Move {
   }
 
   // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?open_point
-  public static isPointOpen(
+  public static isPointOpen = function isPointOpen(
     point: BackgammonPoint,
     player: BackgammonPlayerMoving | BackgammonPlayerRolled
   ) {
@@ -91,7 +91,7 @@ export class Move {
     return false
   }
 
-  public static move(
+  public static move = function _move(
     board: BackgammonBoard,
     move: BackgammonMove,
     isDryRun: boolean = false
@@ -129,7 +129,7 @@ export class Move {
     }
   }
 
-  public static confirmMove(
+  public static confirmMove = function _confirmMove(
     move: BackgammonMoveCompleted
   ): BackgammonMoveConfirmed {
     return {

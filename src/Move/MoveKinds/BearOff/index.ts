@@ -8,14 +8,14 @@ import {
 } from '../../../../types'
 
 export class BearOff {
-  public static isA(
+  public static isA = function isABearOff(
     board: BackgammonBoard,
     player: BackgammonPlayerMoving | BackgammonPlayerRolled
   ): boolean {
     const homeboard = Player.getHomeBoard(board, player)
     const off = board.off[player.direction]
     let eligibleCheckerCount = 0
-    homeboard.forEach((point) => {
+    homeboard.forEach(function countCheckers(point) {
       if (point.checkers.length > 0) {
         eligibleCheckerCount += point.checkers.length
       }
@@ -24,7 +24,7 @@ export class BearOff {
     return eligibleCheckerCount === 15 ? true : false
   }
 
-  public static move(
+  public static move = function moveBearOff(
     board: BackgammonBoard,
     move: BackgammonMove
   ): BackgammonMoveResult {

@@ -73,7 +73,9 @@ export class Board implements BackgammonBoard {
       opponentBarClone.checkers.push(hitChecker)
     }
 
-    this.getCheckercontainers(boardClone).map((cc) => {
+    this.getCheckercontainers(boardClone).map(function updateCheckerContainers(
+      cc
+    ) {
       if (cc.id === originClone.id) {
         cc.checkers = originClone.checkers
       }
@@ -89,9 +91,9 @@ export class Board implements BackgammonBoard {
     const checkercontainers = Board.getCheckercontainers(board)
     const checkers: BackgammonChecker[] = []
 
-    checkercontainers.map((checkercontainer) =>
+    checkercontainers.map(function pushCheckers(checkercontainer) {
       checkers.push(...checkercontainer.checkers)
-    )
+    })
     return checkers
   }
 
@@ -99,41 +101,50 @@ export class Board implements BackgammonBoard {
     board: BackgammonBoard,
     color: BackgammonColor
   ): BackgammonChecker[] {
-    return Board.getCheckers(board).filter((checker) => checker.color === color)
+    return Board.getCheckers(board).filter(function filterCheckers(checker) {
+      return checker.color === color
+    })
   }
 
-  static getPoints = (board: BackgammonBoard): BackgammonPoint[] => board.points
-  static getBars = (board: BackgammonBoard): BackgammonBar[] => [
-    board.bar.clockwise,
-    board.bar.counterclockwise,
-  ]
-
-  static getOffs = (board: BackgammonBoard): BackgammonOff[] => [
-    board.off.clockwise,
-    board.off.counterclockwise,
-  ]
-
-  static getCheckercontainers = (
+  static getPoints = function getPoints(
     board: BackgammonBoard
-  ): BackgammonCheckercontainer[] => {
+  ): BackgammonPoint[] {
+    return board.points
+  }
+
+  static getBars = function getBars(board: BackgammonBoard): BackgammonBar[] {
+    return [board.bar.clockwise, board.bar.counterclockwise]
+  }
+
+  static getOffs = function getOffs(board: BackgammonBoard): BackgammonOff[] {
+    return [board.off.clockwise, board.off.counterclockwise]
+  }
+
+  static getCheckercontainers = function getCheckercontainers(
+    board: BackgammonBoard
+  ): BackgammonCheckercontainer[] {
     const points = Board.getPoints(board) as BackgammonCheckercontainer[]
     const bar = Board.getBars(board) as BackgammonCheckercontainer[]
     const off = Board.getOffs(board) as BackgammonCheckercontainer[]
     return points.concat(...bar).concat(...off)
   }
 
-  static getCheckercontainer = (
+  static getCheckercontainer = function getCheckercontainer(
     board: BackgammonBoard,
     id: string
-  ): BackgammonCheckercontainer => {
-    const container = Board.getCheckercontainers(board).find((c) => c.id === id)
+  ): BackgammonCheckercontainer {
+    const container = Board.getCheckercontainers(board).find(
+      function findContainer(c) {
+        return c.id === id
+      }
+    )
     if (!container) {
       throw Error(`No checkercontainer found for ${id}`)
     }
     return container
   }
 
-  static getPipCounts = (game: BackgammonGame) => {
+  static getPipCounts = function getPipCounts(game: BackgammonGame) {
     const { board, players } = game
     const pipCounts = {
       black: 167,
@@ -174,13 +185,14 @@ export class Board implements BackgammonBoard {
 
     const points: BackgammonPoints = tempPoints as BackgammonPoints
 
-    points.map((point) => {
+    points.map(function mapPoints(point) {
       // console.log('[buildBoard] point.position', point.position)
-      const pointSpec = boardImport.find(
-        (cc) =>
+      const pointSpec = boardImport.find(function findPointSpec(cc) {
+        return (
           cc.position.clockwise === point.position.clockwise &&
           cc.position.counterclockwise === point.position.counterclockwise
-      )
+        )
+      })
       if (pointSpec) {
         // console.log('[buildBoard] pointSpec:', pointSpec)
         if (pointSpec.checkers) {
@@ -207,16 +219,22 @@ export class Board implements BackgammonBoard {
     return board
   }
 
-  private static buildBar(boardImport: BackgammonCheckercontainerImport[]): {
+  private static buildBar = function buildBar(
+    boardImport: BackgammonCheckercontainerImport[]
+  ): {
     clockwise: BackgammonBar
     counterclockwise: BackgammonBar
   } {
     const clockwiseId = generateId()
     const counterclockwiseId = generateId()
-    const barImport = boardImport.filter((cc) => cc.position === 'bar')
-    const clockwiseBarImport = barImport.find(
-      (b) => b.direction === 'clockwise'
-    )
+    const barImport = boardImport.filter(function filterBarImport(cc) {
+      return cc.position === 'bar'
+    })
+    const clockwiseBarImport = barImport.find(function findClockwiseBarImport(
+      b
+    ) {
+      return b.direction === 'clockwise'
+    })
 
     let clockwiseCheckerCount = 0
     const clockwiseCheckers = []
@@ -235,7 +253,9 @@ export class Board implements BackgammonBoard {
     }
 
     const counterclockwiseBarImport = barImport.find(
-      (b) => b.direction === 'counterclockwise'
+      function findCounterclockwiseBarImport(b) {
+        return b.direction === 'counterclockwise'
+      }
     )
 
     let counterclockwiseCheckerCount = 0
@@ -272,16 +292,24 @@ export class Board implements BackgammonBoard {
     }
   }
 
-  private static buildOff(boardImport: BackgammonCheckercontainerImport[]): {
+  private static buildOff = function buildOff(
+    boardImport: BackgammonCheckercontainerImport[]
+  ): {
     clockwise: BackgammonOff
     counterclockwise: BackgammonOff
   } {
-    const offImport = boardImport.filter((cc) => cc.position === 'off')
-    const clockwiseOffImport = offImport.find(
-      (b) => b.direction === 'clockwise'
-    )
+    const offImport = boardImport.filter(function filterOffImport(cc) {
+      return cc.position === 'off'
+    })
+    const clockwiseOffImport = offImport.find(function findClockwiseOffImport(
+      b
+    ) {
+      return b.direction === 'clockwise'
+    })
     const counterclockwiseOffImport = offImport.find(
-      (b) => b.direction === 'counterclockwise'
+      function findCounterclockwiseOffImport(b) {
+        return b.direction === 'counterclockwise'
+      }
     )
 
     const clockwiseCheckers = []

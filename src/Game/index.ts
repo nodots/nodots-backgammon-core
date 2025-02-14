@@ -33,7 +33,7 @@ export class Game {
   board!: Board
   cube!: Cube
 
-  public static initialize(
+  public static initialize = function initializeGame(
     players: BackgammonPlayers
   ): BackgammonGameRollingForStart {
     const game: BackgammonGameRollingForStart = {
@@ -46,7 +46,7 @@ export class Game {
     return game
   }
 
-  public static rollForStart(
+  public static rollForStart = function rollForStartGame(
     game: BackgammonGameRollingForStart
   ): BackgammonGameInProgress {
     const activeColor = randomBackgammonColor()
@@ -81,7 +81,9 @@ export class Game {
     }
   }
 
-  public static roll(game: BackgammonGameInProgress): BackgammonGameInProgress {
+  public static roll = function rollGame(
+    game: BackgammonGameInProgress
+  ): BackgammonGameInProgress {
     let { board, players } = game
     let player = players.find(
       (p) => p.color === game.activeColor && p.stateKind === 'rolling'
@@ -111,7 +113,7 @@ export class Game {
     }
   }
 
-  public static double(
+  public static double = function doubleGame(
     game: BackgammonGameInProgress,
     player: BackgammonPlayerActive,
     players: BackgammonPlayers
@@ -123,7 +125,7 @@ export class Game {
     }
   }
 
-  public static move(
+  public static move = function moveGame(
     game: BackgammonGameInProgress,
     origin: BackgammonMoveOrigin
   ): BackgammonGameInProgress {

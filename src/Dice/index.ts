@@ -14,7 +14,9 @@ export class Dice {
   color: BackgammonColor | undefined = undefined
   currentRoll: BackgammonRoll | undefined = undefined
 
-  public static initialize(color: BackgammonColor): BackgammonDiceReady {
+  public static initialize = function initializeDice(
+    color: BackgammonColor
+  ): BackgammonDiceReady {
     return {
       id: generateId(),
       stateKind: 'ready',
@@ -24,10 +26,12 @@ export class Dice {
     }
   }
 
-  public static roll(dice: BackgammonDiceReady): BackgammonDiceRolled {
+  public static roll = function rollDice(
+    dice: BackgammonDiceReady
+  ): BackgammonDiceRolled {
     const currentRoll: BackgammonRoll = [
-      this.rollDie() as BackgammonDieValue,
-      this.rollDie() as BackgammonDieValue,
+      Dice.rollDie() as BackgammonDieValue,
+      Dice.rollDie() as BackgammonDieValue,
     ]
     return {
       ...dice,
@@ -37,9 +41,9 @@ export class Dice {
     }
   }
 
-  public static switchDice: (
+  public static switchDice = function switchDice(
     dice: BackgammonDiceRolled
-  ) => BackgammonDiceRolled = (dice: BackgammonDiceRolled) => {
+  ): BackgammonDiceRolled {
     return {
       ...dice,
       currentRoll: [
@@ -49,13 +53,13 @@ export class Dice {
     }
   }
 
-  public static isDouble: (dice: BackgammonDiceRolled) => boolean = (
+  public static isDouble = function isDouble(
     dice: BackgammonDiceRolled
-  ) => {
+  ): boolean {
     return dice.currentRoll![0] === dice.currentRoll![1] ? true : false
   }
 
-  private static rollDie(): BackgammonDieValue {
+  private static rollDie = function rollDie(): BackgammonDieValue {
     return (Math.floor(Math.random() * 6) + 1) as BackgammonDieValue
   }
 }

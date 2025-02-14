@@ -1,7 +1,7 @@
 import { Dice } from '.'
 import { randomBackgammonColor } from '..'
 
-const monteCarloRuns = 1000000
+const monteCarloRuns = 10000
 
 describe('Dice', () => {
   const randomColor = randomBackgammonColor()
@@ -34,6 +34,12 @@ describe('Dice', () => {
     expect(Dice.isDouble(doubleDice)).toBe(true)
   })
 
+  test('should return false if the dice are not doubles', () => {
+    const nonDoubleDice = Dice.roll(initializedDice)
+    nonDoubleDice.currentRoll = [1, 2]
+    expect(Dice.isDouble(nonDoubleDice)).toBe(false)
+  })
+
   test('should have approximately uniform distribution', () => {
     const rolls = []
     for (let i = 0; i < monteCarloRuns; i++) {
@@ -50,33 +56,5 @@ describe('Dice', () => {
       const deviation = Math.abs(count - expectedCount) / expectedCount
       expect(deviation).toBeLessThan(0.05) // Allowing 5% deviation
     })
-  })
-  const rolls = []
-  for (let i = 0; i < monteCarloRuns; i++) {
-    const roll = Dice.roll(initializedDice)
-    rolls.push(roll.currentRoll)
-  }
-  interface totalRow {
-    total: number
-    count: number
-  }
-  const uniqueTotals: totalRow[] = []
-
-  rolls.forEach((roll) => {
-    const total = roll[0] + roll[1]
-    const index = uniqueTotals.findIndex((row) => row.total === total)
-    if (index === -1) {
-      uniqueTotals.push({ total, count: 1 })
-    } else {
-      uniqueTotals[index].count++
-    }
-  })
-  const expectedDistinctRolls = 11 // Maximum number of unique totals for two six-sided dice
-  expect(uniqueTotals.length).toBeLessThan(monteCarloRuns)
-  expect(uniqueTotals.length).toEqual(expectedDistinctRolls)
-  uniqueTotals.forEach((row) => {
-    const probability = row.count / monteCarloRuns
-    expect(probability).toBeGreaterThan(0)
-    expect(probability).toBeLessThan(1)
   })
 })

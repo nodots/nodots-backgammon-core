@@ -16,13 +16,16 @@ export interface CubeProps {
   value?: BackgammonCubeValue
   owner?: BackgammonPlayer
 }
+
 export class Cube {
   id!: string
   stateKind: BackgammonCubeStateKind = 'initialized'
   value: BackgammonCubeValue | undefined = undefined
   owner: BackgammonPlayer | undefined = undefined
 
-  public static initialize(cube?: CubeProps): BackgammonCube {
+  public static initialize = function initializeCube(
+    cube?: CubeProps
+  ): BackgammonCube {
     if (!cube) {
       cube = {}
     }
@@ -41,7 +44,7 @@ export class Cube {
     }
   }
 
-  public static double(
+  public static double = function doubleCube(
     cube: BackgammonCube,
     player: BackgammonPlayer,
     players: BackgammonPlayers
