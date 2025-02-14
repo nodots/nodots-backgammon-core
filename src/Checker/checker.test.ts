@@ -40,8 +40,11 @@ describe('BackgammonChecker', () => {
   it('should get all checkers', () => {
     expect(checkers.length).toBe(30)
   })
-  it('should get a checker', () => {
+  it('should get a checker with a valid id', () => {
     const foundChecker = Checker.getChecker(board, randomChecker.id)
     expect(foundChecker).toEqual(randomChecker)
+  })
+  it('should throw an error when getting a checker with an invalid id', () => {
+    expect(() => Checker.getChecker(board, 'invalidId')).toThrowError()
   })
 })
