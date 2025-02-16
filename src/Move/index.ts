@@ -7,6 +7,7 @@ import {
   BackgammonMoveCompleted,
   BackgammonMoveConfirmed,
   BackgammonMoveKind,
+  BackgammonMoveOrigin,
   BackgammonMoveResult,
   BackgammonMoveState,
   BackgammonPlayer,
@@ -22,15 +23,8 @@ import { Reenter } from './MoveKinds/Reenter'
 export type MOVE_MODE = 'dry-run' | 'commit'
 
 export interface MoveProps {
-  player: BackgammonPlayerMoving | BackgammonPlayerRolled
-  dieValue: BackgammonDieValue
-  stateKind?: BackgammonMoveState
-  moveKind?: BackgammonMoveKind
-  id?: string
-  origin?: BackgammonCheckercontainer
-  destination?: BackgammonCheckercontainer
-  isAuto?: boolean
-  isForced?: false
+  move: BackgammonMove
+  origin: BackgammonMoveOrigin
 }
 
 export class Move {
@@ -43,33 +37,16 @@ export class Move {
   destination: BackgammonCheckercontainer | undefined = undefined
 
   public static initialize = function initializeMove({
-    player,
-    id,
-    dieValue,
-    stateKind,
-    moveKind,
+    move,
     origin,
-    destination,
-    isAuto,
-    isForced,
   }: MoveProps): BackgammonMove {
-    id = id ? id : generateId()
-    stateKind = stateKind ?? ('no-move' as BackgammonMoveState)
-    moveKind = moveKind ? moveKind : 'no-move'
-
-    const { direction } = player
-
+    const id = move.id ? move.id : generateId()
+    const stateKind = move.stateKind ? move.stateKind : 'ready'
     return {
-      player,
-      id: id ? id : generateId(),
-      dieValue,
-      direction,
+      ...move,
+      id,
       stateKind,
-      moveKind,
       origin,
-      destination,
-      isAuto: isAuto ? isAuto : false,
-      isForced: isForced ? isForced : false,
     }
   }
 
@@ -117,7 +94,7 @@ export class Move {
           },
         }
       case undefined:
-        console.log('Move.move -> move undefined:', move)
+        // console.log('Move.move -> move undefined:', move)
         return {
           board: board,
           move: {

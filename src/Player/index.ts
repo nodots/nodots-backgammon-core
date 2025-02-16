@@ -1,9 +1,10 @@
 import { Dice, generateId } from '..'
 import {
   BackgammonBoard,
+  BackgammonColor,
   BackgammonDice,
+  BackgammonMoveDirection,
   BackgammonPlayer,
-  BackgammonPlayerInactive,
   BackgammonPlayerMoved,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
@@ -19,80 +20,81 @@ export class Player {
   dice!: BackgammonDice
   pipCount = 167
 
-  public static initialize = function initializePlayer({
-    id,
-    color,
-    direction,
-    stateKind,
-    dice,
-    pipCount,
-  }: BackgammonPlayer): BackgammonPlayer {
-    if (!id) {
-      id = generateId()
-    }
-    if (!dice) {
-      dice = {
-        id: generateId(),
-        stateKind: 'inactive',
-        color,
-      }
-    }
-
-    if (!stateKind) {
-      stateKind = 'inactive'
-    }
-    if (!pipCount) {
-      pipCount = 167
-    }
-
-    const player = {
-      id,
-      color,
-      direction,
-      dice,
-      pipCount,
-    }
-
+  public static initialize = function initializePlayer(
+    color: BackgammonColor,
+    direction: BackgammonMoveDirection,
+    id: string = generateId(),
+    stateKind: BackgammonPlayerStateKind = 'inactive'
+  ): BackgammonPlayer {
     switch (stateKind) {
       case 'inactive':
         return {
-          ...player,
-          stateKind: 'inactive',
-        } as BackgammonPlayerInactive
+          id,
+          color,
+          direction,
+          stateKind,
+          dice: Dice.initialize(color),
+          pipCount: 167,
+        } as BackgammonPlayer
       case 'rolling-for-start':
         return {
-          ...player,
-          stateKind: 'rolling-for-start',
+          id,
+          color,
+          direction,
+          stateKind,
+          dice: Dice.initialize(color),
+          pipCount: 167,
         } as BackgammonPlayerRollingForStart
-      case 'rolled-for-start':
+      case 'rolled-for-start': {
         return {
-          ...player,
-          stateKind: 'rolled-for-start',
+          id,
+          color,
+          direction,
+          stateKind,
+          dice: Dice.initialize(color),
+          pipCount: 167,
         } as BackgammonPlayerRolledForStart
+      }
       case 'rolling':
         return {
-          ...player,
-          stateKind: 'rolling',
+          id,
+          color,
+          direction,
+          stateKind,
+          dice: Dice.initialize(color),
+          pipCount: 167,
         } as BackgammonPlayerRolling
       case 'rolled':
         return {
-          ...player,
-          stateKind: 'rolled',
+          id,
+          color,
+          direction,
+          stateKind,
+          dice: Dice.initialize(color),
+          pipCount: 167,
         } as BackgammonPlayerRolled
       case 'moving':
         return {
-          ...player,
-          stateKind: 'moving',
+          id,
+          color,
+          direction,
+          stateKind,
+          dice: Dice.initialize(color),
+          pipCount: 167,
         } as BackgammonPlayerMoving
       case 'moved':
         return {
-          ...player,
-          stateKind: 'moved',
+          id,
+          color,
+          direction,
+          stateKind,
+          dice: Dice.initialize(color),
+          pipCount: 167,
         } as BackgammonPlayerMoved
     }
   }
 
-  public static roll = function rollPlayer(
+  public static roll = function roll(
     player: BackgammonPlayerRolling
   ): BackgammonPlayerRolled {
     const dice = Dice.roll(player.dice)
@@ -113,7 +115,7 @@ export class Player {
       : board.points.slice(0, 6)
   }
 
-  public static getOpponentHomeBoard = function getOpponentHomeBoard(
+  public static getOpponentBoard = function getOpponentBoard(
     board: BackgammonBoard,
     player: BackgammonPlayer
   ) {

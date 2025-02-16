@@ -1,6 +1,8 @@
 import { generateId } from '..'
 import {
   BackgammonColor,
+  BackgammonDice,
+  BackgammonDiceInactive,
   BackgammonDiceReady,
   BackgammonDiceRolled,
   BackgammonDiceStateKind,
@@ -15,14 +17,45 @@ export class Dice {
   currentRoll: BackgammonRoll | undefined = undefined
 
   public static initialize = function initializeDice(
-    color: BackgammonColor
+    color: BackgammonColor,
+    stateKind: BackgammonDiceStateKind = 'inactive',
+    id: string = generateId(),
+    currentRoll: BackgammonRoll | undefined = undefined
+  ): BackgammonDice {
+    const total = currentRoll ? currentRoll[0] + currentRoll[1] : undefined
+
+    switch (stateKind) {
+      case 'ready':
+        return {
+          id,
+          color,
+          stateKind,
+          currentRoll,
+          total,
+        } as BackgammonDiceReady
+      case 'rolled':
+        return {
+          id,
+          color,
+          stateKind,
+          currentRoll: currentRoll as BackgammonRoll,
+          total: total as number,
+        } as BackgammonDiceRolled
+      case 'inactive':
+        return {
+          id,
+          color,
+          stateKind,
+        } as BackgammonDiceInactive
+    }
+  }
+
+  public static setReady = function setReady(
+    dice: BackgammonDice
   ): BackgammonDiceReady {
     return {
-      id: generateId(),
+      ...dice,
       stateKind: 'ready',
-      color,
-      currentRoll: undefined,
-      total: 0,
     }
   }
 
@@ -59,7 +92,9 @@ export class Dice {
     return dice.currentRoll![0] === dice.currentRoll![1] ? true : false
   }
 
-  private static rollDie = function rollDie(): BackgammonDieValue {
+  static rollDie = function rollDie(): BackgammonDieValue {
     return (Math.floor(Math.random() * 6) + 1) as BackgammonDieValue
   }
+  // Convenience  mostly for tests
+  static _RandomRoll = [this.rollDie(), this.rollDie()] as BackgammonRoll
 }

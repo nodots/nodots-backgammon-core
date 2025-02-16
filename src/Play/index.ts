@@ -1,22 +1,23 @@
-import { generateId, Player } from '..'
+import { Dice, generateId, Player } from '..'
 import {
   BackgammonBar,
   BackgammonBoard,
   BackgammonCube,
+  BackgammonDiceRolled,
   BackgammonMove,
-  BackgammonMoveDestination,
-  BackgammonMoveDirection,
   BackgammonMoveOrigin,
   BackgammonMoveReady,
-  BackgammonMoveResult,
   BackgammonMoves,
   BackgammonPlay,
+  BackgammonPlayer,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
   BackgammonPlayerRolling,
+  BackgammonPlayMoved,
   BackgammonPlayMoving,
   BackgammonPlayResult,
   BackgammonPlayRolled,
+  BackgammonPlayRolling,
   BackgammonPlayStateKind,
   BackgammonPoint,
 } from '../../types'
@@ -26,39 +27,92 @@ export class Play {
   id?: string = generateId()
   cube?: BackgammonCube
   stateKind?: BackgammonPlayStateKind
-  moves: BackgammonMoves[] = []
+  moves: BackgammonMoves | undefined = undefined
   player!:
     | BackgammonPlayerRolling
     | BackgammonPlayerRolled
     | BackgammonPlayerMoving
 
-  public static initialize = function initializePlay({
-    id,
-    stateKind,
-    player,
-    moves,
-  }: BackgammonPlay): BackgammonPlay {
-    if (!id) {
-      id = generateId()
+  public static initialize = function initializePlay(
+    player: BackgammonPlayer,
+    stateKind: BackgammonPlayStateKind = 'rolled',
+    id: string = generateId(),
+    moves: BackgammonMoves | undefined = undefined
+  ): BackgammonPlay {
+    switch (stateKind) {
+      case 'rolling':
+        return {
+          id,
+          stateKind,
+          player,
+          moves,
+        } as BackgammonPlayRolling
+      case 'rolled':
+        const rolledPlayer = player as BackgammonPlayerRolled
+        const dice = player.dice as BackgammonDiceRolled
+        const currentRoll = dice.currentRoll
+        const move0: BackgammonMoveReady = {
+          id: generateId(),
+          player: rolledPlayer,
+          dieValue: currentRoll[0],
+          stateKind: 'ready',
+          direction: player.direction,
+          isAuto: false,
+          isForced: false,
+        }
+        const move1: BackgammonMoveReady = {
+          id: generateId(),
+          player: rolledPlayer,
+          dieValue: currentRoll[0],
+          stateKind: 'ready',
+          direction: player.direction,
+          isAuto: false,
+          isForced: false,
+        }
+        moves = [move0, move1]
+        if (Dice.isDouble(dice)) {
+          const move2: BackgammonMoveReady = {
+            id: generateId(),
+            player: rolledPlayer,
+            dieValue: currentRoll[0],
+            stateKind: 'ready',
+            direction: player.direction,
+            isAuto: false,
+            isForced: false,
+          }
+          const move3: BackgammonMoveReady = {
+            id: generateId(),
+            player: rolledPlayer,
+            dieValue: currentRoll[0],
+            stateKind: 'ready',
+            direction: player.direction,
+            isAuto: false,
+            isForced: false,
+          }
+          moves.push(move2, move3)
+        }
+        return {
+          id,
+          player,
+          stateKind,
+          moves,
+        } as BackgammonPlayRolled
+      case 'moving':
+        return {
+          id,
+          stateKind,
+          moves,
+        } as BackgammonPlayMoving
+      case 'moved':
+        return {
+          id,
+          stateKind,
+          moves,
+        } as BackgammonPlayMoved
     }
-    if (!stateKind) {
-      stateKind = 'rolling'
-    }
-
-    player = {
-      ...player,
-      stateKind: 'rolling',
-    }
-
-    const play = {
-      id,
-      stateKind,
-      player,
-    }
-    return play
   }
 
-  public static roll = function rollPlay(
+  public static roll = function roll(
     board: BackgammonBoard,
     play: BackgammonPlay
   ): BackgammonPlayRolled {
@@ -125,7 +179,7 @@ export class Play {
     }
   }
 
-  public static move = function movePlay(
+  public static move = function move(
     board: BackgammonBoard,
     play: BackgammonPlayMoving,
     origin: BackgammonMoveOrigin
@@ -139,11 +193,11 @@ export class Play {
     switch (origin.kind) {
       case 'point':
         const player = play.player as BackgammonPlayerMoving
-        console.log('Play.move -> player', player)
+        // console.log('Play.move -> player', player)
         move.origin = origin as BackgammonPoint
 
-        console.log('Play.move -> move.origin', move.origin)
-        console.log('Play.move -> player', player)
+        // console.log('Play.move -> move.origin', move.origin)
+        // console.log('Play.move -> player', player)
 
         // move.destination = board.points.find(
         //   (p) => p.position[player.direction] === destinationPosition

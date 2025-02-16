@@ -17,7 +17,7 @@ export class Reenter {
   ): boolean {
     const bar = board.bar[player.direction]
     if (bar.checkers.length === 0) return false
-    const opponentHomeBoard = Player.getOpponentHomeBoard(board, player)
+    const opponentHomeBoard = Player.getOpponentBoard(board, player)
     if (opponentHomeBoard.some((p) => p.checkers.length === 0)) return true
     return false
   }
@@ -37,7 +37,7 @@ export class Reenter {
 
     const direction = player.direction as BackgammonMoveDirection
     const origin = board.bar[direction]
-    const opponentsHomeBoard = Player.getOpponentHomeBoard(board, player)
+    const opponentsHomeBoard = Player.getOpponentBoard(board, player)
     const destination = opponentsHomeBoard.find(
       (p) => p.position[direction] + dieValue
     )

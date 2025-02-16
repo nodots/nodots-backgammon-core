@@ -1,60 +1,53 @@
 import { Play } from '.'
-import { BackgammonPlay } from '../../types'
-import { Board } from '../Board'
+import { Dice, randomBackgammonColor, randomBackgammonDirection } from '..'
+import { BackgammonMoves, BackgammonPlayerRolled } from '../../types'
 
 describe('Play', () => {
-  let play: BackgammonPlay
-  const defaultBoard = Board.initialize()
-
-  beforeAll(() => {
-    play = Play.initialize({
-      stateKind: 'rolling',
-      player: {
-        id: '1',
-        stateKind: 'rolling',
-        color: 'black',
-        direction: 'clockwise',
-        dice: {
-          id: '1',
-          stateKind: 'inactive',
-          color: 'black',
-        },
-        pipCount: 167,
-      },
-      moves: [],
-    })
-  })
+  const color = randomBackgammonColor()
+  const direction = randomBackgammonDirection()
+  const currentRoll = Dice._RandomRoll
+  const isDoubles = currentRoll[0] === currentRoll[1] ? true : false
+  const total = currentRoll[0] + currentRoll[1]
+  let moves: BackgammonMoves | undefined
+  let player: BackgammonPlayerRolled = {
+    id: '1',
+    color,
+    direction,
+    stateKind: 'rolled',
+    dice: {
+      id: '1',
+      color,
+      stateKind: 'rolled',
+      currentRoll,
+      total,
+    },
+    pipCount: 167,
+  }
 
   it('should initialize the play correctly', () => {
+    let play = Play.initialize(player)
+    player = play.player
+    moves = play.moves
+    const { dice } = player
     expect(play).toBeDefined()
     expect(play.id).toBeDefined()
-    expect(play.stateKind).toBe('rolling')
-    expect(play.player).toBeDefined()
-    expect(play.player.id).toBe('1')
-    expect(play.player.stateKind).toBe('rolling')
-  })
-
-  it('should correctly handle a roll', () => {
-    play = Play.roll(defaultBoard, play)
     expect(play.stateKind).toBe('rolled')
-    expect(play.player.stateKind).toBe('rolled')
-    expect(play.player.dice.stateKind).toBe('rolled')
-    expect(play.player.dice.currentRoll).toBeDefined()
-    expect(play.player.dice.currentRoll[0]).toBeGreaterThan(0)
-    expect(play.player.dice.currentRoll[0]).toBeLessThan(7)
-    expect(play.player.dice.currentRoll[1]).toBeGreaterThan(0)
-    expect(play.player.dice.currentRoll[1]).toBeLessThan(7)
+    expect(player).toBe(player)
+    expect(player.color).toBe(color)
+    expect(player.direction).toBe(direction)
+    expect(dice).toBeDefined()
+    expect(player.pipCount).toBe(167)
+    expect(dice.stateKind).toBe('rolled')
+    expect(dice.currentRoll).toEqual(currentRoll)
+    expect(dice.total).toBe(total)
+    isDoubles
+      ? expect(Dice.isDouble(dice)).toBe(true)
+      : expect(Dice.isDouble(dice)).toBe(false)
+    isDoubles ? expect(moves?.length).toBe(4) : expect(moves?.length).toBe(2)
   })
 
-  it('should handle an invalid move', () => {
-    // Add test logic here
-  })
-
-  it('should detect a win condition', () => {
-    // Add test logic here
-  })
-
-  it('should reset the game', () => {
-    // Add test logic here
-  })
+  // it('should set the play to ready', () => {
+  //   play = Play.setReady(play)
+  //   expect(play.stateKind).toBe('ready')
+  // })
 })
