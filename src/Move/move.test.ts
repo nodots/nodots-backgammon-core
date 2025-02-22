@@ -5,14 +5,10 @@ import {
   randomBackgammonDirection,
 } from '..'
 import {
-  BackgammonBoard,
   BackgammonDiceRolled,
-  BackgammonMove,
   BackgammonMoveReady,
   BackgammonPlayerMoving,
-  BackgammonPoint,
 } from '../../types'
-import { BOARD_IMPORT_DEFAULT } from '../Board/imports'
 import { Move } from './index'
 
 describe('Move', () => {
@@ -34,9 +30,6 @@ describe('Move', () => {
     player,
     dieValue: currentRoll[0],
     stateKind: 'ready',
-    direction,
-    isAuto: false,
-    isForced: false,
   }
 
   it('should initialize the move correctly', () => {

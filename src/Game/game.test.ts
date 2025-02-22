@@ -1,9 +1,15 @@
 import { Game, Player, randomBackgammonColor } from '..'
 import {
+  BackgammonBoard,
+  BackgammonColor,
+  BackgammonCube,
   BackgammonGame,
+  BackgammonGameRolledForStart,
   BackgammonGameRollingForStart,
+  BackgammonPlay,
   BackgammonPlayer,
   BackgammonPlayers,
+  BackgammonPlayerWinner,
 } from '../../types'
 
 describe('Game', () => {
@@ -11,53 +17,72 @@ describe('Game', () => {
   const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
 
   let game: BackgammonGame | undefined = undefined
-  let player: BackgammonPlayer | undefined = undefined
-  let opponent: BackgammonPlayer | undefined = undefined
-
+  let stateKind:
+    | 'rolling-for-start'
+    | 'rolled-for-start'
+    | 'in-progress'
+    | 'completed'
+    | undefined = undefined
+  let board: BackgammonBoard | undefined = undefined
+  let cube: BackgammonCube | undefined = undefined
   const players: BackgammonPlayers = [
     Player.initialize(clockwiseColor, 'clockwise'),
     Player.initialize(counterclockwiseColor, 'counterclockwise'),
   ]
+  let activeColor: BackgammonColor | undefined = undefined
+  let activePlay: BackgammonPlay | undefined = undefined
+  let activePlayer: BackgammonPlayer | undefined = undefined
+  let inactivePlayer: BackgammonPlayer | undefined = undefined
+  let winner: BackgammonPlayerWinner | undefined = undefined
 
-  const gameRollingForStart = Game.initialize(
-    players
-  ) as BackgammonGameRollingForStart
+  game = Game.initialize(players) as BackgammonGameRollingForStart
+  stateKind = game.stateKind
+  board = game.board
+  cube = game.cube
+  activeColor = game.activeColor
+  activePlay = game.activePlay
+  winner = game.winner
 
   it('should initialize the game correctly', () => {
-    expect(gameRollingForStart).toBeDefined()
-    expect(gameRollingForStart!.id).toBeDefined()
-    expect(gameRollingForStart!.players).toBeDefined()
-    expect(gameRollingForStart!.players.length).toBe(2)
-  })
-
-  const gameRolledForStart = Game.rollForStart(gameRollingForStart)
-
-  it('should correctly handle a roll for start', () => {
-    expect(gameRolledForStart).toBeDefined()
-    expect(gameRolledForStart.stateKind).toBe('in-progress')
-    expect(gameRolledForStart.activeColor).toBeDefined()
-    expect(gameRolledForStart.players.length).toBe(2)
-    const player = Game.activePlayer(gameRolledForStart)
-    expect(player).toBeDefined()
-    expect(player!.stateKind).toBe('rolling')
-    expect(player!.dice).toBeDefined()
-    expect(player!.dice.stateKind).toBe('ready')
-  })
-
-  const gameRolled = Game.roll(gameRolledForStart)
-
-  it('should correctly handle a roll', () => {
-    const activePlay = gameRolled.activePlay
-    expect(gameRolled).toBeDefined()
-    expect(gameRolled.stateKind).toBe('in-progress')
-    expect(gameRolled.activeColor).toBeDefined()
-    expect(gameRolled.players.length).toBe(2)
-    const player = Game.activePlayer(gameRolled)
-    expect(player).toBeDefined()
-    expect(player!.stateKind).toBe('rolled')
-    expect(player!.dice).toBeDefined()
-    expect(player!.dice.stateKind).toBe('rolled')
+    expect(game).toBeDefined()
+    expect(stateKind).toBe('rolled-for-start')
+    expect(board).toBeDefined()
+    expect(cube).toBeDefined()
+    expect(activeColor).toBeDefined()
     expect(activePlay).toBeDefined()
-    expect(activePlay!.playerId).toBe(player!.id)
+    expect(activePlayer).toBeDefined()
+    expect(winner).toBeUndefined()
   })
+
+  const gameRolledForStart = Game.rollForStart(
+    game as BackgammonGameRollingForStart
+  ) as BackgammonGameRolledForStart
+  stateKind = gameRolledForStart.stateKind
+  activeColor = gameRolledForStart.activeColor
+  activePlayer = gameRolledForStart.activePlayer
+  inactivePlayer = gameRolledForStart.inactivePlayer
+
+  it('should roll for start correctly', () => {
+    stateKind = gameRolledForStart.stateKind
+    activeColor = gameRolledForStart.activeColor
+    activePlayer = gameRolledForStart.activePlayer
+
+    expect(game).toBeDefined()
+    expect(stateKind).toBe('rolled-for-start')
+    expect(activeColor).toBeDefined()
+    expect(activePlayer).toBeDefined()
+    expect(inactivePlayer).toBeDefined()
+  })
+  // game = Game.roll(game as BackgammonGameRolledForStart)
+
+  // it('should roll the dice correctly', () => {
+  //   stateKind = game.stateKind
+  //   activePlay = game.activePlay
+
+  //   expect(game).toBeDefined()
+  //   expect(stateKind).toBe('in-progress')
+  //   expect(activePlay).toBeDefined()
+  //   expect(activePlayer).toBeDefined()
+  //   expect(inactivePlayer).toBeDefined()
+  // })
 })

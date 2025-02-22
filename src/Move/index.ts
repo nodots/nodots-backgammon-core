@@ -9,11 +9,9 @@ import {
   BackgammonMoveKind,
   BackgammonMoveOrigin,
   BackgammonMoveResult,
-  BackgammonMoveState,
   BackgammonPlayer,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
-  BackgammonPlayRolled,
   BackgammonPoint,
 } from '../../types'
 import { BearOff } from './MoveKinds/BearOff'

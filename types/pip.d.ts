@@ -11,4 +11,4 @@ type Enumerate<
   ? Acc[number]
   : Enumerate<N, [...Acc, Acc['length']]>
 
-export type BackgammonPips = IntegerRange<1, 167>
+export type BackgammonPips = IntegerRange<0, 167>

@@ -40,9 +40,6 @@ describe('BearOff', () => {
     id: '1',
     player,
     stateKind: 'ready',
-    direction,
-    isAuto: false,
-    isForced: false,
     dieValue: currentRoll[0],
   }
 

@@ -1,42 +1,65 @@
-import { generateId, Player, randomBackgammonColor } from '..'
+import { generateId, randomBackgammonColor } from '..'
 import {
   BackgammonBoard,
+  BackgammonColor,
   BackgammonCube,
   BackgammonGame,
   BackgammonGameInProgress,
+  BackgammonGameRolledForStart,
   BackgammonGameRollingForStart,
   BackgammonGameStateKind,
-  BackgammonMoveOrigin,
   BackgammonPlayerActive,
+  BackgammonPlayerInactive,
+  BackgammonPlayerRolledForStart,
   BackgammonPlayerRolling,
   BackgammonPlayers,
-  BackgammonPlayMoving,
 } from '../../types'
 import { Board } from '../Board'
 import { Cube } from '../Cube'
 import { Play } from '../Play'
-
 export interface GameProps {
   players: BackgammonPlayers
   board?: BackgammonBoard
   cube?: BackgammonCube
 }
+/*
+ * The Game class is a state machine that can be in one of three states:
+ *  - rolling-for-start,
+ *  - in-progress
+ *  - completed.
+ */
+
 export class Game {
   id!: string
   stateKind!: BackgammonGameStateKind
   players!: BackgammonPlayers
   board!: Board
   cube!: Cube
+  activeColor!: BackgammonColor
+  activePlay!: Play
+  activePlayer!: BackgammonPlayerActive
+  inactivePlayer!: BackgammonPlayerInactive
 
+  // The initializer is designed to create an instance of a Game from any of its starting states.
   public static initialize = function initializeGame(
     players: BackgammonPlayers,
     id: string = generateId(),
     stateKind: BackgammonGameStateKind = 'rolling-for-start',
     board: BackgammonBoard = Board.initialize(),
-    cube: BackgammonCube = Cube.initialize()
+    cube: BackgammonCube = Cube.initialize(),
+    activeColor?: BackgammonColor,
+    activePlayer?: BackgammonPlayerActive,
+    inactivePlayer?: BackgammonPlayerInactive
   ): BackgammonGame {
     switch (stateKind) {
       case 'rolling-for-start':
+        activeColor = randomBackgammonColor()
+        activePlayer = players.find(
+          (p) => p.color === activeColor && p.stateKind !== 'inactive'
+        ) as BackgammonPlayerActive
+        inactivePlayer = players.find(
+          (p) => p.color !== activeColor && p.stateKind !== 'inactive'
+        ) as BackgammonPlayerInactive
         return {
           id,
           stateKind,
@@ -44,6 +67,30 @@ export class Game {
           board: Board.initialize(),
           cube: Cube.initialize(),
         } as BackgammonGameRollingForStart
+      case 'rolled-for-start':
+        activePlayer = players.find(
+          (p) => p.color === activeColor
+        ) as BackgammonPlayerRolling
+        inactivePlayer = players.find(
+          (p) => p.color !== activeColor
+        ) as BackgammonPlayerInactive
+
+        const activePlay = Play.roll({
+          player: activePlayer,
+          stateKind: 'rolling',
+        })
+
+        return {
+          id,
+          stateKind: 'in-progress',
+          players,
+          board,
+          cube,
+          activeColor,
+          activePlay,
+          activePlayer,
+          inactivePlayer,
+        } as BackgammonGameInProgress
       case 'in-progress':
         return {
           id,
@@ -51,6 +98,8 @@ export class Game {
           players,
           board,
           cube,
+          activeColor,
+          activePlayer,
         } as BackgammonGameInProgress
       case 'completed':
         throw new Error('Game cannot be initialized in the completed state')
@@ -59,41 +108,32 @@ export class Game {
 
   public static rollForStart = function rollForStartGame(
     game: BackgammonGameRollingForStart
-  ): BackgammonGameInProgress {
+  ): BackgammonGameRolledForStart {
     const activeColor = randomBackgammonColor()
-    let player = game.players.find((p) => p.color === activeColor)
-    if (!player) {
-      throw new Error('Active player not found')
-    }
-    if (!player.dice) {
-      throw new Error('Active player dice not found')
-    }
+    const activePlayer = game.players.find(
+      (p) => p.color === activeColor
+    ) as BackgammonPlayerRolledForStart
 
-    const inactivePlayer = game.players.find((p) => p.color !== activeColor)
-    if (!inactivePlayer) {
-      throw new Error('Inactive player not found')
-    }
+    const inactivePlayer = game.players.find(
+      (p) => p.color !== activeColor
+    ) as BackgammonPlayerInactive
 
-    const activePlayer: BackgammonPlayerRolling = {
-      ...player,
-      stateKind: 'rolling',
-      dice: {
-        ...player.dice,
-        stateKind: 'ready',
-      },
-    }
+    const activePlay = Play.roll({
+      player: activePlayer,
+      stateKind: 'rolled',
+    })
 
     return {
       ...game,
-      players: [activePlayer, inactivePlayer],
-      stateKind: 'in-progress',
+      stateKind: 'rolled-for-start',
       activeColor,
-      activePlay: undefined,
+      activePlayer,
+      inactivePlayer,
     }
   }
 
   public static roll = function roll(
-    game: BackgammonGameInProgress
+    game: BackgammonGameRolledForStart
   ): BackgammonGameInProgress {
     let { players } = game
     let player = players.find(
@@ -106,9 +146,12 @@ export class Game {
     if (!opponent) {
       throw new Error('Opponent player not found')
     }
-    const playerRolled = Player.roll(player)
-    players = [playerRolled, opponent]
-    const activePlay = Play.initialize(playerRolled)
+
+    const activePlay = Play.roll({
+      player,
+      stateKind: 'rolled',
+    })
+
     return {
       ...game,
       stateKind: 'in-progress',
@@ -128,39 +171,16 @@ export class Game {
     }
     return activePlayer as BackgammonPlayerActive // TODO: Fix this
   }
-  // public static double = function double(
-  //   game: BackgammonGameInProgress,
-  //   player: BackgammonPlayerActive,
-  //   players: BackgammonPlayers
-  // ): BackgammonGameInProgress {
-  //   const cube = Cube.double(game.cube, player, players)
-  //   return {
-  //     ...game,
-  //     cube,
-  //   }
-  // }
 
-  // public static move = function move(
-  //   game: BackgammonGameInProgress,
-  //   origin: BackgammonMoveOrigin
-  // ): BackgammonGameInProgress {
-  //   let activePlay = game.activePlay as BackgammonPlayMoving
-  //   let board = game.board
-  //   if (!activePlay) {
-  //     throw new Error('Active play not found')
-  //   }
-  //   let moves = activePlay.moves
-  //   const moveResults = Play.move(board, activePlay, origin)
-  //   moves = moveResults.play.moves
-  //   board = moveResults.board
-  //   activePlay = {
-  //     ...activePlay,
-  //     moves,
-  //   }
-
-  //   return {
-  //     ...game,
-  //     activePlay,
-  //   }
-  // }
+  public static inactivePlayer = function inactivePlayer(
+    game: BackgammonGame
+  ): BackgammonPlayerInactive {
+    const inactivePlayer = game.players.find(
+      (p) => p.color !== game.activeColor && p.stateKind !== 'inactive'
+    )
+    if (!inactivePlayer) {
+      throw new Error('Inactive player not found')
+    }
+    return inactivePlayer as BackgammonPlayerInactive // TODO: Fix this
+  }
 }

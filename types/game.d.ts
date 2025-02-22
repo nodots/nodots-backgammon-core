@@ -2,7 +2,12 @@ import { BackgammonBoard } from './board'
 import { BackgammonCube } from './cube'
 import { IntegerRange } from './generics'
 import { BackgammonPlay, BackgammonPlayMoving } from './play'
-import { BackgammonPlayerActive, BackgammonPlayers } from './player'
+import {
+  BackgammonPlayerActive,
+  BackgammonPlayerRolledForStart,
+  BackgammonPlayers,
+  BackgammonPlayerWinner,
+} from './player'
 
 export type BackgammonColor = 'black' | 'white'
 export type BackgammonMoveDirection = 'clockwise' | 'counterclockwise'
@@ -13,6 +18,7 @@ export const CHECKERS_PER_PLAYER = 15
 
 export type BackgammonGameStateKind =
   | 'rolling-for-start'
+  | 'rolled-for-start'
   | 'in-progress'
   | 'completed'
 
@@ -34,18 +40,29 @@ export type BackgammonGameRollingForStart = BackgammonGame & {
   stateKind: 'rolling-for-start'
 }
 
+export type BackgammonGameRolledForStart = BackgammonGame & {
+  stateKind: 'rolled-for-start'
+  activeColor: BackgammonColor
+  activePlay: BackgammonPlayRolledForStart
+  activePlayer: BackgammonPlayerRolledForStart
+  inactivePlayer: BackgammonPlayerInactive
+}
+
 export type BackgammonGameInProgress = BackgammonGame & {
   stateKind: 'in-progress'
   activeColor: BackgammonColor
   activePlay: BackgammonPlay
+  activePlayer: BackgammonPlayerActive
+  inactivePlayer: BackgammonPlayerInactive
 }
 
 export type BackgammonGameCompleted = BackgammonGame & {
   stateKind: 'completed'
-  winner: BackgammonPlayer // FIXME: Should probably be BackgammonPlayerWinner
+  winner: BackgammonPlayerWinner
 }
 
 export type BackgammonGame =
   | BackgammonGameRollingForStart
+  | BackgammonGameRolledForStart
   | BackgamonGameInProgress
   | BackgammonGameCompleted

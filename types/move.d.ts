@@ -18,11 +18,8 @@ export type BackgammonMoveKind =
 type BaseMove = {
   id: string
   player: BackgammonPlayerActive
-  isAuto: boolean = false
-  isForced: boolean = false
   stateKind: BackgammonMoveState
   dieValue: BackgammonDieValue
-  direction: BackgammonMoveDirection
   moveKind?: BackgammonMoveKind
   isHit?: boolean
   origin?: BackgammonCheckercontainer

@@ -16,6 +16,7 @@ export type BackgammonPlayerStateKind =
   | 'rolled'
   | 'moving'
   | 'moved'
+  | 'winner'
 
 type BasePlayer = {
   id?: string
@@ -75,6 +76,12 @@ export type BackgammonPlayerMoved = Player & {
   dice: BackgammonDiceRolled
 }
 
+export type BackgammonPlayerWinner = Player & {
+  id: string
+  stateKind: 'winner'
+  dice: BackgammonDiceRolled
+}
+
 export type BackgammonPlayer =
   | BackgammonPlayerInactive
   | BackgammonPlayerRollingForStart
@@ -83,6 +90,7 @@ export type BackgammonPlayer =
   | BackgammonPlayerRolled
   | BackgammonPlayerMoving
   | BackgammonPlayerMoved
+  | BackgammonPlayerWinner
 
 export type BackgammonPlayerActive =
   | BackgammonPlayerRollingForStart

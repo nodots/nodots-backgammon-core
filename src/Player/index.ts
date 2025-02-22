@@ -12,6 +12,7 @@ import {
   BackgammonPlayerRolling,
   BackgammonPlayerRollingForStart,
   BackgammonPlayerStateKind,
+  BackgammonPlayerWinner,
 } from '../../types'
 
 export class Player {
@@ -91,6 +92,15 @@ export class Player {
           dice: Dice.initialize(color),
           pipCount: 167,
         } as BackgammonPlayerMoved
+      case 'winner':
+        return {
+          id,
+          color,
+          direction,
+          stateKind: 'winner',
+          dice: Dice.initialize(color),
+          pipCount: 0,
+        } as BackgammonPlayerWinner
     }
   }
 
