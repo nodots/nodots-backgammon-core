@@ -1,4 +1,4 @@
-import { generateId } from '..'
+import { Checker, generateId } from '..'
 import {
   BackgammonBar,
   BackgammonBoard,
@@ -12,9 +12,8 @@ import {
   BackgammonPoint,
   BackgammonPoints,
   BackgammonPointValue,
-  OffPosition,
+  CheckercontainerPosition,
 } from '../../types'
-import { Checker } from '..'
 import { BOARD_IMPORT_DEFAULT } from './imports'
 
 export const BOARD_POINT_COUNT = 24
@@ -356,5 +355,103 @@ export class Board implements BackgammonBoard {
         checkers: counterclockwiseCheckers,
       },
     }
+  }
+
+  public static generateRandomBoard = (): BackgammonBoard => {
+    const boardImport: BackgammonCheckercontainerImport[] = []
+
+    const addCheckersToImport = (
+      color: BackgammonColor,
+      positions: number[]
+    ) => {
+      let checkerCount = 0
+      positions.forEach((position) => {
+        const positionCheckerCount = Math.floor(Math.random() * 5) + 1
+        checkerCount += positionCheckerCount
+        if (checkerCount > 15) return
+
+        if (checkerCount)
+          boardImport.push({
+            position: {
+              clockwise: position as BackgammonPointValue,
+              counterclockwise: (25 - position) as BackgammonPointValue,
+            },
+            checkers: {
+              color,
+              qty: positionCheckerCount,
+            },
+          })
+
+        const extraCheckers = 15 - checkerCount
+        if (extraCheckers) {
+          boardImport.push({
+            position: 'off',
+            checkers: {
+              color,
+              qty: extraCheckers,
+            },
+          })
+        }
+      })
+    }
+
+    const generateRandomPositions = (count: number): number[] => {
+      const positions: number[] = []
+      while (positions.length < count) {
+        const position = Math.floor(Math.random() * BOARD_POINT_COUNT) + 1
+        positions.push(position)
+      }
+      return positions
+    }
+
+    const blackPositions = generateRandomPositions(5)
+    const whitePositions = generateRandomPositions(5)
+
+    // Ensure some points have more than one checker
+    addCheckersToImport('black', blackPositions)
+    addCheckersToImport('white', whitePositions)
+
+    return Board.buildBoard(boardImport)
+  }
+
+  public static displayAsciiBoard = (board: BackgammonBoard): void => {
+    const points = board.points
+    const bar = board.bar
+    const off = board.off
+
+    const displayPoint = (point: BackgammonPoint) => {
+      const pointId = point.position.clockwise
+      const checkers = point.checkers
+      const color = checkers[0]?.color
+      const symbol = color === 'black' ? '🔴' : '⚪️'
+      const checkerCount = checkers.length
+      const pointDisplay = `${pointId}: ${symbol.repeat(checkerCount)}`
+      console.log(pointDisplay)
+    }
+
+    const displayBar = (bar: BackgammonBar) => {
+      const checkers = bar.checkers
+      const color = checkers[0]?.color
+      const checkerCount = checkers.length
+      const symbol = color === 'black' ? '🔴' : '⚪️'
+      const barDisplay = `Bar: ${symbol.repeat(checkerCount)}`
+      console.log(barDisplay)
+    }
+
+    const displayOff = (off: BackgammonOff) => {
+      const checkers = off.checkers
+      const color = checkers[0]?.color
+      const checkerCount = checkers.length
+      const symbol = color === 'black' ? '🔴' : '⚪️'
+
+      const offDisplay = `Off: ${symbol.repeat(checkerCount)}`
+      console.log(offDisplay)
+    }
+
+    points.forEach((point) => displayPoint(point))
+    displayBar(bar.clockwise)
+    displayOff(off.clockwise)
+    displayOff(off.counterclockwise)
+    displayBar(bar.counterclockwise)
   }
 }

@@ -44,4 +44,8 @@ describe('Board', () => {
     expect(points[0].position.clockwise).toBe(1)
     expect(points[0].position.counterclockwise).toBe(24)
   })
+
+  const randomBoard = Board.generateRandomBoard()
+  const displayAsciiBoard = Board.displayAsciiBoard(randomBoard)
+  console.log('displayAsciiBoard:', displayAsciiBoard)
 })
