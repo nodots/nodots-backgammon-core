@@ -3,8 +3,10 @@ import {
   BackgammonBoard,
   BackgammonCube,
   BackgammonMove,
+  BackgammonMoveInProgress,
   BackgammonMoveReady,
   BackgammonMoves,
+  BackgammonMoveStateKind,
   BackgammonPlayerMoved,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
@@ -173,8 +175,12 @@ export class Play {
 
     moves.forEach(function forEachMove(m: BackgammonMoveReady) {
       originPoints.map(function mapOrigins(o) {
-        m.origin = o
-        const newM = Move.move(newBoard, m, true)
+        const move: BackgammonMoveInProgress = {
+          ...m,
+          stateKind: 'in-progress' as BackgammonMoveStateKind,
+          origin: o,
+        } as BackgammonMoveInProgress // FIXME
+        const newM = Move.move(newBoard, move, true)
         validMoves.add(newM.move)
       })
     })

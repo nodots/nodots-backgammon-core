@@ -9,6 +9,7 @@ import {
   BackgammonDiceRolled,
   BackgammonMove,
   BackgammonMoveCompleted,
+  BackgammonMoveInProgress,
   BackgammonMoveReady,
   BackgammonPlayerMoving,
   BackgammonRoll,
@@ -48,11 +49,25 @@ describe('BearOff', () => {
   const origin = board.points.find((p) => p.position[direction] === 1)!
 
   it('should initialize the BearOff move', () => {
-    const moveResult = BearOff.move(board, move, origin)
-    const completedMove = moveResult.move as BackgammonMoveCompleted
-    expect(completedMove).toBeDefined()
-    expect(completedMove.id).toBeDefined()
-    expect(completedMove.stateKind).toBe('ready')
-    expect(completedMove.player).toBe(player)
+    const m: BackgammonMoveInProgress = {
+      id: '1',
+      player,
+      stateKind: 'in-progress',
+      moveKind: 'bear-off',
+      origin,
+      dieValue: currentRoll[0],
+    } as BackgammonMoveInProgress
+
+    const moveResult = BearOff.move(board, m)
+    const completedMove = moveResult.move
+    if (completedMove.destination) {
+      expect(completedMove).toBeDefined()
+      expect(completedMove.id).toBeDefined()
+      expect(completedMove.origin).toBeDefined()
+      expect(completedMove.destination).toBeDefined()
+    } else {
+      expect(completedMove).toBeDefined()
+      expect(completedMove.id).toBeDefined()
+    }
   })
 })

@@ -42,7 +42,7 @@ export type BackgammonMoveInProgress = Move & {
   player: BackgammonPlayerMoving
   dieValue: BackgammonDieValue
   origin: BackgammonCheckercontainer
-  destination: BackgammonCheckercontainer | undefined
+  destination?: BackgammonCheckercontainer
 }
 
 export type BackgammonMoveCompleted = Move & {

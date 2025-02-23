@@ -3,6 +3,7 @@ import {
   BackgammonBoard,
   BackgammonMove,
   BackgammonMoveCompleted,
+  BackgammonMoveInProgress,
   BackgammonMoveNoMove,
   BackgammonMoveReady,
   BackgammonMoveResult,
@@ -32,8 +33,7 @@ export class BearOff {
 
   public static move = function moveBearOff(
     board: BackgammonBoard,
-    move: BackgammonMoveReady,
-    origin: BackgammonPoint
+    move: BackgammonMoveInProgress
   ): BackgammonMoveResult {
     const dieValue = move.dieValue
     const player = move.player as BackgammonPlayerMoving
@@ -44,29 +44,7 @@ export class BearOff {
     const mostDistantPosition = homeboard.find(
       (p) => p.checkers.length > 0 && p.checkers[0].color === player.color
     )
-
-    if (!mostDistantPosition) {
-      return { board, move }
-    }
-    if (mostDistantPosition.position[direction] > dieValue) {
-      const completedMove: BackgammonMoveNoMove = {
-        ...move,
-        stateKind: 'completed',
-        moveKind: 'no-move',
-        origin,
-        destination: undefined,
-      }
-      return { board, move: completedMove }
-    } else {
-      const completedMove: BackgammonMoveCompleted = {
-        ...move,
-        stateKind: 'completed',
-        moveKind: 'bear-off',
-        origin,
-        destination: off,
-      }
-      return { board, move: completedMove }
-    }
+    console.warn('BearOff.move not implemented')
     return { board, move }
   }
 }

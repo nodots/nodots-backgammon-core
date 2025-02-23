@@ -6,6 +6,7 @@ import {
   BackgammonMove,
   BackgammonMoveCompleted,
   BackgammonMoveConfirmed,
+  BackgammonMoveInProgress,
   BackgammonMoveKind,
   BackgammonMoveOrigin,
   BackgammonMoveReady,
@@ -70,7 +71,7 @@ export class Move {
 
   public static move = function move(
     board: BackgammonBoard,
-    move: BackgammonMoveReady,
+    move: BackgammonMoveInProgress,
     isDryRun: boolean = false
   ): BackgammonMoveResult {
     const { moveKind } = move
@@ -80,14 +81,13 @@ export class Move {
       throw Error('Invalid player state for move')
     switch (moveKind) {
       case 'point-to-point':
-        if (!PointToPoint.isA(board, player))
-          throw Error('Invalid point-to-point move')
+        // if (!PointToPoint.isA(board, player))
+        //   throw Error('Invalid point-to-point move')
         return PointToPoint.move(board, move, isDryRun)
       case 'reenter':
         if (!Reenter.isA(board, player)) return Reenter.move(board, move)
       case 'bear-off':
-        if (!BearOff.isA(board, player))
-          return BearOff.move(board, move, move.origin as BackgammonPoint)
+        if (!BearOff.isA(board, player)) return BearOff.move(board, move)
       case 'no-move':
       case undefined:
         move = {

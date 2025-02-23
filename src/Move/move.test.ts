@@ -6,6 +6,7 @@ import {
 } from '..'
 import {
   BackgammonDiceRolled,
+  BackgammonMoveInProgress,
   BackgammonMoveReady,
   BackgammonPlayerMoving,
 } from '../../types'
@@ -41,11 +42,15 @@ describe('Move', () => {
     expect(newMove.player).toBe(player)
   })
 
-  const validPointToPoint: BackgammonMoveReady = {
+  const validPointToPoint: BackgammonMoveInProgress = {
     player,
     id: '1',
     dieValue: 1,
-    stateKind: 'ready',
+    stateKind: 'in-progress',
+    moveKind: 'point-to-point',
     origin,
-  } as BackgammonMoveReady
+  }
+
+  const completedPointToPointResult = Move.move(board, validPointToPoint)
+  const completedPointToPoint = completedPointToPointResult.move
 })
