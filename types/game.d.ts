@@ -19,7 +19,8 @@ export const CHECKERS_PER_PLAYER = 15
 export type BackgammonGameStateKind =
   | 'rolling-for-start'
   | 'rolled-for-start'
-  | 'in-progress'
+  | 'rolling'
+  | 'moving'
   | 'completed'
 
 type BaseGame = {
@@ -43,15 +44,20 @@ export type BackgammonGameRollingForStart = BackgammonGame & {
 export type BackgammonGameRolledForStart = BackgammonGame & {
   stateKind: 'rolled-for-start'
   activeColor: BackgammonColor
-  activePlay: BackgammonPlayRolledForStart
   activePlayer: BackgammonPlayerRolledForStart
   inactivePlayer: BackgammonPlayerInactive
 }
 
-export type BackgammonGameInProgress = BackgammonGame & {
-  stateKind: 'in-progress'
+export type BackgammonGameRolling = BackgammonGame & {
+  stateKind: 'rolling'
   activeColor: BackgammonColor
-  activePlay: BackgammonPlay
+  activePlayer: BackgammonPlayerActive
+  inactivePlayer: BackgammonPlayerInactive
+}
+
+export type BackgammonGameMoving = BackgammonGame & {
+  stateKind: 'moving'
+  activeColor: BackgammonColor
   activePlayer: BackgammonPlayerActive
   inactivePlayer: BackgammonPlayerInactive
 }
@@ -64,5 +70,6 @@ export type BackgammonGameCompleted = BackgammonGame & {
 export type BackgammonGame =
   | BackgammonGameRollingForStart
   | BackgammonGameRolledForStart
-  | BackgamonGameInProgress
+  | BackgammonGameRolling
+  | BackgammonGameMoving
   | BackgammonGameCompleted

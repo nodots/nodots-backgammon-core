@@ -24,19 +24,28 @@ describe('Move', () => {
     dice: Dice.initialize(color, 'rolled') as BackgammonDiceRolled,
     pipCount: 167,
   }
-  const point = board.points[0]
+  const origin = board.points[0]
   let move: BackgammonMoveReady = {
     id: '1',
     player,
     dieValue: currentRoll[0],
     stateKind: 'ready',
+    origin,
   }
 
   it('should initialize the move correctly', () => {
-    const newMove = Move.initialize({ move, origin: point })
+    const newMove = Move.initialize({ move, origin })
     expect(newMove).toBeDefined()
     expect(newMove.id).toBeDefined()
     expect(newMove.stateKind).toBe('ready')
     expect(newMove.player).toBe(player)
   })
+
+  const validPointToPoint: BackgammonMoveReady = {
+    player,
+    id: '1',
+    dieValue: 1,
+    stateKind: 'ready',
+    origin,
+  } as BackgammonMoveReady
 })

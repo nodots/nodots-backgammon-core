@@ -4,8 +4,9 @@ import {
   BackgammonColor,
   BackgammonCube,
   BackgammonGame,
-  BackgammonGameInProgress,
+  BackgammonGameMoving,
   BackgammonGameRolledForStart,
+  BackgammonGameRolling,
   BackgammonGameRollingForStart,
   BackgammonGameStateKind,
   BackgammonPlayerActive,
@@ -54,44 +55,58 @@ export class Game {
     switch (stateKind) {
       case 'rolling-for-start':
         activeColor = randomBackgammonColor()
-        activePlayer = players.find(
-          (p) => p.color === activeColor && p.stateKind !== 'inactive'
-        ) as BackgammonPlayerActive
-        inactivePlayer = players.find(
-          (p) => p.color !== activeColor && p.stateKind !== 'inactive'
-        ) as BackgammonPlayerInactive
-        return {
-          id,
-          stateKind,
-          players,
-          board: Board.initialize(),
-          cube: Cube.initialize(),
-        } as BackgammonGameRollingForStart
-      case 'rolled-for-start':
-        activePlayer = players.find(
+        const playerRollingForStart = players.find(
           (p) => p.color === activeColor
-        ) as BackgammonPlayerRolling
+        )
+        if (!playerRollingForStart) {
+          throw new Error('Active player not found')
+        }
+        activePlayer = {
+          ...playerRollingForStart,
+          stateKind: 'rolling',
+        } as BackgammonPlayerRolling
         inactivePlayer = players.find(
           (p) => p.color !== activeColor
         ) as BackgammonPlayerInactive
-
-        const activePlay = Play.roll({
-          player: activePlayer,
-          stateKind: 'rolling',
-        })
-
+        if (!inactivePlayer) {
+          throw new Error('Inactive player not found')
+        }
+        players = [activePlayer, inactivePlayer]
         return {
           id,
-          stateKind: 'in-progress',
+          stateKind: 'rolled-for-start',
+          players,
+          board: Board.initialize(),
+          cube: Cube.initialize(),
+        } as BackgammonGameRolledForStart
+      case 'rolled-for-start':
+        return {
+          id,
+          stateKind: 'rolling',
           players,
           board,
           cube,
           activeColor,
-          activePlay,
           activePlayer,
           inactivePlayer,
-        } as BackgammonGameInProgress
-      case 'in-progress':
+        } as BackgammonGameRolling
+      case 'rolling':
+        const player = players.find(
+          (p) => p.color === activeColor && p.stateKind === 'rolling'
+        ) as BackgammonPlayerRolling
+        Play.roll({
+          player,
+        })
+        return {
+          id,
+          stateKind: 'moving',
+          players,
+          board,
+          cube,
+          activeColor,
+          activePlayer,
+        } as BackgammonGameMoving
+      case 'moving':
         return {
           id,
           stateKind,
@@ -100,7 +115,7 @@ export class Game {
           cube,
           activeColor,
           activePlayer,
-        } as BackgammonGameInProgress
+        } as BackgammonGameMoving
       case 'completed':
         throw new Error('Game cannot be initialized in the completed state')
     }
@@ -110,18 +125,20 @@ export class Game {
     game: BackgammonGameRollingForStart
   ): BackgammonGameRolledForStart {
     const activeColor = randomBackgammonColor()
-    const activePlayer = game.players.find(
-      (p) => p.color === activeColor
-    ) as BackgammonPlayerRolledForStart
-
-    const inactivePlayer = game.players.find(
+    const { players } = game
+    console.log('players', players)
+    let activePlayer = players.find((p) => p.color === activeColor)
+    if (!activePlayer) {
+      throw new Error('Active player not found')
+    }
+    const inactivePlayer = players.find(
       (p) => p.color !== activeColor
     ) as BackgammonPlayerInactive
 
-    const activePlay = Play.roll({
-      player: activePlayer,
-      stateKind: 'rolled',
-    })
+    activePlayer = {
+      ...activePlayer,
+      stateKind: 'rolled-for-start',
+    } as BackgammonPlayerRolledForStart
 
     return {
       ...game,
@@ -133,8 +150,8 @@ export class Game {
   }
 
   public static roll = function roll(
-    game: BackgammonGameRolledForStart
-  ): BackgammonGameInProgress {
+    game: BackgammonGameRolling
+  ): BackgammonGameMoving {
     let { players } = game
     let player = players.find(
       (p) => p.color === game.activeColor && p.stateKind === 'rolling'
@@ -149,12 +166,12 @@ export class Game {
 
     const activePlay = Play.roll({
       player,
-      stateKind: 'rolled',
+      stateKind: 'rolling',
     })
 
     return {
       ...game,
-      stateKind: 'in-progress',
+      stateKind: 'moving',
       activePlay,
       players,
     }

@@ -8,7 +8,9 @@ import {
   BackgammonMoveConfirmed,
   BackgammonMoveKind,
   BackgammonMoveOrigin,
+  BackgammonMoveReady,
   BackgammonMoveResult,
+  BackgammonMoveStateKind,
   BackgammonPlayer,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
@@ -29,8 +31,8 @@ export class Move {
   player!: BackgammonPlayer
   id!: string
   dieValue!: BackgammonDieValue
-  stateKind!: BackgammonMoveKind
-  moveKind!: BackgammonMoveKind
+  stateKind!: BackgammonMoveStateKind
+  moveKind: BackgammonMoveKind | undefined = undefined
   origin: BackgammonCheckercontainer | undefined = undefined
   destination: BackgammonCheckercontainer | undefined = undefined
 
@@ -45,7 +47,7 @@ export class Move {
       id,
       stateKind,
       origin,
-    }
+    } as BackgammonMoveReady
   }
 
   // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?open_point
@@ -66,40 +68,35 @@ export class Move {
     return false
   }
 
-  public static move = function _move(
+  public static move = function move(
     board: BackgammonBoard,
-    move: BackgammonMove,
+    move: BackgammonMoveReady,
     isDryRun: boolean = false
   ): BackgammonMoveResult {
     const { moveKind } = move
-
+    const { player } = move
+    if (!player) throw Error('Player not found')
+    if (player.stateKind !== 'moving')
+      throw Error('Invalid player state for move')
     switch (moveKind) {
       case 'point-to-point':
-        if (!PointToPoint.isA(board, move.player))
+        if (!PointToPoint.isA(board, player))
           throw Error('Invalid point-to-point move')
         return PointToPoint.move(board, move, isDryRun)
       case 'reenter':
-        if (!Reenter.isA(board, move.player)) return Reenter.move(board, move)
+        if (!Reenter.isA(board, player)) return Reenter.move(board, move)
       case 'bear-off':
-        if (!BearOff.isA(board, move.player)) return BearOff.move(board, move)
+        if (!BearOff.isA(board, player))
+          return BearOff.move(board, move, move.origin as BackgammonPoint)
       case 'no-move':
-        return {
-          board: board,
-          move: {
-            ...move,
-            moveKind: 'no-move',
-            destination: undefined,
-          },
-        }
       case undefined:
-        // console.log('Move.move -> move undefined:', move)
+        move = {
+          ...move,
+        }
+
         return {
-          board: board,
-          move: {
-            ...move,
-            moveKind: 'no-move',
-            destination: undefined,
-          },
+          board,
+          move,
         }
     }
   }

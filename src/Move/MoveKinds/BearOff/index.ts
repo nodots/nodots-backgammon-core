@@ -2,9 +2,15 @@ import { Player } from '../../..'
 import {
   BackgammonBoard,
   BackgammonMove,
+  BackgammonMoveCompleted,
+  BackgammonMoveNoMove,
+  BackgammonMoveReady,
   BackgammonMoveResult,
+  BackgammonOff,
+  BackgammonPlayer,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
+  BackgammonPoint,
 } from '../../../../types'
 
 export class BearOff {
@@ -26,20 +32,41 @@ export class BearOff {
 
   public static move = function moveBearOff(
     board: BackgammonBoard,
-    move: BackgammonMove
+    move: BackgammonMoveReady,
+    origin: BackgammonPoint
   ): BackgammonMoveResult {
-    const { player } = move
-    let bearOff: BackgammonMove = {
-      ...move,
-      moveKind: 'no-move',
+    const dieValue = move.dieValue
+    const player = move.player as BackgammonPlayerMoving
+    const direction = player.direction
+    const homeboard = Player.getHomeBoard(board, player)
+    homeboard.sort((a, b) => a.position[direction] - b.position[direction])
+    const off = board.off[player.direction]
+    const mostDistantPosition = homeboard.find(
+      (p) => p.checkers.length > 0 && p.checkers[0].color === player.color
+    )
+
+    if (!mostDistantPosition) {
+      return { board, move }
     }
-    if (BearOff.isA(board, player)) {
-      bearOff = {
+    if (mostDistantPosition.position[direction] > dieValue) {
+      const completedMove: BackgammonMoveNoMove = {
         ...move,
-        moveKind: 'bear-off',
+        stateKind: 'completed',
+        moveKind: 'no-move',
+        origin,
+        destination: undefined,
       }
+      return { board, move: completedMove }
+    } else {
+      const completedMove: BackgammonMoveCompleted = {
+        ...move,
+        stateKind: 'completed',
+        moveKind: 'bear-off',
+        origin,
+        destination: off,
+      }
+      return { board, move: completedMove }
     }
-    // console.warn('reenter not implemented')
-    return { board, move: bearOff }
+    return { board, move }
   }
 }

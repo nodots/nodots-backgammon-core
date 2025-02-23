@@ -3,7 +3,7 @@ import {
   BackgammonColor,
   BackgammonDice,
   BackgammonDiceInactive,
-  BackgammonDiceReady,
+  BackgammonDiceRolling,
   BackgammonDiceRolled,
   BackgammonDiceStateKind,
   BackgammonDieValue,
@@ -25,14 +25,14 @@ export class Dice {
     const total = currentRoll ? currentRoll[0] + currentRoll[1] : undefined
 
     switch (stateKind) {
-      case 'ready':
+      case 'rolling':
         return {
           id,
           color,
           stateKind,
           currentRoll,
           total,
-        } as BackgammonDiceReady
+        } as BackgammonDiceRolling
       case 'rolled':
         return {
           id,
@@ -50,17 +50,8 @@ export class Dice {
     }
   }
 
-  public static setReady = function setReady(
-    dice: BackgammonDice
-  ): BackgammonDiceReady {
-    return {
-      ...dice,
-      stateKind: 'ready',
-    }
-  }
-
   public static roll = function rollDice(
-    dice: BackgammonDiceReady
+    dice: BackgammonDiceInactive
   ): BackgammonDiceRolled {
     const currentRoll: BackgammonRoll = [
       Dice.rollDie() as BackgammonDieValue,
