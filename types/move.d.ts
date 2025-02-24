@@ -63,7 +63,6 @@ export type BackgammonMoveNoMove = Move & {
   stateKind: 'completed'
   moveKind: 'no-move'
   origin: BackgammonCheckercontainer
-  destination: undefined
 }
 
 export type BackgammonMove =

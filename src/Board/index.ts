@@ -383,15 +383,15 @@ export class Board implements BackgammonBoard {
           })
 
         const extraCheckers = 15 - checkerCount
-        if (extraCheckers) {
-          boardImport.push({
-            position: 'off',
-            checkers: {
-              color,
-              qty: extraCheckers,
-            },
-          })
-        }
+        // if (extraCheckers) {
+        //   boardImport.push({
+        //     position: 'off',
+        //     checkers: {
+        //       color,
+        //       qty: extraCheckers,
+        //     },
+        //   })
+        // }
       })
     }
 

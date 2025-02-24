@@ -15,21 +15,36 @@ export function getDestination(
   player: BackgammonPlayerMoving,
   dieValue: BackgammonDieValue
 ): BackgammonPoint | BackgammonOff | undefined {
-  const direction: BackgammonMoveDirection = player.direction
-  // console.log('getDestination', { origin, board, player, dieValue })
+  const direction = player.direction
   switch (origin.kind) {
     case 'point':
       const point = origin as BackgammonPoint
-      const destinationPosition = point.position[direction] - dieValue
-      return board.points.find(
-        (p) =>
-          p.position[direction] === destinationPosition &&
-          Move.isPointOpen(p, player)
+      let destinationPosition = point.position[direction] - dieValue
+      if (direction === 'clockwise') {
+        if (destinationPosition < 1) return undefined
+      } else {
+        if (destinationPosition > 24) return undefined
+      }
+      console.log(
+        `getDestination color: ${player.color} originPosition: ${point.position[direction]} destinationPosition:`,
+        destinationPosition
       )
+      const destination = board.points.find(
+        (p) => p.position[direction] === destinationPosition
+      )
+      if (destination && Move.isPointOpen(destination, player)) {
+        return destination
+      } else {
+        return undefined
+      }
     case 'bar':
-    // return this.getBarDestination(origin, player, dieValue)
+      // return this.getBarDestination(origin, player, dieValue)
+      return undefined
     case 'off':
-    // return this.getOffDestination(origin, player, dieValue)
-    // console.log('Bar and off not implemented')
+      // return this.getOffDestination(origin, player, dieValue)
+      // console.log('Bar and off not implemented')
+      return undefined
+    default:
+      return undefined
   }
 }

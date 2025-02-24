@@ -1,9 +1,11 @@
 import {
   BackgammonBoard,
-  BackgammonMove,
+  BackgammonMoveCompleted,
   BackgammonMoveInProgress,
-  BackgammonMoveReady,
+  BackgammonMoveKind,
+  BackgammonMoveNoMove,
   BackgammonMoveResult,
+  BackgammonMoveStateKind,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
   BackgammonPoint,
@@ -28,36 +30,30 @@ export class PointToPoint {
   ): BackgammonMoveResult {
     const { player, dieValue } = move
     const direction = player.direction
-    let newMove: BackgammonMove = {
-      ...move,
-      stateKind: 'completed',
-      moveKind: 'no-move',
-    }
-    let newBoard = board
     if (!move.origin) throw new Error('Origin not found')
     const origin = move.origin as BackgammonPoint // FIXME: Better type check
     const destination = getDestination(origin, board, player, dieValue)
-
     if (destination) {
-      newMove = {
+      const newMove = {
         ...move,
         stateKind: 'completed',
-        moveKind: 'point-to-point',
-        origin,
+        moveKind: 'point-to-point' as BackgammonMoveKind,
         destination,
+      } as BackgammonMoveCompleted
+      if (!isDryRun) {
+        board = Board.moveChecker(board, origin, destination, direction)
       }
-      if (!isDryRun)
-        newBoard = Board.moveChecker(newBoard, origin, destination, direction)
-
+      return { board, move: newMove }
+    } else {
+      const noMove: BackgammonMoveNoMove = {
+        ...move,
+        stateKind: 'completed',
+        moveKind: 'no-move' as BackgammonMoveKind,
+      } as BackgammonMoveNoMove
       return {
-        move: newMove,
-        board: newBoard,
+        board,
+        move: noMove,
       }
-    }
-
-    return {
-      move: newMove,
-      board,
     }
   }
 }

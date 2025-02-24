@@ -72,13 +72,17 @@ export class Game {
           throw new Error('Inactive player not found')
         }
         players = [activePlayer, inactivePlayer]
-        return {
+        const gameRolling: BackgammonGameRolling = {
           id,
-          stateKind: 'rolled-for-start',
+          stateKind: 'rolling',
           players,
           board: Board.initialize(),
           cube: Cube.initialize(),
-        } as BackgammonGameRolledForStart
+          activeColor,
+          activePlayer,
+          inactivePlayer,
+        }
+        return gameRolling
       case 'rolled-for-start':
         return {
           id,
@@ -123,7 +127,7 @@ export class Game {
 
   public static rollForStart = function rollForStartGame(
     game: BackgammonGameRollingForStart
-  ): BackgammonGameRolledForStart {
+  ): BackgammonGameRolling {
     const activeColor = randomBackgammonColor()
     const { players } = game
     console.log('players', players)
@@ -137,12 +141,12 @@ export class Game {
 
     activePlayer = {
       ...activePlayer,
-      stateKind: 'rolled-for-start',
-    } as BackgammonPlayerRolledForStart
+      stateKind: 'rolling',
+    } as BackgammonPlayerRolling
 
     return {
       ...game,
-      stateKind: 'rolled-for-start',
+      stateKind: 'rolling',
       activeColor,
       activePlayer,
       inactivePlayer,

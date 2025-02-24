@@ -4,7 +4,7 @@ import {
   BackgammonColor,
   BackgammonCube,
   BackgammonGame,
-  BackgammonGameRollingForStart,
+  BackgammonGameRolledForStart,
   BackgammonPlay,
   BackgammonPlayer,
   BackgammonPlayers,
@@ -15,7 +15,6 @@ describe('Game', () => {
   const clockwiseColor = randomBackgammonColor()
   const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
 
-  let game: BackgammonGame | undefined = undefined
   let stateKind:
     | 'rolling-for-start'
     | 'rolled-for-start'
@@ -36,32 +35,29 @@ describe('Game', () => {
 
   const gameRolledForStart = Game.initialize(
     players
-  ) as BackgammonGameRollingForStart
+  ) as BackgammonGameRolledForStart
   players = gameRolledForStart.players
   stateKind = gameRolledForStart.stateKind
   board = gameRolledForStart.board
   cube = gameRolledForStart.cube
   activeColor = gameRolledForStart.activeColor
   activePlay = gameRolledForStart.activePlay
+  activePlayer = gameRolledForStart.activePlayer
+  inactivePlayer = gameRolledForStart.inactivePlayer
   winner = gameRolledForStart.winner
 
   it('should initialize the game correctly', () => {
     expect(gameRolledForStart).toBeDefined()
-    // expect(stateKind).toBe('rolled-for-start')
-    // expect(board).toBeDefined()
-    // expect(cube).toBeDefined()
-    // expect(winner).toBeUndefined()
+    expect(stateKind).toBe('rolling')
+    expect(players).toBeDefined()
+    expect(players.length).toBe(2)
+    expect(board).toBeDefined()
+    expect(cube).toBeDefined()
+    expect(activeColor).toBeDefined()
+    expect(activePlayer).toBeDefined()
+    expect(inactivePlayer).toBeDefined()
+    expect(board).toBeDefined()
+    expect(cube).toBeDefined()
+    expect(winner).toBeUndefined()
   })
-
-  // it('should roll for start correctly', () => {
-  //   expect(gameRolledForStart).toBeDefined()
-  //   expect(stateKind).toBe('rolled-for-start')
-  //   expect(board).toBeDefined()
-  //   expect(cube).toBeDefined()
-  //   expect(activeColor).toBeDefined()
-  //   expect(activePlay).toBeDefined()
-  //   expect(activePlayer).toBeDefined()
-  //   expect(inactivePlayer).toBeDefined()
-  //   expect(winner).toBeUndefined()
-  // })
 })

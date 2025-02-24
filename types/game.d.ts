@@ -44,7 +44,7 @@ export type BackgammonGameRollingForStart = BackgammonGame & {
 export type BackgammonGameRolledForStart = BackgammonGame & {
   stateKind: 'rolled-for-start'
   activeColor: BackgammonColor
-  activePlayer: BackgammonPlayerRolledForStart
+  activePlayer: BackgammonPlayerRolling
   inactivePlayer: BackgammonPlayerInactive
 }
 
