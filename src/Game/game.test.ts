@@ -3,7 +3,6 @@ import {
   BackgammonBoard,
   BackgammonColor,
   BackgammonCube,
-  BackgammonGame,
   BackgammonGameRolledForStart,
   BackgammonPlay,
   BackgammonPlayer,
