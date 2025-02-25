@@ -7,6 +7,7 @@ import {
   BackgammonGameRolledForStart,
   BackgammonPlay,
   BackgammonPlayer,
+  BackgammonPlayerRolling,
   BackgammonPlayers,
   BackgammonPlayerWinner,
 } from '../../types'
@@ -60,4 +61,26 @@ describe('Game', () => {
     expect(cube).toBeDefined()
     expect(winner).toBeUndefined()
   })
+
+  activePlayer = gameRolledForStart.activePlayer
+  if (!activePlayer) throw new Error('activePlayer is undefined')
+  activePlayer = activePlayer as BackgammonPlayerRolling
+  // const gameRolling = Game.roll({
+  //   id: gameRolledForStart.id,
+  //   stateKind: 'rolling',
+  //   players,
+  //   board,
+  //   cube,
+  //   activeColor,
+  //   activePlayer,
+  //   inactivePlayer,
+  // })
+
+  // it('should roll the dice correctly', () => {
+  //   expect(gameRolling).toBeDefined()
+  //   expect(gameRolling.stateKind).toBe('rolling')
+  //   expect(gameRolling.activePlayer).toBeDefined()
+  //   expect(gameRolling.activePlayer).not.toEqual(activePlayer)
+  //   expect(gameRolling.activePlayer.stateKind).toBe('rolling')
+  // })
 })
