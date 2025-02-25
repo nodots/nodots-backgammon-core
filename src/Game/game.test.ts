@@ -64,22 +64,40 @@ describe('Game', () => {
   activePlayer = gameRolledForStart.activePlayer
   if (!activePlayer) throw new Error('activePlayer is undefined')
   activePlayer = activePlayer as BackgammonPlayerRolling
-  // const gameRolling = Game.roll({
-  //   id: gameRolledForStart.id,
-  //   stateKind: 'rolling',
-  //   players,
-  //   board,
-  //   cube,
-  //   activeColor,
-  //   activePlayer,
-  //   inactivePlayer,
-  // })
 
-  // it('should roll the dice correctly', () => {
-  //   expect(gameRolling).toBeDefined()
-  //   expect(gameRolling.stateKind).toBe('rolling')
-  //   expect(gameRolling.activePlayer).toBeDefined()
-  //   expect(gameRolling.activePlayer).not.toEqual(activePlayer)
-  //   expect(gameRolling.activePlayer.stateKind).toBe('rolling')
-  // })
+  // TODO: test for rolling
+  const gameMoving = Game.roll({
+    id: gameRolledForStart.id,
+    stateKind: 'rolling',
+    players,
+    board,
+    cube,
+    activeColor,
+    activePlay,
+    activePlayer,
+    inactivePlayer,
+  })
+
+  it('should roll the dice correctly', () => {
+    expect(gameMoving).toBeDefined()
+    expect(gameMoving.stateKind).toBe('moving')
+    expect(gameMoving.activePlayer).toBeDefined()
+    expect(gameMoving.activePlayer).toBeDefined()
+    expect(gameMoving.board).toBeDefined()
+    expect(gameMoving.cube).toBeDefined()
+    expect(gameMoving.activePlay).toBeDefined()
+    expect(gameMoving.activeColor).toBeDefined()
+    expect(gameMoving.activeColor).toBe(activeColor)
+    expect(gameMoving.activePlay.moves).toBeDefined()
+    if (
+      gameMoving.activePlayer.dice.currentRoll[0] ===
+      gameMoving.activePlayer.dice.currentRoll[1]
+    ) {
+      expect(gameMoving.activePlay.moves.length).toBe(4)
+    } else {
+      expect(gameMoving.activePlay.moves.length).toBe(2)
+    }
+  })
+
+  // TODO: test for moving
 })

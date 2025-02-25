@@ -11,6 +11,7 @@ import {
   BackgammonMoveOrigin,
   BackgammonPlayerActive,
   BackgammonPlayerInactive,
+  BackgammonPlayerMoving,
   BackgammonPlayerRolledForStart,
   BackgammonPlayerRolling,
   BackgammonPlayers,
@@ -144,15 +145,16 @@ export class Game {
     if (!activeColor) throw new Error('Active color must be provided')
     let [activePlayerForColor, inactivePlayerForColor] =
       Game.getPlayersForColor(players, activeColor!)
-    const activePlayer = activePlayerForColor as BackgammonPlayerRolling
+    let activePlayer = activePlayerForColor as BackgammonPlayerRolling
     if (!activePlayer) throw new Error('Active player not found')
     const inactivePlayer = inactivePlayerForColor
     if (!inactivePlayer) throw new Error('Inactive player not found')
 
-    Play.roll({
+    const activePlay = Play.roll({
       player: activePlayer,
       stateKind: 'rolling',
     })
+    const movingPlayer = activePlay.player
     return {
       id,
       stateKind: 'moving',
@@ -160,7 +162,8 @@ export class Game {
       board,
       cube,
       activeColor,
-      activePlayer,
+      activePlayer: movingPlayer,
+      activePlay,
     } as BackgammonGameMoving
   }
 

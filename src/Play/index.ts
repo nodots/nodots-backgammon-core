@@ -45,54 +45,15 @@ export class Play {
   public static roll = function roll({
     player,
   }: PlayProps): BackgammonPlayRolled {
-    switch (player.stateKind) {
-      case 'rolling':
-        let moves: BackgammonMove[] = []
-        player = Player.roll(player)
-        const roll = player.dice.currentRoll
-        const total = roll.reduce((a, b) => a + b, 0)
+    const rollingPlayer = player as BackgammonPlayerRolling
+    player = Player.roll(rollingPlayer)
+    const moves = Play.buildMoves(player)
 
-        const move0: BackgammonMoveReady = {
-          id: generateId(),
-          stateKind: 'ready',
-          player,
-          dieValue: roll[0],
-        }
-        const move1: BackgammonMoveReady = {
-          id: generateId(),
-          stateKind: 'ready',
-          player,
-          dieValue: roll[1],
-        }
-
-        moves = [move0, move1]
-
-        if (roll[0] === roll[1]) {
-          const move2: BackgammonMoveReady = {
-            id: generateId(),
-            stateKind: 'ready',
-            player,
-            dieValue: roll[0],
-          }
-          const move3: BackgammonMoveReady = {
-            id: generateId(),
-            stateKind: 'ready',
-            player,
-            dieValue: roll[1],
-          }
-          moves.push(move2, move3)
-        }
-
-        return {
-          id: generateId(),
-          stateKind: 'rolled',
-          player,
-          moves,
-        } as BackgammonPlayRolled
-      case 'rolled':
-      default:
-        console.error(`Invalid player state ${player.stateKind}`)
-        throw new Error('Invalid player state')
+    return {
+      id: generateId(),
+      stateKind: 'rolled',
+      player,
+      moves,
     }
   }
 
@@ -191,5 +152,43 @@ export class Play {
     })
 
     return validMoves
+  }
+
+  private static buildMoves = function buildMoves(
+    player: BackgammonPlayerRolled
+  ): BackgammonMoves {
+    const moves = new Set<BackgammonMove>()
+    const roll = player.dice.currentRoll
+    const move0: BackgammonMoveReady = {
+      id: generateId(),
+      player,
+      stateKind: 'ready',
+      dieValue: roll[0],
+    }
+    const move1: BackgammonMoveReady = {
+      id: generateId(),
+      player,
+      stateKind: 'ready',
+      dieValue: roll[1],
+    }
+    moves.add(move0)
+    moves.add(move1)
+    if (roll[0] === roll[1]) {
+      const move2: BackgammonMoveReady = {
+        id: generateId(),
+        player,
+        stateKind: 'ready',
+        dieValue: roll[0],
+      }
+      const move3: BackgammonMoveReady = {
+        id: generateId(),
+        player,
+        stateKind: 'ready',
+        dieValue: roll[1],
+      }
+      moves.add(move2)
+      moves.add(move3)
+    }
+    return Array.from(moves) as BackgammonMoves
   }
 }
