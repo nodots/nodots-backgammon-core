@@ -11,7 +11,6 @@ import {
   BackgammonMoveOrigin,
   BackgammonPlayerActive,
   BackgammonPlayerInactive,
-  BackgammonPlayerMoving,
   BackgammonPlayerRolledForStart,
   BackgammonPlayerRolling,
   BackgammonPlayers,
@@ -65,7 +64,7 @@ export class Game {
           board,
           cube,
         })
-      case 'rolled-for-start':
+      case 'rolled-for-start': // FIXME: This is probably wrong
         return {
           id,
           stateKind: 'rolling',
@@ -89,15 +88,7 @@ export class Game {
         } as BackgammonGameRolling)
       case 'moving':
         if (!activePlay) throw new Error('Active play must be provided')
-        if (!activeColor) throw new Error('Active color must be provided')
-        if (!activePlayer) throw new Error('Active player must be provided')
-        if (!inactivePlayer) throw new Error('Inactive player must be provided')
-        if (!board) throw new Error('Board must be provided')
-        if (!cube) throw new Error('Cube must be provided')
-        if (!activePlay) throw new Error('Active play must be provided')
         if (!origin) throw new Error('Origin must be provided')
-        stateKind = 'moving'
-
         return Game.move(
           {
             id,
@@ -167,7 +158,7 @@ export class Game {
     } as BackgammonGameMoving
   }
 
-  private static move = function move(
+  public static move = function move(
     game: BackgammonGameMoving,
     play: Play,
     origin: BackgammonMoveOrigin

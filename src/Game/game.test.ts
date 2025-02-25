@@ -4,6 +4,8 @@ import {
   BackgammonColor,
   BackgammonCube,
   BackgammonGameRolledForStart,
+  BackgammonMove,
+  BackgammonMoveOrigin,
   BackgammonPlay,
   BackgammonPlayer,
   BackgammonPlayerRolling,
@@ -99,5 +101,46 @@ describe('Game', () => {
     }
   })
 
+  const origin = board.points.find(
+    (p) => p.position[activePlayer.direction] === 24
+  ) as BackgammonMoveOrigin
+
+  activePlay = gameMoving.activePlay
+
   // TODO: test for moving
+  const gameMoved = Game.move(
+    {
+      id: gameMoving.id,
+      stateKind: 'moving',
+      players,
+      board: gameMoving.board,
+      cube: gameMoving.cube,
+      activePlay,
+      activeColor: gameMoving.activeColor,
+      activePlayer: gameMoving.activePlayer,
+      inactivePlayer: gameMoving.inactivePlayer,
+    },
+    activePlay,
+    origin as BackgammonMoveOrigin
+  )
+
+  it('should move correctly', () => {
+    expect(gameMoved).toBeDefined()
+    expect(gameMoved.stateKind).toBe('moving')
+    expect(gameMoved.activePlayer).toBeDefined()
+    expect(gameMoved.board).toBeDefined()
+    expect(gameMoved.cube).toBeDefined()
+    expect(gameMoved.activePlay).toBeDefined()
+    expect(gameMoved.activeColor).toBeDefined()
+    expect(gameMoved.activeColor).toBe(activeColor)
+    expect(gameMoved.activePlay.moves).toBeDefined()
+    if (
+      gameMoved.activePlayer.dice.currentRoll[0] ===
+      gameMoved.activePlayer.dice.currentRoll[1]
+    ) {
+      expect(gameMoved.activePlay.moves.length).toBe(4)
+    } else {
+      expect(gameMoved.activePlay.moves.length).toBe(2)
+    }
+  })
 })

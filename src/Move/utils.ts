@@ -25,10 +25,6 @@ export function getDestination(
       } else {
         if (destinationPosition > 24) return undefined
       }
-      console.log(
-        `getDestination color: ${player.color} originPosition: ${point.position[direction]} destinationPosition:`,
-        destinationPosition
-      )
       const destination = board.points.find(
         (p) => p.position[direction] === destinationPosition
       )

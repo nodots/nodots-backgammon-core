@@ -56,7 +56,6 @@ export class Move {
     point: BackgammonPoint,
     player: BackgammonPlayerMoving | BackgammonPlayerRolled
   ) {
-    console.log('isPointOpen', point, player)
     if (point.checkers.length < 2) return true
     if (point.checkers.length >= 2 && point.checkers[0].color === player.color)
       return true

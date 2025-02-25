@@ -67,23 +67,7 @@ export class Play {
     switch (origin.kind) {
       case 'point':
         const player = play.player as BackgammonPlayerMoving
-        // console.log('Play.move -> player', player)
         move.origin = origin as BackgammonPoint
-
-        console.log('Play.move -> move.origin', move.origin)
-        console.log('Play.move -> player', player)
-
-        // move.destination = board.points.find(
-        //   (p) => p.position[player.direction] === destinationPosition
-        // ) as BackgammonPoint
-
-        // const results = Move.move(board, move, false)
-        // move = results.move as BackgammonMove
-        // if (!move) throw new Error('Move not found')
-        // board = results.board
-        // moves = moves.map((m) =>
-        //   m.id === move!.id ? move : m
-        // ) as BackgammonMoves // FIXME: squirelly cast
         play = {
           ...play,
           stateKind: 'moving',
