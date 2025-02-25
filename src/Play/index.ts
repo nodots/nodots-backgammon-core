@@ -26,11 +26,7 @@ export interface PlayProps {
   cube?: BackgammonCube
   stateKind?: BackgammonPlayStateKind
   moves?: BackgammonMoves
-  player:
-    | BackgammonPlayerRolling
-    | BackgammonPlayerRolled
-    | BackgammonPlayerMoving
-    | BackgammonPlayerMoved
+  player: BackgammonPlayerRolling | BackgammonPlayerMoving
 }
 export class Play {
   id?: string = generateId()
@@ -46,13 +42,13 @@ export class Play {
     player,
   }: PlayProps): BackgammonPlayRolled {
     const rollingPlayer = player as BackgammonPlayerRolling
-    player = Player.roll(rollingPlayer)
-    const moves = Play.buildMoves(player)
+    const rolledPlayer = Player.roll(rollingPlayer) as BackgammonPlayerRolled
+    const moves = Play.buildMoves(rolledPlayer)
 
     return {
       id: generateId(),
       stateKind: 'rolled',
-      player,
+      player: rolledPlayer,
       moves,
     }
   }
