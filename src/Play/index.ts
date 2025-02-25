@@ -74,8 +74,8 @@ export class Play {
         // console.log('Play.move -> player', player)
         move.origin = origin as BackgammonPoint
 
-        // console.log('Play.move -> move.origin', move.origin)
-        // console.log('Play.move -> player', player)
+        console.log('Play.move -> move.origin', move.origin)
+        console.log('Play.move -> player', player)
 
         // move.destination = board.points.find(
         //   (p) => p.position[player.direction] === destinationPosition
@@ -94,7 +94,6 @@ export class Play {
           player,
           moves,
         }
-
         return {
           play,
           board,
