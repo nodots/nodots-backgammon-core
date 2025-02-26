@@ -33,18 +33,24 @@ describe('Play', () => {
   it('should initialize the play correctly', () => {
     player = play.player
     const { dice } = player
+    const currentRoll = dice.currentRoll
     expect(play).toBeDefined()
-    // expect(play.id).toBeDefined()
-    // expect(play.stateKind).toBe('rolled')
-    // expect(player).toBe(player)
-    // expect(player.color).toBe(color)
-    // expect(player.direction).toBe(direction)
-    // expect(dice).toBeDefined()
-    // expect(player.pipCount).toBe(167)
-    // expect(dice.stateKind).toBe('rolled')
-    // expect(moves).toBeDefined()
-    // expect(moves.length).toBeGreaterThan(0)
-    // expect(moves.length).toBeLessThanOrEqual(4)
+    expect(play.id).toBeDefined()
+    expect(play.stateKind).toBe('rolled')
+    expect(player).toBe(player)
+    expect(player.color).toBe(color)
+    expect(player.direction).toBe(direction)
+    expect(dice).toBeDefined()
+    expect(player.pipCount).toBe(167)
+    expect(dice.stateKind).toBe('rolled')
+    expect(moves).toBeDefined()
+    expect(moves.length).toBeGreaterThan(0)
+    expect(moves.length).toBeLessThanOrEqual(4)
+    if (currentRoll[0] === currentRoll[1]) {
+      expect(moves.length).toBe(4)
+    } else {
+      expect(moves.length).toBe(2)
+    }
   })
 
   // const validMoves = Play.getValidMoves(board, play.moves)
