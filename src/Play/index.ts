@@ -4,11 +4,9 @@ import {
   BackgammonBoard,
   BackgammonCube,
   BackgammonMove,
-  BackgammonMoveInProgress,
   BackgammonMoveOrigin,
   BackgammonMoveReady,
   BackgammonMoves,
-  BackgammonMoveStateKind,
   BackgammonPlayerMoved,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
@@ -19,7 +17,6 @@ import {
   BackgammonPlayStateKind,
   BackgammonPoint,
 } from '../../types'
-import { Move } from '../Move'
 
 export interface PlayProps {
   id?: string
@@ -103,34 +100,103 @@ export class Play {
       | BackgammonPlayerMoved = moves[0].player
 
     let validMoves = new Set<BackgammonMove>()
-    let newBoard = board
 
     const originPoints = board.points.filter(
       (p) => p.checkers.length > 0 && p.checkers[0]?.color === player.color
     )
+    const originBar = board.bar[player.direction]
 
-    // TODO: Implement reentering
-    // const bar = board.bar[player.direction]
-    // if (bar && bar.checkers.length > 0) {
-    //   const reenter = Move.move(board, {
+    const simulateMove = (
+      board: BackgammonBoard,
+      move: BackgammonMoveReady
+    ) => {
+      const newBoard = JSON.parse(JSON.stringify(board)) as BackgammonBoard
+      const origin = move.origin as BackgammonPoint | BackgammonBar
+      const destination = move.destination as BackgammonPoint
+      if (origin.kind === 'point') {
+        const originPoint = newBoard.points.find(
+          (p) =>
+            p.position[player.direction] === origin.position[player.direction]
+        )
+        const checkerToMove = originPoint?.checkers.pop()
+        if (!checkerToMove) throw new Error('Checker not found')
+        destination.checkers.push(checkerToMove)
+      } else if (origin.kind === 'bar') {
+        const checkerToMove = newBoard.bar[player.direction].checkers.pop()
+        if (!checkerToMove) throw new Error('Checker not found')
+        destination.checkers.push(checkerToMove)
+      }
 
-    //   })
-    //   validMoves.add(reenter.move)
-    // }
+      return newBoard
+    }
 
-    moves.forEach(function forEachMove(m: BackgammonMoveReady) {
-      originPoints.map(function mapOrigins(o) {
-        const move: BackgammonMoveInProgress = {
-          ...m,
-          stateKind: 'in-progress' as BackgammonMoveStateKind,
-          origin: o,
-        } as BackgammonMoveInProgress // FIXME
-        const newM = Move.move(newBoard, move, true)
-        validMoves.add(newM.move)
-      })
-    })
+    const addValidMove = (
+      move: BackgammonMoveReady,
+      board: BackgammonBoard
+    ) => {
+      const possibleMove = { ...move }
+      const dieValue = move.dieValue
+      const origin = move.origin as BackgammonPoint | BackgammonBar
 
-    return validMoves
+      if (origin.kind === 'point') {
+        const originPosition = origin.position[player.direction]
+        const destinationPosition = originPosition + dieValue
+        const destination = board.points.find(
+          (p) => p.position[player.direction] === destinationPosition
+        )
+        if (destination) {
+          const destinationCheckers = destination.checkers
+          if (
+            destinationCheckers.length === 0 ||
+            destinationCheckers[0]?.color === player.color ||
+            destinationCheckers.length === 1
+          ) {
+            possibleMove.destination = destination
+            validMoves.add(possibleMove)
+          }
+        }
+      } else if (origin.kind === 'bar') {
+        const destinationPosition = board.points.find(
+          (p) => p.position[player.direction] === dieValue
+        )
+        if (destinationPosition) {
+          const destinationCheckers = destinationPosition.checkers
+          if (
+            destinationCheckers.length === 0 ||
+            destinationCheckers[0]?.color === player.color
+          ) {
+            possibleMove.destination = destinationPosition
+            validMoves.add(possibleMove)
+          }
+        }
+      }
+    }
+
+    if (originBar.checkers.length > 0) {
+      for (const move of moves) {
+        move.origin = originBar
+        addValidMove(move, board)
+      }
+    }
+
+    for (const origin of originPoints) {
+      for (const move of moves) {
+        move.origin = origin
+        addValidMove(move, board)
+      }
+    }
+
+    const finalValidMoves = new Set<BackgammonMove>()
+    for (const move of validMoves) {
+      const newBoard = simulateMove(board, move as BackgammonMoveReady)
+      const remainingMoves = moves.filter((m) => m.id !== move.id)
+      const nextValidMoves = Play.getValidMoves(newBoard, remainingMoves)
+      if (nextValidMoves.size > 0) {
+        finalValidMoves.add(move)
+      }
+    }
+
+    return finalValidMoves
   }
 
   private static buildMoves = function buildMoves(
