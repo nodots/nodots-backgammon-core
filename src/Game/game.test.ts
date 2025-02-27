@@ -1,4 +1,4 @@
-import { Game, Player, randomBackgammonColor } from '..'
+import { Board, Game, Player, randomBackgammonColor } from '..'
 import {
   BackgammonBoard,
   BackgammonColor,
@@ -34,6 +34,7 @@ describe('Game', () => {
   let activePlayer: BackgammonPlayer | undefined = undefined
   let inactivePlayer: BackgammonPlayer | undefined = undefined
   let winner: BackgammonPlayerWinner | undefined = undefined
+  let asciiBoard: string | undefined = undefined
 
   const gameRolledForStart = Game.initialize(
     players
@@ -47,6 +48,10 @@ describe('Game', () => {
   activePlayer = gameRolledForStart.activePlayer
   inactivePlayer = gameRolledForStart.inactivePlayer
   winner = gameRolledForStart.winner
+
+  asciiBoard = Board.getAsciiBoard(board)
+  console.log('INITIAL BOARD')
+  console.log(asciiBoard)
 
   it('should initialize the game correctly', () => {
     expect(gameRolledForStart).toBeDefined()
@@ -142,5 +147,8 @@ describe('Game', () => {
     } else {
       expect(gameMoved.activePlay.moves.length).toBe(2)
     }
+    asciiBoard = Board.getAsciiBoard(gameMoved.board)
+    console.log('MOVED BOARD')
+    console.log(asciiBoard)
   })
 })
