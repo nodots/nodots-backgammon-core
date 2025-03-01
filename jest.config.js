@@ -6,13 +6,14 @@ module.exports = {
   verbose: true,
   collectCoverage: true,
   testMatch: ['**/?(*.)+(test).ts'],
-  moduleFileExtensions: ['ts', 'ts', 'js', 'json', 'node'],
+  moduleFileExtensions: ['ts', 'js', 'json', 'node'],
   transform: {
-    '^.+\\.ts$': 'ts-jest',
-  },
-  globals: {
-    'ts-jest': {
-      tsconfig: 'tsconfig.json',
-    },
+    '^.+\\.ts$': [
+      'ts-jest',
+      {
+        tsconfig: 'tsconfig.json',
+        // Add any other ts-jest configuration options here
+      },
+    ],
   },
 }

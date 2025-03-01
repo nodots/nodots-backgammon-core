@@ -422,7 +422,7 @@ export class Board implements BackgammonBoard {
     const displayPoint = (point: BackgammonPoint, row: number): string => {
       const checkers = point.checkers
       const checker = checkers[row]
-      if (!checker) return '.'
+      if (!checker) return ' '
       const color = checker.color
       const symbol = color === 'black' ? 'X' : 'O'
       return `${symbol}`
@@ -431,7 +431,7 @@ export class Board implements BackgammonBoard {
     const displayBar = (bar: BackgammonBar, row: number): string => {
       const checkers = bar.checkers
       const checker = checkers[row]
-      if (!checker) return '*'
+      if (!checker) return ' '
       const color = checker.color
       const symbol = color === 'black' ? 'X' : 'O'
       return `${symbol} `
@@ -446,7 +446,8 @@ export class Board implements BackgammonBoard {
       return `${symbol}`
     }
 
-    let boardDisplay = ''
+    let boardDisplay = ' +-12--------7-+ +-6---------1-+\n'
+
     for (let row = 0; row < 5; row++) {
       boardDisplay += ' |'
       for (let i = 12; i < 18; i++) {
@@ -459,17 +460,18 @@ export class Board implements BackgammonBoard {
       boardDisplay += ' |\n'
     }
     boardDisplay += 'v|             |B|             |\n'
-    for (let row = 0; row < 5; row++) {
-      boardDisplay += ' |'
+    for (let row = 4; row >= 0; row--) {
+      boardDisplay += ' !'
       for (let i = 11; i >= 6; i--) {
         boardDisplay += ` ${displayPoint(points[i], row)}`
       }
-      boardDisplay += ' | |'
+      boardDisplay += ' ! !'
       for (let i = 5; i >= 0; i--) {
         boardDisplay += ` ${displayPoint(points[i], row)}`
       }
       boardDisplay += ' |\n'
     }
+    boardDisplay += ' +-13-------18-+ +-19-------24-+\n'
 
     return boardDisplay
   }
