@@ -1,4 +1,10 @@
-import { Checker, generateId, Player } from '..'
+import {
+  Checker,
+  generateId,
+  Player,
+  randomBackgammonColor,
+  randomBackgammonDirection,
+} from '..'
 import {
   BackgammonBar,
   BackgammonBoard,
@@ -416,7 +422,6 @@ export class Board implements BackgammonBoard {
       },
     }
   }
-
   public static generateRandomBoard = (): BackgammonBoard => {
     const boardImport: BackgammonCheckercontainerImport[] = []
 
@@ -426,11 +431,13 @@ export class Board implements BackgammonBoard {
     ) => {
       let checkerCount = 0
       positions.forEach((position) => {
-        const positionCheckerCount = Math.floor(Math.random() * 5) + 1
+        let positionCheckerCount = Math.floor(Math.random() * 5) + 1
+        if (checkerCount + positionCheckerCount > 15) {
+          positionCheckerCount = 15 - checkerCount
+        }
         checkerCount += positionCheckerCount
-        if (checkerCount > 15) return
 
-        if (checkerCount)
+        if (checkerCount <= 15) {
           boardImport.push({
             position: {
               clockwise: position as BackgammonPointValue,
@@ -441,35 +448,72 @@ export class Board implements BackgammonBoard {
               qty: positionCheckerCount,
             },
           })
-
-        const extraCheckers = 15 - checkerCount
-        // if (extraCheckers) {
-        //   boardImport.push({
-        //     position: 'off',
-        //     checkers: {
-        //       color,
-        //       qty: extraCheckers,
-        //     },
-        //   })
-        // }
+        }
       })
     }
 
     const generateRandomPositions = (count: number): number[] => {
-      const positions: number[] = []
-      while (positions.length < count) {
-        const position = Math.floor(Math.random() * BOARD_POINT_COUNT) + 1
-        positions.push(position)
+      const positions: Set<number> = new Set()
+      while (positions.size < count) {
+        const position = Math.floor(Math.random() * 24) + 1
+        positions.add(position)
       }
-      return positions
+      return Array.from(positions)
     }
 
-    const blackPositions = generateRandomPositions(5)
-    const whitePositions = generateRandomPositions(5)
+    let blackPositions = generateRandomPositions(5)
+    let whitePositions = generateRandomPositions(5)
+
+    // Ensure black and white positions do not overlap
+    while (blackPositions.some((pos) => whitePositions.includes(pos))) {
+      blackPositions = generateRandomPositions(5)
+      whitePositions = generateRandomPositions(5)
+    }
 
     // Ensure some points have more than one checker
     addCheckersToImport('black', blackPositions)
     addCheckersToImport('white', whitePositions)
+
+    const totalBlackCheckers = boardImport.reduce((acc, cc) => {
+      if (cc.checkers?.color === 'black') {
+        acc += cc.checkers.qty
+      }
+      return acc
+    }, 0)
+    const totalWhiteCheckers = boardImport.reduce((acc, cc) => {
+      if (cc.checkers?.color === 'white') {
+        acc += cc.checkers.qty
+      }
+      return acc
+    }, 0)
+
+    if (totalBlackCheckers < 15) {
+      const blackOffQty = 15 - totalBlackCheckers
+      boardImport.push({
+        position: {
+          clockwise: 0,
+          counterclockwise: 0,
+        },
+        checkers: {
+          color: 'black',
+          qty: blackOffQty,
+        },
+      })
+    }
+
+    if (totalWhiteCheckers < 15) {
+      const whiteOffQty = 15 - totalWhiteCheckers
+      boardImport.push({
+        position: {
+          clockwise: 0,
+          counterclockwise: 0,
+        },
+        checkers: {
+          color: 'white',
+          qty: whiteOffQty,
+        },
+      })
+    }
 
     return Board.buildBoard(boardImport)
   }
