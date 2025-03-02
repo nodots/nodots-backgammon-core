@@ -5,17 +5,15 @@ import {
   randomBackgammonColor,
   randomBackgammonDirection,
 } from '../../..'
+import { Board } from '../../../Board'
+import { BOARD_IMPORT_BOTH_BEAROFF } from '../../../Board/imports'
 import {
   BackgammonDiceRolled,
-  BackgammonMove,
-  BackgammonMoveCompleted,
   BackgammonMoveInProgress,
   BackgammonMoveReady,
   BackgammonPlayerMoving,
   BackgammonRoll,
 } from '../../../types'
-import { Board } from '../../../Board'
-import { BOARD_IMPORT_BOTH_BEAROFF } from '../../../Board/imports'
 
 describe('BearOff', () => {
   const diceId: string = generateId()
@@ -44,19 +42,21 @@ describe('BearOff', () => {
     player,
     stateKind: 'ready',
     dieValue: currentRoll[0],
+    possibleMoves: Board.getPossibleMoves(board, player, currentRoll[0]),
   }
 
   const origin = board.points.find((p) => p.position[direction] === 1)!
 
   it('should initialize the BearOff move', () => {
-    const m: BackgammonMoveInProgress = {
+    const m: BackgammonMoveReady = {
       id: '1',
       player,
-      stateKind: 'in-progress',
+      stateKind: 'ready',
       moveKind: 'bear-off',
       origin,
       dieValue: currentRoll[0],
-    } as BackgammonMoveInProgress
+      possibleMoves: Board.getPossibleMoves(board, player, currentRoll[0]),
+    }
 
     const moveResult = BearOff.move(board, m)
     const completedMove = moveResult.move

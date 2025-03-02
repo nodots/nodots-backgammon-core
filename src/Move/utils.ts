@@ -26,9 +26,10 @@ export function getDestination(
         if (destinationPosition > 24) return undefined
       }
       const destination = board.points.find(
-        (p) => p.position[direction] === destinationPosition
+        (p) =>
+          p.position[direction] === destinationPosition && p.checkers.length < 2
       )
-      if (destination && Move.isPointOpen(destination, player)) {
+      if (destination) {
         return destination
       } else {
         return undefined

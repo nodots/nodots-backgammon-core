@@ -144,6 +144,7 @@ export class Game {
     const activePlay = Play.roll({
       player: activePlayer,
       stateKind: 'rolling',
+      board,
     })
     const movingPlayer = activePlay.player
     return {

@@ -4,6 +4,7 @@ import {
   randomBackgammonColor,
   randomBackgammonDirection,
 } from '..'
+import { ascii } from '../Board/ascii'
 import {
   BackgammonDiceRolled,
   BackgammonMoveInProgress,
@@ -32,6 +33,7 @@ describe('Move', () => {
     dieValue: currentRoll[0],
     stateKind: 'ready',
     origin,
+    possibleMoves: Board.getPossibleMoves(board, player, currentRoll[0]),
   }
 
   it('should initialize the move correctly', () => {
@@ -42,15 +44,52 @@ describe('Move', () => {
     expect(newMove.player).toBe(player)
   })
 
-  const validPointToPoint: BackgammonMoveInProgress = {
+  const validPointToPoint: BackgammonMoveReady = {
     player,
     id: '1',
-    dieValue: 1,
-    stateKind: 'in-progress',
+    dieValue: 2,
+    stateKind: 'ready',
     moveKind: 'point-to-point',
     origin,
+    possibleMoves: Board.getPossibleMoves(board, player, currentRoll[0]),
   }
 
-  const completedPointToPointResult = Move.move(board, validPointToPoint)
-  const completedPointToPoint = completedPointToPointResult.move
+  it('Should have possibleMoves', () => {
+    expect(validPointToPoint.possibleMoves).toBeDefined()
+    expect(validPointToPoint.possibleMoves.length).toBeGreaterThan(0)
+    expect(validPointToPoint.destination).toBeUndefined()
+    expect(validPointToPoint.moveKind).toBe('point-to-point')
+    expect(validPointToPoint.stateKind).toBe('ready')
+  })
+
+  const randomMoveSkeleton = validPointToPoint.possibleMoves[0]
+  const randomMove = {
+    ...randomMoveSkeleton,
+  }
+
+  it('Should have a random move', () => {
+    expect(randomMove).toBeDefined()
+    expect(randomMove.origin).toBeDefined()
+    expect(randomMove.destination).toBeDefined()
+  })
+
+  const movePayload: BackgammonMoveReady = {
+    ...randomMove,
+    id: '1',
+    moveKind: 'point-to-point',
+    stateKind: 'ready',
+    player,
+    possibleMoves: validPointToPoint.possibleMoves,
+  }
+  const moveResult = Move.move(board, movePayload, false)
+
+  it('Should move the checker', () => {
+    expect(moveResult).toBeDefined()
+    expect(moveResult.board).toBeDefined()
+    expect(moveResult.move).toBeDefined()
+    expect(moveResult.move.stateKind).toBe('completed')
+  })
+
+  // const completedPointToPointResult = Move.move(board, validPointToPoint, false)
+  // const newBoard = completedPointToPointResult.board
 })

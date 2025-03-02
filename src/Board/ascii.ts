@@ -44,25 +44,25 @@ export const ascii = (board: BackgammonBoard): string => {
     for (let i = 12; i < 18; i++) {
       boardDisplay += `${displayPoint(points[i], row)}`
     }
-    boardDisplay += '  |   |'
+    boardDisplay += ' |   | '
     for (let i = 18; i < 24; i++) {
       boardDisplay += `${displayPoint(points[i], row)}`
     }
     boardDisplay += ' |\n'
   }
-  boardDisplay += 'v|                    |BAR|                   |\n'
+  boardDisplay += 'v|                   |BAR|                    |\n'
   for (let row = 4; row >= 0; row--) {
     boardDisplay += ' |'
     for (let i = 11; i >= 6; i--) {
       boardDisplay += `${displayPoint(points[i], row)}`
     }
-    boardDisplay += '  |   |'
+    boardDisplay += ' |   | '
     for (let i = 5; i >= 0; i--) {
       boardDisplay += `${displayPoint(points[i], row)}`
     }
     boardDisplay += ' |\n'
   }
-  boardDisplay += ' +-12-11-10--9--8--7--------6--5--4--3--2--1--+ \n'
+  boardDisplay += ' +-12-11-10--9-8--7--------6--5--4--3--2--1--+ \n'
   boardDisplay += `       BLACK BAR: ${board.bar.clockwise.checkers.length}          WHITE BAR: ${board.bar.counterclockwise.checkers.length}\n`
   boardDisplay += `       BLACK OFF: ${board.off.clockwise.checkers.length}          WHITE OFF: ${board.off.counterclockwise.checkers.length}\n`
   return boardDisplay

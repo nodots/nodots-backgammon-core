@@ -50,8 +50,8 @@ describe('Game', () => {
   winner = gameRolledForStart.winner
 
   asciiBoard = Board.getAsciiBoard(board)
-  console.log('INITIAL BOARD')
-  console.log(asciiBoard)
+  // console.log('INITIAL BOARD')
+  // console.log(asciiBoard)
 
   it('should initialize the game correctly', () => {
     expect(gameRolledForStart).toBeDefined()
@@ -148,7 +148,7 @@ describe('Game', () => {
       expect(gameMoved.activePlay.moves.length).toBe(2)
     }
     asciiBoard = Board.getAsciiBoard(gameMoved.board)
-    console.log('MOVED BOARD')
-    console.log(asciiBoard)
+    // console.log('MOVED BOARD')
+    // console.log(asciiBoard)
   })
 })

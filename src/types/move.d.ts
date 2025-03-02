@@ -1,4 +1,7 @@
-import { BackgammonCheckercontainer } from './checkercontainer'
+import {
+  BackgammonCheckercontainer,
+  BackgammonMoveOrigin,
+} from './checkercontainer'
 import { BackgammonDieValue } from './dice'
 import { BackgammonMoveDirection } from './game'
 import { BackgammonPlayerActive, BackgammonPlayerMoving } from './player'
@@ -15,11 +18,19 @@ export type BackgammonMoveKind =
   | 'reenter'
   | 'bear-off'
 
+export type BackgammonMoveSkeleton = {
+  dieValue: BackgammonDieValue
+  direction: BackgammonMoveDirection
+  origin: BackgammonMoveOrigin
+  destination: BackgammonMoveDestination
+}
+
 type BaseMove = {
   id: string
   player: BackgammonPlayerActive
   stateKind: BackgammonMoveStateKind
   dieValue: BackgammonDieValue
+  possibleMoves: BackgammonMoveSkeleton[]
   moveKind?: BackgammonMoveKind
   isHit?: boolean
   origin?: BackgammonCheckercontainer
@@ -42,7 +53,7 @@ export type BackgammonMoveInProgress = Move & {
   player: BackgammonPlayerMoving
   dieValue: BackgammonDieValue
   origin: BackgammonCheckercontainer
-  destination?: BackgammonCheckercontainer
+  destination: BackgammonCheckercontainer
 }
 
 export type BackgammonMoveCompleted = Move & {

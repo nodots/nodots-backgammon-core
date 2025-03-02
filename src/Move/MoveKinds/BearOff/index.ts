@@ -33,7 +33,7 @@ export class BearOff {
 
   public static move = function moveBearOff(
     board: BackgammonBoard,
-    move: BackgammonMoveInProgress
+    move: BackgammonMoveReady
   ): BackgammonMoveResult {
     const dieValue = move.dieValue
     const player = move.player as BackgammonPlayerMoving

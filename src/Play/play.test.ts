@@ -28,11 +28,14 @@ describe('Play', () => {
     pipCount: 167,
   }
 
-  let play: BackgammonPlay = Play.roll({ player }) as BackgammonPlayRolled
+  const play = Play.roll({
+    board,
+    player,
+  })
   const moves = play.moves
 
   it('should initialize the play correctly', () => {
-    player = play.player
+    const player = play.player
     const { dice } = player
     const currentRoll = dice.currentRoll
     expect(play).toBeDefined()

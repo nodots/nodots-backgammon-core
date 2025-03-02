@@ -43,6 +43,8 @@ describe('Reenter', () => {
     player,
     stateKind: 'ready',
     dieValue: currentRoll[0],
+    origin,
+    possibleMoves: Board.getPossibleMoves(board, player, currentRoll[0]),
   }
 
   it('should initialize the Reenter move', () => {
