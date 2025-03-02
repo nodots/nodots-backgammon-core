@@ -88,7 +88,18 @@ describe('Move', () => {
     expect(moveResult.board).toBeDefined()
     expect(moveResult.move).toBeDefined()
     expect(moveResult.move.stateKind).toBe('completed')
+    expect(moveResult.move.moveKind).toBe('point-to-point')
+    expect(moveResult.move.origin).toBeDefined()
+    expect(moveResult.move.destination).toBeDefined()
+    expect(moveResult.move.origin).not.toBe(moveResult.move.destination)
   })
+
+  // const moveInProgress: BackgammonMoveInProgress = {
+  //   ...moveResult.move,
+  //   stateKind: 'in-progress',
+  //   moveKind: 'point-to-point',
+  // }
+  // const confirmedMove = Move.confirmMove(moveInProgress)
 
   // const completedPointToPointResult = Move.move(board, validPointToPoint, false)
   // const newBoard = completedPointToPointResult.board

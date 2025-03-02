@@ -96,8 +96,8 @@ export class Move {
     }
   }
 
-  public static confirmMove = function _confirmMove(
-    move: BackgammonMoveCompleted
+  public static confirmMove = function confirmMove(
+    move: BackgammonMoveInProgress
   ): BackgammonMoveConfirmed {
     return {
       ...move,
