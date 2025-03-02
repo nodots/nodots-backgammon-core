@@ -16,7 +16,7 @@ import {
   BackgammonPlayRolled,
   BackgammonPlayStateKind,
   BackgammonPoint,
-} from '../../types'
+} from '../types'
 
 export interface PlayProps {
   id?: string

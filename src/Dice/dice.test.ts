@@ -1,6 +1,6 @@
 import { Dice } from '.'
 import { randomBackgammonColor } from '..'
-import { BackgammonDiceInactive, BackgammonDiceRolled } from '../../types'
+import { BackgammonDiceInactive, BackgammonDiceRolled } from '../types'
 
 const monteCarloRuns = 100000
 const randomColor = randomBackgammonColor()

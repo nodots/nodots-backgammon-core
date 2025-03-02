@@ -13,7 +13,7 @@ import {
   BackgammonPlayerRollingForStart,
   BackgammonPlayerStateKind,
   BackgammonPlayerWinner,
-} from '../../types'
+} from '../types'
 
 export class Player {
   id: string = generateId()

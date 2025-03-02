@@ -12,7 +12,7 @@ import {
   BackgammonPlayerMoving,
   BackgammonPoint,
   BackgammonRoll,
-} from '../../../../types'
+} from '../../../types'
 import { Board } from '../../../Board'
 import { BOARD_IMPORT_DEFAULT } from '../../../Board/imports'
 

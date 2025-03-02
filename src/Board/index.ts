@@ -12,8 +12,8 @@ import {
   BackgammonPoint,
   BackgammonPoints,
   BackgammonPointValue,
-  CheckercontainerPosition,
-} from '../../types'
+} from '../types'
+import { ascii } from './ascii'
 import { BOARD_IMPORT_DEFAULT } from './imports'
 
 export const BOARD_POINT_COUNT = 24
@@ -414,65 +414,9 @@ export class Board implements BackgammonBoard {
     return Board.buildBoard(boardImport)
   }
 
-  public static getAsciiBoard = (board: BackgammonBoard): string => {
-    const points = board.points
-    const bar = board.bar
-    const off = board.off
+  public static getAsciiBoard = (board: BackgammonBoard): string => ascii(board)
 
-    const displayPoint = (point: BackgammonPoint, row: number): string => {
-      const checkers = point.checkers
-      const checker = checkers[row]
-      if (!checker) return ' '
-      const color = checker.color
-      const symbol = color === 'black' ? 'X' : 'O'
-      return `${symbol}`
-    }
-
-    const displayBar = (bar: BackgammonBar, row: number): string => {
-      const checkers = bar.checkers
-      const checker = checkers[row]
-      if (!checker) return ' '
-      const color = checker.color
-      const symbol = color === 'black' ? 'X' : 'O'
-      return `${symbol} `
-    }
-
-    const displayOff = (off: BackgammonOff, row: number): string => {
-      const checkers = off.checkers
-      const checker = checkers[row]
-      if (!checker) return ' '
-      const color = checker.color
-      const symbol = color === 'black' ? 'X' : 'O'
-      return `${symbol}`
-    }
-
-    let boardDisplay = ' +-12--------7-+ +-6---------1-+\n'
-
-    for (let row = 0; row < 5; row++) {
-      boardDisplay += ' |'
-      for (let i = 12; i < 18; i++) {
-        boardDisplay += ` ${displayPoint(points[i], row)}`
-      }
-      boardDisplay += ' | |'
-      for (let i = 18; i < 24; i++) {
-        boardDisplay += ` ${displayPoint(points[i], row)}`
-      }
-      boardDisplay += ' |\n'
-    }
-    boardDisplay += 'v|             |B|             |\n'
-    for (let row = 4; row >= 0; row--) {
-      boardDisplay += ' !'
-      for (let i = 11; i >= 6; i--) {
-        boardDisplay += ` ${displayPoint(points[i], row)}`
-      }
-      boardDisplay += ' ! !'
-      for (let i = 5; i >= 0; i--) {
-        boardDisplay += ` ${displayPoint(points[i], row)}`
-      }
-      boardDisplay += ' |\n'
-    }
-    boardDisplay += ' +-13-------18-+ +-19-------24-+\n'
-
-    return boardDisplay
+  public static displayAsciiBoard = (board: BackgammonBoard): void => {
+    console.log(ascii(board))
   }
 }

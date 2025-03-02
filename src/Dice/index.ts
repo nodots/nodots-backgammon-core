@@ -8,7 +8,7 @@ import {
   BackgammonDiceStateKind,
   BackgammonDieValue,
   BackgammonRoll,
-} from '../../types'
+} from '../types'
 
 export class Dice {
   id!: string

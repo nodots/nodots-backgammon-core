@@ -11,7 +11,7 @@ import {
   BackgammonPlayerRolling,
   BackgammonPlayers,
   BackgammonPlayerWinner,
-} from '../../types'
+} from '../types'
 
 describe('Game', () => {
   const clockwiseColor = randomBackgammonColor()

@@ -8,7 +8,7 @@ import {
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
   BackgammonPoint,
-} from '../../../../types'
+} from '../../../types'
 
 export class Reenter {
   public static isA = function isAReenter(

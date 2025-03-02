@@ -7,7 +7,7 @@ import {
   BackgammonOff,
   BackgammonPlayerMoving,
   BackgammonPoint,
-} from '../../types'
+} from '../types'
 
 export function getDestination(
   origin: BackgammonCheckercontainer,

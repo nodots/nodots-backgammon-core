@@ -9,7 +9,7 @@ import {
   BackgammonMoveInProgress,
   BackgammonMoveReady,
   BackgammonPlayerMoving,
-} from '../../types'
+} from '../types'
 import { Move } from './index'
 
 describe('Move', () => {

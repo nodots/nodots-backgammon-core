@@ -1,5 +1,5 @@
 import { Board } from '.'
-import { BackgammonBoard } from '../../types'
+import { BackgammonBoard } from '../types'
 import { BOARD_IMPORT_BOTH_BEAROFF } from './imports'
 
 describe('Board', () => {

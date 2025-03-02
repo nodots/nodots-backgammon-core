@@ -9,7 +9,7 @@ import {
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
   BackgammonPoint,
-} from '../../../../types'
+} from '../../../types'
 import { Board } from '../../../Board'
 import { getDestination } from '../../utils'
 import { BearOff } from '../BearOff'

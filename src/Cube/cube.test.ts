@@ -6,7 +6,7 @@ import {
   BackgammonPlayerInactive,
   BackgammonPlayerRolled,
   BackgammonPlayers,
-} from '../../types'
+} from '../types'
 
 let cube: Cube
 let players: BackgammonPlayers | undefined = undefined

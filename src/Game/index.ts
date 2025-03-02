@@ -15,7 +15,7 @@ import {
   BackgammonPlayerRolling,
   BackgammonPlayers,
   BackgammonPlayMoving,
-} from '../../types'
+} from '../types'
 import { Board } from '../Board'
 import { Cube } from '../Cube'
 import { Play } from '../Play'

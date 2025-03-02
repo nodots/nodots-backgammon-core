@@ -1,9 +1,5 @@
 import { Board, generateId } from '..'
-import {
-  BackgammonBoard,
-  BackgammonChecker,
-  BackgammonColor,
-} from '../../types'
+import { BackgammonBoard, BackgammonChecker, BackgammonColor } from '../types'
 
 export class Checker {
   public static getCheckers = function getCheckers(

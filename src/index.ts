@@ -1,4 +1,4 @@
-import { BackgammonColor, BackgammonMoveDirection } from '../types'
+import { BackgammonColor, BackgammonMoveDirection } from './types'
 
 export { v4 as generateId } from 'uuid'
 export type BackgammonEntity =
@@ -23,6 +23,11 @@ export interface BackgammonError extends Error {
   entity: BackgammonEntity
   message: string
 }
+
+export const isValidUuid = (uuid: string): boolean =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+    uuid
+  )
 
 export * from './Board'
 export * from './Checker'

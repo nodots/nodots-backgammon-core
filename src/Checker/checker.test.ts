@@ -1,10 +1,6 @@
 import { Checker } from '.'
 import { Board, randomBackgammonColor } from '..'
-import {
-  BackgammonBoard,
-  BackgammonChecker,
-  BackgammonColor,
-} from '../../types'
+import { BackgammonBoard, BackgammonChecker, BackgammonColor } from '../types'
 import { BOARD_IMPORT_DEFAULT } from '../Board/imports'
 describe('BackgammonChecker', () => {
   let board: BackgammonBoard

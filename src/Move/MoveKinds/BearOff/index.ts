@@ -12,7 +12,7 @@ import {
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
   BackgammonPoint,
-} from '../../../../types'
+} from '../../../types'
 
 export class BearOff {
   public static isA = function isABearOff(

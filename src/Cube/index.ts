@@ -8,7 +8,7 @@ import {
   BackgammonCubeValue,
   BackgammonPlayer,
   BackgammonPlayers,
-} from '../../types'
+} from '../types'
 
 export interface CubeProps {
   id?: string

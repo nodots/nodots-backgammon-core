@@ -1,6 +1,6 @@
 import { Player } from '.'
 import { randomBackgammonColor, randomBackgammonDirection } from '..'
-import { BackgammonPlayerInactive } from '../../types'
+import { BackgammonPlayerInactive } from '../types'
 
 describe('Player', () => {
   let player: BackgammonPlayerInactive
