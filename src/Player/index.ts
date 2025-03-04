@@ -1,9 +1,13 @@
-import { Dice, generateId } from '..'
+import { Board, Dice, generateId } from '..'
+import { Play } from '../Play'
 import {
   BackgammonBoard,
   BackgammonColor,
   BackgammonDice,
+  BackgammonDiceRolled,
   BackgammonMoveDirection,
+  BackgammonMoveOrigin,
+  BackgammonMoveResult,
   BackgammonPlayer,
   BackgammonPlayerMoved,
   BackgammonPlayerMoving,
@@ -13,6 +17,8 @@ import {
   BackgammonPlayerRollingForStart,
   BackgammonPlayerStateKind,
   BackgammonPlayerWinner,
+  BackgammonPlayMoving,
+  BackgammonPlayRolled,
 } from '../types'
 
 export class Player {
@@ -24,6 +30,7 @@ export class Player {
   public static initialize = function initializePlayer(
     color: BackgammonColor,
     direction: BackgammonMoveDirection,
+    dice: BackgammonDice = Dice.initialize(color),
     id: string = generateId(),
     stateKind: BackgammonPlayerStateKind = 'inactive'
   ): BackgammonPlayer {
@@ -62,16 +69,17 @@ export class Player {
           color,
           direction,
           stateKind,
-          dice: Dice.initialize(color),
+          dice,
           pipCount: 167,
         } as BackgammonPlayerRolling
       case 'rolled':
+        const rolledDice = dice as BackgammonDiceRolled
         return {
           id,
           color,
           direction,
           stateKind,
-          dice: Dice.initialize(color),
+          dice: rolledDice,
           pipCount: 167,
         } as BackgammonPlayerRolled
       case 'moving':
@@ -80,7 +88,7 @@ export class Player {
           color,
           direction,
           stateKind,
-          dice: Dice.initialize(color),
+          dice,
           pipCount: 167,
         } as BackgammonPlayerMoving
       case 'moved':
@@ -89,7 +97,7 @@ export class Player {
           color,
           direction,
           stateKind,
-          dice: Dice.initialize(color),
+          dice,
           pipCount: 167,
         } as BackgammonPlayerMoved
       case 'winner':
@@ -98,7 +106,7 @@ export class Player {
           color,
           direction,
           stateKind: 'winner',
-          dice: Dice.initialize(color),
+          dice,
           pipCount: 0,
         } as BackgammonPlayerWinner
     }
@@ -109,12 +117,22 @@ export class Player {
   ): BackgammonPlayerRolled {
     const rolledDice = Dice.roll(player.dice)
     player.dice = rolledDice
-    const rolledPlayer = {
+    return {
       ...player,
       stateKind: 'rolled',
-      dice: player.dice,
-    } as BackgammonPlayerRolled
-    return rolledPlayer
+    }
+  }
+
+  public static move = function move(
+    board: Board,
+    play: BackgammonPlayMoving,
+    origin: BackgammonMoveOrigin
+  ): BackgammonMoveResult {
+    const moveResults = Play.move(board, play, origin)
+
+    return {
+      ...moveResults,
+    }
   }
 
   public static getHomeBoard = function getHomeBoard(

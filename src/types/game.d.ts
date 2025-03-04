@@ -1,7 +1,11 @@
 import { BackgammonBoard } from './board'
 import { BackgammonCube } from './cube'
 import { IntegerRange } from './generics'
-import { BackgammonPlay, BackgammonPlayMoving } from './play'
+import {
+  BackgammonPlay,
+  BackgammonPlayMoving,
+  BackgammonPlayRolled,
+} from './play'
 import {
   BackgammonPlayerActive,
   BackgammonPlayerRolledForStart,
@@ -31,6 +35,8 @@ type BaseGame = {
   winner?: BackgammonPlayer
   activeColor?: BackgammonColor
   activePlay?: BackgammonPlay
+  activePlayer?: BackgammonPlayer
+  inactivePlayer?: BackgammonPlayer
 }
 
 type BackgammonGame = BaseGame & {
@@ -55,9 +61,18 @@ export type BackgammonGameRolling = BackgammonGame & {
   inactivePlayer: BackgammonPlayerInactive
 }
 
+export type BackgammonGameRolled = BackgammonGame & {
+  stateKind: 'rolled'
+  activeColor: BackgammonColor
+  activePlayer: BackgammonPlayerActive
+  inactivePlayer: BackgammonPlayerInactive
+  activePlay: BackgammonPlayRolled
+}
+
 export type BackgammonGameMoving = BackgammonGame & {
   stateKind: 'moving'
   activeColor: BackgammonColor
+  activePlay: BackgammonPlayMoving
   activePlayer: BackgammonPlayerActive
   inactivePlayer: BackgammonPlayerInactive
 }

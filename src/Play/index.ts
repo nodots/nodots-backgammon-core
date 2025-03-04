@@ -1,13 +1,13 @@
 import { Board, generateId, Player } from '..'
 import {
-  BackgammonBar,
   BackgammonBoard,
   BackgammonCube,
   BackgammonMove,
+  BackgammonMoveInProgress,
   BackgammonMoveOrigin,
   BackgammonMoveReady,
   BackgammonMoves,
-  BackgammonPlayerMoved,
+  BackgammonPlay,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
   BackgammonPlayerRolling,
@@ -15,7 +15,6 @@ import {
   BackgammonPlayResult,
   BackgammonPlayRolled,
   BackgammonPlayStateKind,
-  BackgammonPoint,
 } from '../types'
 
 export interface PlayProps {
@@ -37,64 +36,50 @@ export class Play {
     | BackgammonPlayerRolled
     | BackgammonPlayerMoving
 
-  public static roll = function roll({
-    board,
-    player,
-  }: PlayProps): BackgammonPlayRolled {
-    const rollingPlayer = player as BackgammonPlayerRolling
-    const rolledPlayer = Player.roll(rollingPlayer) as BackgammonPlayerRolled
-    const moves = Play.buildMoves(board, rolledPlayer)
-
-    return {
-      id: generateId(),
-      stateKind: 'rolled',
-      player: rolledPlayer,
-      moves,
-    }
-  }
-
   public static move = function move(
     board: BackgammonBoard,
-    play: BackgammonPlayMoving,
+    play: BackgammonPlayRolled | BackgammonPlayMoving,
     origin: BackgammonMoveOrigin
   ): BackgammonPlayResult {
     let moves = play.moves
-    let move = moves.find(
+    let move: BackgammonMoveReady = moves.find(
       (m) => m.stateKind === 'ready' && m.origin === undefined
-    )
-    if (!move) throw new Error('Move not found. Is play finished?')
+    ) as BackgammonMoveReady
+    if (move === undefined) throw new Error('No move ready')
+    const destination = move.possibleMoves.find(
+      (m) => m.origin === origin
+    )?.destination
+    if (destination === undefined) throw new Error('Invalid move')
 
-    switch (origin.kind) {
-      case 'point':
-        const player = play.player as BackgammonPlayerMoving
-        move.origin = origin as BackgammonPoint
-        play = {
-          ...play,
-          stateKind: 'moving',
-          player,
-          moves,
-        }
+    board = Board.moveChecker(board, origin, destination, move.player.direction)
+    moves = moves.map((m) => {
+      if (m.stateKind === 'ready' && m.origin === undefined) {
         return {
-          play,
-          board,
-        }
-      case 'bar':
-        move.origin = origin as BackgammonBar
-        break
-      default:
-        throw new Error('Invalid origin')
+          ...m,
+          origin,
+          destination,
+        } as BackgammonMoveInProgress
+      }
+      return m
+    }) as BackgammonMoves
+
+    play = {
+      ...play,
+      moves,
+      board,
     }
 
     return {
       play,
       board,
+      move,
     }
   }
 
-  private static buildMoves = function buildMoves(
+  public static initialize = function initialize(
     board: BackgammonBoard,
     player: BackgammonPlayerRolled
-  ): BackgammonMoves {
+  ): BackgammonPlayRolled {
     const moves = new Set<BackgammonMove>()
     const roll = player.dice.currentRoll
 
@@ -133,6 +118,12 @@ export class Play {
       moves.add(move2)
       moves.add(move3)
     }
-    return Array.from(moves) as BackgammonMoves
+    return {
+      id: generateId(),
+      stateKind: 'rolled',
+      board,
+      player,
+      moves: Array.from(moves) as BackgammonMoves,
+    }
   }
 }

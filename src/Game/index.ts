@@ -1,14 +1,20 @@
-import { generateId, randomBackgammonColor } from '..'
+import { generateId, Player, randomBackgammonColor } from '..'
+import { Board } from '../Board'
+import { Cube } from '../Cube'
+import { Play } from '../Play'
 import {
   BackgammonBoard,
   BackgammonColor,
   BackgammonCube,
   BackgammonGame,
   BackgammonGameMoving,
+  BackgammonGameRolled,
+  BackgammonGameRolledForStart,
   BackgammonGameRolling,
   BackgammonGameRollingForStart,
   BackgammonGameStateKind,
   BackgammonMoveOrigin,
+  BackgammonPlay,
   BackgammonPlayerActive,
   BackgammonPlayerInactive,
   BackgammonPlayerRolledForStart,
@@ -16,9 +22,6 @@ import {
   BackgammonPlayers,
   BackgammonPlayMoving,
 } from '../types'
-import { Board } from '../Board'
-import { Cube } from '../Cube'
-import { Play } from '../Play'
 export interface GameProps {
   players: BackgammonPlayers
   board?: BackgammonBoard
@@ -38,7 +41,7 @@ export class Game {
   board!: Board
   cube!: Cube
   activeColor!: BackgammonColor
-  activePlay!: Play
+  activePlay!: BackgammonPlay
   activePlayer!: BackgammonPlayerActive
   inactivePlayer!: BackgammonPlayerInactive
 
@@ -49,12 +52,19 @@ export class Game {
     stateKind: BackgammonGameStateKind = 'rolling-for-start',
     board: BackgammonBoard = Board.initialize(),
     cube: BackgammonCube = Cube.initialize(),
-    activePlay?: Play,
+    activePlay?: BackgammonPlay,
     activeColor?: BackgammonColor,
     activePlayer?: BackgammonPlayerActive,
     inactivePlayer?: BackgammonPlayerInactive,
     origin?: BackgammonMoveOrigin
   ): BackgammonGame {
+    let game: BackgammonGame = {
+      id,
+      players,
+      board,
+      cube,
+      stateKind,
+    }
     switch (stateKind) {
       case 'rolling-for-start':
         return Game.rollForStart({
@@ -76,35 +86,24 @@ export class Game {
           inactivePlayer: inactivePlayer,
         } as BackgammonGameRolling
       case 'rolling':
+        activeColor = activeColor as BackgammonColor
         return Game.roll({
           id,
-          stateKind: 'rolling',
+          stateKind: 'rolled-for-start',
           players,
           board,
           cube,
           activeColor,
           activePlayer,
           inactivePlayer,
-        } as BackgammonGameRolling)
-      case 'moving':
-        if (!activePlay) throw new Error('Active play must be provided')
-        if (!origin) throw new Error('Origin must be provided')
-        return Game.move(
-          {
-            id,
-            stateKind,
-            players,
-            board,
-            cube,
-            activeColor,
-            activePlayer,
-            inactivePlayer,
-            activePlay,
-          } as BackgammonGameMoving,
           activePlay,
-          origin
-        )
-
+        })
+      case 'moving':
+        const gameMoving = Game.sanityCheckMovingGame(game)
+        origin = origin as BackgammonMoveOrigin
+        if (!gameMoving) throw new Error('Game is not in a moving state')
+        if (!origin) throw new Error('Origin must be provided')
+        return Game.move(gameMoving, origin)
       case 'completed':
         throw new Error('Game cannot be initialized in the completed state')
     }
@@ -130,8 +129,8 @@ export class Game {
   }
 
   public static roll = function roll(
-    game: BackgammonGameRolling
-  ): BackgammonGameMoving {
+    game: BackgammonGameRolledForStart
+  ): BackgammonGameRolled {
     const { id, players, board, cube, activeColor } = game
     if (!activeColor) throw new Error('Active color must be provided')
     let [activePlayerForColor, inactivePlayerForColor] =
@@ -141,37 +140,25 @@ export class Game {
     const inactivePlayer = inactivePlayerForColor
     if (!inactivePlayer) throw new Error('Inactive player not found')
 
-    const activePlay = Play.roll({
-      player: activePlayer,
-      stateKind: 'rolling',
-      board,
-    })
-    const movingPlayer = activePlay.player
+    const playerRolled = Player.roll(activePlayer)
+    const activePlay = Play.initialize(board, playerRolled)
     return {
-      id,
-      stateKind: 'moving',
-      players,
-      board,
-      cube,
-      activeColor,
-      activePlayer: movingPlayer,
+      ...game,
+      stateKind: 'rolled',
+      activePlayer: playerRolled,
       activePlay,
-    } as BackgammonGameMoving
+    } as BackgammonGameRolled
   }
 
   public static move = function move(
-    game: BackgammonGameMoving,
-    play: Play,
+    game: BackgammonGameMoving | BackgammonGameRolled,
     origin: BackgammonMoveOrigin
   ): BackgammonGameMoving {
-    const { id, players, cube, activeColor, activePlayer } = game
+    const { id, players, cube, activeColor, activePlay } = game
     let board = game.board
-    let activePlay = game.activePlay
-    if (!activeColor) throw new Error('Active color must be provided')
-    if (!activePlayer) throw new Error('Active player must be provided')
-    const playResult = Play.move(board, play as BackgammonPlayMoving, origin)
+    const activePlayer = Game.activePlayer(game)
+    const playResult = Player.move(board, activePlay, origin)
     board = playResult.board
-    activePlay = playResult.play
 
     return {
       id,
@@ -229,5 +216,15 @@ export class Game {
       throw new Error('Inactive player not found')
     }
     return [activePlayer, inactivePlayer]
+  }
+
+  private static sanityCheckMovingGame = (
+    game: BackgammonGame
+  ): BackgammonGameMoving | false => {
+    if (!game.activeColor) return false
+    if (!game.activePlayer) return false
+    if (!game.activePlay) return false
+    if (!game.board) return false
+    return game as BackgammonGameMoving
   }
 }

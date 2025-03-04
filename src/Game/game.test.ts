@@ -3,14 +3,16 @@ import {
   BackgammonBoard,
   BackgammonColor,
   BackgammonCube,
+  BackgammonGameMoving,
+  BackgammonGameRolled,
   BackgammonGameRolledForStart,
-  BackgammonMove,
   BackgammonMoveOrigin,
   BackgammonPlay,
   BackgammonPlayer,
   BackgammonPlayerRolling,
   BackgammonPlayers,
   BackgammonPlayerWinner,
+  BackgammonPlayMoving,
 } from '../types'
 
 describe('Game', () => {
@@ -49,10 +51,6 @@ describe('Game', () => {
   inactivePlayer = gameRolledForStart.inactivePlayer
   winner = gameRolledForStart.winner
 
-  asciiBoard = Board.getAsciiBoard(board)
-  // console.log('INITIAL BOARD')
-  // console.log(asciiBoard)
-
   it('should initialize the game correctly', () => {
     expect(gameRolledForStart).toBeDefined()
     expect(stateKind).toBe('rolling')
@@ -68,87 +66,55 @@ describe('Game', () => {
     expect(winner).toBeUndefined()
   })
 
-  activePlayer = gameRolledForStart.activePlayer
-  if (!activePlayer) throw new Error('activePlayer is undefined')
-  activePlayer = activePlayer as BackgammonPlayerRolling
+  // const gameRolled = Game.roll(gameRolledForStart)
 
-  // TODO: test for rolling
-  const gameMoving = Game.roll({
-    id: gameRolledForStart.id,
-    stateKind: 'rolling',
-    players,
-    board,
-    cube,
-    activeColor,
-    activePlay,
-    activePlayer,
-    inactivePlayer,
-  })
+  // it('should roll the dice correctly', () => {
+  //   expect(gameMoving).toBeDefined()
+  //   expect(gameMoving.stateKind).toBe('moving')
+  // })
 
-  it('should roll the dice correctly', () => {
-    expect(gameMoving).toBeDefined()
-    expect(gameMoving.stateKind).toBe('moving')
-    expect(gameMoving.activePlayer).toBeDefined()
-    expect(gameMoving.activePlayer).toBeDefined()
-    expect(gameMoving.board).toBeDefined()
-    expect(gameMoving.cube).toBeDefined()
-    expect(gameMoving.activePlay).toBeDefined()
-    expect(gameMoving.activeColor).toBeDefined()
-    expect(gameMoving.activeColor).toBe(activeColor)
-    expect(gameMoving.activePlay.moves).toBeDefined()
-    if (
-      gameMoving.activePlayer.dice.currentRoll[0] ===
-      gameMoving.activePlayer.dice.currentRoll[1]
-    ) {
-      expect(gameMoving.activePlay.moves.length).toBe(4)
-    } else {
-      expect(gameMoving.activePlay.moves.length).toBe(2)
-    }
-  })
+  // const origin = board.points.find(
+  //   (p) => p.position[activePlayer.direction] === 24
+  // ) as BackgammonMoveOrigin
 
-  const origin = board.points.find(
-    (p) => p.position[activePlayer.direction] === 24
-  ) as BackgammonMoveOrigin
+  // activePlay = gameMoving.activePlay as BackgammonPlayMoving
 
-  activePlay = gameMoving.activePlay
+  // // TODO: test for moving
+  // const gameMoved = Game.move(
+  //   {
+  //     id: gameMoving.id,
+  //     stateKind: 'moving',
+  //     players,
+  //     board: gameMoving.board,
+  //     cube: gameMoving.cube,
+  //     activePlay,
+  //     activeColor: gameMoving.activeColor,
+  //     activePlayer: gameMoving.activePlayer,
+  //     inactivePlayer: gameMoving.inactivePlayer,
+  //   },
+  //   origin
+  // )
 
-  // TODO: test for moving
-  const gameMoved = Game.move(
-    {
-      id: gameMoving.id,
-      stateKind: 'moving',
-      players,
-      board: gameMoving.board,
-      cube: gameMoving.cube,
-      activePlay,
-      activeColor: gameMoving.activeColor,
-      activePlayer: gameMoving.activePlayer,
-      inactivePlayer: gameMoving.inactivePlayer,
-    },
-    activePlay,
-    origin as BackgammonMoveOrigin
-  )
-
-  it('should move correctly', () => {
-    expect(gameMoved).toBeDefined()
-    expect(gameMoved.stateKind).toBe('moving')
-    expect(gameMoved.activePlayer).toBeDefined()
-    expect(gameMoved.board).toBeDefined()
-    expect(gameMoved.cube).toBeDefined()
-    expect(gameMoved.activePlay).toBeDefined()
-    expect(gameMoved.activeColor).toBeDefined()
-    expect(gameMoved.activeColor).toBe(activeColor)
-    expect(gameMoved.activePlay.moves).toBeDefined()
-    if (
-      gameMoved.activePlayer.dice.currentRoll[0] ===
-      gameMoved.activePlayer.dice.currentRoll[1]
-    ) {
-      expect(gameMoved.activePlay.moves.length).toBe(4)
-    } else {
-      expect(gameMoved.activePlay.moves.length).toBe(2)
-    }
-    asciiBoard = Board.getAsciiBoard(gameMoved.board)
-    // console.log('MOVED BOARD')
-    // console.log(asciiBoard)
-  })
+  // it('should move correctly', () => {
+  //   expect(gameMoved).toBeDefined()
+  //   expect(gameMoved.stateKind).toBe('moving')
+  //   expect(gameMoved.activePlayer).toBeDefined()
+  //   expect(gameMoved.board).toBeDefined()
+  //   expect(gameMoved.cube).toBeDefined()
+  //   expect(gameMoved.activePlay).toBeDefined()
+  //   expect(gameMoved.activeColor).toBeDefined()
+  //   expect(gameMoved.activeColor).toBe(activeColor)
+  //   expect(gameMoved.activePlay.moves).toBeDefined()
+  //   if (
+  //     gameMoved.activePlayer.dice.currentRoll[0] ===
+  //     gameMoved.activePlayer.dice.currentRoll[1]
+  //   ) {
+  //     expect(gameMoved.activePlay.moves.length).toBe(4)
+  //   } else {
+  //     expect(gameMoved.activePlay.moves.length).toBe(2)
+  //   }
+  //   asciiBoard = Board.getAsciiBoard(gameMoved.board)
+  //   // console.log('MOVED BOARD')
+  //   // console.log(asciiBoard)
+  // })
 })

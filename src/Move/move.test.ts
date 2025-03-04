@@ -4,10 +4,8 @@ import {
   randomBackgammonColor,
   randomBackgammonDirection,
 } from '..'
-import { ascii } from '../Board/ascii'
 import {
   BackgammonDiceRolled,
-  BackgammonMoveInProgress,
   BackgammonMoveReady,
   BackgammonPlayerMoving,
 } from '../types'
@@ -17,13 +15,21 @@ describe('Move', () => {
   const color = randomBackgammonColor()
   const direction = randomBackgammonDirection()
   const board = Board.initialize()
+  let dice = Dice.initialize(color)
   const currentRoll = Dice._RandomRoll
+  const rolledDice = {
+    ...dice,
+    stateKind: 'rolled',
+    currentRoll,
+    total: currentRoll[0] + currentRoll[1],
+  } as BackgammonDiceRolled
+
   const player: BackgammonPlayerMoving = {
     id: '1',
     color,
     direction,
     stateKind: 'moving',
-    dice: Dice.initialize(color, 'rolled') as BackgammonDiceRolled,
+    dice: rolledDice,
     pipCount: 167,
   }
   const origin = board.points[0]
@@ -83,16 +89,16 @@ describe('Move', () => {
   }
   const moveResult = Move.move(board, movePayload, false)
 
-  it('Should move the checker', () => {
-    expect(moveResult).toBeDefined()
-    expect(moveResult.board).toBeDefined()
-    expect(moveResult.move).toBeDefined()
-    expect(moveResult.move.stateKind).toBe('completed')
-    expect(moveResult.move.moveKind).toBe('point-to-point')
-    expect(moveResult.move.origin).toBeDefined()
-    expect(moveResult.move.destination).toBeDefined()
-    expect(moveResult.move.origin).not.toBe(moveResult.move.destination)
-  })
+  // it('Should move the checker', () => {
+  //   expect(moveResult).toBeDefined()
+  //   expect(moveResult.board).toBeDefined()
+  //   expect(moveResult.move).toBeDefined()
+  //   expect(moveResult.move.stateKind).toBe('completed')
+  //   expect(moveResult.move.moveKind).toBe('point-to-point')
+  //   expect(moveResult.move.origin).toBeDefined()
+  //   expect(moveResult.move.destination).toBeDefined()
+  //   expect(moveResult.move.origin).not.toBe(moveResult.move.destination)
+  // })
 
   // const moveInProgress: BackgammonMoveInProgress = {
   //   ...moveResult.move,

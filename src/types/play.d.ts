@@ -9,6 +9,7 @@ import {
 export type BackgammonPlayResult = {
   board: BackgammonBoard
   play: BackgammonPlay
+  move: BackgammonMoveCompleted
 }
 
 export type BackgammonPlayStateKind =
@@ -21,40 +22,41 @@ export type BackgammonPlayStateKind =
 type BasePlay = {
   id: string
   player: BackgammonPlayer
+  board: BakgammonBoard
   moves?: BackgammonMoves
 }
 
-type Play = BasePlay & {
+type BackgammonPlay = BasePlay & {
   stateKind: BackgammonPlayStateKind
 }
 
-export type BackgammonPlayRolling = Play & {
+export type BackgammonPlayRolling = BackgammonPlay & {
   stateKind: 'rolling'
   player: BackgammonPlayerRolling
 }
 
-export type BackgammonPlayRolled = Play & {
+export type BackgammonPlayRolled = BackgammonPlay & {
   stateKind: 'rolled'
   player: BackgammonPlayerRolled
   moves: BackgammonMoves
 }
 
-export type BackgammonPlayDoubled = Play & {
+export type BackgammonPlayDoubled = BackgammonPlay & {
   stateKind: 'doubled'
 }
 
-export type BackgammonPlayMoving = Play & {
+export type BackgammonPlayMoving = BackgammonPlay & {
   stateKind: 'moving'
   player: BackgammonPlayerMoving
   moves: BackgammonMoves
 }
 
-export type BackgammonPlayMoved = Play & {
+export type BackgammonPlayMoved = BackgammonPlay & {
   stateKind: 'moved'
   player: BackgammonPlayerMoved
 }
 
-export type BackgammonPlayConfirmed = Play & {
+export type BackgammonPlayConfirmed = BackgammonPlay & {
   stateKind: 'confirmed'
   player: BackgammonPlayerMoved
 }
@@ -66,6 +68,11 @@ export type BackgammonPlay =
   | BackgammonPlayMoving
   | BackgammonPlayMoved
   | BackgammonPlayCompleted
+
+export type BackgammonRollResults = {
+  player: BackgammonPlayerRolled
+  activePlay: BackgammonPlayRolled
+}
 
 export type BackgammonPlayResults = {
   board: BackgammonBoard

@@ -21,32 +21,14 @@ export class Dice {
     stateKind: BackgammonDiceStateKind = 'inactive',
     id: string = generateId(),
     currentRoll: BackgammonRoll | undefined = undefined
-  ): BackgammonDice {
+  ): BackgammonDiceInactive {
     const total = currentRoll ? currentRoll[0] + currentRoll[1] : undefined
-
-    switch (stateKind) {
-      case 'rolling':
-        return {
-          id,
-          color,
-          stateKind,
-          currentRoll,
-          total,
-        } as BackgammonDiceRolling
-      case 'rolled':
-        return {
-          id,
-          color,
-          stateKind,
-          currentRoll: currentRoll as BackgammonRoll,
-          total: total as number,
-        } as BackgammonDiceRolled
-      case 'inactive':
-        return {
-          id,
-          color,
-          stateKind,
-        } as BackgammonDiceInactive
+    return {
+      id,
+      stateKind: 'inactive',
+      color,
+      currentRoll,
+      total,
     }
   }
 

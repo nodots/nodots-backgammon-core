@@ -4,8 +4,8 @@ import {
   BackgammonCheckercontainer,
   BackgammonDieValue,
   BackgammonMove,
-  BackgammonMoveCompleted,
   BackgammonMoveConfirmed,
+  BackgammonMoveDryRunResult,
   BackgammonMoveInProgress,
   BackgammonMoveKind,
   BackgammonMoveOrigin,
@@ -70,7 +70,7 @@ export class Move {
     board: BackgammonBoard,
     move: BackgammonMoveReady,
     isDryRun: boolean = false
-  ): BackgammonMoveResult {
+  ): BackgammonMoveResult | BackgammonMoveDryRunResult {
     const { moveKind } = move
     const { player } = move
     if (!player) throw Error('Player not found')
@@ -80,6 +80,10 @@ export class Move {
       case 'point-to-point':
         return PointToPoint.move(board, move, false)
       case 'reenter':
+        move.destination = move.possibleMoves.find(
+          (m) => m.origin === move.origin
+        )?.destination
+        if (!move.destination) throw Error('Invalid move')
         return Reenter.move(board, move)
       case 'bear-off':
         return BearOff.move(board, move)

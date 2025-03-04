@@ -67,19 +67,19 @@ export class Board implements BackgammonBoard {
       JSON.stringify(destination)
     )
 
-    const checker = originClone.checkers.pop()
-    if (!checker) throw Error('No checker found')
-    destinationClone.checkers.push(checker)
-
     // handle hit
     if (
-      destination.checkers.length === 1 &&
-      destination.checkers[0].color !== origin.checkers[0].color
+      destinationClone.checkers.length === 1 &&
+      destinationClone.checkers[0].color !== originClone.checkers[0].color
     ) {
       const hitChecker = destinationClone.checkers.pop()
       if (!hitChecker) throw Error('No hit checker found')
       opponentBarClone.checkers.push(hitChecker)
     }
+
+    const checker = originClone.checkers.pop()
+    if (!checker) throw Error('No checker found')
+    destinationClone.checkers.push(checker)
 
     this.getCheckercontainers(boardClone).forEach(
       function updateCheckerContainers(cc) {
@@ -167,6 +167,10 @@ export class Board implements BackgammonBoard {
     const playerDirection = player.direction
     const bar = board.bar[playerDirection]
 
+    console.log('Player Points:', playerPoints)
+    console.log('Player Direction:', playerDirection)
+    console.log('Bar Checkers:', bar.checkers)
+
     // player is the winner! Need to do more here
     if (playerPoints.length === 0 && bar.checkers.length === 0) {
       return possibleMoves
@@ -186,6 +190,7 @@ export class Board implements BackgammonBoard {
           direction: playerDirection,
         })
       }
+      console.log('Possible Moves from Bar:', possibleMoves)
       return possibleMoves
     } else {
       playerPoints.map(function mapPlayerPoints(point) {
@@ -206,6 +211,7 @@ export class Board implements BackgammonBoard {
       })
     }
 
+    console.log('Possible Moves from Points:', possibleMoves)
     return possibleMoves
   }
 

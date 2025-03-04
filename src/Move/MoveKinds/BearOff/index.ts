@@ -1,24 +1,19 @@
-import { Player } from '../../..'
+import { Board, Player } from '../../..'
 import {
   BackgammonBoard,
-  BackgammonMove,
   BackgammonMoveCompleted,
   BackgammonMoveInProgress,
-  BackgammonMoveNoMove,
   BackgammonMoveReady,
   BackgammonMoveResult,
-  BackgammonOff,
-  BackgammonPlayer,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
-  BackgammonPoint,
 } from '../../../types'
 
 export class BearOff {
   public static isA = function isABearOff(
     board: BackgammonBoard,
     player: BackgammonPlayerMoving | BackgammonPlayerRolled
-  ): boolean {
+  ): BackgammonMoveInProgress | false {
     const homeboard = Player.getHomeBoard(board, player)
     const off = board.off[player.direction]
     let eligibleCheckerCount = 0
@@ -28,23 +23,48 @@ export class BearOff {
       }
     })
     eligibleCheckerCount += off.checkers.length
-    return eligibleCheckerCount === 15 ? true : false
+
+    if (eligibleCheckerCount === 15) {
+      return {
+        player,
+        stateKind: 'in-progress',
+        moveKind: 'bear-off',
+      } as BackgammonMoveInProgress
+    }
+    return false
   }
 
-  public static move = function moveBearOff(
+  public static move = function bearOff(
     board: BackgammonBoard,
     move: BackgammonMoveReady
   ): BackgammonMoveResult {
-    const dieValue = move.dieValue
     const player = move.player as BackgammonPlayerMoving
     const direction = player.direction
+    const { dieValue } = move
     const homeboard = Player.getHomeBoard(board, player)
-    homeboard.sort((a, b) => a.position[direction] - b.position[direction])
-    const off = board.off[player.direction]
+    homeboard.sort((a, b) => b.position[direction] - a.position[direction])
+    const destination = board.off[player.direction]
     const mostDistantPosition = homeboard.find(
       (p) => p.checkers.length > 0 && p.checkers[0].color === player.color
     )
-    console.warn('BearOff.move not implemented')
-    return { board, move }
+    if (!mostDistantPosition) throw Error('No checker to bear off')
+    const origin = mostDistantPosition
+    if (origin.checkers.length === 0) throw Error('No checker to bear off')
+    if (origin.checkers[0].color !== player.color)
+      throw Error('Invalid checker to bear off')
+    if (origin.position[direction] + dieValue !== 25)
+      throw Error('Checker not at the most distant position')
+    board = Board.moveChecker(board, origin, destination, direction)
+    if (!board) throw Error('Invalid board from moveChecker in BearOff')
+
+    const bearOff: BackgammonMoveCompleted = {
+      ...move,
+      stateKind: 'completed',
+      moveKind: 'bear-off',
+      origin,
+      destination,
+    }
+
+    return { board, move: bearOff }
   }
 }

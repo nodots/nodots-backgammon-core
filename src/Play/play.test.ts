@@ -5,33 +5,25 @@ import {
   randomBackgammonColor,
   randomBackgammonDirection,
 } from '..'
-import {
-  BackgammonPlay,
-  BackgammonPlayerRolling,
-  BackgammonPlayRolled,
-  BackgammonPoint,
-} from '../types'
+import { BackgammonPlayerRolled } from '../types'
 
 describe('Play', () => {
   const color = randomBackgammonColor()
   const direction = randomBackgammonDirection()
   const board = Board.initialize()
   let dice = Dice.initialize(color)
-  dice.stateKind = 'rolling'
+  const rolledDice = Dice.roll(dice)
 
-  let player: BackgammonPlayerRolling = {
+  let player: BackgammonPlayerRolled = {
     id: '1',
     color,
     direction,
-    stateKind: 'rolling',
-    dice,
+    stateKind: 'rolled',
+    dice: rolledDice,
     pipCount: 167,
   }
 
-  const play = Play.roll({
-    board,
-    player,
-  })
+  const play = Play.initialize(board, player)
   const moves = play.moves
 
   it('should initialize the play correctly', () => {
@@ -57,38 +49,23 @@ describe('Play', () => {
     }
   })
 
-  // const validMoves = Play.getValidMoves(board, play.moves)
-
-  // it('should find valid moves from the default board', () => {
-  //   expect(validMoves).toBeDefined()
-  //   expect(validMoves.size).toBeGreaterThan(0)
-  //   validMoves.forEach((move) => {
-  //     expect(move.origin).toBeDefined()
-  //     expect(move.destination).toBeDefined()
-  //     expect(move.origin).not.toBe(move.destination)
-  //     expect(move.origin!.position).toBeDefined()
-  //     expect(move.destination!.position).toBeDefined()
-  //     expect(move.origin!.position).not.toBe(move.destination!.position)
-  //     expect(move.origin!.checkers.length).toBeGreaterThan(0)
-  //     if (move.destination!.checkers.length > 0) {
-  //       expect(move.destination!.checkers[0].color).toBe(player.color)
-  //     }
-  //     if (move.destination!.checkers.length >= 1) {
-  //       expect(move.destination!.checkers[0].color).toBe(player.color)
-  //     }
-  //     if (move.origin?.kind === 'point' && move.destination?.kind === 'point') {
-  //       const origin = move.origin as BackgammonPoint
-  //       const destination = move.destination as BackgammonPoint
-  //       expect(origin.checkers.length).toBeGreaterThan(0)
-  //       const originPosition = origin.position[player.direction]
-  //       const expectedDestinationPosition = originPosition + move.dieValue
-  //       expect(destination.position[player.direction]).toBe(
-  //         expectedDestinationPosition
-  //       )
-  //       if (destination.checkers.length > 0) {
-  //         expect(destination.checkers[0].color).toBe(player.color)
-  //       }
-  //     }
-  //   })
-  // })
+  it('should have valid moves', () => {
+    moves.forEach((move) => {
+      const { origin, destination, player } = move
+      const { dice, color } = player
+      const currentRoll = dice.currentRoll
+      expect(player).toBeDefined()
+      expect(player.stateKind).toBe('rolled')
+      expect(dice.stateKind).toBe('rolled')
+      expect(origin).toBeUndefined()
+      expect(destination).toBeUndefined()
+      expect(dice.color).toBe(color)
+      expect(currentRoll).toBeDefined()
+      if (currentRoll[0] === currentRoll[1]) {
+        expect(moves.length).toBe(4)
+      } else {
+        expect(moves.length).toBe(2)
+      }
+    })
+  })
 })

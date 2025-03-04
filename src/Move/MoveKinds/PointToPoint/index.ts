@@ -2,57 +2,90 @@ import { Board } from '../../../Board'
 import {
   BackgammonBoard,
   BackgammonMoveCompleted,
+  BackgammonMoveDirection,
+  BackgammonMoveDryRunResult,
   BackgammonMoveInProgress,
   BackgammonMoveKind,
-  BackgammonMoveNoMove,
   BackgammonMoveReady,
   BackgammonMoveResult,
-  BackgammonPlayerMoving,
-  BackgammonPlayerRolled,
   BackgammonPoint,
 } from '../../../types'
-import { getDestination } from '../../utils'
-import { BearOff } from '../BearOff'
-import { Reenter } from '../Reenter'
 
 export class PointToPoint {
   public static isA = function isAPointToPoint(
-    board: BackgammonBoard,
-    player: BackgammonPlayerMoving | BackgammonPlayerRolled
-  ): boolean {
-    return Reenter.isA(board, player) || BearOff.isA(board, player)
+    move: any
+  ): BackgammonMoveInProgress | false {
+    const { player, origin, destination } = move
+    if (origin.checkers.length === 0) return false
+    if (origin.checkers[0].color !== player.color) return false
+    if (!destination) return false
+    // if (
+    //   destination.checkers.length > 1 &&
+    //   destination.checkers[0].color !== player.color
+    // )
+    //   return false
+    return {
+      ...move,
+      stateKind: 'in-progress',
+      moveKind: 'point-to-point',
+    } as BackgammonMoveInProgress
   }
 
-  public static move = function movePointToPoint(
+  public static getDestination = (
+    board: BackgammonBoard,
+    move: BackgammonMoveReady
+  ) => {
+    const { player, dieValue } = move
+    const direction = player.direction as BackgammonMoveDirection
+    const originPoint = move.origin as BackgammonPoint
+    const originPosition = originPoint.position[direction]
+    const destinationPosition = originPosition - dieValue
+    const destination = board.points.find(
+      (point) => point.position[direction] === destinationPosition
+    ) as BackgammonPoint
+    return destination
+  }
+
+  public static move = function pointToPoint(
     board: BackgammonBoard,
     move: BackgammonMoveReady,
     isDryRun: boolean = false
-  ): BackgammonMoveResult {
-    const { player, dieValue } = move
-    const direction = player.direction
-    if (!move.origin) throw new Error('Origin not found')
-    const origin = move.origin as BackgammonPoint // FIXME: Better type check
-    const destination = move.destination
-    if (destination) {
+  ): BackgammonMoveResult | BackgammonMoveDryRunResult {
+    move = {
+      ...move,
+      moveKind: 'point-to-point',
+      destination: PointToPoint.getDestination(board, move),
+    }
+
+    const pointToPoint = PointToPoint.isA(move)
+
+    if (!pointToPoint) throw Error('Invalid point-to-point move')
+    const originPoint = move.origin as BackgammonPoint
+    const destinationPoint = move.destination as BackgammonPoint
+    const player = move.player
+    if (!isDryRun) {
+      board = Board.moveChecker(
+        board,
+        originPoint,
+        destinationPoint,
+        player.direction
+      )
+      const movedPlayer = {
+        ...player,
+        stateKind: 'moving',
+      }
       const newMove = {
         ...move,
+        player: movedPlayer,
         stateKind: 'completed',
-        moveKind: 'point-to-point' as BackgammonMoveKind,
-        destination,
       } as BackgammonMoveCompleted
-      const destinationPoint = destination as BackgammonPoint
-      board = Board.moveChecker(board, origin, destinationPoint, direction)
       return { board, move: newMove }
     } else {
-      const noMove: BackgammonMoveNoMove = {
+      const dryRunMove = {
         ...move,
-        stateKind: 'completed',
-        moveKind: 'no-move' as BackgammonMoveKind,
-      } as BackgammonMoveNoMove
-      return {
-        board,
-        move: noMove,
-      }
+        stateKind: 'in-progress',
+      } as BackgammonMoveCompleted
+      return { board, move: dryRunMove }
     }
   }
 }

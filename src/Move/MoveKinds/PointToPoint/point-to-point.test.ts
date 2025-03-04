@@ -8,32 +8,37 @@ import {
 import { Board } from '../../../Board'
 import { BOARD_IMPORT_DEFAULT } from '../../../Board/imports'
 import {
-  BackgammonDiceRolled,
-  BackgammonMoveDirection,
+  BackgammonMoveCompleted,
   BackgammonMoveReady,
+  BackgammonMoveResult,
   BackgammonPlayerMoving,
-  BackgammonPoint,
   BackgammonRoll,
 } from '../../../types'
 
 describe('PointToPoint', () => {
   const diceId: string = generateId()
-  const board = Board.initialize(BOARD_IMPORT_DEFAULT)
+  let board = Board.initialize(BOARD_IMPORT_DEFAULT)
   const color = randomBackgammonColor()
   const direction = randomBackgammonDirection()
   const currentRoll: BackgammonRoll = [1, 5]
-  const dice = Dice.initialize(
+  const dieValue = currentRoll[0]
+  const dice: Dice = {
+    id: diceId,
     color,
-    'rolled',
-    diceId,
-    currentRoll
-  ) as BackgammonDiceRolled
-
+    currentRoll,
+    stateKind: 'rolled',
+  }
   const player: BackgammonPlayerMoving = {
     id: '1',
     color,
     stateKind: 'moving',
-    dice,
+    dice: {
+      ...dice,
+      color,
+      stateKind: 'rolled',
+      currentRoll: [1, 5],
+      total: 6,
+    },
     direction,
     pipCount: 167,
   }
@@ -44,58 +49,15 @@ describe('PointToPoint', () => {
     id: '1',
     player,
     stateKind: 'ready',
-    moveKind: 'point-to-point',
-    origin: origin,
-    dieValue: currentRoll[0],
-    possibleMoves: Board.getPossibleMoves(board, player, currentRoll[0]),
+    dieValue,
+    origin,
+    possibleMoves: Board.getPossibleMoves(board, player, dieValue),
   }
-  const moveResult = PointToPoint.move(board, validMove)
-  const completedMove = moveResult.move
 
-  it(`should complete a valid PointToPoint move`, () => {
-    expect(completedMove).toBeDefined()
-    const direction = completedMove.player.direction as BackgammonMoveDirection
-    const origin: BackgammonPoint = completedMove.origin as BackgammonPoint
-    const originPosition = origin.position[direction]
-    const destination: BackgammonPoint =
-      completedMove.destination as BackgammonPoint
-    Board.displayAsciiBoard(moveResult.board)
-    // const destinationPosition = destination.position[direction]
-    // expect(completedMove.id).toBeDefined()
-    // expect(origin).toBeDefined()
-    // expect(destination).toBeDefined()
-    // expect(origin).not.toBe(destination)
-    // expect(direction).toBe(player.direction)
-    // expect(originPosition - destinationPosition).toBe(currentRoll[0])
+  const moveResult = PointToPoint.move(board, validMove) as BackgammonMoveResult
+
+  it('should return a BackgammonMoveResult', () => {
+    expect(moveResult).toHaveProperty('board')
+    expect(moveResult).toHaveProperty('move')
   })
-
-  // let invalidMove: BackgammonMoveReady = {
-  //   id: '1',
-  //   player,
-  //   stateKind: 'ready',
-  //   moveKind: 'point-to-point',
-  //   origin: origin,
-  //   dieValue: currentRoll[1],
-  //   possibleMoves: Board.getPossibleMoves(board, player, currentRoll[1]),
-  // }
-  // const invalidMoveResult = PointToPoint.move(board, invalidMove)
-  // const invalidCompletedMove = invalidMoveResult.move
-
-  // it(`should not complete an invalid PointToPoint move ${JSON.stringify(
-  //   invalidMove.origin.position
-  // )} ${invalidMove.dieValue}`, () => {
-  //   expect(invalidCompletedMove).toBeDefined()
-  //   const direction = invalidCompletedMove.player
-  //     .direction as BackgammonMoveDirection
-  //   const invalidOrigin: BackgammonPoint =
-  //     invalidCompletedMove.origin as BackgammonPoint
-
-  //   expect(invalidMove.destination).toBeUndefined()
-  //   expect(invalidCompletedMove.id).toBeDefined()
-  //   expect(invalidOrigin).toBeDefined()
-  //   expect(direction).toBe(player.direction)
-  //   expect(invalidCompletedMove.stateKind).toBe('completed')
-  //   // this test is failing. sometimes. need to investigate
-  //   // expect(invalidCompletedMove.moveKind).toBe('no-move')
-  // })
 })

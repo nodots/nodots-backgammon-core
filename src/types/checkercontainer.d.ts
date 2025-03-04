@@ -104,7 +104,4 @@ export type BackgammonPoints = [
 ]
 
 export type BackgammonMoveOrigin = BackgammonPoint | BackgammonBar
-export type BackgammonMoveDestination =
-  | BackgammonPoint
-  | BackgammonBar
-  | BackgammonOff
+export type BackgammonMoveDestination = BackgammonPoint | BackgammonOff
