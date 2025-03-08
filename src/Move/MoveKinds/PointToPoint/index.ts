@@ -1,13 +1,16 @@
 import { Board } from '../../../Board'
 import {
   BackgammonBoard,
+  BackgammonDieValue,
   BackgammonMoveCompleted,
   BackgammonMoveDirection,
   BackgammonMoveDryRunResult,
   BackgammonMoveInProgress,
-  BackgammonMoveKind,
+  BackgammonMoveOrigin,
   BackgammonMoveReady,
   BackgammonMoveResult,
+  BackgammonMoveStateKind,
+  BackgammonPlayer,
   BackgammonPoint,
 } from '../../../types'
 
@@ -33,13 +36,12 @@ export class PointToPoint {
 
   public static getDestination = (
     board: BackgammonBoard,
-    move: BackgammonMoveReady
+    player: BackgammonPlayer,
+    origin: BackgammonPoint,
+    dieValue: BackgammonDieValue
   ) => {
-    const { player, dieValue } = move
     const direction = player.direction as BackgammonMoveDirection
-    const originPoint = move.origin as BackgammonPoint
-    const originPosition = originPoint.position[direction]
-    const destinationPosition = originPosition - dieValue
+    const destinationPosition = origin.position[direction] - dieValue
     const destination = board.points.find(
       (point) => point.position[direction] === destinationPosition
     ) as BackgammonPoint
@@ -49,43 +51,36 @@ export class PointToPoint {
   public static move = function pointToPoint(
     board: BackgammonBoard,
     move: BackgammonMoveReady,
+    origin: BackgammonPoint,
     isDryRun: boolean = false
   ): BackgammonMoveResult | BackgammonMoveDryRunResult {
-    move = {
+    const destination = PointToPoint.getDestination(
+      board,
+      move.player,
+      origin,
+      move.dieValue
+    )
+    const stateKind: BackgammonMoveStateKind = isDryRun
+      ? 'in-progress'
+      : 'completed'
+    const newMove = {
       ...move,
-      moveKind: 'point-to-point',
-      destination: PointToPoint.getDestination(board, move),
+      stateKind,
+      origin,
+      destination,
     }
-
-    const pointToPoint = PointToPoint.isA(move)
-
-    if (!pointToPoint) throw Error('Invalid point-to-point move')
-    const originPoint = move.origin as BackgammonPoint
-    const destinationPoint = move.destination as BackgammonPoint
-    const player = move.player
-    if (!isDryRun) {
+    if (isDryRun) {
       board = Board.moveChecker(
         board,
-        originPoint,
-        destinationPoint,
-        player.direction
+        origin,
+        destination,
+        move.player.direction
       )
-      const movedPlayer = {
-        ...player,
-        stateKind: 'moving',
-      }
-      const newMove = {
-        ...move,
-        player: movedPlayer,
-        stateKind: 'completed',
-      } as BackgammonMoveCompleted
-      return { board, move: newMove }
+      const m = newMove as BackgammonMoveInProgress
+      return { board, move: m }
     } else {
-      const dryRunMove = {
-        ...move,
-        stateKind: 'in-progress',
-      } as BackgammonMoveCompleted
-      return { board, move: dryRunMove }
+      const m = newMove as BackgammonMoveCompleted
+      return { board, move: m }
     }
   }
 }

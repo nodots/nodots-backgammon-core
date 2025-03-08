@@ -14,7 +14,9 @@ import {
   BackgammonColor,
   BackgammonDieValue,
   BackgammonGame,
+  BackgammonMoveDestination,
   BackgammonMoveDirection,
+  BackgammonMoveOrigin,
   BackgammonMoveSkeleton,
   BackgammonOff,
   BackgammonPlayer,
@@ -50,14 +52,15 @@ export class Board implements BackgammonBoard {
   // Note that this does NOT actually update the board. Separate action.
   public static moveChecker(
     board: BackgammonBoard,
-    origin: BackgammonPoint | BackgammonBar,
-    destination: BackgammonPoint | BackgammonOff, // Note that this means that hit has to be a different function
+    origin: BackgammonMoveOrigin,
+    destination: BackgammonMoveDestination, // Note that this means that hit has to be a different function
     direction: BackgammonMoveDirection
   ): BackgammonBoard {
     const opponentDirection =
       direction === 'clockwise' ? 'counterclockwise' : 'clockwise'
-    const opponentBarClone = JSON.parse(
-      JSON.stringify(board.bar[opponentDirection])
+    const opponentBar = board.bar[opponentDirection]
+    const opponentBarClone: BackgammonCheckercontainer = JSON.parse(
+      JSON.stringify(opponentBar)
     )
     const boardClone: BackgammonBoard = JSON.parse(JSON.stringify(board))
     const originClone: BackgammonCheckercontainer = JSON.parse(
@@ -73,7 +76,7 @@ export class Board implements BackgammonBoard {
       destinationClone.checkers[0].color !== originClone.checkers[0].color
     ) {
       const hitChecker = destinationClone.checkers.pop()
-      if (!hitChecker) throw Error('No hit checker found')
+      if (!hitChecker) throw Error('No checker found')
       opponentBarClone.checkers.push(hitChecker)
     }
 
@@ -155,6 +158,85 @@ export class Board implements BackgammonBoard {
     return container
   }
 
+  private static getPossibleReenterMoves = function getPossibleReenterMoves(
+    board: BackgammonBoard,
+    player: BackgammonPlayer,
+    dieValue: BackgammonDieValue
+  ): BackgammonMoveSkeleton[] {
+    const bar = board.bar[player.direction]
+    const possibleMoves: BackgammonMoveSkeleton[] = []
+    if (bar.checkers.length === 0) return possibleMoves
+    const possibleDestinations = board.points.filter((p) => {
+      const destinationPosition = 25 - dieValue
+      return p.position[player.direction] === destinationPosition
+    })
+    possibleDestinations.forEach((destination) => {
+      possibleMoves.push({
+        origin: bar,
+        destination,
+        dieValue,
+        direction: player.direction,
+      })
+    })
+    return possibleMoves
+  }
+
+  private static getPossibleBearOffMoves = function getPossibleReenterMoves(
+    board: BackgammonBoard,
+    player: BackgammonPlayer,
+    dieValue: BackgammonDieValue
+  ): BackgammonMoveSkeleton[] {
+    const possibleMoves: BackgammonMoveSkeleton[] = []
+    if (board.bar[player.direction].checkers.length > 0) return possibleMoves
+    const playerPoints = Board.getPoints(board).filter(
+      (p) => p.checkers.length > 0 && p.checkers[0].color === player.color
+    )
+    const off = board.off[player.direction]
+    if (off.checkers.length === 15) return possibleMoves
+    const possibleOrigins = playerPoints.filter((p) => {
+      const originPosition = p.position[player.direction]
+      return originPosition - dieValue <= 0
+    })
+    possibleOrigins.forEach((origin) => {
+      possibleMoves.push({
+        origin,
+        destination: off,
+        dieValue,
+        direction: player.direction,
+      })
+    })
+    return possibleMoves
+  }
+
+  private static getPossiblePointToPointMoves =
+    function getPossiblePointToPointMoves(
+      board: BackgammonBoard,
+      player: BackgammonPlayer,
+      dieValue: BackgammonDieValue
+    ): BackgammonMoveSkeleton[] {
+      const possibleMoves: BackgammonMoveSkeleton[] = []
+      const playerPoints = Board.getPoints(board).filter(
+        (p) => p.checkers.length > 0 && p.checkers[0].color === player.color
+      )
+      playerPoints.map((p) => {
+        const possibleDestination = Board.getPoints(board).find(
+          (p) =>
+            (p.checkers.length < 2 || p.checkers[0].color === player.color) &&
+            p.position[player.direction] ===
+              p.position[player.direction] - dieValue
+        )
+        if (possibleDestination) {
+          possibleMoves.push({
+            origin: p,
+            destination: possibleDestination,
+            dieValue,
+            direction: player.direction,
+          })
+        }
+      })
+      return possibleMoves
+    }
+
   public static getPossibleMoves = function getPossibleMoves(
     board: BackgammonBoard,
     player: BackgammonPlayer,
@@ -166,52 +248,52 @@ export class Board implements BackgammonBoard {
     )
     const playerDirection = player.direction
     const bar = board.bar[playerDirection]
-
-    console.log('Player Points:', playerPoints)
-    console.log('Player Direction:', playerDirection)
-    console.log('Bar Checkers:', bar.checkers)
+    const off = board.off[playerDirection]
 
     // player is the winner! Need to do more here
-    if (playerPoints.length === 0 && bar.checkers.length === 0) {
+    if (
+      playerPoints.length === 0 &&
+      bar.checkers.length === 0 &&
+      off.checkers.length === 15
+    ) {
       return possibleMoves
     }
 
     if (bar.checkers.length > 0) {
-      const opponentBoard = Player.getOpponentBoard(board, player)
-      const possibleDestination = opponentBoard.find(
-        (p) =>
-          p.checkers.length < 2 && p.position[playerDirection] === 25 - dieValue
-      )
-      if (possibleDestination) {
-        possibleMoves.push({
-          origin: bar,
-          destination: possibleDestination,
-          dieValue,
-          direction: playerDirection,
-        })
-      }
-      console.log('Possible Moves from Bar:', possibleMoves)
-      return possibleMoves
+      return Board.getPossibleReenterMoves(board, player, dieValue)
     } else {
-      playerPoints.map(function mapPlayerPoints(point) {
-        const possibleDestination = Board.getPoints(board).find(
-          (p) =>
-            p.checkers.length < 2 &&
-            p.position[playerDirection] ===
-              point.position[playerDirection] + dieValue
-        )
-        if (possibleDestination) {
-          possibleMoves.push({
-            origin: point,
-            destination: possibleDestination,
-            dieValue,
-            direction: playerDirection,
-          })
-        }
-      })
+      const getPossiblePointToPointMoves = Board.getPossiblePointToPointMoves(
+        board,
+        player,
+        dieValue
+      )
+      const getPossibleBearOffMoves = Board.getPossibleBearOffMoves(
+        board,
+        player,
+        dieValue
+      )
+      possibleMoves.push(...getPossiblePointToPointMoves)
+      possibleMoves.push(...getPossibleBearOffMoves)
     }
+    possibleMoves.map((move) => {
+      const { origin, destination, dieValue } = move
+      const originPosition =
+        origin.kind === 'point'
+          ? origin.position[player.direction]
+          : origin.position
+      const destinationPosition =
+        destination.kind === 'point'
+          ? destination.position[player.direction]
+          : destination.position
+      console.log(
+        'POSSIBLE MOVE:',
+        ` DieValue: ${move.dieValue}`,
+        ` Direction: ${move.direction}`,
+        ` Origin Position: ${originPosition}`,
+        ` Destination Position: ${destinationPosition}`
+      )
+    })
 
-    console.log('Possible Moves from Points:', possibleMoves)
     return possibleMoves
   }
 

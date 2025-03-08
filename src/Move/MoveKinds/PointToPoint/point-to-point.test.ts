@@ -21,6 +21,7 @@ describe('PointToPoint', () => {
   const color = randomBackgammonColor()
   const direction = randomBackgammonDirection()
   const currentRoll: BackgammonRoll = [1, 5]
+  const total = currentRoll[0] + currentRoll[1]
   const dieValue = currentRoll[0]
   const dice: Dice = {
     id: diceId,
@@ -36,8 +37,8 @@ describe('PointToPoint', () => {
       ...dice,
       color,
       stateKind: 'rolled',
-      currentRoll: [1, 5],
-      total: 6,
+      currentRoll,
+      total,
     },
     direction,
     pipCount: 167,
@@ -54,9 +55,15 @@ describe('PointToPoint', () => {
     possibleMoves: Board.getPossibleMoves(board, player, dieValue),
   }
 
-  const moveResult = PointToPoint.move(board, validMove) as BackgammonMoveResult
+  const moveResult = PointToPoint.move(
+    board,
+    validMove,
+    origin
+  ) as BackgammonMoveResult
 
   it('should return a BackgammonMoveResult', () => {
+    console.log('FUCKIG MOVE RESULT', moveResult)
+
     expect(moveResult).toHaveProperty('board')
     expect(moveResult).toHaveProperty('move')
   })

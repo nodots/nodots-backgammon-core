@@ -3,6 +3,7 @@ import { Player } from '../../../Player'
 import {
   BackgammonBar,
   BackgammonBoard,
+  BackgammonMoveCompleted,
   BackgammonMoveDirection,
   BackgammonMoveDryRunResult,
   BackgammonMoveInProgress,
@@ -26,34 +27,6 @@ export class Reenter {
     } as BackgammonMoveInProgress
   }
 
-  // public static move = function reenter(
-  //   board: BackgammonBoard,
-  //   move: BackgammonMove
-  // ): BackgammonMoveResult {
-  //   if (!Reenter.isA(board, move.player)) throw Error('Invalid reenter move')
-  //   const dieValue = move.dieValue
-  //   let player = move.player
-
-  //   move = {
-  //     ...move,
-  //     moveKind: 'no-move',
-  //   }
-
-  //   const direction = player.direction as BackgammonMoveDirection
-  //   const origin = board.bar[direction]
-  //   const opponentsHomeBoard = Player.getOpponentBoard(board, player)
-  //   const destination = opponentsHomeBoard.find(
-  //     (p) => p.position[direction] + dieValue
-  //   )
-  //   if (!destination) throw Error('Invalid reenter move')
-  //   board = Board.moveChecker(board, origin, destination, direction)
-  //   if (!board) throw Error('Invalid board from moveChecker in Reenter')
-
-  //   return {
-  //     board,
-  //     move,
-  //   }
-  // }
   public static getDestination = (
     board: BackgammonBoard,
     move: BackgammonMoveReady
@@ -86,14 +59,17 @@ export class Reenter {
       )
       if (!board) throw Error('Invalid board from moveChecker in Reenter')
     }
-    move = {
+    const moveCompleted: BackgammonMoveCompleted = {
       ...move,
+      stateKind: 'completed',
       moveKind: 'reenter',
+      origin,
       destination,
+      isHit: false, // FIXME: Implement hit logic
     }
     return {
       board,
-      move,
+      move: moveCompleted,
     }
   }
 }

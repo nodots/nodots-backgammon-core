@@ -61,8 +61,8 @@ export type BackgammonMoveInProgress = Move & {
 export type BackgammonMoveCompleted = Move & {
   stateKind: 'completed'
   moveKind: BackgammonMoveKind
-  origin: BackgammonMoveOrigin
-  destination: BackgammonMoveDestination
+  origin: BackgammonMoveOrigin | undefined
+  destination: BackgammonMoveDestination | undefined
 }
 
 export type BackgammonMoveConfirmed = Move & {
@@ -75,9 +75,12 @@ export type BackgammonMoveConfirmed = Move & {
 export type BackgammonMoveNoMove = Move & {
   stateKind: 'completed'
   moveKind: 'no-move'
+  origin: undefined
+  destination: undefined
 }
 
 export type BackgammonMove =
+  | BackgammonMoveNoMove
   | BackgammonMoveReady
   | BackgammonMoveInProgress
   | BackgammonMoveCompleted
@@ -95,5 +98,5 @@ export type BackgammonMoveResult = {
 
 export type BackgammonMoveDryRunResult = {
   board: BackgammonBoard
-  move: BackgammonMoveReady
+  move: BackgammonMoveInProgress
 }

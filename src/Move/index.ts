@@ -4,10 +4,12 @@ import {
   BackgammonCheckercontainer,
   BackgammonDieValue,
   BackgammonMove,
+  BackgammonMoveCompleted,
   BackgammonMoveConfirmed,
   BackgammonMoveDryRunResult,
   BackgammonMoveInProgress,
   BackgammonMoveKind,
+  BackgammonMoveNoMove,
   BackgammonMoveOrigin,
   BackgammonMoveReady,
   BackgammonMoveResult,
@@ -78,7 +80,8 @@ export class Move {
       throw Error('Invalid player state for move')
     switch (moveKind) {
       case 'point-to-point':
-        return PointToPoint.move(board, move, false)
+        const origin = move.origin as BackgammonPoint
+        return PointToPoint.move(board, move, origin, isDryRun)
       case 'reenter':
         move.destination = move.possibleMoves.find(
           (m) => m.origin === move.origin
@@ -89,13 +92,17 @@ export class Move {
         return BearOff.move(board, move)
       case 'no-move':
       case undefined:
-        move = {
+        const noMove: BackgammonMoveCompleted = {
           ...move,
+          stateKind: 'completed',
+          moveKind: 'no-move',
+          origin: undefined,
+          destination: undefined,
         }
 
         return {
           board,
-          move,
+          move: noMove,
         }
     }
   }
