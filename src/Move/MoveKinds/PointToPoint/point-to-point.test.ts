@@ -62,7 +62,13 @@ describe('PointToPoint', () => {
   ) as BackgammonMoveResult
 
   it('should return a BackgammonMoveResult', () => {
-    console.log('FUCKIG MOVE RESULT', moveResult)
+    const origin = moveResult.move.origin
+    const destination = moveResult.move.destination
+    console.log('Move Result:')
+    console.log(' direction:', moveResult.move.player.direction)
+    console.log(' dieValue:', moveResult.move.dieValue)
+    console.log(' origin:', origin!.position)
+    console.log(' destination:', destination!.position)
 
     expect(moveResult).toHaveProperty('board')
     expect(moveResult).toHaveProperty('move')
