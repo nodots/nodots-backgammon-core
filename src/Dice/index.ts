@@ -1,9 +1,7 @@
 import { generateId } from '..'
 import {
   BackgammonColor,
-  BackgammonDice,
   BackgammonDiceInactive,
-  BackgammonDiceRolling,
   BackgammonDiceRolled,
   BackgammonDiceStateKind,
   BackgammonDieValue,

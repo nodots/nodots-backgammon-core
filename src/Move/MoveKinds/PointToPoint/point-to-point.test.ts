@@ -8,7 +8,6 @@ import {
 import { Board } from '../../../Board'
 import { BOARD_IMPORT_DEFAULT } from '../../../Board/imports'
 import {
-  BackgammonMoveCompleted,
   BackgammonMoveReady,
   BackgammonMoveResult,
   BackgammonPlayerMoving,
