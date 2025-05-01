@@ -2,7 +2,7 @@ import { BackgammonChecker } from './checker'
 import {
   BackgammonDice,
   BackgammonDiceInactive,
-  BackgammonDiceReady,
+  BackgammonDiceRolling,
   BackgammonDiceRolled,
 } from './dice'
 import { BackgammonPips } from './pip'
@@ -59,7 +59,7 @@ export type BackgammonPlayerRolledForStart = Player & {
 export type BackgammonPlayerRolling = Player & {
   id: string
   stateKind: 'rolling'
-  dice: BackgammonDiceReady
+  dice: BackgammonDiceRolling
 }
 
 export type BackgammonPlayerRolled = Player & {

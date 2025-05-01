@@ -70,13 +70,17 @@ export class Play {
       board,
     }
 
-    const completedMove = {
-      ...move,
+    const completedMove: BackgammonMoveCompleted = {
+      id: move.id,
+      player: move.player,
       stateKind: 'completed',
+      dieValue: move.dieValue,
       moveKind: 'point-to-point',
       origin,
       destination,
-    } as BackgammonMoveCompleted
+      possibleMoves: move.possibleMoves,
+      isHit: false,
+    }
 
     return {
       play,
@@ -107,8 +111,15 @@ export class Play {
       dieValue: roll[1],
       possibleMoves: Board.getPossibleMoves(board, player, roll[1]),
     }
-    moves.add(move0)
-    moves.add(move1)
+
+    // Only add moves that have possible moves
+    if (move0.possibleMoves.length > 0) {
+      moves.add(move0)
+    }
+    if (move1.possibleMoves.length > 0) {
+      moves.add(move1)
+    }
+
     if (roll[0] === roll[1]) {
       const move2: BackgammonMoveReady = {
         id: generateId(),
@@ -124,15 +135,25 @@ export class Play {
         dieValue: roll[1],
         possibleMoves: Board.getPossibleMoves(board, player, roll[1]),
       }
-      moves.add(move2)
-      moves.add(move3)
+      if (move2.possibleMoves.length > 0) {
+        moves.add(move2)
+      }
+      if (move3.possibleMoves.length > 0) {
+        moves.add(move3)
+      }
     }
+
+    const movesArray = Array.from(moves)
+    if (movesArray.length === 0) {
+      throw new Error('No possible moves available')
+    }
+
     return {
       id: generateId(),
       stateKind: 'rolled',
       board,
       player,
-      moves: Array.from(moves) as BackgammonMoves,
+      moves: movesArray as BackgammonMoves,
     }
   }
 }

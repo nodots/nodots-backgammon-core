@@ -115,11 +115,12 @@ export class Player {
   public static roll = function roll(
     player: BackgammonPlayerRolling
   ): BackgammonPlayerRolled {
-    const rolledDice = Dice.roll(player.dice)
-    player.dice = rolledDice
+    const inactiveDice = Dice.initialize(player.color)
+    const rolledDice = Dice.roll(inactiveDice)
     return {
       ...player,
       stateKind: 'rolled',
+      dice: rolledDice,
     }
   }
 

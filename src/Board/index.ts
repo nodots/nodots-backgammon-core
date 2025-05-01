@@ -63,8 +63,6 @@ export class Board implements BackgammonBoard {
     // console.log('Board before clone:', this.displayAsciiBoard(board))
     try {
       boardClone = JSON.parse(JSON.stringify(board))
-      console.log('Board after clone:', this.displayAsciiBoard(boardClone))
-      console.log('Board clone:', boardClone)
     } catch (e) {
       console.error('Error cloning board:', e)
       throw e

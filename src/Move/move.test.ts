@@ -6,17 +6,22 @@ import {
 } from '..'
 import {
   BackgammonDiceRolled,
+  BackgammonDieValue,
   BackgammonMoveReady,
   BackgammonPlayerMoving,
+  BackgammonRoll,
 } from '../types'
 import { Move } from './index'
 
 describe('Move', () => {
-  const color = randomBackgammonColor()
-  const direction = randomBackgammonDirection()
+  const color = 'white'
+  const direction = 'clockwise'
   const board = Board.initialize()
   let dice = Dice.initialize(color)
-  const currentRoll = Dice._RandomRoll
+  const currentRoll: BackgammonRoll = [
+    1 as BackgammonDieValue,
+    1 as BackgammonDieValue,
+  ]
   const rolledDice = {
     ...dice,
     stateKind: 'rolled',
@@ -32,7 +37,8 @@ describe('Move', () => {
     dice: rolledDice,
     pipCount: 167,
   }
-  const origin = board.points[0]
+  const origin = board.points[5] // Use point 6 for white's starting position
+  const destination = board.points[4] // Use point 5 for destination (one point forward)
   let move: BackgammonMoveReady = {
     id: '1',
     player,
@@ -53,17 +59,18 @@ describe('Move', () => {
   const validPointToPoint: BackgammonMoveReady = {
     player,
     id: '1',
-    dieValue: 2,
+    dieValue: currentRoll[0],
     stateKind: 'ready',
     moveKind: 'point-to-point',
     origin,
+    destination,
     possibleMoves: Board.getPossibleMoves(board, player, currentRoll[0]),
   }
 
   it('Should have possibleMoves', () => {
     expect(validPointToPoint.possibleMoves).toBeDefined()
     expect(validPointToPoint.possibleMoves.length).toBeGreaterThan(0)
-    expect(validPointToPoint.destination).toBeUndefined()
+    expect(validPointToPoint.destination).toBeDefined()
     expect(validPointToPoint.moveKind).toBe('point-to-point')
     expect(validPointToPoint.stateKind).toBe('ready')
   })
@@ -80,25 +87,28 @@ describe('Move', () => {
   })
 
   const movePayload: BackgammonMoveReady = {
-    ...randomMove,
+    ...validPointToPoint,
     id: '1',
     moveKind: 'point-to-point',
     stateKind: 'ready',
     player,
+    dieValue: currentRoll[0],
+    origin,
+    destination,
     possibleMoves: validPointToPoint.possibleMoves,
   }
   const moveResult = Move.move(board, movePayload, false)
 
-  // it('Should move the checker', () => {
-  //   expect(moveResult).toBeDefined()
-  //   expect(moveResult.board).toBeDefined()
-  //   expect(moveResult.move).toBeDefined()
-  //   expect(moveResult.move.stateKind).toBe('completed')
-  //   expect(moveResult.move.moveKind).toBe('point-to-point')
-  //   expect(moveResult.move.origin).toBeDefined()
-  //   expect(moveResult.move.destination).toBeDefined()
-  //   expect(moveResult.move.origin).not.toBe(moveResult.move.destination)
-  // })
+  it('Should move the checker', () => {
+    expect(moveResult).toBeDefined()
+    expect(moveResult.board).toBeDefined()
+    expect(moveResult.move).toBeDefined()
+    expect(moveResult.move.stateKind).toBe('completed')
+    expect(moveResult.move.moveKind).toBe('point-to-point')
+    expect(moveResult.move.origin).toBeDefined()
+    expect(moveResult.move.destination).toBeDefined()
+    expect(moveResult.move.origin).not.toBe(moveResult.move.destination)
+  })
 
   // const moveInProgress: BackgammonMoveInProgress = {
   //   ...moveResult.move,
