@@ -1,14 +1,11 @@
 import { Board, Dice, Player } from '..'
-import { Play } from './index'
 import {
   BackgammonCheckercontainerImport,
-  BackgammonColor,
   BackgammonDiceInactive,
-  BackgammonDiceRolled,
-  BackgammonMoveDirection,
   BackgammonPlayerRolled,
   BackgammonPlayerRolling,
 } from '../types'
+import { Play } from './index'
 
 describe('Play', () => {
   test('initialize', () => {
