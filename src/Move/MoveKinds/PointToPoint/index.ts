@@ -51,6 +51,10 @@ export class PointToPoint {
     move: BackgammonMoveReady,
     isDryRun: boolean = false
   ): BackgammonMoveResult | BackgammonMoveDryRunResult {
+    if (!board) throw Error('Invalid board')
+    if (!move) throw Error('Invalid move')
+    console.log('PointToPoint.move board', Board.displayAsciiBoard(board))
+    Board.displayAsciiBoard(board)
     move = {
       ...move,
       moveKind: 'point-to-point',
@@ -70,6 +74,9 @@ export class PointToPoint {
         destinationPoint,
         player.direction
       )
+
+      if (!board) throw Error('Invalid board after move')
+
       const movedPlayer = {
         ...player,
         stateKind: 'moving',

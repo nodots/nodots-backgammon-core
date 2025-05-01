@@ -19,7 +19,7 @@ describe('PointToPoint', () => {
   let board = Board.initialize(BOARD_IMPORT_DEFAULT)
   const color = randomBackgammonColor()
   const direction = randomBackgammonDirection()
-  const currentRoll: BackgammonRoll = [1, 5]
+  const currentRoll: BackgammonRoll = [1, 4]
   const dieValue = currentRoll[0]
   const dice: Dice = {
     id: diceId,
@@ -35,7 +35,7 @@ describe('PointToPoint', () => {
       ...dice,
       color,
       stateKind: 'rolled',
-      currentRoll: [1, 5],
+      currentRoll: [1, 4],
       total: 6,
     },
     direction,
@@ -54,7 +54,6 @@ describe('PointToPoint', () => {
   }
 
   const moveResult = PointToPoint.move(board, validMove) as BackgammonMoveResult
-
   it('should return a BackgammonMoveResult', () => {
     expect(moveResult).toHaveProperty('board')
     expect(moveResult).toHaveProperty('move')

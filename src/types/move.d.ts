@@ -97,3 +97,30 @@ export type BackgammonMoveDryRunResult = {
   board: BackgammonBoard
   move: BackgammonMoveReady
 }
+
+export interface MoveProps {
+  move: BackgammonMove
+  origin: BackgammonMoveOrigin
+}
+
+export interface MoveClass {
+  player: BackgammonPlayer
+  id: string
+  dieValue: BackgammonDieValue
+  stateKind: BackgammonMoveStateKind
+  moveKind: BackgammonMoveKind | undefined
+  origin: BackgammonCheckercontainer | undefined
+  destination: BackgammonCheckercontainer | undefined
+
+  initialize: (props: MoveProps) => BackgammonMove
+  isPointOpen: (
+    point: BackgammonPoint,
+    player: BackgammonPlayerMoving | BackgammonPlayerRolled
+  ) => boolean
+  move: (
+    board: BackgammonBoard,
+    move: BackgammonMoveReady,
+    isDryRun?: boolean
+  ) => BackgammonMoveResult | BackgammonMoveDryRunResult
+  confirmMove: (move: BackgammonMoveInProgress) => BackgammonMoveConfirmed
+}

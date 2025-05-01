@@ -86,7 +86,9 @@ export class Game {
           inactivePlayer: inactivePlayer,
         } as BackgammonGameRolling
       case 'rolling':
-        activeColor = activeColor as BackgammonColor
+        if (!activeColor) throw new Error('Active color must be provided')
+        if (!activePlayer) throw new Error('Active player must be provided')
+        if (!inactivePlayer) throw new Error('Inactive player must be provided')
         return Game.roll({
           id,
           stateKind: 'rolled-for-start',
@@ -94,7 +96,7 @@ export class Game {
           board,
           cube,
           activeColor,
-          activePlayer,
+          activePlayer: activePlayer as BackgammonPlayerRolling,
           inactivePlayer,
           activePlay,
         })

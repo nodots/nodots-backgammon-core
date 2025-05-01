@@ -59,7 +59,7 @@ describe('BearOff', () => {
       dieValue: currentRoll[0],
       possibleMoves: Board.getPossibleMoves(board, player, currentRoll[0]),
     }
-    Board.displayAsciiBoard(board)
+    // Board.displayAsciiBoard(board)
 
     // const moveResult = BearOff.move(board, m)
     // const completedMove = moveResult.move

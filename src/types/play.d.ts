@@ -1,10 +1,19 @@
 import { BackgammonRoll } from './dice'
-import { BackgammonMoves } from './move'
+import {
+  BackgammonMoves,
+  BackgammonMoveReady,
+  BackgammonMoveInProgress,
+  BackgammonMoveCompleted,
+} from './move'
 import {
   BackgammonPlayer,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
+  BackgammonPlayerRolling,
 } from './player'
+import { BackgammonBoard } from './board'
+import { BackgammonCube } from './cube'
+import { BackgammonMoveOrigin } from './checkercontainer'
 
 export type BackgammonPlayResult = {
   board: BackgammonBoard
@@ -77,4 +86,39 @@ export type BackgammonRollResults = {
 export type BackgammonPlayResults = {
   board: BackgammonBoard
   play: BackgammonPlay
+}
+
+export interface PlayProps {
+  id?: string
+  cube?: BackgammonCube
+  stateKind?: BackgammonPlayStateKind
+  moves?: BackgammonMoves
+  board: BackgammonBoard
+  player: BackgammonPlayerRolling | BackgammonPlayerMoving
+}
+
+export interface PlayClass {
+  id?: string
+  cube?: BackgammonCube
+  stateKind?: BackgammonPlayStateKind
+  moves?: BackgammonMoves
+  board: BackgammonBoard
+  player:
+    | BackgammonPlayerRolling
+    | BackgammonPlayerRolled
+    | BackgammonPlayerMoving
+
+  initialize: (
+    board: BackgammonBoard,
+    player: BackgammonPlayerRolled
+  ) => BackgammonPlayRolled
+  move: (
+    board: BackgammonBoard,
+    play: BackgammonPlayRolled | BackgammonPlayMoving,
+    origin: BackgammonMoveOrigin
+  ) => {
+    play: BackgammonPlayMoving
+    board: BackgammonBoard
+    move: BackgammonMoveCompleted
+  }
 }

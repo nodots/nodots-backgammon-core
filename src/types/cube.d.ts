@@ -1,4 +1,4 @@
-import { BackgammonPlayer } from './player'
+import { BackgammonPlayer, BackgammonPlayers } from './player'
 
 export type BackgammonCubeValue = undefined | 2 | 4 | 8 | 16 | 32 | 64
 export const BackgammonCubeValues: BackgammonCubeValue[] = [
@@ -44,3 +44,24 @@ export type BackgammonCube =
   | BackgammonCubeInitialized
   | BackgammonCubeDoubled
   | BackgammonCubeMaxxed
+
+export interface CubeProps {
+  id?: string
+  stateKind?: BackgammonCubeStateKind
+  value?: BackgammonCubeValue
+  owner?: BackgammonPlayer
+}
+
+export interface CubeClass {
+  id: string
+  stateKind: BackgammonCubeStateKind
+  value: BackgammonCubeValue | undefined
+  owner: BackgammonPlayer | undefined
+
+  initialize: (cube?: CubeProps) => BackgammonCube
+  double: (
+    cube: BackgammonCube,
+    player: BackgammonPlayer,
+    players: BackgammonPlayers
+  ) => BackgammonCubeDoubled | BackgammonCubeMaxxed
+}

@@ -34,3 +34,22 @@ export type BackgammonDice =
   | BackgammonDiceInactive
   | BackgammonDiceRolling
   | BackgammonDiceRolled
+
+export interface DiceClass {
+  id: string
+  stateKind: BackgammonDiceStateKind
+  color: BackgammonColor | undefined
+  currentRoll: BackgammonRoll | undefined
+
+  initialize: (
+    color: BackgammonColor,
+    stateKind?: BackgammonDiceStateKind,
+    id?: string,
+    currentRoll?: BackgammonRoll
+  ) => BackgammonDiceInactive
+  roll: (dice: BackgammonDiceInactive) => BackgammonDiceRolled
+  switchDice: (dice: BackgammonDiceRolled) => BackgammonDiceRolled
+  isDouble: (dice: BackgammonDiceRolled) => boolean
+  rollDie: () => BackgammonDieValue
+  _RandomRoll: BackgammonRoll
+}

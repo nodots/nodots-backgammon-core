@@ -3,6 +3,7 @@ import {
   BackgammonBoard,
   BackgammonCube,
   BackgammonMove,
+  BackgammonMoveCompleted,
   BackgammonMoveInProgress,
   BackgammonMoveOrigin,
   BackgammonMoveReady,
@@ -69,10 +70,18 @@ export class Play {
       board,
     }
 
+    const completedMove = {
+      ...move,
+      stateKind: 'completed',
+      moveKind: 'point-to-point',
+      origin,
+      destination,
+    } as BackgammonMoveCompleted
+
     return {
       play,
       board,
-      move,
+      move: completedMove,
     }
   }
 

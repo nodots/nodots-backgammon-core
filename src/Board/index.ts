@@ -1,10 +1,4 @@
-import {
-  Checker,
-  generateId,
-  Player,
-  randomBackgammonColor,
-  randomBackgammonDirection,
-} from '..'
+import { Checker, generateId, Player } from '..'
 import {
   BackgammonBar,
   BackgammonBoard,
@@ -21,7 +15,6 @@ import {
   BackgammonPoint,
   BackgammonPoints,
   BackgammonPointValue,
-  BackgammonRoll,
 } from '../types'
 import { ascii } from './ascii'
 import { BOARD_IMPORT_DEFAULT } from './imports'
@@ -44,7 +37,10 @@ export class Board implements BackgammonBoard {
     boardImport?: BackgammonCheckercontainerImport[]
   ): BackgammonBoard {
     if (!boardImport) boardImport = BOARD_IMPORT_DEFAULT
-    return Board.buildBoard(boardImport)
+    const board = Board.buildBoard(boardImport)
+    if (!board) throw Error('No board found')
+    console.log('Board initialized:', Board.displayAsciiBoard(board))
+    return board
   }
 
   // Note that this does NOT actually update the board. Separate action.
@@ -54,12 +50,27 @@ export class Board implements BackgammonBoard {
     destination: BackgammonPoint | BackgammonOff, // Note that this means that hit has to be a different function
     direction: BackgammonMoveDirection
   ): BackgammonBoard {
+    if (!board) throw Error('No board found')
+
+    // console.log('Moving checker from:', origin, 'to:', destination)
     const opponentDirection =
       direction === 'clockwise' ? 'counterclockwise' : 'clockwise'
     const opponentBarClone = JSON.parse(
       JSON.stringify(board.bar[opponentDirection])
     )
-    const boardClone: BackgammonBoard = JSON.parse(JSON.stringify(board))
+    let boardClone: BackgammonBoard | undefined = undefined
+
+    // console.log('Board before clone:', this.displayAsciiBoard(board))
+    try {
+      boardClone = JSON.parse(JSON.stringify(board))
+      console.log('Board after clone:', this.displayAsciiBoard(boardClone))
+      console.log('Board clone:', boardClone)
+    } catch (e) {
+      console.error('Error cloning board:', e)
+      throw e
+    }
+
+    console.log('Board after clone:', Board.displayAsciiBoard(boardClone!))
     const originClone: BackgammonCheckercontainer = JSON.parse(
       JSON.stringify(origin)
     )
@@ -81,7 +92,7 @@ export class Board implements BackgammonBoard {
     if (!checker) throw Error('No checker found')
     destinationClone.checkers.push(checker)
 
-    this.getCheckercontainers(boardClone).forEach(
+    this.getCheckercontainers(boardClone!).forEach(
       function updateCheckerContainers(cc) {
         if (cc.id === originClone.id) {
           cc.checkers = originClone.checkers
@@ -94,8 +105,9 @@ export class Board implements BackgammonBoard {
         }
       }
     )
+    console.log('Board After:', Board.displayAsciiBoard(boardClone!))
 
-    return boardClone
+    return boardClone!
   }
 
   static getCheckers(board: BackgammonBoard): BackgammonChecker[] {
@@ -167,9 +179,9 @@ export class Board implements BackgammonBoard {
     const playerDirection = player.direction
     const bar = board.bar[playerDirection]
 
-    console.log('Player Points:', playerPoints)
-    console.log('Player Direction:', playerDirection)
-    console.log('Bar Checkers:', bar.checkers)
+    // console.log('Player Points:', playerPoints)
+    // console.log('Player Direction:', playerDirection)
+    // console.log('Bar Checkers:', bar.checkers)
 
     // player is the winner! Need to do more here
     if (playerPoints.length === 0 && bar.checkers.length === 0) {
@@ -190,7 +202,6 @@ export class Board implements BackgammonBoard {
           direction: playerDirection,
         })
       }
-      console.log('Possible Moves from Bar:', possibleMoves)
       return possibleMoves
     } else {
       playerPoints.map(function mapPlayerPoints(point) {
@@ -211,7 +222,7 @@ export class Board implements BackgammonBoard {
       })
     }
 
-    console.log('Possible Moves from Points:', possibleMoves)
+    // console.log('Possible Moves from Points:', possibleMoves)
     return possibleMoves
   }
 
@@ -526,7 +537,9 @@ export class Board implements BackgammonBoard {
 
   public static getAsciiBoard = (board: BackgammonBoard): string => ascii(board)
 
-  public static displayAsciiBoard = (board: BackgammonBoard): void => {
-    console.log(ascii(board))
+  public static displayAsciiBoard = (
+    board: BackgammonBoard | undefined
+  ): void => {
+    return board ? console.log(ascii(board)) : console.error('No board found')
   }
 }

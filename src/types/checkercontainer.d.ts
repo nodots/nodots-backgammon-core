@@ -1,6 +1,8 @@
 import { BackgammonChecker } from './checker'
 import { BackgammonPoint } from './checkercontainer'
 import { BackgammonColor } from './game'
+import { BackgammonBoard } from './board'
+import { BackgammonCheckercontainerImport } from './import'
 
 type BarPosition = 'bar'
 type OffPosition = 'off'
@@ -105,3 +107,19 @@ export type BackgammonPoints = [
 
 export type BackgammonMoveOrigin = BackgammonPoint | BackgammonBar
 export type BackgammonMoveDestination = BackgammonPoint | BackgammonOff
+
+export interface CheckercontainerClass {
+  getCheckercontainers: (board: BackgammonBoard) => BackgammonCheckercontainer[]
+  getCheckercontainer: (
+    board: BackgammonBoard,
+    id: string
+  ) => BackgammonCheckercontainer
+  buildBar: (boardImport: BackgammonCheckercontainerImport[]) => {
+    clockwise: BackgammonBar
+    counterclockwise: BackgammonBar
+  }
+  buildOff: (boardImport: BackgammonCheckercontainerImport[]) => {
+    clockwise: BackgammonOff
+    counterclockwise: BackgammonOff
+  }
+}
