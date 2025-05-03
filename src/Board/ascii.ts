@@ -3,10 +3,10 @@ import {
   BackgammonPoint,
   BackgammonBar,
   BackgammonOff,
-} from '../types'
+} from 'nodots-backgammon-types'
 
 export const ascii = (board: BackgammonBoard): string => {
-  const points = board.points
+  const points = board.BackgammonPoints
   const bar = board.bar
   const off = board.off
 
@@ -25,7 +25,7 @@ export const ascii = (board: BackgammonBoard): string => {
     if (!checker) return ' '
     const color = checker.color
     const symbol = color === 'black' ? 'X' : 'O'
-    return `${symbol} `
+    return symbol
   }
 
   const displayOff = (off: BackgammonOff, row: number): string => {
@@ -44,7 +44,10 @@ export const ascii = (board: BackgammonBoard): string => {
     for (let i = 12; i < 18; i++) {
       boardDisplay += `${displayPoint(points[i], row)}`
     }
-    boardDisplay += ' |   | '
+    boardDisplay += ' | '
+    // Display bar checkers
+    boardDisplay += displayBar(bar.clockwise, row)
+    boardDisplay += ' | '
     for (let i = 18; i < 24; i++) {
       boardDisplay += `${displayPoint(points[i], row)}`
     }
@@ -56,14 +59,36 @@ export const ascii = (board: BackgammonBoard): string => {
     for (let i = 11; i >= 6; i--) {
       boardDisplay += `${displayPoint(points[i], row)}`
     }
-    boardDisplay += ' |   | '
+    boardDisplay += ' | '
+    // Display bar checkers
+    boardDisplay += displayBar(bar.counterclockwise, row)
+    boardDisplay += ' | '
     for (let i = 5; i >= 0; i--) {
       boardDisplay += `${displayPoint(points[i], row)}`
     }
     boardDisplay += ' |\n'
   }
   boardDisplay += ' +-12-11-10--9-8--7--------6--5--4--3--2--1--+ \n'
-  boardDisplay += `       BLACK BAR: ${board.bar.clockwise.checkers.length}          WHITE BAR: ${board.bar.counterclockwise.checkers.length}\n`
-  boardDisplay += `       BLACK OFF: ${board.off.clockwise.checkers.length}          WHITE OFF: ${board.off.counterclockwise.checkers.length}\n`
+
+  // Count checkers by color instead of direction
+  const blackBarCount =
+    board.bar.clockwise.checkers.filter((c) => c.color === 'black').length +
+    board.bar.counterclockwise.checkers.filter((c) => c.color === 'black')
+      .length
+  const whiteBarCount =
+    board.bar.clockwise.checkers.filter((c) => c.color === 'white').length +
+    board.bar.counterclockwise.checkers.filter((c) => c.color === 'white')
+      .length
+  const blackOffCount =
+    board.off.clockwise.checkers.filter((c) => c.color === 'black').length +
+    board.off.counterclockwise.checkers.filter((c) => c.color === 'black')
+      .length
+  const whiteOffCount =
+    board.off.clockwise.checkers.filter((c) => c.color === 'white').length +
+    board.off.counterclockwise.checkers.filter((c) => c.color === 'white')
+      .length
+
+  boardDisplay += `       BLACK BAR: ${blackBarCount}          WHITE BAR: ${whiteBarCount}\n`
+  boardDisplay += `       BLACK OFF: ${blackOffCount}          WHITE OFF: ${whiteOffCount}\n`
   return boardDisplay
 }

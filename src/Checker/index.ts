@@ -1,12 +1,12 @@
 import { Board, generateId } from '..'
-import { BackgammonBoard, BackgammonChecker, BackgammonColor } from '../types'
+import { BackgammonBoard, BackgammonChecker, BackgammonColor } from 'nodots-backgammon-types'
 
 export class Checker {
   public static getCheckers = function getCheckers(
     board: BackgammonBoard
   ): BackgammonChecker[] {
     const checkers: BackgammonChecker[] = []
-    for (const point of board.points) {
+    for (const point of board.BackgammonPoints) {
       for (const checker of point.checkers) {
         checkers.push(checker)
       }

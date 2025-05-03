@@ -2,6 +2,7 @@
   "compilerOptions": {
     /* Language and Environment */
     "target": "es2016",                                  /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
+    "types": ["node", "jest"],                          /* Specify type package names to be included without being referenced in a source file. */
     /* Modules */
     "module": "commonjs",                                /* Specify what module code is generated. */
     /* JavaScript Support */
@@ -13,6 +14,12 @@
     "strict": true,                                      /* Enable all strict type-checking options. */
 
     /* Completeness */
-    "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
+    "skipLibCheck": true,                                 /* Skip type checking all .d.ts files. */
+
+    "baseUrl": ".",
+    "paths": {
+      "nodots-backgammon-types": ["node_modules/nodots-backgammon-types/src"]
+    },
+    "typeRoots": ["./node_modules/@types", "./node_modules/nodots-backgammon-types"]
   }
 }

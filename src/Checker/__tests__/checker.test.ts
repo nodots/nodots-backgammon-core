@@ -1,7 +1,13 @@
-import { Checker } from '.'
-import { Board, randomBackgammonColor } from '..'
-import { BackgammonBoard, BackgammonChecker, BackgammonColor } from '../types'
-import { BOARD_IMPORT_DEFAULT } from '../Board/imports'
+import { describe, it, expect, beforeAll, beforeEach } from '@jest/globals'
+import { Checker } from '..'
+import { Board } from '../../Board'
+import { generateId, randomBackgammonColor } from '../../'
+import {
+  BackgammonBoard,
+  BackgammonChecker,
+  BackgammonColor,
+} from 'nodots-backgammon-types'
+import { BOARD_IMPORT_DEFAULT } from '../../Board/imports'
 describe('BackgammonChecker', () => {
   let board: BackgammonBoard
   let color: BackgammonColor

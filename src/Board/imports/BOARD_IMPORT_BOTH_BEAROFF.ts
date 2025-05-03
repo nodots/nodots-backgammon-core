@@ -1,5 +1,5 @@
 import { randomBackgammonColor } from '../..'
-import { BackgammonCheckercontainerImport } from '../../types'
+import { BackgammonCheckercontainerImport } from 'nodots-backgammon-types'
 
 const defaultClockwiseColor = 'white'
 const defaultCounterclockwiseColor =
@@ -48,18 +48,18 @@ export const BOARD_IMPORT_BOTH_BEAROFF: BackgammonCheckercontainerImport[] = [
   },
   {
     position: {
-      clockwise: 24,
-      counterclockwise: 1,
+      clockwise: 21,
+      counterclockwise: 4,
     },
     checkers: {
-      qty: 4,
+      qty: 3,
       color: defaultCounterclockwiseColor,
     },
   },
   {
     position: {
-      clockwise: 24,
-      counterclockwise: 1,
+      clockwise: 22,
+      counterclockwise: 3,
     },
     checkers: {
       qty: 4,
@@ -78,21 +78,21 @@ export const BOARD_IMPORT_BOTH_BEAROFF: BackgammonCheckercontainerImport[] = [
   },
   {
     position: {
-      clockwise: 22,
-      counterclockwise: 3,
+      clockwise: 24,
+      counterclockwise: 1,
     },
     checkers: {
-      qty: 4,
+      qty: 2,
       color: defaultCounterclockwiseColor,
     },
   },
   {
     position: {
-      clockwise: 21,
-      counterclockwise: 4,
+      clockwise: 24,
+      counterclockwise: 1,
     },
     checkers: {
-      qty: 3,
+      qty: 2,
       color: defaultCounterclockwiseColor,
     },
   },

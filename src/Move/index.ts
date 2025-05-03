@@ -16,7 +16,7 @@ import {
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
   BackgammonPoint,
-} from '../types'
+} from 'nodots-backgammon-types'
 import { BearOff } from './MoveKinds/BearOff'
 import { PointToPoint } from './MoveKinds/PointToPoint'
 import { Reenter } from './MoveKinds/Reenter'
@@ -74,17 +74,13 @@ export class Move {
     const { moveKind } = move
     const { player } = move
     if (!player) throw Error('Player not found')
-    if (player.stateKind !== 'moving')
+    if (player.stateKind !== 'rolled')
       throw Error('Invalid player state for move')
     switch (moveKind) {
       case 'point-to-point':
-        return PointToPoint.move(board, move, false)
+        return PointToPoint.move(board, move, isDryRun)
       case 'reenter':
-        move.destination = move.possibleMoves.find(
-          (m) => m.origin === move.origin
-        )?.destination
-        if (!move.destination) throw Error('Invalid move')
-        return Reenter.move(board, move)
+        return Reenter.move(board, move, isDryRun)
       case 'bear-off':
         return BearOff.move(board, move)
       case 'no-move':

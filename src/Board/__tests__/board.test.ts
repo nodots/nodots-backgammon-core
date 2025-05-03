@@ -1,6 +1,6 @@
-import { Board } from '.'
+import { Board } from '..'
 import { BackgammonBoard } from 'nodots-backgammon-types'
-import { BOARD_IMPORT_BOTH_BEAROFF } from './imports'
+import { BOARD_IMPORT_BOTH_BEAROFF } from '../imports'
 import { describe, beforeEach, it, expect } from '@jest/globals'
 
 describe('Board', () => {

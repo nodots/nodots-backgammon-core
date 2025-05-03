@@ -16,7 +16,7 @@ import {
   BackgammonPlayResult,
   BackgammonPlayRolled,
   BackgammonPlayStateKind,
-} from '../types'
+} from 'nodots-backgammon-types'
 
 export interface PlayProps {
   id?: string
@@ -43,10 +43,12 @@ export class Play {
     origin: BackgammonMoveOrigin
   ): BackgammonPlayResult {
     let moves = play.moves
-    let move: BackgammonMoveReady = moves.find(
-      (m) => m.stateKind === 'ready' && m.origin === undefined
-    ) as BackgammonMoveReady
+    let move: BackgammonMoveReady | BackgammonMoveInProgress = moves.find(
+      (m) =>
+        m.stateKind === 'ready' || (m.stateKind === 'in-progress' && !m.origin)
+    ) as BackgammonMoveReady | BackgammonMoveInProgress
     if (move === undefined) throw new Error('No move ready')
+
     const destination = move.possibleMoves.find(
       (m) => m.origin === origin
     )?.destination
@@ -54,9 +56,13 @@ export class Play {
 
     board = Board.moveChecker(board, origin, destination, move.player.direction)
     moves = moves.map((m) => {
-      if (m.stateKind === 'ready' && m.origin === undefined) {
+      if (
+        (m.stateKind === 'ready' || m.stateKind === 'in-progress') &&
+        !m.origin
+      ) {
         return {
           ...m,
+          stateKind: 'in-progress',
           origin,
           destination,
         } as BackgammonMoveInProgress
@@ -70,12 +76,15 @@ export class Play {
       board,
     }
 
+    // Determine the moveKind based on the origin
+    const moveKind = origin.kind === 'bar' ? 'reenter' : 'point-to-point'
+
     const completedMove: BackgammonMoveCompleted = {
       id: move.id,
       player: move.player,
       stateKind: 'completed',
       dieValue: move.dieValue,
-      moveKind: 'point-to-point',
+      moveKind,
       origin,
       destination,
       possibleMoves: move.possibleMoves,

@@ -6,14 +6,9 @@ import {
   BackgammonDiceStateKind,
   BackgammonDieValue,
   BackgammonRoll,
-} from '../types'
+} from 'nodots-backgammon-types'
 
 export class Dice {
-  id!: string
-  stateKind!: BackgammonDiceStateKind
-  color: BackgammonColor | undefined = undefined
-  currentRoll: BackgammonRoll | undefined = undefined
-
   public static initialize = function initializeDice(
     color: BackgammonColor,
     stateKind: BackgammonDiceStateKind = 'inactive',
@@ -60,7 +55,7 @@ export class Dice {
   public static isDouble = function isDouble(
     dice: BackgammonDiceRolled
   ): boolean {
-    return dice.currentRoll![0] === dice.currentRoll![1] ? true : false
+    return dice.currentRoll![0] === dice.currentRoll![1]
   }
 
   static rollDie = function rollDie(): BackgammonDieValue {

@@ -1,117 +1,100 @@
-import { randomBackgammonColor } from '../..'
-import { BackgammonCheckercontainerImport } from '../../types'
+import { BackgammonCheckercontainerImport } from 'nodots-backgammon-types'
 
-const defaultClockwiseColor = 'white'
-const defaultCounterclockwiseColor =
-  defaultClockwiseColor === 'white' ? 'black' : 'white'
+// Define colors explicitly to ensure consistency
+const clockwiseColor = 'white'
+const counterclockwiseColor = 'black'
 
 export const BOARD_IMPORT_BOTH_REENTER: BackgammonCheckercontainerImport[] = [
-  // clockwise
+  // Clockwise player's checkers
   {
     position: {
-      clockwise: 1,
-      counterclockwise: 24,
+      clockwise: 13,
+      counterclockwise: 12,
     },
     checkers: {
-      qty: 4,
-      color: defaultClockwiseColor,
+      qty: 5,
+      color: clockwiseColor,
     },
   },
   {
     position: {
-      clockwise: 2,
-      counterclockwise: 23,
+      clockwise: 8,
+      counterclockwise: 17,
     },
     checkers: {
-      qty: 4,
-      color: defaultClockwiseColor,
+      qty: 3,
+      color: clockwiseColor,
     },
   },
   {
     position: {
-      clockwise: 3,
-      counterclockwise: 22,
+      clockwise: 6,
+      counterclockwise: 19,
     },
     checkers: {
-      qty: 4,
-      color: defaultClockwiseColor,
+      qty: 5,
+      color: clockwiseColor,
     },
   },
-  {
-    position: {
-      clockwise: 4,
-      counterclockwise: 21,
-    },
-    checkers: {
-      qty: 1,
-      color: defaultClockwiseColor,
-    },
-  },
+  // Checkers on bar for clockwise player
   {
     position: 'bar',
     direction: 'clockwise',
     checkers: {
       qty: 2,
-      color: defaultClockwiseColor,
+      color: clockwiseColor,
     },
   },
-  // counterclockwise
+
+  // Counterclockwise player's checkers
   {
     position: {
-      clockwise: 20,
-      counterclockwise: 5,
+      clockwise: 12,
+      counterclockwise: 13,
     },
     checkers: {
-      qty: 4,
-      color: defaultCounterclockwiseColor,
+      qty: 5,
+      color: counterclockwiseColor,
     },
   },
   {
     position: {
-      clockwise: 24,
+      clockwise: 17,
+      counterclockwise: 8,
+    },
+    checkers: {
+      qty: 3,
+      color: counterclockwiseColor,
+    },
+  },
+  {
+    position: {
+      clockwise: 19,
+      counterclockwise: 6,
+    },
+    checkers: {
+      qty: 5,
+      color: counterclockwiseColor,
+    },
+  },
+  // Single opponent checker on entry point for testing hitting
+  {
+    position: {
+      clockwise: 24, // Point 24 for clockwise player's entry
       counterclockwise: 1,
     },
     checkers: {
-      qty: 4,
-      color: defaultCounterclockwiseColor,
-    },
-  },
-  {
-    position: {
-      clockwise: 23,
-      counterclockwise: 2,
-    },
-    checkers: {
-      qty: 4,
-      color: defaultCounterclockwiseColor,
-    },
-  },
-  {
-    position: {
-      clockwise: 22,
-      counterclockwise: 3,
-    },
-    checkers: {
-      qty: 4,
-      color: defaultCounterclockwiseColor,
-    },
-  },
-  {
-    position: {
-      clockwise: 21,
-      counterclockwise: 4,
-    },
-    checkers: {
       qty: 1,
-      color: defaultCounterclockwiseColor,
+      color: counterclockwiseColor,
     },
   },
+  // Checkers on bar for counterclockwise player
   {
     position: 'bar',
     direction: 'counterclockwise',
     checkers: {
       qty: 2,
-      color: defaultCounterclockwiseColor,
+      color: counterclockwiseColor,
     },
   },
 ]

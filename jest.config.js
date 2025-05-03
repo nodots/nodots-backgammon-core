@@ -2,7 +2,6 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   rootDir: './src',
-  watch: true,
   verbose: true,
   collectCoverage: true,
   testMatch: ['**/?(*.)+(test).ts'],
@@ -12,7 +11,6 @@ module.exports = {
       'ts-jest',
       {
         tsconfig: 'tsconfig.json',
-        // Add any other ts-jest configuration options here
       },
     ],
   },

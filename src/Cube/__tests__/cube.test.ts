@@ -1,12 +1,13 @@
-import { Cube } from '.'
-import { generateId, randomBackgammonColor } from '..'
+import { Cube } from '..'
+import { generateId, randomBackgammonColor } from '../..'
 import {
   BackgammonCubeDoubled,
   BackgammonCubeInitialized,
   BackgammonPlayerInactive,
   BackgammonPlayerRolled,
   BackgammonPlayers,
-} from '../types'
+} from 'nodots-backgammon-types'
+import { describe, it, expect, beforeAll } from '@jest/globals'
 
 let cube: Cube
 let players: BackgammonPlayers | undefined = undefined

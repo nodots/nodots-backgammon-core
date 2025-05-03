@@ -1,4 +1,7 @@
-import { BackgammonColor, BackgammonMoveDirection } from './types'
+import {
+  BackgammonColor,
+  BackgammonMoveDirection,
+} from 'nodots-backgammon-types'
 
 export { v4 as generateId } from 'uuid'
 export type BackgammonEntity =

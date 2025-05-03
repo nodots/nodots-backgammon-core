@@ -8,7 +8,7 @@ import {
   BackgammonCubeValue,
   BackgammonPlayer,
   BackgammonPlayers,
-} from '../types'
+} from 'nodots-backgammon-types'
 
 export interface CubeProps {
   id?: string
@@ -20,7 +20,7 @@ export interface CubeProps {
 export class Cube {
   id!: string
   stateKind: BackgammonCubeStateKind = 'initialized'
-  value: BackgammonCubeValue | undefined = undefined
+  value: BackgammonCubeValue = undefined
   owner: BackgammonPlayer | undefined = undefined
 
   public static initialize = function initializeCube(
@@ -34,14 +34,14 @@ export class Cube {
       id = generateId()
     }
     if (!stateKind) {
-      stateKind = 'initialized' // FIXME. Should not be necessary
+      stateKind = 'initialized'
     }
     return {
       id,
       stateKind,
       value,
       owner: owner ?? undefined,
-    }
+    } as BackgammonCubeInitialized
   }
 
   public static double = function doubleCube(

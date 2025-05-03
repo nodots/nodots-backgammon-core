@@ -1,5 +1,5 @@
 import { randomBackgammonColor } from '../..'
-import { BackgammonCheckercontainerImport } from '../../types'
+import { BackgammonCheckercontainerImport } from 'nodots-backgammon-types'
 
 const defaultClockwiseColor = 'white'
 const defaultCounterclockwiseColor =

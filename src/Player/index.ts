@@ -19,7 +19,7 @@ import {
   BackgammonPlayerWinner,
   BackgammonPlayMoving,
   BackgammonPlayRolled,
-} from '../types'
+} from 'nodots-backgammon-types'
 
 export class Player {
   id: string = generateId()
@@ -141,16 +141,28 @@ export class Player {
     player: BackgammonPlayer
   ) {
     return player.direction === 'clockwise'
-      ? board.points.slice(18, 24)
-      : board.points.slice(0, 6)
+      ? board.BackgammonPoints.filter(
+          (p) =>
+            p.kind === 'point' &&
+            p.position[player.direction] >= 19 &&
+            p.position[player.direction] <= 24
+        )
+      : board.BackgammonPoints.filter(
+          (p) =>
+            p.kind === 'point' &&
+            p.position[player.direction] >= 1 &&
+            p.position[player.direction] <= 6
+        )
   }
 
   public static getOpponentBoard = function getOpponentBoard(
     board: BackgammonBoard,
     player: BackgammonPlayer
   ) {
-    return player.direction === 'clockwise'
-      ? board.points.slice(0, 6)
-      : board.points.slice(18, 24)
+    const points =
+      player.direction === 'clockwise'
+        ? board.BackgammonPoints.slice(0, 6) // Points 1-6 for clockwise player
+        : board.BackgammonPoints.slice(18, 24) // Points 19-24 for counterclockwise player
+    return points
   }
 }

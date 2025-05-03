@@ -9,7 +9,7 @@ import {
   BackgammonMoveReady,
   BackgammonMoveResult,
   BackgammonPoint,
-} from '../../../types'
+} from 'nodots-backgammon-types'
 
 export class PointToPoint {
   public static isA = function isAPointToPoint(
@@ -40,7 +40,7 @@ export class PointToPoint {
     const originPoint = move.origin as BackgammonPoint
     const originPosition = originPoint.position[direction]
     const destinationPosition = originPosition - dieValue
-    const destination = board.points.find(
+    const destination = board.BackgammonPoints.find(
       (point) => point.position[direction] === destinationPosition
     ) as BackgammonPoint
     return destination

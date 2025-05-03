@@ -7,7 +7,7 @@ import {
   BackgammonOff,
   BackgammonPlayerMoving,
   BackgammonPoint,
-} from '../types'
+} from 'nodots-backgammon-types'
 
 export function getDestination(
   origin: BackgammonCheckercontainer,
@@ -25,7 +25,7 @@ export function getDestination(
       } else {
         if (destinationPosition > 24) return undefined
       }
-      const destination = board.points.find(
+      const destination = board.BackgammonPoints.find(
         (p) =>
           p.position[direction] === destinationPosition && p.checkers.length < 2
       )
