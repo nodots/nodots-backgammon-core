@@ -105,7 +105,7 @@ describe('Play', () => {
           position: { clockwise: 1, counterclockwise: 24 },
           checkers: { qty: 1, color: 'white' },
         },
-        // Block all possible destinations
+        // Block all possible destinations for dice 1 and 2
         {
           position: { clockwise: 2, counterclockwise: 23 },
           checkers: { qty: 2, color: 'black' },
@@ -114,6 +114,7 @@ describe('Play', () => {
           position: { clockwise: 3, counterclockwise: 22 },
           checkers: { qty: 2, color: 'black' },
         },
+        // Also block 4 and 5 to cover all possible dice values
         {
           position: { clockwise: 4, counterclockwise: 21 },
           checkers: { qty: 2, color: 'black' },
@@ -122,14 +123,25 @@ describe('Play', () => {
           position: { clockwise: 5, counterclockwise: 20 },
           checkers: { qty: 2, color: 'black' },
         },
+        // Block 6 for completeness
         {
           position: { clockwise: 6, counterclockwise: 19 },
+          checkers: { qty: 2, color: 'black' },
+        },
+        // Block 7 for double 6 scenario
+        {
+          position: { clockwise: 7, counterclockwise: 18 },
           checkers: { qty: 2, color: 'black' },
         },
       ]
 
       const board = Board.initialize(boardImport)
-      const inactiveDice = Dice.initialize('white') as BackgammonDiceInactive
+      const inactiveDice = Dice.initialize(
+        'white',
+        'inactive',
+        generateId(),
+        [1, 2]
+      ) as BackgammonDiceInactive
       const player = Player.initialize(
         'white',
         'clockwise',

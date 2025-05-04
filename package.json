@@ -25,7 +25,7 @@
     "simulate:game": "ts-node src/scripts/simulateGame.ts"
   },
   "dependencies": {
-    "nodots-backgammon-types": "file:../nodots-backgammon-types",
+    "nodots-backgammon-types": "git+https://github.com/nodots/nodots-backgammon-types.git",
     "uuid": "^11.0.5"
   },
   "devDependencies": {
