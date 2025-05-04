@@ -21,7 +21,9 @@
       "nodots-backgammon-types": ["node_modules/nodots-backgammon-types/src"]
     },
     "typeRoots": ["./node_modules/@types", "./node_modules/nodots-backgammon-types"],
-    "outDir": "dist",
-    "declaration": true
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
+    "outDir": "dist"
   }
 }
