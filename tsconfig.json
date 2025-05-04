@@ -20,6 +20,8 @@
     "paths": {
       "nodots-backgammon-types": ["node_modules/nodots-backgammon-types/src"]
     },
-    "typeRoots": ["./node_modules/@types", "./node_modules/nodots-backgammon-types"]
+    "typeRoots": ["./node_modules/@types", "./node_modules/nodots-backgammon-types"],
+    "outDir": "dist",
+    "declaration": true
   }
 }

@@ -2,7 +2,11 @@
   "name": "nodots-backgammon-core",
   "version": "1.0.0",
   "description": "Types and game logic for a backgammon game",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "keywords": [
     "backgammon",
     "game",
@@ -11,6 +15,11 @@
   ],
   "author": "Ken Riley <kenr@nodots.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nodots/nodots-backgammon-core.git"
+  },
+  "homepage": "https://github.com/nodots/nodots-backgammon-core#readme",
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
@@ -22,7 +31,8 @@
     "clean": "rm -rf dist coverage",
     "prebuild": "npm run clean",
     "simulate": "ts-node src/scripts/simulate.ts",
-    "simulate:game": "ts-node src/scripts/simulateGame.ts"
+    "simulate:game": "ts-node src/scripts/simulateGame.ts",
+    "prepare": "npm run build"
   },
   "dependencies": {
     "nodots-backgammon-types": "git+https://github.com/nodots/nodots-backgammon-types.git",
