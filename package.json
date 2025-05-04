@@ -12,7 +12,15 @@
   "author": "Ken Riley <kenr@nodots.com>",
   "license": "MIT",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:single": "jest -t",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "build": "tsc",
+    "clean": "rm -rf dist coverage",
+    "prebuild": "npm run clean"
   },
   "dependencies": {
     "nodots-backgammon-types": "file:../nodots-backgammon-types",
