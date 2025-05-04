@@ -15,6 +15,11 @@
   ],
   "author": "Ken Riley <kenr@nodots.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nodots/nodots-backgammon-core.git"
+  },
+  "homepage": "https://github.com/nodots/nodots-backgammon-core#readme",
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
