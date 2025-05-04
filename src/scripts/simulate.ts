@@ -1,16 +1,14 @@
-import { Board, Game, Player } from '..'
 import {
-  BackgammonGame,
   BackgammonGameMoving,
   BackgammonGameRolledForStart,
-  BackgammonGameRolling,
   BackgammonGameRollingForStart,
   BackgammonMove,
   BackgammonMoveOrigin,
+  BackgammonPlayerInactive,
   BackgammonPlayerRolled,
   BackgammonPlayerRolling,
-  BackgammonPlayerInactive,
 } from 'nodots-backgammon-types'
+import { Board, Game, Player } from '..'
 
 interface SimulationStats {
   totalTurns: number
@@ -155,21 +153,40 @@ export async function runSimulation(maxTurns: number = 100) {
 
     try {
       while (
-        gameMoved.activePlay.moves.some(
-          (m) =>
-            (m.stateKind === 'ready' ||
-              (m.stateKind === 'in-progress' && !m.origin)) &&
-            m.possibleMoves.length > 0
-        )
+        Array.from(gameMoved.activePlay.moves).some((m: any) => {
+          // Only consider moves that are 'ready' or 'in-progress' and have possible moves
+          if (
+            m.stateKind === 'ready' ||
+            (m.stateKind === 'in-progress' && !m.origin)
+          ) {
+            const possibleMoves = Board.getPossibleMoves(
+              gameMoved.board,
+              m.player,
+              m.dieValue
+            )
+            return possibleMoves.length > 0
+          }
+          return false
+        })
       ) {
-        const nextMove = gameMoved.activePlay.moves.find(
-          (m) =>
-            (m.stateKind === 'ready' ||
-              (m.stateKind === 'in-progress' && !m.origin)) &&
-            m.possibleMoves.length > 0
+        const nextMove = Array.from(gameMoved.activePlay.moves).find(
+          (m: any) => {
+            if (
+              m.stateKind === 'ready' ||
+              (m.stateKind === 'in-progress' && !m.origin)
+            ) {
+              const possibleMoves = Board.getPossibleMoves(
+                gameMoved.board,
+                m.player,
+                m.dieValue
+              )
+              return possibleMoves.length > 0
+            }
+            return false
+          }
         ) as BackgammonMove
 
-        if (!nextMove || nextMove.possibleMoves.length === 0) {
+        if (!nextMove) {
           break
         }
 
@@ -248,15 +265,15 @@ export async function runSimulation(maxTurns: number = 100) {
 
             // Show remaining moves
             console.log('\nRemaining moves:')
-            gameMoved.activePlay.moves.forEach((move) => {
+            Array.from(gameMoved.activePlay.moves).forEach((move: any) => {
               // Update possible moves for this die value
-              move.possibleMoves = Board.getPossibleMoves(
+              const possibleMoves = Board.getPossibleMoves(
                 gameMoved.board,
                 move.player,
                 move.dieValue
               )
               console.log(
-                `  Die value ${move.dieValue}: ${move.possibleMoves.length} possible moves`
+                `  Die value ${move.dieValue}: ${possibleMoves.length} possible moves`
               )
             })
           }
@@ -283,7 +300,19 @@ export async function runSimulation(maxTurns: number = 100) {
 
     // Switch turns
     console.log(`Switching to ${gameMoved.inactivePlayer.color}'s turn\n`)
-    gameRolling = Game.switchTurn(gameMoved)
+    // Manually switch active/inactive players and update activeColor
+    const newActiveColor = gameMoved.inactivePlayer.color
+    const [newActivePlayer, newInactivePlayer] = Game.getPlayersForColor(
+      gameMoved.players,
+      newActiveColor
+    )
+    gameRolling = {
+      ...gameMoved,
+      stateKind: 'rolling',
+      activeColor: newActiveColor,
+      activePlayer: newActivePlayer,
+      inactivePlayer: newInactivePlayer,
+    }
   }
 
   // Display final statistics
