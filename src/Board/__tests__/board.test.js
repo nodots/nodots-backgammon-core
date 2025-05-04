@@ -1,0 +1,90 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const __1 = require("..");
+const imports_1 = require("../imports");
+const globals_1 = require("@jest/globals");
+(0, globals_1.describe)('Board', () => {
+    let board;
+    (0, globals_1.beforeEach)(() => {
+        board = __1.Board.initialize();
+    });
+    (0, globals_1.it)('should initialize the board', () => {
+        (0, globals_1.expect)(board.id).toBeDefined();
+        (0, globals_1.expect)(board.BackgammonPoints.length).toBe(24);
+        (0, globals_1.expect)(board.bar.clockwise.checkers).toEqual([]);
+        (0, globals_1.expect)(board.bar.counterclockwise.checkers).toEqual([]);
+        (0, globals_1.expect)(board.off.clockwise.checkers).toEqual([]);
+        (0, globals_1.expect)(board.off.counterclockwise.checkers).toEqual([]);
+        const totalCheckers = board.BackgammonPoints.reduce((acc, point) => {
+            acc.black += point.checkers.filter((checker) => checker.color === 'black').length;
+            acc.white += point.checkers.filter((checker) => checker.color === 'white').length;
+            return acc;
+        }, { black: 0, white: 0 });
+        (0, globals_1.expect)(totalCheckers.black).toBe(15);
+        (0, globals_1.expect)(totalCheckers.white).toBe(15);
+        const checkerContainers = __1.Board.getCheckercontainers(board);
+        (0, globals_1.expect)(checkerContainers.length).toBe(28);
+        (0, globals_1.expect)(checkerContainers.filter((cc) => cc.kind === 'point').length).toBe(24);
+        (0, globals_1.expect)(checkerContainers.filter((cc) => cc.kind === 'bar').length).toBe(2);
+        (0, globals_1.expect)(checkerContainers.filter((cc) => cc.kind === 'off').length).toBe(2);
+        const points = __1.Board.getPoints(board);
+        (0, globals_1.expect)(points.length).toBe(24);
+        (0, globals_1.expect)(points[0].position.clockwise).toBe(1);
+        (0, globals_1.expect)(points[0].position.counterclockwise).toBe(24);
+    });
+    const bearOffBoard = __1.Board.buildBoard(imports_1.BOARD_IMPORT_BOTH_BEAROFF);
+    (0, globals_1.it)('should build a board with both players bearing off', () => {
+        (0, globals_1.expect)(bearOffBoard.id).toBeDefined();
+        (0, globals_1.expect)(bearOffBoard.BackgammonPoints.length).toBe(24);
+        (0, globals_1.expect)(bearOffBoard.bar.clockwise.checkers).toEqual([]);
+        (0, globals_1.expect)(bearOffBoard.bar.counterclockwise.checkers).toEqual([]);
+        (0, globals_1.expect)(bearOffBoard.off.clockwise.checkers).toEqual([]);
+        (0, globals_1.expect)(bearOffBoard.off.counterclockwise.checkers).toEqual([]);
+        const totalCheckers = bearOffBoard.BackgammonPoints.reduce((acc, point) => {
+            acc.black += point.checkers.filter((checker) => checker.color === 'black').length;
+            acc.white += point.checkers.filter((checker) => checker.color === 'white').length;
+            return acc;
+        }, { black: 0, white: 0 });
+        totalCheckers.black += bearOffBoard.bar.clockwise.checkers.filter((checker) => checker.color === 'black').length;
+        totalCheckers.white += bearOffBoard.bar.counterclockwise.checkers.filter((checker) => checker.color === 'white').length;
+        totalCheckers.black += bearOffBoard.off.clockwise.checkers.filter((checker) => checker.color === 'black').length;
+        totalCheckers.white += bearOffBoard.off.counterclockwise.checkers.filter((checker) => checker.color === 'white').length;
+        (0, globals_1.expect)(totalCheckers.black).toBe(15);
+        (0, globals_1.expect)(totalCheckers.white).toBe(15);
+        const checkerContainers = __1.Board.getCheckercontainers(bearOffBoard);
+        (0, globals_1.expect)(checkerContainers.length).toBe(28);
+        (0, globals_1.expect)(checkerContainers.filter((cc) => cc.kind === 'point').length).toBe(24);
+        (0, globals_1.expect)(checkerContainers.filter((cc) => cc.kind === 'bar').length).toBe(2);
+        (0, globals_1.expect)(checkerContainers.filter((cc) => cc.kind === 'off').length).toBe(2);
+        const points = __1.Board.getPoints(bearOffBoard);
+        (0, globals_1.expect)(points.length).toBe(24);
+        (0, globals_1.expect)(points[0].position.clockwise).toBe(1);
+        (0, globals_1.expect)(points[0].position.counterclockwise).toBe(24);
+    });
+    const randomBoard = __1.Board.generateRandomBoard();
+    __1.Board.displayAsciiBoard(randomBoard);
+    (0, globals_1.it)('should generate a random board', () => {
+        (0, globals_1.expect)(randomBoard.id).toBeDefined();
+        (0, globals_1.expect)(randomBoard.BackgammonPoints.length).toBe(24);
+        let totalCheckers = randomBoard.BackgammonPoints.reduce((acc, point) => {
+            acc.black += point.checkers.filter((checker) => checker.color === 'black').length;
+            acc.white += point.checkers.filter((checker) => checker.color === 'white').length;
+            return acc;
+        }, { black: 0, white: 0 });
+        totalCheckers.black += randomBoard.bar.clockwise.checkers.filter((checker) => checker.color === 'black').length;
+        totalCheckers.white += randomBoard.bar.counterclockwise.checkers.filter((checker) => checker.color === 'white').length;
+        totalCheckers.black += randomBoard.off.clockwise.checkers.filter((checker) => checker.color === 'black').length;
+        totalCheckers.white += randomBoard.off.counterclockwise.checkers.filter((checker) => checker.color === 'white').length;
+        const checkerContainers = __1.Board.getCheckercontainers(randomBoard);
+        (0, globals_1.expect)(checkerContainers.length).toBe(28);
+        (0, globals_1.expect)(checkerContainers.filter((cc) => cc.kind === 'point').length).toBe(24);
+        (0, globals_1.expect)(checkerContainers.filter((cc) => cc.kind === 'bar').length).toBe(2);
+        (0, globals_1.expect)(checkerContainers.filter((cc) => cc.kind === 'off').length).toBe(2);
+        const points = __1.Board.getPoints(randomBoard);
+        (0, globals_1.expect)(points.length).toBe(24);
+        (0, globals_1.expect)(points[0].position.clockwise).toBe(1);
+        (0, globals_1.expect)(points[0].position.counterclockwise).toBe(24);
+        (0, globals_1.expect)(totalCheckers.black).toBeLessThanOrEqual(15);
+        (0, globals_1.expect)(totalCheckers.white).toBeLessThanOrEqual(15);
+    });
+});

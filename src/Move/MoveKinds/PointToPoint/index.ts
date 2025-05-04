@@ -9,21 +9,28 @@ import {
   BackgammonMoveReady,
   BackgammonMoveResult,
   BackgammonPoint,
+  BackgammonMoveCompletedWithMove,
+  BackgammonPlayerMoving,
+  BackgammonDiceRolled,
 } from 'nodots-backgammon-types'
 
 export class PointToPoint {
   public static isA = function isAPointToPoint(
     move: any
   ): BackgammonMoveInProgress | false {
-    const { player, origin, destination } = move
-    if (origin.checkers.length === 0) return false
-    if (origin.checkers[0].color !== player.color) return false
-    if (!destination) return false
-    // if (
-    //   destination.checkers.length > 1 &&
-    //   destination.checkers[0].color !== player.color
-    // )
-    //   return false
+    const { player, origin } = move
+    if (!origin || !origin.checkers || origin.checkers.length === 0) {
+      return false
+    }
+    if (origin.checkers[0].color !== player.color) {
+      return false
+    }
+    if (origin.kind !== 'point') {
+      return false
+    }
+    if (!move.dieValue) {
+      return false
+    }
     return {
       ...move,
       stateKind: 'in-progress',
@@ -34,7 +41,7 @@ export class PointToPoint {
   public static getDestination = (
     board: BackgammonBoard,
     move: BackgammonMoveReady
-  ) => {
+  ): BackgammonPoint => {
     const { player, dieValue } = move
     const direction = player.direction as BackgammonMoveDirection
     const originPoint = move.origin as BackgammonPoint
@@ -42,57 +49,79 @@ export class PointToPoint {
     const destinationPosition = originPosition - dieValue
     const destination = board.BackgammonPoints.find(
       (point) => point.position[direction] === destinationPosition
-    ) as BackgammonPoint
+    )
+    if (!destination) {
+      throw new Error('Invalid destination point')
+    }
     return destination
   }
 
   public static move = function pointToPoint(
     board: BackgammonBoard,
-    move: BackgammonMoveReady,
-    isDryRun: boolean = false
-  ): BackgammonMoveResult | BackgammonMoveDryRunResult {
-    if (!board) throw Error('Invalid board')
-    if (!move) throw Error('Invalid move')
-    console.log('PointToPoint.move board', Board.displayAsciiBoard(board))
-    Board.displayAsciiBoard(board)
-    move = {
-      ...move,
-      moveKind: 'point-to-point',
-      destination: PointToPoint.getDestination(board, move),
+    move: BackgammonMoveReady
+  ): BackgammonMoveResult {
+    if (!board) {
+      throw new Error('Invalid board')
+    }
+    if (!move) {
+      throw new Error('Invalid move')
     }
 
-    const pointToPoint = PointToPoint.isA(move)
+    // Get the destination point
+    const destination = PointToPoint.getDestination(board, move)
 
-    if (!pointToPoint) throw Error('Invalid point-to-point move')
-    const originPoint = move.origin as BackgammonPoint
-    const destinationPoint = move.destination as BackgammonPoint
-    const player = move.player
-    if (!isDryRun) {
-      board = Board.moveChecker(
-        board,
-        originPoint,
-        destinationPoint,
-        player.direction
+    // Validate the move
+    const validMove = PointToPoint.isA(move)
+    if (!validMove) {
+      throw new Error('Invalid point-to-point move')
+    }
+
+    // Check if the destination is valid (empty or has at most one opponent checker)
+    if (
+      destination.checkers.length >= 2 &&
+      destination.checkers[0].color !== move.player.color
+    ) {
+      throw new Error(
+        'Invalid destination: point is blocked by opponent checkers'
       )
+    }
 
-      if (!board) throw Error('Invalid board after move')
+    // Check if there's an opponent checker to be hit
+    const isHit =
+      destination.checkers.length === 1 &&
+      destination.checkers[0].color !== move.player.color
 
-      const movedPlayer = {
-        ...player,
-        stateKind: 'moving',
-      }
-      const newMove = {
+    // Get the checker to move
+    const origin = move.origin
+    const checker = origin.checkers[origin.checkers.length - 1]
+    if (!checker) throw Error('No checker found')
+
+    // Move the checker
+    const updatedBoard = Board.moveChecker(
+      board,
+      origin,
+      destination,
+      move.player.direction
+    )
+
+    // Get the updated destination point from the updated board
+    const updatedDestination = updatedBoard.BackgammonPoints.find(
+      (p) => p.id === destination.id
+    )
+    if (!updatedDestination) {
+      throw new Error('Could not find destination point after move')
+    }
+
+    // Return the result with completed move
+    return {
+      board: updatedBoard,
+      move: {
         ...move,
-        player: movedPlayer,
-        stateKind: 'completed',
-      } as BackgammonMoveCompleted
-      return { board, move: newMove }
-    } else {
-      const dryRunMove = {
-        ...move,
-        stateKind: 'in-progress',
-      } as BackgammonMoveCompleted
-      return { board, move: dryRunMove }
+        moveKind: 'point-to-point' as const,
+        stateKind: 'completed' as const,
+        destination: updatedDestination,
+        isHit,
+      },
     }
   }
 }

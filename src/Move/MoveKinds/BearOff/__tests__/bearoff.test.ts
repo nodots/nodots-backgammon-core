@@ -10,7 +10,39 @@ import {
   BackgammonRoll,
   BackgammonPoint,
   BackgammonCheckercontainerImport,
+  BackgammonBoard,
+  BackgammonColor,
+  BackgammonDieValue,
+  BackgammonMoveDirection,
+  BackgammonMoveKind,
+  BackgammonMoveSkeleton,
+  BackgammonPlayer,
 } from 'nodots-backgammon-types'
+import { BOARD_IMPORT_BOTH_BEAROFF } from '../../../../Board/imports'
+
+const convertSkeletonToMove = (
+  skeleton: BackgammonMoveSkeleton,
+  player: BackgammonPlayer,
+  moveKind: BackgammonMoveKind
+): BackgammonMoveReady => ({
+  id: generateId(),
+  player,
+  stateKind: 'ready',
+  moveKind,
+  origin: skeleton.origin,
+  dieValue: skeleton.dieValue,
+})
+
+const convertSkeletonsToMoves = (
+  skeletons: BackgammonMoveSkeleton[],
+  player: BackgammonPlayer,
+  moveKind: BackgammonMoveKind
+): Set<BackgammonMoveReady> =>
+  new Set(
+    skeletons.map((skeleton) =>
+      convertSkeletonToMove(skeleton, player, moveKind)
+    )
+  )
 
 describe('BearOff', () => {
   const setupTestBoard = (boardImport: BackgammonCheckercontainerImport[]) => {
@@ -66,7 +98,11 @@ describe('BearOff', () => {
         moveKind: 'bear-off',
         origin,
         dieValue: 6,
-        possibleMoves: Board.getPossibleMoves(board, player, 6),
+        possibleMoves: convertSkeletonsToMoves(
+          Board.getPossibleMoves(board, player, 6),
+          player,
+          'bear-off'
+        ),
       }
 
       const moveResult = BearOff.move(board, move)
@@ -106,7 +142,11 @@ describe('BearOff', () => {
         moveKind: 'bear-off',
         origin,
         dieValue: 6, // Using higher dice value
-        possibleMoves: Board.getPossibleMoves(board, player, 6),
+        possibleMoves: convertSkeletonsToMoves(
+          Board.getPossibleMoves(board, player, 6),
+          player,
+          'bear-off'
+        ),
       }
 
       const moveResult = BearOff.move(board, move)
@@ -152,7 +192,11 @@ describe('BearOff', () => {
         moveKind: 'bear-off',
         origin,
         dieValue: 4,
-        possibleMoves: Board.getPossibleMoves(board, player, 4),
+        possibleMoves: convertSkeletonsToMoves(
+          Board.getPossibleMoves(board, player, 4),
+          player,
+          'bear-off'
+        ),
       }
 
       expect(() => BearOff.move(board, move)).toThrow(
@@ -190,7 +234,11 @@ describe('BearOff', () => {
         moveKind: 'bear-off',
         origin,
         dieValue: 6, // Trying to use higher dice value
-        possibleMoves: Board.getPossibleMoves(board, player, 6),
+        possibleMoves: convertSkeletonsToMoves(
+          Board.getPossibleMoves(board, player, 6),
+          player,
+          'bear-off'
+        ),
       }
 
       expect(() => BearOff.move(board, move)).toThrow(
@@ -219,7 +267,11 @@ describe('BearOff', () => {
         moveKind: 'bear-off',
         origin,
         dieValue: 4,
-        possibleMoves: Board.getPossibleMoves(board, player, 4),
+        possibleMoves: convertSkeletonsToMoves(
+          Board.getPossibleMoves(board, player, 4),
+          player,
+          'bear-off'
+        ),
       }
 
       expect(() => BearOff.move(board, move)).toThrow('No checker to bear off')
@@ -253,7 +305,11 @@ describe('BearOff', () => {
         moveKind: 'bear-off',
         origin,
         dieValue: 6,
-        possibleMoves: Board.getPossibleMoves(board, player, 6),
+        possibleMoves: convertSkeletonsToMoves(
+          Board.getPossibleMoves(board, player, 6),
+          player,
+          'bear-off'
+        ),
       }
 
       const moveResult = BearOff.move(board, move)

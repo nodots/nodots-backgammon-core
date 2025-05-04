@@ -70,19 +70,19 @@ export class Move {
 
   public static move = function move(
     board: BackgammonBoard,
-    move: BackgammonMoveReady,
-    isDryRun: boolean = false
-  ): BackgammonMoveResult | BackgammonMoveDryRunResult {
+    move: BackgammonMoveReady
+  ): BackgammonMoveResult {
     const { moveKind } = move
     const { player } = move
     if (!player) throw Error('Player not found')
     if (player.stateKind !== 'rolled')
       throw Error('Invalid player state for move')
+
     switch (moveKind) {
       case 'point-to-point':
-        return PointToPoint.move(board, move, isDryRun)
+        return PointToPoint.move(board, move)
       case 'reenter':
-        return Reenter.move(board, move, isDryRun)
+        return Reenter.move(board, move)
       case 'bear-off':
         return BearOff.move(board, move)
       case 'no-move':

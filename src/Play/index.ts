@@ -1,14 +1,11 @@
-import { Board, generateId, Player } from '..'
 import {
   BackgammonBoard,
+  BackgammonChecker,
   BackgammonCube,
-  BackgammonMove,
-  BackgammonMoveCompleted,
-  BackgammonMoveInProgress,
+  BackgammonMoveCompletedWithMove,
   BackgammonMoveOrigin,
   BackgammonMoveReady,
   BackgammonMoves,
-  BackgammonPlay,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
   BackgammonPlayerRolling,
@@ -17,6 +14,7 @@ import {
   BackgammonPlayRolled,
   BackgammonPlayStateKind,
 } from 'nodots-backgammon-types'
+import { Board, generateId } from '..'
 
 export interface PlayProps {
   id?: string
@@ -26,11 +24,12 @@ export interface PlayProps {
   board: BackgammonBoard
   player: BackgammonPlayerRolling | BackgammonPlayerMoving
 }
+
 export class Play {
   id?: string = generateId()
   cube?: BackgammonCube
   stateKind?: BackgammonPlayStateKind
-  moves?: BackgammonMoves | undefined = undefined
+  moves?: BackgammonMoves = new Set()
   board!: BackgammonBoard
   player!:
     | BackgammonPlayerRolling
@@ -42,52 +41,54 @@ export class Play {
     play: BackgammonPlayRolled | BackgammonPlayMoving,
     origin: BackgammonMoveOrigin
   ): BackgammonPlayResult {
-    let moves = play.moves
-    let move: BackgammonMoveReady | BackgammonMoveInProgress = moves.find(
-      (m) =>
-        m.stateKind === 'ready' || (m.stateKind === 'in-progress' && !m.origin)
-    ) as BackgammonMoveReady | BackgammonMoveInProgress
-    if (move === undefined) throw new Error('No move ready')
+    const movesArray = Array.from(play.moves)
+    let move = movesArray.find(
+      (m) => m.stateKind === 'ready'
+    ) as BackgammonMoveReady
 
-    const destination = move.possibleMoves.find(
-      (m) => m.origin === origin
-    )?.destination
-    if (destination === undefined) throw new Error('Invalid move')
+    if (!move) throw new Error('No move ready')
 
-    board = Board.moveChecker(board, origin, destination, move.player.direction)
-    moves = moves.map((m) => {
-      if (
-        (m.stateKind === 'ready' || m.stateKind === 'in-progress') &&
-        !m.origin
-      ) {
-        return {
-          ...m,
-          stateKind: 'in-progress',
-          origin,
-          destination,
-        } as BackgammonMoveInProgress
-      }
-      return m
-    }) as BackgammonMoves
+    const possibleMoves = Board.getPossibleMoves(
+      board,
+      move.player,
+      move.dieValue
+    )
+    const destinationMove = possibleMoves.find((m) => m.origin === origin)
+
+    if (!destinationMove) throw new Error('Invalid move')
+
+    board = Board.moveChecker(
+      board,
+      origin,
+      destinationMove.destination,
+      move.player.direction
+    )
+
+    const readyMove: BackgammonMoveReady = {
+      id: move.id,
+      player: move.player,
+      dieValue: move.dieValue,
+      stateKind: 'ready',
+      moveKind: origin.kind === 'bar' ? 'reenter' : 'point-to-point',
+      origin,
+    }
+
+    const updatedMoves: BackgammonMoves = new Set([readyMove])
 
     play = {
       ...play,
-      moves,
+      moves: updatedMoves,
       board,
     }
 
-    // Determine the moveKind based on the origin
-    const moveKind = origin.kind === 'bar' ? 'reenter' : 'point-to-point'
-
-    const completedMove: BackgammonMoveCompleted = {
+    const completedMove: BackgammonMoveCompletedWithMove = {
       id: move.id,
       player: move.player,
-      stateKind: 'completed',
       dieValue: move.dieValue,
-      moveKind,
+      stateKind: 'completed',
+      moveKind: origin.kind === 'bar' ? 'reenter' : 'point-to-point',
       origin,
-      destination,
-      possibleMoves: move.possibleMoves,
+      destination: destinationMove.destination,
       isHit: false,
     }
 
@@ -102,67 +103,134 @@ export class Play {
     board: BackgammonBoard,
     player: BackgammonPlayerRolled
   ): BackgammonPlayRolled {
-    const moves = new Set<BackgammonMove>()
     const roll = player.dice.currentRoll
+    const moves = new Set<BackgammonMoveReady>()
 
-    const move0: BackgammonMoveReady = {
-      id: generateId(),
-      player,
-      stateKind: 'ready',
-      dieValue: roll[0],
-      possibleMoves: Board.getPossibleMoves(board, player, roll[0]),
-    }
+    // Check if player has checkers on the bar
+    const bar =
+      player.direction === 'clockwise'
+        ? board.bar.clockwise
+        : board.bar.counterclockwise
+    const playerCheckersOnBar = bar.checkers.filter(
+      (checker: BackgammonChecker) => checker.color === player.color
+    )
 
-    const move1: BackgammonMoveReady = {
-      id: generateId(),
-      player,
-      stateKind: 'ready',
-      dieValue: roll[1],
-      possibleMoves: Board.getPossibleMoves(board, player, roll[1]),
-    }
+    // Handle checkers on the bar
+    if (playerCheckersOnBar.length > 0) {
+      // Player must move checkers from the bar first
+      const possibleMoves = roll.map((dieValue) =>
+        Board.getPossibleMoves(board, player, dieValue)
+      )
+      const hasNoMoves = possibleMoves.every((moves) => moves.length === 0)
 
-    // Only add moves that have possible moves
-    if (move0.possibleMoves.length > 0) {
-      moves.add(move0)
-    }
-    if (move1.possibleMoves.length > 0) {
-      moves.add(move1)
-    }
-
-    if (roll[0] === roll[1]) {
-      const move2: BackgammonMoveReady = {
-        id: generateId(),
-        player,
-        stateKind: 'ready',
-        dieValue: roll[0],
-        possibleMoves: Board.getPossibleMoves(board, player, roll[0]),
+      if (hasNoMoves) {
+        // If no reentry moves are possible for any die, create a single no-move move
+        const noMove: BackgammonMoveReady = {
+          id: generateId(),
+          player,
+          dieValue: roll[0], // Use first die value for the no-move
+          stateKind: 'ready',
+          moveKind: 'no-move',
+          origin: bar,
+        }
+        moves.add(noMove)
+      } else {
+        // Add reentry moves for each die that has possible moves
+        roll.forEach((dieValue, index) => {
+          if (possibleMoves[index].length > 0) {
+            const move: BackgammonMoveReady = {
+              id: generateId(),
+              player,
+              dieValue,
+              stateKind: 'ready',
+              moveKind: 'reenter',
+              origin: bar,
+            }
+            moves.add(move)
+          }
+        })
       }
-      const move3: BackgammonMoveReady = {
-        id: generateId(),
-        player,
-        stateKind: 'ready',
-        dieValue: roll[1],
-        possibleMoves: Board.getPossibleMoves(board, player, roll[1]),
-      }
-      if (move2.possibleMoves.length > 0) {
-        moves.add(move2)
-      }
-      if (move3.possibleMoves.length > 0) {
-        moves.add(move3)
-      }
-    }
+    } else {
+      // Handle regular moves
+      const possibleMoves = roll.map((dieValue) =>
+        Board.getPossibleMoves(board, player, dieValue)
+      )
+      const hasNoMoves = possibleMoves.every((moves) => moves.length === 0)
 
-    const movesArray = Array.from(moves)
-    if (movesArray.length === 0) {
-      throw new Error('No possible moves available')
+      if (hasNoMoves) {
+        // If no moves are possible for any die, create a single no-move move
+        const noMove: BackgammonMoveReady = {
+          id: generateId(),
+          player,
+          dieValue: roll[0], // Use first die value for the no-move
+          stateKind: 'ready',
+          moveKind: 'no-move',
+          origin: board.BackgammonPoints[0], // Use first point as origin for no-move
+        }
+        moves.add(noMove)
+      } else {
+        // For doubles, we want exactly 4 moves
+        if (roll[0] === roll[1]) {
+          const dieValue = roll[0] // Both dice are the same
+          const firstMoves = Board.getPossibleMoves(board, player, dieValue)
+
+          if (firstMoves.length === 0) {
+            // If no moves are possible, create a single no-move move
+            const noMove: BackgammonMoveReady = {
+              id: generateId(),
+              player,
+              dieValue: roll[0], // Use first die value for the no-move
+              stateKind: 'ready',
+              moveKind: 'no-move',
+              origin: board.BackgammonPoints[0], // Use first point as origin for no-move
+            }
+            moves.add(noMove)
+          } else {
+            // Add all possible first moves
+            firstMoves.forEach((skeleton) => {
+              // For each first move, we can potentially move the same checker again
+              // or move a different checker. We'll add all possibilities up to 4 moves.
+              const move: BackgammonMoveReady = {
+                id: generateId(),
+                player,
+                dieValue,
+                stateKind: 'ready',
+                moveKind: 'point-to-point',
+                origin: skeleton.origin,
+              }
+              moves.add(move)
+              moves.add({ ...move, id: generateId() })
+              moves.add({ ...move, id: generateId() })
+              moves.add({ ...move, id: generateId() })
+            })
+          }
+        } else {
+          // Add moves for each die that has possible moves
+          roll.forEach((dieValue, index) => {
+            if (possibleMoves[index].length > 0) {
+              possibleMoves[index].forEach((skeleton) => {
+                const move: BackgammonMoveReady = {
+                  id: generateId(),
+                  player,
+                  dieValue,
+                  stateKind: 'ready',
+                  moveKind: 'point-to-point',
+                  origin: skeleton.origin,
+                }
+                moves.add(move)
+              })
+            }
+          })
+        }
+      }
     }
 
     return {
       id: generateId(),
-      stateKind: 'rolled',
       board,
       player,
-      moves: movesArray as BackgammonMoves,
+      moves,
+      stateKind: 'rolled',
     }
   }
 }

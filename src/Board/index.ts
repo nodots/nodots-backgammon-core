@@ -73,35 +73,44 @@ export class Board implements BackgammonBoard {
     // Remove the checker from origin
     originClone.checkers.pop()
 
-    // Handle hit
-    if (
-      destinationClone.checkers.length === 1 &&
-      destinationClone.checkers[0].color !== movingCheckerColor
-    ) {
-      // Get the hit checker and preserve its color
-      const hitChecker = destinationClone.checkers[0]
-      const hitCheckerColor = hitChecker.color
+    // Handle hit (only for point-to-point moves)
+    if (destination.kind === 'point') {
+      if (
+        destinationClone.checkers.length === 1 &&
+        destinationClone.checkers[0].color !== movingCheckerColor
+      ) {
+        // Get the hit checker and preserve its color
+        const hitChecker = destinationClone.checkers[0]
+        const hitCheckerColor = hitChecker.color
 
-      // Move the hit checker to the opponent's bar
-      destinationClone.checkers = []
-      opponentBarClone.checkers.push({
-        id: hitChecker.id,
-        color: hitCheckerColor,
-        checkercontainerId: opponentBarClone.id,
-      })
-    } else {
-      // Clear the destination if it's not a hit
-      destinationClone.checkers = []
-    }
+        // Move the hit checker to the opponent's bar
+        destinationClone.checkers = []
+        opponentBarClone.checkers.push({
+          id: hitChecker.id,
+          color: hitCheckerColor,
+          checkercontainerId: opponentBarClone.id,
+        })
+      } else {
+        // Clear the destination if it's not a hit
+        destinationClone.checkers = []
+      }
 
-    // Place the moving checker with its original color
-    destinationClone.checkers = [
-      {
+      // Place the moving checker with its original color
+      destinationClone.checkers = [
+        {
+          id: checker.id,
+          color: movingCheckerColor,
+          checkercontainerId: destinationClone.id,
+        },
+      ]
+    } else if (destination.kind === 'off') {
+      // For off moves, append the checker to the existing checkers array
+      destinationClone.checkers.push({
         id: checker.id,
         color: movingCheckerColor,
         checkercontainerId: destinationClone.id,
-      },
-    ]
+      })
+    }
 
     return boardClone
   }
@@ -176,17 +185,22 @@ export class Board implements BackgammonBoard {
     const playerDirection = player.direction
     const bar = board.bar[playerDirection]
 
-    // player is the winner! Need to do more here
+    // If player has no checkers left, return empty array
     if (playerPoints.length === 0 && bar.checkers.length === 0) {
       return possibleMoves
     }
 
+    // If player has checkers on the bar, they must move those first
     if (bar.checkers.length > 0) {
       const reentryPoint =
         playerDirection === 'clockwise' ? 25 - dieValue : dieValue
       const possibleDestination = Board.getPoints(board).find(
         (p: BackgammonPoint) =>
-          p.checkers.length < 2 &&
+          // Point must be empty or have only one opponent checker
+          (p.checkers.length === 0 ||
+            (p.checkers.length === 1 &&
+              p.checkers[0].color !== player.color)) &&
+          // Point must match the reentry point based on direction
           (playerDirection === 'clockwise'
             ? p.position.clockwise === reentryPoint
             : p.position.counterclockwise === reentryPoint)
@@ -200,24 +214,41 @@ export class Board implements BackgammonBoard {
         })
       }
       return possibleMoves
-    } else {
-      playerPoints.map(function mapPlayerPoints(point) {
-        const possibleDestination = Board.getPoints(board).find(
-          (p: BackgammonPoint) =>
-            p.checkers.length < 2 &&
-            p.position[playerDirection] ===
-              point.position[playerDirection] + dieValue
-        )
-        if (possibleDestination) {
-          possibleMoves.push({
-            origin: point,
-            destination: possibleDestination,
-            dieValue,
-            direction: playerDirection,
-          })
-        }
-      })
     }
+
+    // Handle regular point-to-point moves
+    playerPoints.forEach(function mapPlayerPoints(point) {
+      const destinationPoint =
+        playerDirection === 'clockwise'
+          ? point.position.clockwise + dieValue
+          : point.position.counterclockwise - dieValue
+
+      // Skip if destination point is out of bounds
+      if (destinationPoint < 1 || destinationPoint > 24) {
+        return
+      }
+
+      const possibleDestination = Board.getPoints(board).find(
+        (p: BackgammonPoint) =>
+          // Point must be empty or have only one opponent checker
+          (p.checkers.length === 0 ||
+            (p.checkers.length === 1 &&
+              p.checkers[0].color !== player.color)) &&
+          // Point must match the destination point based on direction
+          (playerDirection === 'clockwise'
+            ? p.position.clockwise === destinationPoint
+            : p.position.counterclockwise === destinationPoint)
+      )
+
+      if (possibleDestination) {
+        possibleMoves.push({
+          origin: point,
+          destination: possibleDestination,
+          dieValue,
+          direction: playerDirection,
+        })
+      }
+    })
 
     return possibleMoves
   }

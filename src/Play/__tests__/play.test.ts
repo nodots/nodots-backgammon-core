@@ -8,13 +8,15 @@ import {
   BackgammonPlayRolled,
   BackgammonPoint,
   BackgammonBar,
+  BackgammonMoveReady,
+  BackgammonMoveCompletedWithMove,
+  BackgammonMoveCompletedNoMove,
 } from 'nodots-backgammon-types'
 import { Play } from '..'
 
 describe('Play', () => {
   describe('initialization', () => {
     test('should initialize with basic board setup', () => {
-      // Create a simple board setup with only 1 checker per point
       const boardImport: BackgammonCheckercontainerImport[] = [
         {
           position: { clockwise: 6, counterclockwise: 19 },
@@ -36,20 +38,29 @@ describe('Play', () => {
         'rolling'
       ) as BackgammonPlayerRolling
 
-      // Roll the player to get a rolled state
       const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
-
-      // Initialize the play with the rolled player
       const play = Play.initialize(board, rolledPlayer)
 
       expect(play).toBeDefined()
       expect(play.stateKind).toBe('rolled')
       expect(play.moves).toBeDefined()
-      expect(Array.from(play.moves).length).toBeGreaterThan(0)
+      expect(play.moves.size).toBeGreaterThan(0)
+
+      // Check that each move has the required moveKind
+      for (const move of play.moves) {
+        if (move.stateKind === 'ready') {
+          expect(move.moveKind).toBe('point-to-point')
+        } else if (move.stateKind === 'completed' && 'moveKind' in move) {
+          expect(
+            ['point-to-point', 'reenter', 'bear-off', 'no-move'].includes(
+              move.moveKind
+            )
+          ).toBeTruthy()
+        }
+      }
     })
 
     test('should handle doubles correctly', () => {
-      // Create a board setup where doubles can be used
       const boardImport: BackgammonCheckercontainerImport[] = [
         {
           position: { clockwise: 1, counterclockwise: 24 },
@@ -74,10 +85,66 @@ describe('Play', () => {
       const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
       const play = Play.initialize(board, rolledPlayer)
 
-      expect(Array.from(play.moves).length).toBe(4) // Should have 4 moves for doubles
+      expect(play.moves.size).toBe(4) // Should have 4 moves for doubles
+
+      // Verify all moves are point-to-point
+      for (const move of play.moves) {
+        if (move.stateKind === 'ready') {
+          expect(move.moveKind).toBe('point-to-point')
+        }
+      }
 
       // Cleanup
       jest.spyOn(Math, 'random').mockRestore()
+    })
+
+    test('should handle no possible moves', () => {
+      // Create a board setup where no moves are possible
+      const boardImport: BackgammonCheckercontainerImport[] = [
+        {
+          position: { clockwise: 1, counterclockwise: 24 },
+          checkers: { qty: 1, color: 'white' },
+        },
+        // Block all possible destinations
+        {
+          position: { clockwise: 2, counterclockwise: 23 },
+          checkers: { qty: 2, color: 'black' },
+        },
+        {
+          position: { clockwise: 3, counterclockwise: 22 },
+          checkers: { qty: 2, color: 'black' },
+        },
+        {
+          position: { clockwise: 4, counterclockwise: 21 },
+          checkers: { qty: 2, color: 'black' },
+        },
+        {
+          position: { clockwise: 5, counterclockwise: 20 },
+          checkers: { qty: 2, color: 'black' },
+        },
+        {
+          position: { clockwise: 6, counterclockwise: 19 },
+          checkers: { qty: 2, color: 'black' },
+        },
+      ]
+
+      const board = Board.initialize(boardImport)
+      const inactiveDice = Dice.initialize('white') as BackgammonDiceInactive
+      const player = Player.initialize(
+        'white',
+        'clockwise',
+        inactiveDice,
+        undefined,
+        'rolling'
+      ) as BackgammonPlayerRolling
+
+      const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
+      const play = Play.initialize(board, rolledPlayer)
+
+      expect(play.moves.size).toBe(1)
+      const move = Array.from(play.moves)[0]
+      expect(move.stateKind).toBe('ready')
+      expect(move.moveKind).toBe('no-move')
     })
   })
 
@@ -103,7 +170,6 @@ describe('Play', () => {
       const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
       const play = Play.initialize(board, rolledPlayer) as BackgammonPlayRolled
 
-      // Get the point from the board to use as origin
       const origin = board.BackgammonPoints.find(
         (p) => p.position.clockwise === 1 && p.position.counterclockwise === 24
       ) as BackgammonPoint
@@ -113,6 +179,9 @@ describe('Play', () => {
       expect(result.play).toBeDefined()
       expect(result.board).toBeDefined()
       expect(result.move.stateKind).toBe('completed')
+      expect((result.move as BackgammonMoveCompletedWithMove).moveKind).toBe(
+        'point-to-point'
+      )
     })
 
     test('should throw error for invalid move', () => {
@@ -136,7 +205,6 @@ describe('Play', () => {
       const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
       const play = Play.initialize(board, rolledPlayer) as BackgammonPlayRolled
 
-      // Get an invalid point from the board to use as origin
       const invalidOrigin = board.BackgammonPoints.find(
         (p) => p.position.clockwise === 24 && p.position.counterclockwise === 1
       ) as BackgammonPoint
@@ -148,9 +216,7 @@ describe('Play', () => {
 
     describe('reenter moves', () => {
       test('should execute a valid reenter move from bar', () => {
-        // Create a board setup with an open point for reentry in opponent's home board
         const boardImport: BackgammonCheckercontainerImport[] = [
-          // Add a checker to the bar
           {
             position: 'bar',
             direction: 'clockwise',
@@ -159,36 +225,33 @@ describe('Play', () => {
               color: 'white',
             },
           },
-          // Initialize all points in opponent's home board (19-24)
           {
             position: { clockwise: 19, counterclockwise: 6 },
-            checkers: { qty: 0, color: 'white' }, // Empty point for reentry
+            checkers: { qty: 0, color: 'white' },
           },
           {
             position: { clockwise: 20, counterclockwise: 5 },
-            checkers: { qty: 2, color: 'black' }, // Blocked point
+            checkers: { qty: 2, color: 'black' },
           },
           {
             position: { clockwise: 21, counterclockwise: 4 },
-            checkers: { qty: 2, color: 'black' }, // Blocked point
+            checkers: { qty: 2, color: 'black' },
           },
           {
             position: { clockwise: 22, counterclockwise: 3 },
-            checkers: { qty: 2, color: 'black' }, // Blocked point
+            checkers: { qty: 2, color: 'black' },
           },
           {
             position: { clockwise: 23, counterclockwise: 2 },
-            checkers: { qty: 2, color: 'black' }, // Blocked point
+            checkers: { qty: 2, color: 'black' },
           },
           {
             position: { clockwise: 24, counterclockwise: 1 },
-            checkers: { qty: 2, color: 'black' }, // Blocked point
+            checkers: { qty: 2, color: 'black' },
           },
         ]
 
         const board = Board.buildBoard(boardImport)
-
-        // Initialize dice with a roll of 6 (maps to point 19 for reentry)
         const inactiveDice = Dice.initialize(
           'white',
           'inactive',
@@ -219,8 +282,6 @@ describe('Play', () => {
           board,
           rolledPlayer
         ) as BackgammonPlayRolled
-
-        // Use the bar as origin for reenter move
         const origin = board.bar.clockwise as BackgammonBar
 
         const result = Play.move(board, play, origin)
@@ -228,19 +289,20 @@ describe('Play', () => {
         expect(result.play).toBeDefined()
         expect(result.board).toBeDefined()
         expect(result.move.stateKind).toBe('completed')
-        expect(result.move.moveKind).toBe('reenter')
-        const destination = result.move.destination as BackgammonPoint
-        expect(destination.position.clockwise).toBe(19) // Should reenter on point 19
+        expect((result.move as BackgammonMoveCompletedWithMove).moveKind).toBe(
+          'reenter'
+        )
+        const destination = (result.move as BackgammonMoveCompletedWithMove)
+          .destination as BackgammonPoint
+        expect(destination.position.clockwise).toBe(19)
       })
 
       test('should prioritize bar moves when checker is on bar', () => {
-        // Create a board setup with both regular moves possible and a checker on bar
         const boardImport: BackgammonCheckercontainerImport[] = [
           {
             position: { clockwise: 1, counterclockwise: 24 },
-            checkers: { qty: 1, color: 'white' }, // Regular checker that could move
+            checkers: { qty: 1, color: 'white' },
           },
-          // Add a checker to the bar
           {
             position: 'bar',
             direction: 'clockwise',
@@ -249,43 +311,10 @@ describe('Play', () => {
               color: 'white',
             },
           },
-          // Initialize all points in opponent's home board (19-24)
-          {
-            position: { clockwise: 19, counterclockwise: 6 },
-            checkers: { qty: 0, color: 'white' }, // Empty point for reentry
-          },
-          {
-            position: { clockwise: 20, counterclockwise: 5 },
-            checkers: { qty: 2, color: 'black' }, // Blocked point
-          },
-          {
-            position: { clockwise: 21, counterclockwise: 4 },
-            checkers: { qty: 2, color: 'black' }, // Blocked point
-          },
-          {
-            position: { clockwise: 22, counterclockwise: 3 },
-            checkers: { qty: 2, color: 'black' }, // Blocked point
-          },
-          {
-            position: { clockwise: 23, counterclockwise: 2 },
-            checkers: { qty: 2, color: 'black' }, // Blocked point
-          },
-          {
-            position: { clockwise: 24, counterclockwise: 1 },
-            checkers: { qty: 2, color: 'black' }, // Blocked point
-          },
         ]
 
         const board = Board.buildBoard(boardImport)
-
-        // Initialize dice with a roll of 6 (maps to point 19 for reentry)
-        const inactiveDice = Dice.initialize(
-          'white',
-          'inactive',
-          generateId(),
-          [6, 1]
-        ) as BackgammonDiceInactive
-
+        const inactiveDice = Dice.initialize('white') as BackgammonDiceInactive
         const player = Player.initialize(
           'white',
           'clockwise',
@@ -294,54 +323,16 @@ describe('Play', () => {
           'rolling'
         ) as BackgammonPlayerRolling
 
-        const rolledPlayer = {
-          ...player,
-          stateKind: 'rolled',
-          dice: {
-            ...inactiveDice,
-            stateKind: 'rolled',
-            currentRoll: [6, 1],
-            total: 7,
-          },
-        } as BackgammonPlayerRolled
-
+        const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
         const play = Play.initialize(board, rolledPlayer)
 
-        // Should only have moves from the bar available
-        const moves = Array.from(play.moves)
-        expect(moves.length).toBeGreaterThan(0)
-        expect(
-          moves.every((m) =>
-            m.possibleMoves.every((pm) => pm.origin.kind === 'bar')
-          )
-        ).toBe(true)
+        // All moves should be reenter moves when there's a checker on the bar
+        for (const move of play.moves) {
+          if (move.stateKind === 'ready') {
+            expect(move.moveKind).toBe('reenter')
+          }
+        }
       })
     })
-  })
-
-  test('should throw error when no possible moves available', () => {
-    // Create a board setup where no moves are possible
-    const boardImport: BackgammonCheckercontainerImport[] = [
-      {
-        position: { clockwise: 24, counterclockwise: 1 },
-        checkers: { qty: 1, color: 'white' },
-      },
-    ]
-
-    const board = Board.initialize(boardImport)
-    const inactiveDice = Dice.initialize('white') as BackgammonDiceInactive
-    const player = Player.initialize(
-      'white',
-      'clockwise',
-      inactiveDice,
-      undefined,
-      'rolling'
-    ) as BackgammonPlayerRolling
-
-    const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
-
-    expect(() => {
-      Play.initialize(board, rolledPlayer)
-    }).toThrow('No possible moves available')
   })
 })

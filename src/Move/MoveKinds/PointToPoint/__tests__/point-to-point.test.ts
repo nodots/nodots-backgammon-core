@@ -52,15 +52,15 @@ describe('PointToPoint', () => {
   describe('isA', () => {
     it('should return false for move with empty origin point', () => {
       const { board, player } = setupTestData()
-      const emptyPoint = board.BackgammonPoints[0] // An empty point
-      const destination = board.BackgammonPoints[1]
+      const emptyPoint = board.BackgammonPoints[2] // An empty point
 
       const move = {
         id: '1',
         player,
         origin: emptyPoint,
-        destination,
         stateKind: 'ready',
+        dieValue: 1,
+        moveKind: 'point-to-point',
       }
 
       expect(PointToPoint.isA(move)).toBe(false)
@@ -73,20 +73,20 @@ describe('PointToPoint', () => {
         (point) =>
           point.checkers.length > 0 && point.checkers[0].color === 'black'
       )
-      const destination = board.BackgammonPoints[1]
 
       const move = {
         id: '1',
         player,
         origin: originWithBlackChecker,
-        destination,
         stateKind: 'ready',
+        dieValue: 1,
+        moveKind: 'point-to-point',
       }
 
       expect(PointToPoint.isA(move)).toBe(false)
     })
 
-    it('should return false for move without destination', () => {
+    it('should return false for move without dieValue', () => {
       const { board, player } = setupTestData()
       const origin = board.BackgammonPoints[5] // Point with checkers
 
@@ -95,6 +95,7 @@ describe('PointToPoint', () => {
         player,
         origin,
         stateKind: 'ready',
+        moveKind: 'point-to-point',
       }
 
       expect(PointToPoint.isA(move)).toBe(false)
@@ -105,12 +106,13 @@ describe('PointToPoint', () => {
       const origin = board.BackgammonPoints[5]
       const destination = board.BackgammonPoints[4]
 
-      const move = {
+      const move: BackgammonMoveReady = {
         id: '1',
         player,
         origin,
-        destination,
         stateKind: 'ready',
+        dieValue: 1,
+        moveKind: 'point-to-point',
       }
 
       const result = PointToPoint.isA(move)
@@ -133,7 +135,7 @@ describe('PointToPoint', () => {
         origin,
         stateKind: 'ready',
         dieValue: 1,
-        possibleMoves: Board.getPossibleMoves(board, player, 1),
+        moveKind: 'point-to-point',
       }
 
       const destination = PointToPoint.getDestination(board, move)
@@ -150,7 +152,7 @@ describe('PointToPoint', () => {
         origin,
         stateKind: 'ready',
         dieValue: 1,
-        possibleMoves: Board.getPossibleMoves(board, player, 1),
+        moveKind: 'point-to-point',
       }
 
       const destination = PointToPoint.getDestination(board, move)
@@ -162,13 +164,14 @@ describe('PointToPoint', () => {
 
   describe('move', () => {
     it('should throw error for invalid board', () => {
-      const { player } = setupTestData()
+      const { player, board } = setupTestData()
       const move: BackgammonMoveReady = {
         id: '1',
         player,
         stateKind: 'ready',
         dieValue: 1,
-        possibleMoves: [],
+        moveKind: 'point-to-point',
+        origin: board.BackgammonPoints[0],
       }
 
       expect(() => PointToPoint.move(null as any, move)).toThrow(
@@ -194,7 +197,7 @@ describe('PointToPoint', () => {
         origin,
         stateKind: 'ready',
         dieValue: 1,
-        possibleMoves: Board.getPossibleMoves(board, player, 1),
+        moveKind: 'point-to-point',
       }
 
       const result = PointToPoint.move(board, move)
@@ -203,26 +206,6 @@ describe('PointToPoint', () => {
       expect(result.board.BackgammonPoints[5].checkers.length).toBe(
         initialCheckerCount - 1
       )
-    })
-
-    it('should perform a dry run without modifying the board', () => {
-      const { board, player } = setupTestData()
-      const origin = board.BackgammonPoints[5]
-      const initialCheckerCount = origin.checkers.length
-
-      const move: BackgammonMoveReady = {
-        id: '1',
-        player,
-        origin,
-        stateKind: 'ready',
-        dieValue: 1,
-        possibleMoves: Board.getPossibleMoves(board, player, 1),
-      }
-
-      const result = PointToPoint.move(board, move, true)
-      expect(result.board).toBeTruthy()
-      expect(result.move.stateKind).toBe('in-progress')
-      expect(origin.checkers.length).toBe(initialCheckerCount) // Checkers should not have moved
     })
   })
 })

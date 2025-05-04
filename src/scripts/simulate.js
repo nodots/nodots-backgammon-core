@@ -113,50 +113,62 @@ function runSimulation() {
                     if (!nextMove || nextMove.possibleMoves.length === 0) {
                         break;
                     }
+                    // Recalculate possible moves for this die value based on current board state
+                    const possibleMoves = __1.Board.getPossibleMoves(gameMoved.board, nextMove.player, nextMove.dieValue);
                     // Display all possible moves for this die value
                     console.log(`\nPossible moves for die value ${nextMove.dieValue}:`);
-                    nextMove.possibleMoves.forEach((possibleMove, index) => {
+                    possibleMoves.forEach((possibleMove, index) => {
                         const fromPoint = possibleMove.origin.kind === 'point'
                             ? possibleMove.origin.position.clockwise
                             : 'bar';
+                        const checkerCount = possibleMove.origin.kind === 'point'
+                            ? possibleMove.origin.checkers.length
+                            : possibleMove.origin.checkers.length;
                         const toPoint = possibleMove.destination.kind === 'point'
                             ? possibleMove.destination.position.clockwise
                             : 'off';
-                        const checkerCount = possibleMove.origin.kind === 'point'
-                            ? possibleMove.origin.checkers.length
-                            : possibleMove.origin.checkers.filter((c) => c.color === gameMoved.activeColor).length;
                         console.log(`  ${index + 1}: from ${fromPoint} (${checkerCount} checkers) to ${toPoint}`);
                     });
-                    // For simulation, take the first possible move
-                    moveCount++;
-                    totalMoves++;
-                    const validMove = nextMove.possibleMoves[0];
+                    // Take the first valid move that has checkers
+                    let validMove = null;
+                    for (const move of possibleMoves) {
+                        const origin = move.origin;
+                        const checkers = origin.checkers;
+                        if (checkers.length > 0 &&
+                            checkers[0].color === gameMoved.activeColor) {
+                            validMove = move;
+                            break;
+                        }
+                    }
+                    if (!validMove) {
+                        console.log('\nNo valid moves with checkers found');
+                        break;
+                    }
                     const origin = validMove.origin;
                     const destination = validMove.destination;
-                    console.log(`\nMove ${moveCount}: from ${origin.kind === 'point' ? origin.position.clockwise : 'bar'} to ${destination.kind === 'point'
+                    console.log(`\nMove ${moveCount + 1}: from ${origin.kind === 'point' ? origin.position.clockwise : 'bar'} to ${destination.kind === 'point'
                         ? destination.position.clockwise
                         : 'off'}`);
+                    console.log('\nBoard before move:');
+                    __1.Board.displayAsciiBoard(gameMoved.board);
                     try {
-                        // Show board before move
-                        console.log('\nBoard before move:');
-                        __1.Board.displayAsciiBoard(gameMoved.board);
-                        // Make the move
-                        gameMoved = __1.Game.move(gameMoved, origin);
-                        // Show board after move
-                        console.log('\nBoard after move:');
-                        __1.Board.displayAsciiBoard(gameMoved.board);
-                        lastBoard = gameMoved.board;
-                        // Show remaining moves if any
-                        const remainingMoves = gameMoved.activePlay.moves;
-                        if (remainingMoves.length > 0) {
+                        const moveResult = __1.Game.move(gameMoved, origin);
+                        if ('board' in moveResult) {
+                            gameMoved = moveResult;
+                            moveCount++;
+                            console.log('\nBoard after move:');
+                            __1.Board.displayAsciiBoard(gameMoved.board);
+                            // Show remaining moves
                             console.log('\nRemaining moves:');
-                            remainingMoves.forEach((m) => {
-                                console.log(`  Die value ${m.dieValue}: ${m.possibleMoves.length} possible moves`);
+                            gameMoved.activePlay.moves.forEach((move) => {
+                                // Update possible moves for this die value
+                                move.possibleMoves = __1.Board.getPossibleMoves(gameMoved.board, move.player, move.dieValue);
+                                console.log(`  Die value ${move.dieValue}: ${move.possibleMoves.length} possible moves`);
                             });
                         }
                     }
                     catch (error) {
-                        console.log(`Couldn't make move: ${error}\n`);
+                        console.log(`\nCouldn't make move: ${error}`);
                         break;
                     }
                 }

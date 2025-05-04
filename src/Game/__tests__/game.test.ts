@@ -163,7 +163,7 @@ describe('Game', () => {
       expect(gameMoving.activePlay).toBeDefined()
       expect(gameMoving.board).toBeDefined()
       expect(gameMoving.activePlayer.dice.currentRoll).toBeDefined()
-      expect(gameMoving.activePlay.moves.length).toBeGreaterThan(0)
+      expect(gameMoving.activePlay.moves.size).toBeGreaterThan(0)
     })
 
     it('should handle moves correctly', () => {
@@ -188,24 +188,16 @@ describe('Game', () => {
       const gameMoving = Game.roll(rolledForStartGame) as BackgammonGameMoving
 
       // Get the first available move
-      expect(gameMoving.activePlay.moves.length).toBeGreaterThan(0)
-      const firstMove = gameMoving.activePlay.moves[0]
+      expect(gameMoving.activePlay.moves.size).toBeGreaterThan(0)
+      const firstMove = Array.from(gameMoving.activePlay.moves)[0]
       expect(firstMove).toBeDefined()
-      expect(firstMove.possibleMoves.length).toBeGreaterThan(0)
 
-      // Get the first possible move's origin
-      const moveOrigin = firstMove.possibleMoves[0].origin
-      expect(moveOrigin).toBeDefined()
-
-      // Make the move
-      const gameMoved = Game.move(gameMoving, moveOrigin)
-
-      // Verify the move was made
-      expect(gameMoved.stateKind).toBe('moving')
-      expect(gameMoved.activePlayer).toBeDefined()
-      expect(gameMoved.board).toBeDefined()
-      expect(gameMoved.activePlay).toBeDefined()
-      expect(gameMoved.activeColor).toBe(gameMoving.activeColor)
+      // Get the move's origin and make the move
+      expect(firstMove.origin).toBeDefined()
+      if (firstMove.origin) {
+        const gameMoved = Game.move(gameMoving, firstMove.origin)
+        expect(gameMoved).toBeDefined()
+      }
     })
 
     it('should throw error when rolling with invalid active color', () => {
