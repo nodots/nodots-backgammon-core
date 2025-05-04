@@ -5,6 +5,8 @@ import {
   BackgammonDieValue,
   BackgammonMove,
   BackgammonMoveConfirmed,
+  BackgammonMoveConfirmedNoMove,
+  BackgammonMoveConfirmedWithMove,
   BackgammonMoveDryRunResult,
   BackgammonMoveInProgress,
   BackgammonMoveKind,
@@ -85,13 +87,16 @@ export class Move {
         return BearOff.move(board, move)
       case 'no-move':
       case undefined:
-        move = {
-          ...move,
-        }
-
         return {
           board,
-          move,
+          move: {
+            ...move,
+            moveKind: 'no-move',
+            stateKind: 'completed',
+            origin: undefined,
+            destination: undefined,
+            isHit: false,
+          },
         }
     }
   }
@@ -99,9 +104,23 @@ export class Move {
   public static confirmMove = function confirmMove(
     move: BackgammonMoveInProgress
   ): BackgammonMoveConfirmed {
+    if (move.moveKind === 'no-move') {
+      return {
+        ...move,
+        stateKind: 'confirmed',
+        origin: undefined,
+        destination: undefined,
+        isHit: false,
+      } as BackgammonMoveConfirmedNoMove
+    }
+
     return {
       ...move,
       stateKind: 'confirmed',
-    }
+      isHit:
+        move.moveKind === 'point-to-point' &&
+        move.destination?.checkers.length === 1 &&
+        move.destination.checkers[0].color !== move.player.color,
+    } as BackgammonMoveConfirmedWithMove
   }
 }
