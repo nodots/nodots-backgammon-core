@@ -1,0 +1,16 @@
+# Exclude test files and folders
+src/**/__tests__/
+src/**/*.test.ts
+src/**/*.test.js
+
+# Exclude scripts
+src/scripts/
+
+# Exclude config files
+*.config.js
+*.config.json
+
+# Exclude root files not needed in package
+!.gitignore
+!.npmignore
+README.md 

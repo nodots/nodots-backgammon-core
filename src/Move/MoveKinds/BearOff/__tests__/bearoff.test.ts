@@ -92,17 +92,12 @@ describe('BearOff', () => {
       )!
 
       const move: BackgammonMoveReady = {
-        id: '1',
+        id: generateId(),
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
         origin,
         dieValue: 6,
-        possibleMoves: convertSkeletonsToMoves(
-          Board.getPossibleMoves(board, player, 6),
-          player,
-          'bear-off'
-        ),
       }
 
       const moveResult = BearOff.move(board, move)
@@ -136,17 +131,12 @@ describe('BearOff', () => {
       )!
 
       const move: BackgammonMoveReady = {
-        id: '1',
+        id: generateId(),
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
         origin,
         dieValue: 6, // Using higher dice value
-        possibleMoves: convertSkeletonsToMoves(
-          Board.getPossibleMoves(board, player, 6),
-          player,
-          'bear-off'
-        ),
       }
 
       const moveResult = BearOff.move(board, move)
@@ -186,17 +176,12 @@ describe('BearOff', () => {
       )!
 
       const move: BackgammonMoveReady = {
-        id: '1',
+        id: generateId(),
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
         origin,
         dieValue: 4,
-        possibleMoves: convertSkeletonsToMoves(
-          Board.getPossibleMoves(board, player, 4),
-          player,
-          'bear-off'
-        ),
       }
 
       expect(() => BearOff.move(board, move)).toThrow(
@@ -228,17 +213,12 @@ describe('BearOff', () => {
       )!
 
       const move: BackgammonMoveReady = {
-        id: '1',
+        id: generateId(),
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
         origin,
         dieValue: 6, // Trying to use higher dice value
-        possibleMoves: convertSkeletonsToMoves(
-          Board.getPossibleMoves(board, player, 6),
-          player,
-          'bear-off'
-        ),
       }
 
       expect(() => BearOff.move(board, move)).toThrow(
@@ -261,17 +241,12 @@ describe('BearOff', () => {
       )!
 
       const move: BackgammonMoveReady = {
-        id: '1',
+        id: generateId(),
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
         origin,
         dieValue: 4,
-        possibleMoves: convertSkeletonsToMoves(
-          Board.getPossibleMoves(board, player, 4),
-          player,
-          'bear-off'
-        ),
       }
 
       expect(() => BearOff.move(board, move)).toThrow('No checker to bear off')
@@ -299,17 +274,12 @@ describe('BearOff', () => {
       )!
 
       const move: BackgammonMoveReady = {
-        id: '1',
+        id: generateId(),
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
         origin,
         dieValue: 6,
-        possibleMoves: convertSkeletonsToMoves(
-          Board.getPossibleMoves(board, player, 6),
-          player,
-          'bear-off'
-        ),
       }
 
       const moveResult = BearOff.move(board, move)
