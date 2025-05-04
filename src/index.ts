@@ -38,3 +38,8 @@ export * from './Cube'
 export * from './Dice'
 export * from './Game'
 export * from './Player'
+
+export {
+  BackgammonColor,
+  BackgammonMoveDirection,
+} from 'nodots-backgammon-types'
