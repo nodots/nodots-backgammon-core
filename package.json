@@ -26,7 +26,8 @@
     "clean": "rm -rf dist coverage",
     "prebuild": "npm run clean",
     "simulate": "ts-node src/scripts/simulate.ts",
-    "simulate:game": "ts-node src/scripts/simulateGame.ts"
+    "simulate:game": "ts-node src/scripts/simulateGame.ts",
+    "prepare": "npm run build"
   },
   "dependencies": {
     "nodots-backgammon-types": "git+https://github.com/nodots/nodots-backgammon-types.git",
