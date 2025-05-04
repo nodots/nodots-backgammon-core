@@ -54,11 +54,8 @@ function simulateGame() {
 
     // Roll dice
     let gameMoving = Game.roll(rolledForStartGame) as BackgammonGameMoving
-    console.log(
-      `\n${gameMoving.activeColor}'s roll: ${gameMoving.activePlay.moves
-        .map((m) => m.dieValue)
-        .join(', ')}`
-    )
+    const roll = (gameMoving.activePlayer as any).dice.currentRoll
+    console.log(`\n${gameMoving.activeColor}'s roll: ${roll.join(', ')}`)
 
     // Make moves until no more valid moves are available
     let gameMoved = gameMoving
@@ -66,31 +63,71 @@ function simulateGame() {
 
     // Keep making moves while there are moves with possible destinations
     while (
-      gameMoved.activePlay.moves.some(
-        (m) =>
-          (m.stateKind === 'ready' ||
-            (m.stateKind === 'in-progress' && !m.origin)) &&
-          m.possibleMoves.length > 0
-      )
+      Array.from(gameMoved.activePlay.moves).some((m: any) => {
+        if (
+          m.stateKind === 'ready' ||
+          (m.stateKind === 'in-progress' && !m.origin)
+        ) {
+          const possibleMoves = Board.getPossibleMoves(
+            gameMoved.board,
+            m.player,
+            m.dieValue
+          )
+          return possibleMoves.length > 0
+        }
+        return false
+      })
     ) {
       // Find the next move that has possible destinations
-      const nextMove = gameMoved.activePlay.moves.find(
-        (m) =>
-          (m.stateKind === 'ready' ||
-            (m.stateKind === 'in-progress' && !m.origin)) &&
-          m.possibleMoves.length > 0
-      )
+      const nextMove = Array.from(gameMoved.activePlay.moves).find((m: any) => {
+        if (
+          m.stateKind === 'ready' ||
+          (m.stateKind === 'in-progress' && !m.origin)
+        ) {
+          const possibleMoves = Board.getPossibleMoves(
+            gameMoved.board,
+            m.player,
+            m.dieValue
+          )
+          return possibleMoves.length > 0
+        }
+        return false
+      })
 
       if (!nextMove) {
         break
       }
 
-      // Take the first possible move
-      const validMove = nextMove.possibleMoves[0]
-      moveCount++
+      // Recalculate possible moves for this die value based on current board state
+      const possibleMoves = Board.getPossibleMoves(
+        gameMoved.board,
+        nextMove.player,
+        nextMove.dieValue
+      )
+
+      // Take the first valid move that has checkers
+      let validMove = null
+      for (const move of possibleMoves) {
+        const origin = move.origin
+        const checkers = origin.checkers
+        if (
+          checkers.length > 0 &&
+          checkers[0].color === gameMoved.activeColor
+        ) {
+          validMove = move
+          break
+        }
+      }
+
+      if (!validMove) {
+        console.log('\nNo valid moves with checkers found')
+        break
+      }
 
       const origin = validMove.origin
       const destination = validMove.destination
+      moveCount++
+
       console.log(
         `\nMove ${moveCount}: from ${
           origin.kind === 'point' ? origin.position.clockwise : 'bar'
@@ -128,7 +165,19 @@ function simulateGame() {
 
     if (!winner) {
       // Switch turns if no winner yet
-      currentGame = Game.switchTurn(gameMoved)
+      // Manually switch active/inactive players and update activeColor
+      const newActiveColor = gameMoved.inactivePlayer.color
+      const [newActivePlayer, newInactivePlayer] = Game.getPlayersForColor(
+        gameMoved.players,
+        newActiveColor
+      )
+      currentGame = {
+        ...gameMoved,
+        stateKind: 'rolling',
+        activeColor: newActiveColor,
+        activePlayer: newActivePlayer,
+        inactivePlayer: newInactivePlayer,
+      }
       console.log(`\nSwitching to ${currentGame.activeColor}'s turn`)
     }
   }
