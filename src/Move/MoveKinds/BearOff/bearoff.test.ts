@@ -86,11 +86,11 @@ describe('BearOff', () => {
 
       const move: BackgammonMoveReady = {
         id: generateId(),
-        stateKind: 'ready',
         player,
-        dieValue: 1 as BackgammonDieValue,
+        stateKind: 'ready',
         moveKind: 'bear-off',
         origin: nonHomePoint,
+        dieValue: 1 as BackgammonDieValue,
       }
 
       expect(() => BearOff.move(board, move)).toThrow()
@@ -118,11 +118,11 @@ describe('BearOff', () => {
 
       const move: BackgammonMoveReady = {
         id: generateId(),
-        stateKind: 'ready',
         player,
-        dieValue: 1 as BackgammonDieValue,
+        stateKind: 'ready',
         moveKind: 'bear-off',
         origin: homePoint,
+        dieValue: 1 as BackgammonDieValue,
       }
 
       expect(() => BearOff.move(board, move)).toThrow()
