@@ -1,6 +1,12 @@
 import {
   BackgammonColor,
   BackgammonMoveDirection,
+  BackgammonGame,
+  BackgammonGameMoving,
+  BackgammonGameRolledForStart,
+  BackgammonGameRolling,
+  BackgammonGameRollingForStart,
+  BackgammonGameStateKind,
 } from 'nodots-backgammon-types'
 
 export { v4 as generateId } from 'uuid'
@@ -42,4 +48,10 @@ export * from './Player'
 export {
   BackgammonColor,
   BackgammonMoveDirection,
+  BackgammonGame,
+  BackgammonGameMoving,
+  BackgammonGameRolledForStart,
+  BackgammonGameRolling,
+  BackgammonGameRollingForStart,
+  BackgammonGameStateKind,
 } from 'nodots-backgammon-types'

@@ -81,9 +81,18 @@ export class PointToPoint {
       destination.checkers.length >= 2 &&
       destination.checkers[0].color !== move.player.color
     ) {
-      throw new Error(
-        'Invalid destination: point is blocked by opponent checkers'
-      )
+      // Return a no-move completed move if blocked
+      return {
+        board,
+        move: {
+          ...move,
+          moveKind: 'no-move',
+          stateKind: 'completed',
+          origin: undefined,
+          destination: undefined,
+          isHit: false,
+        },
+      }
     }
 
     // Check if there's an opponent checker to be hit

@@ -3,6 +3,7 @@ import {
   BackgammonChecker,
   BackgammonCube,
   BackgammonMoveCompletedWithMove,
+  BackgammonMoveCompletedNoMove,
   BackgammonMoveOrigin,
   BackgammonMoveReady,
   BackgammonMoves,
@@ -46,7 +47,24 @@ export class Play {
       (m) => m.stateKind === 'ready'
     ) as BackgammonMoveReady
 
-    if (!move) throw new Error('No move ready')
+    if (!move) {
+      // Return a no-move completed move
+      const noMove: BackgammonMoveCompletedNoMove = {
+        id: generateId(),
+        player: play.player,
+        dieValue: play.player.dice.currentRoll[0],
+        stateKind: 'completed',
+        moveKind: 'no-move',
+        isHit: false,
+        origin: undefined,
+        destination: undefined,
+      }
+      return {
+        play: { ...play, moves: new Set([noMove]) },
+        board,
+        move: noMove,
+      }
+    }
 
     const possibleMoves = Board.getPossibleMoves(
       board,
@@ -55,7 +73,23 @@ export class Play {
     )
     const destinationMove = possibleMoves.find((m) => m.origin === origin)
 
-    if (!destinationMove) throw new Error('Invalid move')
+    if (!destinationMove) {
+      const noMove: BackgammonMoveCompletedNoMove = {
+        id: generateId(),
+        player: play.player,
+        dieValue: move.dieValue,
+        stateKind: 'completed',
+        moveKind: 'no-move',
+        isHit: false,
+        origin: undefined,
+        destination: undefined,
+      }
+      return {
+        play: { ...play, moves: new Set([noMove]) },
+        board,
+        move: noMove,
+      }
+    }
 
     board = Board.moveChecker(
       board,
