@@ -133,25 +133,37 @@ describe('Game', () => {
         players
       ) as BackgammonGameRollingForStart
       const gameRolling = Game.rollForStart(gameStart)
-      // Use the public API for state transitions
-      // Simulate the player rolling dice: set the activePlayer to 'rolling' state
-      // This is typically handled by the game logic, but for the test, we need to ensure the type matches
-      // We'll assume the first player is the roller
       const rollingPlayers = gameRolling.players.map((p) =>
         p.color === gameRolling.activeColor
           ? ({ ...p, stateKind: 'rolling' } as BackgammonPlayerRolling)
           : ({ ...p, stateKind: 'inactive' } as BackgammonPlayerInactive)
       ) as BackgammonPlayers
+      const foundPlayer = rollingPlayers.find(
+        (p) => p.color === gameRolling.activeColor
+      )!
+      const activePlayer = Player.initialize(
+        foundPlayer.color,
+        foundPlayer.direction,
+        undefined,
+        foundPlayer.id,
+        'rolling'
+      ) as BackgammonPlayerRolling
+      const inactivePlayerObj = rollingPlayers.find(
+        (p) => p.color !== gameRolling.activeColor
+      )!
+      const inactivePlayer = Player.initialize(
+        inactivePlayerObj.color,
+        inactivePlayerObj.direction,
+        undefined,
+        inactivePlayerObj.id,
+        'inactive'
+      ) as BackgammonPlayerInactive
       const rolledForStartGame: BackgammonGameRolledForStart = {
         ...gameRolling,
         stateKind: 'rolled-for-start',
         players: rollingPlayers,
-        activePlayer: rollingPlayers.find(
-          (p) => p.color === gameRolling.activeColor
-        ) as BackgammonPlayerRolledForStart,
-        inactivePlayer: rollingPlayers.find(
-          (p) => p.color !== gameRolling.activeColor
-        ) as BackgammonPlayerInactive,
+        activePlayer,
+        inactivePlayer,
         activeColor: gameRolling.activeColor!,
       }
       const gameRolled = Game.roll(rolledForStartGame)
@@ -173,16 +185,32 @@ describe('Game', () => {
           ? ({ ...p, stateKind: 'rolling' } as BackgammonPlayerRolling)
           : ({ ...p, stateKind: 'inactive' } as BackgammonPlayerInactive)
       ) as BackgammonPlayers
+      const foundPlayer = rollingPlayers.find(
+        (p) => p.color === gameRolling.activeColor
+      )!
+      const activePlayer = Player.initialize(
+        foundPlayer.color,
+        foundPlayer.direction,
+        undefined,
+        foundPlayer.id,
+        'rolling'
+      ) as BackgammonPlayerRolling
+      const inactivePlayerObj = rollingPlayers.find(
+        (p) => p.color !== gameRolling.activeColor
+      )!
+      const inactivePlayer = Player.initialize(
+        inactivePlayerObj.color,
+        inactivePlayerObj.direction,
+        undefined,
+        inactivePlayerObj.id,
+        'inactive'
+      ) as BackgammonPlayerInactive
       const rolledForStartGame: BackgammonGameRolledForStart = {
         ...gameRolling,
         stateKind: 'rolled-for-start',
         players: rollingPlayers,
-        activePlayer: rollingPlayers.find(
-          (p) => p.color === gameRolling.activeColor
-        ) as BackgammonPlayerRolledForStart,
-        inactivePlayer: rollingPlayers.find(
-          (p) => p.color !== gameRolling.activeColor
-        ) as BackgammonPlayerInactive,
+        activePlayer,
+        inactivePlayer,
         activeColor: gameRolling.activeColor!,
       }
       const gameRolled = Game.roll(rolledForStartGame)
@@ -275,25 +303,44 @@ describe('Game', () => {
         players
       ) as BackgammonGameRollingForStart
       const gameRolling = Game.rollForStart(gameStart)
-      const rolledForStartGame = {
+      const rollingPlayers = gameRolling.players.map((p) =>
+        p.color === gameRolling.activeColor
+          ? ({ ...p, stateKind: 'rolling' } as BackgammonPlayerRolling)
+          : ({ ...p, stateKind: 'inactive' } as BackgammonPlayerInactive)
+      ) as BackgammonPlayers
+      const foundPlayer = rollingPlayers.find(
+        (p) => p.color === gameRolling.activeColor
+      )!
+      const activePlayer = Player.initialize(
+        foundPlayer.color,
+        foundPlayer.direction,
+        undefined,
+        foundPlayer.id,
+        'rolling'
+      ) as BackgammonPlayerRolling
+      const inactivePlayerObj = rollingPlayers.find(
+        (p) => p.color !== gameRolling.activeColor
+      )!
+      const inactivePlayer = Player.initialize(
+        inactivePlayerObj.color,
+        inactivePlayerObj.direction,
+        undefined,
+        inactivePlayerObj.id,
+        'inactive'
+      ) as BackgammonPlayerInactive
+      const rolledForStartGame: BackgammonGameRolledForStart = {
         ...gameRolling,
         stateKind: 'rolled-for-start',
-        players: [
-          {
-            ...gameRolling.activePlayer,
-            stateKind: 'rolling',
-          },
-          {
-            ...gameRolling.inactivePlayer,
-            stateKind: 'inactive',
-          },
-        ],
-      } as BackgammonGameRolledForStart
+        players: rollingPlayers,
+        activePlayer,
+        inactivePlayer,
+        activeColor: gameRolling.activeColor!,
+      }
 
-      const activePlayer = Game.activePlayer(rolledForStartGame)
-      expect(activePlayer).toBeDefined()
-      expect(activePlayer.color).toBe(rolledForStartGame.activeColor)
-      expect(activePlayer.stateKind).not.toBe('inactive')
+      const activePlayerResult = Game.activePlayer(rolledForStartGame)
+      expect(activePlayerResult).toBeDefined()
+      expect(activePlayerResult.color).toBe(rolledForStartGame.activeColor)
+      expect(activePlayerResult.stateKind).not.toBe('inactive')
     })
 
     it('should get inactive player correctly', () => {
@@ -301,25 +348,46 @@ describe('Game', () => {
         players
       ) as BackgammonGameRollingForStart
       const gameRolling = Game.rollForStart(gameStart)
-      const rolledForStartGame = {
+      const rollingPlayers = gameRolling.players.map((p) =>
+        p.color === gameRolling.activeColor
+          ? ({ ...p, stateKind: 'rolling' } as BackgammonPlayerRolling)
+          : ({ ...p, stateKind: 'inactive' } as BackgammonPlayerInactive)
+      ) as BackgammonPlayers
+      const foundPlayer = rollingPlayers.find(
+        (p) => p.color === gameRolling.activeColor
+      )!
+      const activePlayer = Player.initialize(
+        foundPlayer.color,
+        foundPlayer.direction,
+        undefined,
+        foundPlayer.id,
+        'rolling'
+      ) as BackgammonPlayerRolling
+      const inactivePlayerObj = rollingPlayers.find(
+        (p) => p.color !== gameRolling.activeColor
+      )!
+      const inactivePlayer = Player.initialize(
+        inactivePlayerObj.color,
+        inactivePlayerObj.direction,
+        undefined,
+        inactivePlayerObj.id,
+        'inactive'
+      ) as BackgammonPlayerInactive
+      const rolledForStartGame: BackgammonGameRolledForStart = {
         ...gameRolling,
         stateKind: 'rolled-for-start',
-        players: [
-          {
-            ...gameRolling.activePlayer,
-            stateKind: 'rolled-for-start',
-          },
-          {
-            ...gameRolling.inactivePlayer,
-            stateKind: 'inactive',
-          },
-        ],
-      } as BackgammonGameRolledForStart
+        players: rollingPlayers,
+        activePlayer,
+        inactivePlayer,
+        activeColor: gameRolling.activeColor!,
+      }
 
-      const inactivePlayer = Game.inactivePlayer(rolledForStartGame)
-      expect(inactivePlayer).toBeDefined()
-      expect(inactivePlayer.color).not.toBe(rolledForStartGame.activeColor)
-      expect(inactivePlayer.stateKind).toBe('inactive')
+      const inactivePlayerResult = Game.inactivePlayer(rolledForStartGame)
+      expect(inactivePlayerResult).toBeDefined()
+      expect(inactivePlayerResult.color).not.toBe(
+        rolledForStartGame.activeColor
+      )
+      expect(inactivePlayerResult.stateKind).toBe('inactive')
     })
 
     it('should throw error when active player not found', () => {

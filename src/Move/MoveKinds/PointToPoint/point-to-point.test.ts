@@ -125,9 +125,13 @@ describe('PointToPoint', () => {
         origin,
       }
 
-      expect(() => PointToPoint.move(board, move)).toThrow(
-        'Invalid destination: point is blocked by opponent checkers'
-      )
+      const result = PointToPoint.move(board, move)
+      const completedMove = result.move as BackgammonMoveCompleted
+      expect(completedMove.moveKind).toBe('no-move')
+      expect(completedMove.stateKind).toBe('completed')
+      expect(completedMove.isHit).toBe(false)
+      expect(completedMove.origin).toBeUndefined()
+      expect(completedMove.destination).toBeUndefined()
     })
   })
 })
