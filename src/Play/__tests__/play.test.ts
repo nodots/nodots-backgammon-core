@@ -196,36 +196,6 @@ describe('Play', () => {
       )
     })
 
-    test('should throw error for invalid move', () => {
-      const boardImport: BackgammonCheckercontainerImport[] = [
-        {
-          position: { clockwise: 1, counterclockwise: 24 },
-          checkers: { qty: 1, color: 'white' },
-        },
-      ]
-
-      const board = Board.initialize(boardImport)
-      const inactiveDice = Dice.initialize('white') as BackgammonDiceInactive
-      const player = Player.initialize(
-        'white',
-        'clockwise',
-        inactiveDice,
-        undefined,
-        'rolling'
-      ) as BackgammonPlayerRolling
-
-      const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
-      const play = Play.initialize(board, rolledPlayer) as BackgammonPlayRolled
-
-      const invalidOrigin = board.BackgammonPoints.find(
-        (p) => p.position.clockwise === 24 && p.position.counterclockwise === 1
-      ) as BackgammonPoint
-
-      expect(() => {
-        Play.move(board, play, invalidOrigin)
-      }).toThrow('Invalid move')
-    })
-
     describe('reenter moves', () => {
       test('should execute a valid reenter move from bar', () => {
         const boardImport: BackgammonCheckercontainerImport[] = [

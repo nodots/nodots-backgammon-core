@@ -1,10 +1,9 @@
-import { describe, it, expect } from '@jest/globals'
-import { Board } from '..'
+import { describe, expect, it } from '@jest/globals'
 import {
-  BackgammonBoard,
   BackgammonCheckercontainerImport,
   BackgammonPointValue,
 } from 'nodots-backgammon-types'
+import { Board } from '..'
 import { ascii } from '../ascii'
 
 describe('ascii', () => {
