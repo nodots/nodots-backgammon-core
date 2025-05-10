@@ -171,13 +171,17 @@ function simulateGame() {
         gameMoved.players,
         newActiveColor
       )
-      currentGame = {
-        ...gameMoved,
-        stateKind: 'rolling',
-        activeColor: newActiveColor,
-        activePlayer: newActivePlayer,
-        inactivePlayer: newInactivePlayer,
-      }
+      currentGame = Game.initialize(
+        gameMoved.players,
+        gameMoved.id,
+        'rolling',
+        gameMoved.board,
+        gameMoved.cube,
+        undefined, // activePlay
+        newActiveColor,
+        newActivePlayer,
+        newInactivePlayer
+      ) as any // Type assertion to satisfy TS, as Game.initialize returns BackgammonGame
       console.log(`\nSwitching to ${currentGame.activeColor}'s turn`)
     }
   }

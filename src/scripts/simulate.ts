@@ -306,13 +306,17 @@ export async function runSimulation(maxTurns: number = 100) {
       gameMoved.players,
       newActiveColor
     )
-    gameRolling = {
-      ...gameMoved,
-      stateKind: 'rolling',
-      activeColor: newActiveColor,
-      activePlayer: newActivePlayer,
-      inactivePlayer: newInactivePlayer,
-    }
+    gameRolling = Game.initialize(
+      gameMoved.players,
+      gameMoved.id,
+      'rolling',
+      gameMoved.board,
+      gameMoved.cube,
+      undefined, // activePlay
+      newActiveColor,
+      newActivePlayer,
+      newInactivePlayer
+    ) as any // Type assertion to satisfy TS, as Game.initialize returns BackgammonGame
   }
 
   // Display final statistics
