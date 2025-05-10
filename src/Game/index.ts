@@ -13,9 +13,11 @@ import {
   BackgammonPlay,
   BackgammonPlayerActive,
   BackgammonPlayerInactive,
+  BackgammonPlayerRolledForStart,
   BackgammonPlayerRolling,
   BackgammonPlayers,
   BackgammonPlayRolled,
+  BackgammonPlayMoving,
 } from 'nodots-backgammon-types'
 import { generateId, Player, randomBackgammonColor } from '..'
 import { Board } from '../Board'
@@ -104,9 +106,16 @@ export class Game {
           inactivePlayer,
           activePlay,
         } as BackgammonGameMoving
+      case 'rolled':
+        throw new Error('Game cannot be initialized in the rolled state')
+      case 'moved':
+        throw new Error('Game cannot be initialized in the moved state')
       case 'completed':
         throw new Error('Game cannot be initialized in the completed state')
     }
+    // Exhaustiveness check
+    const _exhaustiveCheck: never = stateKind
+    throw new Error(`Unhandled stateKind: ${stateKind}`)
   }
 
   public static rollForStart = function rollForStart(
@@ -115,12 +124,18 @@ export class Game {
     const activeColor = randomBackgammonColor()
     const rollingPlayers = game.players.map((p) =>
       p.color === activeColor
-        ? Player.initialize(p.color, p.direction, undefined, p.id, 'rolling')
+        ? Player.initialize(
+            p.color,
+            p.direction,
+            undefined,
+            p.id,
+            'rolled-for-start'
+          )
         : Player.initialize(p.color, p.direction, undefined, p.id, 'inactive')
     ) as BackgammonPlayers
     const activePlayer = rollingPlayers.find(
       (p) => p.color === activeColor
-    ) as BackgammonPlayerRolling
+    ) as BackgammonPlayerRolledForStart
     const inactivePlayer = rollingPlayers.find(
       (p) => p.color !== activeColor
     ) as BackgammonPlayerInactive
@@ -138,13 +153,27 @@ export class Game {
     game: BackgammonGameRolledForStart | BackgammonGameRolling
   ): BackgammonGameRolled {
     if (game.stateKind === 'rolled-for-start') {
-      const { players, board, cube, activeColor } = game
-      const rollingPlayers = players.map((p) =>
-        p.color === activeColor
-          ? Player.initialize(p.color, p.direction, undefined, p.id, 'rolling')
-          : Player.initialize(p.color, p.direction, undefined, p.id, 'inactive')
-      ) as BackgammonPlayers
-      const activePlayer = rollingPlayers.find(
+      const { players, board, cube, activeColor, activePlayer } = game
+      const rollingPlayers = players.map((p) => {
+        if (p.color === activeColor) {
+          if (p.stateKind === 'rolling') return p
+          return Player.initialize(
+            p.color,
+            p.direction,
+            undefined,
+            p.id,
+            'rolling'
+          )
+        }
+        return Player.initialize(
+          p.color,
+          p.direction,
+          undefined,
+          p.id,
+          'inactive'
+        )
+      }) as BackgammonPlayers
+      const newActivePlayer = rollingPlayers.find(
         (p) => p.color === activeColor
       ) as BackgammonPlayerRolling
       const inactivePlayer = rollingPlayers.find(
@@ -154,7 +183,7 @@ export class Game {
         ...game,
         stateKind: 'rolling',
         players: rollingPlayers,
-        activePlayer,
+        activePlayer: newActivePlayer,
         inactivePlayer,
         activeColor: activeColor!,
       }
@@ -196,6 +225,9 @@ export class Game {
     const { players, cube, activeColor, activePlay } = game
     let board = game.board
     const activePlayer = Game.activePlayer(game)
+    if (activePlay.stateKind !== 'moving') {
+      throw new Error('activePlay must be in moving state to make a move')
+    }
     const playResult = Player.move(board, activePlay, origin)
     board = playResult.board
     return {
@@ -257,5 +289,17 @@ export class Game {
   ): BackgammonGameMoving | false => {
     if (game.stateKind !== 'moving') return false
     return game as BackgammonGameMoving
+  }
+
+  public static startMove = function startMove(
+    game: BackgammonGameRolled,
+    movingPlay: BackgammonPlayMoving
+  ): BackgammonGameMoving {
+    return {
+      ...game,
+      stateKind: 'moving',
+      activePlay: movingPlay,
+      activePlayer: Player.toMoving(game.activePlayer),
+    } as BackgammonGameMoving
   }
 }

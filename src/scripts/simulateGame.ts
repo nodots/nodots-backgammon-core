@@ -1,13 +1,14 @@
-import { Game } from '../Game'
-import { Board } from '../Board'
-import { Player } from '../Player'
-import { randomBackgammonColor } from '..'
 import {
+  BackgammonGame,
   BackgammonGameMoving,
-  BackgammonGameRolledForStart,
+  BackgammonGameRolled,
   BackgammonGameRollingForStart,
   BackgammonPlayers,
 } from 'nodots-backgammon-types'
+import { randomBackgammonColor } from '..'
+import { Board } from '../Board'
+import { Game } from '../Game'
+import { Player } from '../Player'
 
 function simulateGame() {
   // Initial game setup
@@ -28,7 +29,7 @@ function simulateGame() {
   console.log(`\nFirst player: ${gameRolling.activeColor}`)
 
   // Game loop
-  let currentGame = gameRolling
+  let currentGame: BackgammonGame = gameRolling
   let turnCount = 0
   let winner = null
 
@@ -36,32 +37,46 @@ function simulateGame() {
     turnCount++
     console.log(`\n=== Turn ${turnCount} ===`)
 
-    // Convert to rolled-for-start state
-    const rolledForStartGame = {
-      ...currentGame,
-      stateKind: 'rolled-for-start',
-      players: [
-        {
-          ...currentGame.activePlayer,
-          stateKind: 'rolling',
-        },
-        {
-          ...currentGame.inactivePlayer,
-          stateKind: 'inactive',
-        },
-      ],
-    } as BackgammonGameRolledForStart
-
-    // Roll dice
-    let gameMoving = Game.roll(rolledForStartGame) as BackgammonGameMoving
-    const roll = (gameMoving.activePlayer as any).dice.currentRoll
-    console.log(`\n${gameMoving.activeColor}'s roll: ${roll.join(', ')}`)
+    // Use the transition function to roll dice and advance state
+    let gameRolled: BackgammonGameRolled
+    if (currentGame.stateKind === 'rolling-for-start') {
+      const gameRolledForStart = Game.rollForStart(currentGame)
+      gameRolled = Game.roll(gameRolledForStart)
+    } else if (currentGame.stateKind === 'rolled-for-start') {
+      gameRolled = Game.roll(currentGame)
+    } else {
+      throw new Error('currentGame is not in a rollable state')
+    }
+    const roll = (gameRolled.activePlayer as any).dice.currentRoll
+    console.log(`\n${gameRolled.activeColor}'s roll: ${roll.join(', ')}`)
 
     // Make moves until no more valid moves are available
-    let gameMoved = gameMoving
-    let moveCount = 0
+    const firstMove = Array.from(gameRolled.activePlay.moves)[0]
+    if (!firstMove || !firstMove.origin) {
+      console.log(`\nNo valid moves for ${gameRolled.activeColor} this turn`)
+      // Switch turns if no winner yet
+      const newActiveColor = gameRolled.inactivePlayer.color
+      const [newActivePlayer, newInactivePlayer] = Game.getPlayersForColor(
+        gameRolled.players,
+        newActiveColor
+      )
+      currentGame = Game.initialize(
+        gameRolled.players,
+        gameRolled.id,
+        'rolling-for-start',
+        gameRolled.board,
+        gameRolled.cube
+      )
+      console.log(`\nSwitching to ${currentGame.activeColor}'s turn`)
+      continue
+    }
+    let gameMoved: BackgammonGameMoving = Game.move(
+      gameRolled,
+      firstMove.origin
+    )
+    let moveCount = 1
 
-    // Keep making moves while there are moves with possible destinations
+    // Continue making moves while there are moves with possible destinations
     while (
       Array.from(gameMoved.activePlay.moves).some((m: any) => {
         if (
@@ -137,7 +152,7 @@ function simulateGame() {
       )
 
       try {
-        gameMoved = Game.move(gameMoved, origin) as BackgammonGameMoving
+        gameMoved = Game.move(gameMoved, origin)
         console.log('\nBoard after move:')
         console.log(Board.getAsciiBoard(gameMoved.board))
 
@@ -174,14 +189,10 @@ function simulateGame() {
       currentGame = Game.initialize(
         gameMoved.players,
         gameMoved.id,
-        'rolling',
+        'rolling-for-start',
         gameMoved.board,
-        gameMoved.cube,
-        undefined, // activePlay
-        newActiveColor,
-        newActivePlayer,
-        newInactivePlayer
-      ) as any // Type assertion to satisfy TS, as Game.initialize returns BackgammonGame
+        gameMoved.cube
+      )
       console.log(`\nSwitching to ${currentGame.activeColor}'s turn`)
     }
   }

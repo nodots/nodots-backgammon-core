@@ -32,7 +32,8 @@
     "prebuild": "npm run clean",
     "simulate": "ts-node src/scripts/simulate.ts",
     "simulate:game": "ts-node src/scripts/simulateGame.ts",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "install:latest-types": "rm -rf node_modules package-lock.json && npm install"
   },
   "dependencies": {
     "nodots-backgammon-types": "git+https://github.com/nodots/nodots-backgammon-types.git",

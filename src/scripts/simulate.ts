@@ -125,31 +125,20 @@ export async function runSimulation(maxTurns: number = 100) {
   while (shouldRunUntilWinner || turnCount < maxTurns) {
     turnCount++
 
-    // Convert to rolled-for-start state for the roll
-    const rolledForStartGame = {
-      ...gameRolling,
-      stateKind: 'rolled-for-start',
-      players: [
-        {
-          ...gameRolling.activePlayer,
-          stateKind: 'rolling',
-        } as BackgammonPlayerRolling,
-        {
-          ...gameRolling.inactivePlayer,
-          stateKind: 'inactive',
-        } as BackgammonPlayerInactive,
-      ],
-    } as BackgammonGameRolledForStart
-
-    // Roll dice
-    let gameMoving = Game.roll(rolledForStartGame) as BackgammonGameMoving
-    const roll = (gameMoving.activePlayer as BackgammonPlayerRolled).dice
-      .currentRoll
-    displayTurnInfo(turnCount, gameMoving.activeColor, roll)
+    // Use gameRolling directly, no need to re-initialize
+    const gameRolled = Game.roll(gameRolling)
+    const roll = gameRolled.activePlayer.dice.currentRoll
+    displayTurnInfo(turnCount, gameRolled.activeColor, roll)
 
     // Make moves until no more valid moves are available
     let moveCount = 0
-    let gameMoved = gameMoving
+    let gameMoved: any = gameRolled
+    // Only call Game.move if there is a valid move origin
+    const firstMove = Array.from(gameRolled.activePlay.moves)[0]
+    if (firstMove && firstMove.origin) {
+      gameMoved = Game.move(gameRolled, firstMove.origin)
+      moveCount++
+    }
 
     try {
       while (

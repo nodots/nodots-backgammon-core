@@ -12,6 +12,7 @@ import {
 import { Game } from '..'
 import { randomBackgammonColor } from '../../'
 import { Player } from '../../Player'
+import { Play } from '../../Play'
 
 describe('Game', () => {
   describe('Initialization', () => {
@@ -145,8 +146,8 @@ describe('Game', () => {
         foundPlayer.direction,
         undefined,
         foundPlayer.id,
-        'rolling'
-      ) as BackgammonPlayerRolling
+        'rolled-for-start'
+      ) as BackgammonPlayerRolledForStart
       const inactivePlayerObj = rollingPlayers.find(
         (p) => p.color !== gameRolling.activeColor
       )!
@@ -192,8 +193,8 @@ describe('Game', () => {
         foundPlayer.direction,
         undefined,
         foundPlayer.id,
-        'rolling'
-      ) as BackgammonPlayerRolling
+        'rolled-for-start'
+      ) as BackgammonPlayerRolledForStart
       const inactivePlayerObj = rollingPlayers.find(
         (p) => p.color !== gameRolling.activeColor
       )!
@@ -213,10 +214,9 @@ describe('Game', () => {
         activeColor: gameRolling.activeColor!,
       }
       const gameRolled = Game.roll(rolledForStartGame)
-      const gameMoving = Game.move(
-        gameRolled,
-        Array.from((gameRolled as any).activePlay.moves as any[])[0].origin!
-      )
+      // Transition play to 'moving' state
+      const movingPlay = Play.startMove((gameRolled as any).activePlay)
+      const gameMoving = Game.startMove(gameRolled, movingPlay)
       // Get the first available move
       expect((gameMoving as any).activePlay.moves.size).toBeGreaterThan(0)
       const firstMove = Array.from(
@@ -321,8 +321,8 @@ describe('Game', () => {
         foundPlayer.direction,
         undefined,
         foundPlayer.id,
-        'rolling'
-      ) as BackgammonPlayerRolling
+        'rolled-for-start'
+      ) as BackgammonPlayerRolledForStart
       const inactivePlayerObj = rollingPlayers.find(
         (p) => p.color !== gameRolling.activeColor
       )!
@@ -366,8 +366,8 @@ describe('Game', () => {
         foundPlayer.direction,
         undefined,
         foundPlayer.id,
-        'rolling'
-      ) as BackgammonPlayerRolling
+        'rolled-for-start'
+      ) as BackgammonPlayerRolledForStart
       const inactivePlayerObj = rollingPlayers.find(
         (p) => p.color !== gameRolling.activeColor
       )!

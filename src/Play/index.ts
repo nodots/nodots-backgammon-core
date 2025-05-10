@@ -267,4 +267,14 @@ export class Play {
       stateKind: 'rolled',
     }
   }
+
+  public static startMove = function startMove(
+    play: BackgammonPlayRolled
+  ): BackgammonPlayMoving {
+    return {
+      ...play,
+      stateKind: 'moving',
+      player: { ...play.player, stateKind: 'moving' },
+    } as BackgammonPlayMoving
+  }
 }

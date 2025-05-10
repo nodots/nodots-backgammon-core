@@ -165,4 +165,16 @@ export class Player {
         : board.BackgammonPoints.slice(18, 24) // Points 19-24 for counterclockwise player
     return points
   }
+
+  public static toMoving = function toMoving(
+    player: BackgammonPlayer
+  ): BackgammonPlayerMoving {
+    return Player.initialize(
+      player.color,
+      player.direction,
+      player.dice,
+      player.id,
+      'moving'
+    ) as BackgammonPlayerMoving
+  }
 }
