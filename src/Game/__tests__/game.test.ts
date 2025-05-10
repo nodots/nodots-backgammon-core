@@ -1,7 +1,6 @@
 import { describe, expect, it } from '@jest/globals'
 import {
   BackgammonColor,
-  BackgammonGameMoving,
   BackgammonGameRolledForStart,
   BackgammonGameRollingForStart,
   BackgammonPlayerActive,
@@ -115,12 +114,12 @@ describe('Game', () => {
       Player.initialize(counterclockwiseColor, 'counterclockwise'),
     ]
 
-    it('should transition from rolling-for-start to rolling', () => {
+    it('should transition from rolling-for-start to rolled-for-start', () => {
       const gameStart = Game.initialize(
         players
       ) as BackgammonGameRollingForStart
       const gameRolling = Game.rollForStart(gameStart)
-      expect(gameRolling.stateKind).toBe('rolling')
+      expect(gameRolling.stateKind).toBe('rolled-for-start')
       expect(gameRolling.activeColor).toBeDefined()
       expect(gameRolling.activePlayer).toBeDefined()
       expect(gameRolling.inactivePlayer).toBeDefined()
@@ -258,14 +257,20 @@ describe('Game', () => {
         stateKind: 'rolled-for-start',
         activeColor: 'invalid' as BackgammonColor,
         players: [
-          {
-            ...gameRolling.activePlayer,
-            stateKind: 'rolled-for-start',
-          } as BackgammonPlayerRolledForStart,
-          {
-            ...gameRolling.inactivePlayer,
-            stateKind: 'inactive',
-          } as BackgammonPlayerInactive,
+          Player.initialize(
+            gameRolling.activePlayer.color,
+            gameRolling.activePlayer.direction,
+            undefined,
+            gameRolling.activePlayer.id,
+            'rolled-for-start'
+          ) as BackgammonPlayerRolledForStart,
+          Player.initialize(
+            gameRolling.inactivePlayer.color,
+            gameRolling.inactivePlayer.direction,
+            undefined,
+            gameRolling.inactivePlayer.id,
+            'inactive'
+          ) as BackgammonPlayerInactive,
         ] as BackgammonPlayers,
       } as BackgammonGameRolledForStart
 
