@@ -1,18 +1,16 @@
-import { describe, it, expect, beforeAll, test } from '@jest/globals'
-import { Board, Dice, Player, generateId } from '../..'
+import { describe, expect, test } from '@jest/globals'
 import {
+  BackgammonBar,
   BackgammonCheckercontainerImport,
   BackgammonDiceInactive,
+  BackgammonMoveCompletedWithMove,
   BackgammonPlayerRolled,
   BackgammonPlayerRolling,
   BackgammonPlayRolled,
   BackgammonPoint,
-  BackgammonBar,
-  BackgammonMoveReady,
-  BackgammonMoveCompletedWithMove,
-  BackgammonMoveCompletedNoMove,
 } from 'nodots-backgammon-types'
 import { Play } from '..'
+import { Board, Dice, generateId, Player } from '../..'
 
 describe('Play', () => {
   describe('initialization', () => {
@@ -44,7 +42,7 @@ describe('Play', () => {
       expect(play).toBeDefined()
       expect(play.stateKind).toBe('rolled')
       expect(play.moves).toBeDefined()
-      expect(play.moves.size).toBeGreaterThan(0)
+      expect((play.moves as unknown as any[]).length).toBeGreaterThan(0)
 
       // Check that each move has the required moveKind
       for (const move of play.moves) {
@@ -85,7 +83,7 @@ describe('Play', () => {
       const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
       const play = Play.initialize(board, rolledPlayer)
 
-      expect(play.moves.size).toBe(4) // Should have 4 moves for doubles
+      expect((play.moves as unknown as any[]).length).toBe(4) // Should have 4 moves for doubles
 
       // Verify all moves are point-to-point
       for (const move of play.moves) {
@@ -153,7 +151,7 @@ describe('Play', () => {
       const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
       const play = Play.initialize(board, rolledPlayer)
 
-      expect(play.moves.size).toBe(1)
+      expect((play.moves as unknown as any[]).length).toBe(1)
       const move = Array.from(play.moves)[0]
       expect(move.stateKind).toBe('ready')
       expect(move.moveKind).toBe('no-move')
