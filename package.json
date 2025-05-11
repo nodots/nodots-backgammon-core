@@ -1,6 +1,6 @@
 {
   "name": "nodots-backgammon-core",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Types and game logic for a backgammon game",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
