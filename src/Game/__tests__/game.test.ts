@@ -172,7 +172,9 @@ describe('Game', () => {
       expect((gameRolled as any).activePlay).toBeDefined()
       expect((gameRolled as any).board).toBeDefined()
       expect((gameRolled as any).activePlayer.dice.currentRoll).toBeDefined()
-      expect((gameRolled as any).activePlay.moves.size).toBeGreaterThan(0)
+      expect(
+        ((gameRolled as any).activePlay.moves as unknown as any[]).length
+      ).toBeGreaterThan(0)
     })
 
     it('should handle moves correctly', () => {
@@ -218,7 +220,9 @@ describe('Game', () => {
       const movingPlay = Play.startMove((gameRolled as any).activePlay)
       const gameMoving = Game.startMove(gameRolled, movingPlay)
       // Get the first available move
-      expect((gameMoving as any).activePlay.moves.size).toBeGreaterThan(0)
+      expect(
+        ((gameMoving as any).activePlay.moves as unknown as any[]).length
+      ).toBeGreaterThan(0)
       const firstMove = Array.from(
         (gameMoving as any).activePlay.moves as any[]
       )[0] as any
@@ -241,7 +245,9 @@ describe('Game', () => {
           } else {
             expect(gameMoved).toBeDefined()
             expect((gameMoved as any).stateKind).toBe('moving')
-            expect((gameMoved as any).activePlay.moves.size).toBeGreaterThan(0)
+            expect(
+              ((gameMoved as any).activePlay.moves as unknown as any[]).length
+            ).toBeGreaterThan(0)
           }
         }
       }

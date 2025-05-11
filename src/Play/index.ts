@@ -60,7 +60,7 @@ export class Play {
         destination: undefined,
       }
       return {
-        play: { ...play, moves: new Set([noMove]) },
+        play: { ...play, moves: [noMove] } as any,
         board,
         move: noMove,
       }
@@ -85,7 +85,7 @@ export class Play {
         destination: undefined,
       }
       return {
-        play: { ...play, moves: new Set([noMove]) },
+        play: { ...play, moves: [noMove] } as any,
         board,
         move: noMove,
       }
@@ -127,7 +127,7 @@ export class Play {
     }
 
     return {
-      play,
+      play: { ...play, moves: Array.from(play.moves) } as any,
       board,
       move: completedMove,
     }
@@ -263,9 +263,9 @@ export class Play {
       id: generateId(),
       board,
       player,
-      moves,
+      moves: Array.from(moves),
       stateKind: 'rolled',
-    }
+    } as any
   }
 
   public static startMove = function startMove(
@@ -275,6 +275,7 @@ export class Play {
       ...play,
       stateKind: 'moving',
       player: { ...play.player, stateKind: 'moving' },
-    } as BackgammonPlayMoving
+      moves: Array.from(play.moves),
+    } as any
   }
 }
