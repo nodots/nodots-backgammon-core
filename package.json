@@ -36,7 +36,7 @@
     "install:latest-types": "rm -rf node_modules package-lock.json && npm install"
   },
   "dependencies": {
-    "nodots-backgammon-types": "git+https://github.com/nodots/nodots-backgammon-types.git",
+    "nodots-backgammon-types": "file://Users/kenr/Code/nodots-backgammon/nodots-backgammon-types",
     "uuid": "^11.0.5"
   },
   "devDependencies": {

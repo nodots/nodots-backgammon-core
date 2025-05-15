@@ -1,7 +1,7 @@
 import { generateId } from '..'
 import {
   BackgammonBoard,
-  BackgammonCheckercontainer,
+  BackgammonCheckerContainer,
   BackgammonDieValue,
   BackgammonMove,
   BackgammonMoveConfirmed,
@@ -36,8 +36,8 @@ export class Move {
   dieValue!: BackgammonDieValue
   stateKind!: BackgammonMoveStateKind
   moveKind: BackgammonMoveKind | undefined = undefined
-  origin: BackgammonCheckercontainer | undefined = undefined
-  destination: BackgammonCheckercontainer | undefined = undefined
+  origin: BackgammonCheckerContainer | undefined = undefined
+  destination: BackgammonCheckerContainer | undefined = undefined
 
   public static initialize = function initializeMove({
     move,

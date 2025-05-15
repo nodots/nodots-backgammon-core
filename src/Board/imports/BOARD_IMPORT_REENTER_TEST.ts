@@ -1,10 +1,10 @@
-import { BackgammonCheckercontainerImport } from 'nodots-backgammon-types'
+import { BackgammonCheckerContainerImport } from 'nodots-backgammon-types'
 
 // Define colors explicitly to ensure consistency
 const clockwiseColor = 'white'
 const counterclockwiseColor = 'black'
 
-export const BOARD_IMPORT_REENTER_TEST: BackgammonCheckercontainerImport[] = [
+export const BOARD_IMPORT_REENTER_TEST: BackgammonCheckerContainerImport[] = [
   // Clockwise player's checkers
   {
     position: {

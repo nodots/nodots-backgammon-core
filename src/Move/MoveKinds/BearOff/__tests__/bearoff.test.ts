@@ -9,7 +9,7 @@ import {
   BackgammonPlayerRolled,
   BackgammonRoll,
   BackgammonPoint,
-  BackgammonCheckercontainerImport,
+  BackgammonCheckerContainerImport,
   BackgammonBoard,
   BackgammonColor,
   BackgammonDieValue,
@@ -45,7 +45,7 @@ const convertSkeletonsToMoves = (
   )
 
 describe('BearOff', () => {
-  const setupTestBoard = (boardImport: BackgammonCheckercontainerImport[]) => {
+  const setupTestBoard = (boardImport: BackgammonCheckerContainerImport[]) => {
     const diceId: string = generateId()
     const board = Board.initialize(boardImport)
     const color = 'white' // Use fixed color for predictable tests
@@ -74,7 +74,7 @@ describe('BearOff', () => {
   describe('Valid Bear Off Scenarios', () => {
     it('should successfully bear off a checker with exact dice value', () => {
       // Setup board with all checkers in home board (points 19-24 for clockwise)
-      const boardImport: BackgammonCheckercontainerImport[] = [
+      const boardImport: BackgammonCheckerContainerImport[] = [
         {
           position: { clockwise: 24, counterclockwise: 1 },
           checkers: { qty: 1, color: 'white' },
@@ -113,7 +113,7 @@ describe('BearOff', () => {
 
     it('should successfully bear off a checker with higher dice value when no checkers on higher points', () => {
       // Setup board with all checkers in home board, one on point 22, rest on point 19
-      const boardImport: BackgammonCheckercontainerImport[] = [
+      const boardImport: BackgammonCheckerContainerImport[] = [
         {
           position: { clockwise: 22, counterclockwise: 3 },
           checkers: { qty: 1, color: 'white' },
@@ -154,7 +154,7 @@ describe('BearOff', () => {
   describe('Invalid Bear Off Scenarios', () => {
     it('should not allow bearing off when checkers exist outside home board', () => {
       // Setup board with a checker outside home board (point 18)
-      const boardImport: BackgammonCheckercontainerImport[] = [
+      const boardImport: BackgammonCheckerContainerImport[] = [
         {
           position: { clockwise: 22, counterclockwise: 3 },
           checkers: { qty: 1, color: 'white' },
@@ -191,7 +191,7 @@ describe('BearOff', () => {
 
     it('should not allow bearing off with higher dice when checkers exist on higher points', () => {
       // Setup board with checkers on points 22 and 24
-      const boardImport: BackgammonCheckercontainerImport[] = [
+      const boardImport: BackgammonCheckerContainerImport[] = [
         {
           position: { clockwise: 22, counterclockwise: 3 },
           checkers: { qty: 1, color: 'white' },
@@ -228,7 +228,7 @@ describe('BearOff', () => {
 
     it('should not allow bearing off from empty point', () => {
       // Setup board with all checkers on point 19
-      const boardImport: BackgammonCheckercontainerImport[] = [
+      const boardImport: BackgammonCheckerContainerImport[] = [
         {
           position: { clockwise: 19, counterclockwise: 6 },
           checkers: { qty: 15, color: 'white' },
@@ -256,7 +256,7 @@ describe('BearOff', () => {
   describe('Multiple Checkers Scenarios', () => {
     it('should bear off one checker at a time from a point with multiple checkers', () => {
       // Setup board with multiple checkers on point 24
-      const boardImport: BackgammonCheckercontainerImport[] = [
+      const boardImport: BackgammonCheckerContainerImport[] = [
         {
           position: { clockwise: 24, counterclockwise: 1 },
           checkers: { qty: 2, color: 'white' },

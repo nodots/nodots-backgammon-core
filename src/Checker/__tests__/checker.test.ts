@@ -30,7 +30,7 @@ describe('BackgammonChecker', () => {
     expect(checker.checkercontainerId).toBe('checkercontainer1')
   })
   it('should be able to build checkers for a checker container', () => {
-    checkers = Checker.buildCheckersForCheckercontainerId(
+    checkers = Checker.buildCheckersForCheckerContainerId(
       'checkercontainer1',
       color,
       2

@@ -1,5 +1,9 @@
 import { Board, generateId } from '..'
-import { BackgammonBoard, BackgammonChecker, BackgammonColor } from 'nodots-backgammon-types'
+import {
+  BackgammonBoard,
+  BackgammonChecker,
+  BackgammonColor,
+} from 'nodots-backgammon-types'
 
 export class Checker {
   public static getCheckers = function getCheckers(
@@ -21,8 +25,8 @@ export class Checker {
     return { id: generateId(), color, checkercontainerId }
   }
 
-  public static buildCheckersForCheckercontainerId =
-    function buildCheckersForCheckercontainerId(
+  public static buildCheckersForCheckerContainerId =
+    function buildCheckersForCheckerContainerId(
       checkercontainerId: string,
       color: BackgammonColor,
       count: number

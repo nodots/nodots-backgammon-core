@@ -2,14 +2,14 @@ import { BOARD_IMPORT_DEFAULT } from '../BOARD_IMPORT_DEFAULT'
 import { BOARD_IMPORT_BOTH_REENTER } from '../BOARD_IMPORT_BOTH_REENTER'
 import { BOARD_IMPORT_BOTH_BEAROFF } from '../BOARD_IMPORT_BOTH_BEAROFF'
 import {
-  BackgammonCheckercontainerImport,
-  BackgammonCheckercontainerPosition,
+  BackgammonCheckerContainerImport,
+  BackgammonCheckerContainerPosition,
   BackgammonPoint,
 } from 'nodots-backgammon-types'
 
 describe('Board Imports', () => {
   const validateBoardImport = (
-    boardImport: BackgammonCheckercontainerImport[]
+    boardImport: BackgammonCheckerContainerImport[]
   ) => {
     // Check that all checkers have valid colors
     boardImport.forEach((container) => {
@@ -35,7 +35,7 @@ describe('Board Imports', () => {
   }
 
   const isPointPosition = (
-    position: BackgammonCheckercontainerPosition
+    position: BackgammonCheckerContainerPosition
   ): position is BackgammonPoint['position'] => {
     return (
       typeof position === 'object' &&

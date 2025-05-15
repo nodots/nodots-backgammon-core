@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals'
 import {
-  BackgammonCheckercontainerImport,
+  BackgammonCheckerContainerImport,
   BackgammonPointValue,
 } from 'nodots-backgammon-types'
 import { Board } from '..'
@@ -27,7 +27,7 @@ describe('ascii', () => {
   })
 
   it('should display checkers with correct symbols', () => {
-    const boardImport: BackgammonCheckercontainerImport[] = [
+    const boardImport: BackgammonCheckerContainerImport[] = [
       {
         position: { clockwise: 24, counterclockwise: 1 },
         checkers: { qty: 2, color: 'black' },
@@ -47,7 +47,7 @@ describe('ascii', () => {
   })
 
   it('should display checkers on bar correctly', () => {
-    const boardImport: BackgammonCheckercontainerImport[] = [
+    const boardImport: BackgammonCheckerContainerImport[] = [
       {
         position: 'bar',
         direction: 'clockwise',
@@ -67,7 +67,7 @@ describe('ascii', () => {
   })
 
   it('should display checkers in off position correctly', () => {
-    const boardImport: BackgammonCheckercontainerImport[] = [
+    const boardImport: BackgammonCheckerContainerImport[] = [
       {
         position: 'off',
         direction: 'clockwise',
@@ -87,7 +87,7 @@ describe('ascii', () => {
   })
 
   it('should display stacked checkers correctly', () => {
-    const boardImport: BackgammonCheckercontainerImport[] = [
+    const boardImport: BackgammonCheckerContainerImport[] = [
       {
         position: { clockwise: 13, counterclockwise: 12 },
         checkers: { qty: 5, color: 'black' },
@@ -121,7 +121,7 @@ describe('ascii', () => {
   })
 
   it('should handle maximum checkers per point', () => {
-    const boardImport: BackgammonCheckercontainerImport[] = [
+    const boardImport: BackgammonCheckerContainerImport[] = [
       {
         position: { clockwise: 1, counterclockwise: 24 },
         checkers: { qty: 15, color: 'white' },
@@ -140,7 +140,7 @@ describe('ascii', () => {
   })
 
   it('should display multiple checkers on bar correctly', () => {
-    const boardImport: BackgammonCheckercontainerImport[] = [
+    const boardImport: BackgammonCheckerContainerImport[] = [
       {
         position: 'bar',
         direction: 'clockwise',
@@ -173,7 +173,7 @@ describe('ascii', () => {
   })
 
   it('should display mixed color checkers in off position correctly', () => {
-    const boardImport: BackgammonCheckercontainerImport[] = [
+    const boardImport: BackgammonCheckerContainerImport[] = [
       {
         position: 'off',
         direction: 'clockwise',
@@ -194,7 +194,7 @@ describe('ascii', () => {
   })
 
   it('should handle points with maximum number of checkers', () => {
-    const boardImport: BackgammonCheckercontainerImport[] = [
+    const boardImport: BackgammonCheckerContainerImport[] = [
       {
         position: { clockwise: 13, counterclockwise: 12 },
         checkers: { qty: 15, color: 'black' },
@@ -217,7 +217,7 @@ describe('ascii', () => {
   })
 
   it('should handle points with mixed color checkers', () => {
-    const boardImport: BackgammonCheckercontainerImport[] = [
+    const boardImport: BackgammonCheckerContainerImport[] = [
       {
         position: { clockwise: 13, counterclockwise: 12 },
         checkers: { qty: 2, color: 'black' },
@@ -240,7 +240,7 @@ describe('ascii', () => {
   })
 
   it('should handle checkers on all points', () => {
-    const boardImport: BackgammonCheckercontainerImport[] = Array.from(
+    const boardImport: BackgammonCheckerContainerImport[] = Array.from(
       { length: 24 },
       (_, i) => ({
         position: {
@@ -262,7 +262,7 @@ describe('ascii', () => {
   })
 
   it('should handle empty points between occupied points', () => {
-    const boardImport: BackgammonCheckercontainerImport[] = [
+    const boardImport: BackgammonCheckerContainerImport[] = [
       {
         position: { clockwise: 13, counterclockwise: 12 },
         checkers: { qty: 1, color: 'black' },
@@ -284,7 +284,7 @@ describe('ascii', () => {
   })
 
   it('should handle maximum checkers on bar', () => {
-    const boardImport: BackgammonCheckercontainerImport[] = [
+    const boardImport: BackgammonCheckerContainerImport[] = [
       {
         position: 'bar',
         direction: 'clockwise',
@@ -305,7 +305,7 @@ describe('ascii', () => {
 
   it('should handle invalid point numbers gracefully', () => {
     // This test verifies that the ascii display handles points outside the valid range
-    const boardImport: BackgammonCheckercontainerImport[] = [
+    const boardImport: BackgammonCheckerContainerImport[] = [
       {
         position: { clockwise: 25 as any, counterclockwise: 0 as any },
         checkers: { qty: 1, color: 'black' },
@@ -336,7 +336,7 @@ describe('ascii', () => {
   })
 
   it('should handle empty spaces between occupied points', () => {
-    const boardImport: BackgammonCheckercontainerImport[] = [
+    const boardImport: BackgammonCheckerContainerImport[] = [
       {
         position: { clockwise: 13, counterclockwise: 12 },
         checkers: { qty: 1, color: 'black' },
@@ -358,7 +358,7 @@ describe('ascii', () => {
   })
 
   it('should handle off position with maximum checkers', () => {
-    const boardImport: BackgammonCheckercontainerImport[] = [
+    const boardImport: BackgammonCheckerContainerImport[] = [
       {
         position: 'off',
         direction: 'clockwise',
@@ -378,7 +378,7 @@ describe('ascii', () => {
   })
 
   it('should handle mixed colors in off position', () => {
-    const boardImport: BackgammonCheckercontainerImport[] = [
+    const boardImport: BackgammonCheckerContainerImport[] = [
       {
         position: 'off',
         direction: 'clockwise',

@@ -24,7 +24,7 @@ import {
   BackgammonDiceStateKind,
   BackgammonPlayerActive,
   BackgammonPointValue,
-  BackgammonCheckercontainerImport,
+  BackgammonCheckerContainerImport,
   BackgammonMoveSkeleton,
   BackgammonMoveKind,
   BackgammonMove,
@@ -308,7 +308,7 @@ describe('Move', () => {
 
     it('should handle bear-off move', () => {
       // Create a board with all white checkers in the home board (points 19-24)
-      const boardImport: BackgammonCheckercontainerImport[] = [
+      const boardImport: BackgammonCheckerContainerImport[] = [
         {
           position: {
             clockwise: 24 as BackgammonPointValue,

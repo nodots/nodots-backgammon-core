@@ -3,8 +3,8 @@ import {
   BackgammonBar,
   BackgammonBoard,
   BackgammonChecker,
-  BackgammonCheckercontainer,
-  BackgammonCheckercontainerImport,
+  BackgammonCheckerContainer,
+  BackgammonCheckerContainerImport,
   BackgammonColor,
   BackgammonDieValue,
   BackgammonGame,
@@ -34,7 +34,7 @@ export class Board implements BackgammonBoard {
   }
 
   public static initialize(
-    boardImport?: BackgammonCheckercontainerImport[]
+    boardImport?: BackgammonCheckerContainerImport[]
   ): BackgammonBoard {
     if (!boardImport) boardImport = BOARD_IMPORT_DEFAULT
     const board = Board.buildBoard(boardImport)
@@ -58,8 +58,8 @@ export class Board implements BackgammonBoard {
     const boardClone = JSON.parse(JSON.stringify(board))
 
     // Get references to the cloned containers
-    const originClone = this.getCheckercontainer(boardClone, origin.id)
-    const destinationClone = this.getCheckercontainer(
+    const originClone = this.getCheckerContainer(boardClone, origin.id)
+    const destinationClone = this.getCheckerContainer(
       boardClone,
       destination.id
     )
@@ -116,7 +116,7 @@ export class Board implements BackgammonBoard {
   }
 
   static getCheckers(board: BackgammonBoard): BackgammonChecker[] {
-    const checkercontainers = Board.getCheckercontainers(board)
+    const checkercontainers = Board.getCheckerContainers(board)
     const checkers: BackgammonChecker[] = []
 
     checkercontainers.map(function pushCheckers(checkercontainer) {
@@ -148,20 +148,20 @@ export class Board implements BackgammonBoard {
     return [board.off.clockwise, board.off.counterclockwise]
   }
 
-  static getCheckercontainers = function getCheckercontainers(
+  static getCheckerContainers = function getCheckerContainers(
     board: BackgammonBoard
-  ): BackgammonCheckercontainer[] {
-    const points = Board.getPoints(board) as BackgammonCheckercontainer[]
-    const bar = Board.getBars(board) as BackgammonCheckercontainer[]
-    const off = Board.getOffs(board) as BackgammonCheckercontainer[]
+  ): BackgammonCheckerContainer[] {
+    const points = Board.getPoints(board) as BackgammonCheckerContainer[]
+    const bar = Board.getBars(board) as BackgammonCheckerContainer[]
+    const off = Board.getOffs(board) as BackgammonCheckerContainer[]
     return points.concat(...bar).concat(...off)
   }
 
-  static getCheckercontainer = function getCheckercontainer(
+  static getCheckerContainer = function getCheckerContainer(
     board: BackgammonBoard,
     id: string
-  ): BackgammonCheckercontainer {
-    const container = Board.getCheckercontainers(board).find(
+  ): BackgammonCheckerContainer {
+    const container = Board.getCheckerContainers(board).find(
       function findContainer(c) {
         return c.id === id
       }
@@ -264,7 +264,7 @@ export class Board implements BackgammonBoard {
   }
 
   public static buildBoard(
-    boardImport: BackgammonCheckercontainerImport[]
+    boardImport: BackgammonCheckerContainerImport[]
   ): BackgammonBoard {
     if (!boardImport) boardImport = BOARD_IMPORT_DEFAULT
     const tempPoints: BackgammonPoint[] = []
@@ -308,7 +308,7 @@ export class Board implements BackgammonBoard {
       if (pointSpecs.length > 0) {
         pointSpecs.forEach((pointSpec) => {
           if (pointSpec.checkers) {
-            const checkers = Checker.buildCheckersForCheckercontainerId(
+            const checkers = Checker.buildCheckersForCheckerContainerId(
               point.id,
               pointSpec.checkers.color,
               pointSpec.checkers.qty
@@ -333,7 +333,7 @@ export class Board implements BackgammonBoard {
   }
 
   private static buildBar = function buildBar(
-    boardImport: BackgammonCheckercontainerImport[]
+    boardImport: BackgammonCheckerContainerImport[]
   ): {
     clockwise: BackgammonBar
     counterclockwise: BackgammonBar
@@ -357,7 +357,7 @@ export class Board implements BackgammonBoard {
         clockwiseCheckerCount = clockwiseBarImport.checkers.qty
       }
       clockwiseCheckers.push(
-        ...Checker.buildCheckersForCheckercontainerId(
+        ...Checker.buildCheckersForCheckerContainerId(
           clockwiseId,
           clockwiseBarImport.checkers.color,
           clockwiseCheckerCount
@@ -379,7 +379,7 @@ export class Board implements BackgammonBoard {
         counterclockwiseCheckerCount = counterclockwiseBarImport.checkers.qty
       }
       counterclockwiseCheckers.push(
-        ...Checker.buildCheckersForCheckercontainerId(
+        ...Checker.buildCheckersForCheckerContainerId(
           counterclockwiseId,
           counterclockwiseBarImport.checkers.color,
           counterclockwiseCheckerCount
@@ -406,7 +406,7 @@ export class Board implements BackgammonBoard {
   }
 
   private static buildOff = function buildOff(
-    boardImport: BackgammonCheckercontainerImport[]
+    boardImport: BackgammonCheckerContainerImport[]
   ): {
     clockwise: BackgammonOff
     counterclockwise: BackgammonOff
@@ -430,7 +430,7 @@ export class Board implements BackgammonBoard {
       if (clockwiseOffImport.checkers) {
         const checkerCount = clockwiseOffImport.checkers.qty
         clockwiseCheckers.push(
-          ...Checker.buildCheckersForCheckercontainerId(
+          ...Checker.buildCheckersForCheckerContainerId(
             generateId(),
             clockwiseOffImport.checkers.color,
             checkerCount
@@ -444,7 +444,7 @@ export class Board implements BackgammonBoard {
       if (counterclockwiseOffImport.checkers) {
         const checkerCount = counterclockwiseOffImport.checkers.qty
         counterclockwiseCheckers.push(
-          ...Checker.buildCheckersForCheckercontainerId(
+          ...Checker.buildCheckersForCheckerContainerId(
             generateId(),
             counterclockwiseOffImport.checkers.color,
             checkerCount
@@ -472,7 +472,7 @@ export class Board implements BackgammonBoard {
   }
 
   public static generateRandomBoard = (): BackgammonBoard => {
-    const boardImport: BackgammonCheckercontainerImport[] = []
+    const boardImport: BackgammonCheckerContainerImport[] = []
 
     const addCheckersToImport = (
       color: BackgammonColor,

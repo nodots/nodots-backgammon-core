@@ -33,7 +33,7 @@ describe('Board', () => {
     expect(totalCheckers.black).toBe(15)
     expect(totalCheckers.white).toBe(15)
 
-    const checkerContainers = Board.getCheckercontainers(board)
+    const checkerContainers = Board.getCheckerContainers(board)
     expect(checkerContainers.length).toBe(28)
     expect(checkerContainers.filter((cc) => cc.kind === 'point').length).toBe(
       24
@@ -84,7 +84,7 @@ describe('Board', () => {
     expect(totalCheckers.black).toBe(15)
     expect(totalCheckers.white).toBe(15)
 
-    const checkerContainers = Board.getCheckercontainers(bearOffBoard)
+    const checkerContainers = Board.getCheckerContainers(bearOffBoard)
     expect(checkerContainers.length).toBe(28)
     expect(checkerContainers.filter((cc) => cc.kind === 'point').length).toBe(
       24
@@ -128,7 +128,7 @@ describe('Board', () => {
       (checker) => checker.color === 'white'
     ).length
 
-    const checkerContainers = Board.getCheckercontainers(randomBoard)
+    const checkerContainers = Board.getCheckerContainers(randomBoard)
     expect(checkerContainers.length).toBe(28)
     expect(checkerContainers.filter((cc) => cc.kind === 'point').length).toBe(
       24

@@ -1,7 +1,7 @@
 import { describe, expect, test } from '@jest/globals'
 import {
   BackgammonBar,
-  BackgammonCheckercontainerImport,
+  BackgammonCheckerContainerImport,
   BackgammonDiceInactive,
   BackgammonMoveCompletedWithMove,
   BackgammonPlayerRolled,
@@ -15,7 +15,7 @@ import { Board, Dice, generateId, Player } from '../..'
 describe('Play', () => {
   describe('initialization', () => {
     test('should initialize with basic board setup', () => {
-      const boardImport: BackgammonCheckercontainerImport[] = [
+      const boardImport: BackgammonCheckerContainerImport[] = [
         {
           position: { clockwise: 6, counterclockwise: 19 },
           checkers: { qty: 1, color: 'white' },
@@ -59,7 +59,7 @@ describe('Play', () => {
     })
 
     test('should handle doubles correctly', () => {
-      const boardImport: BackgammonCheckercontainerImport[] = [
+      const boardImport: BackgammonCheckerContainerImport[] = [
         {
           position: { clockwise: 1, counterclockwise: 24 },
           checkers: { qty: 2, color: 'white' },
@@ -98,7 +98,7 @@ describe('Play', () => {
 
     test('should handle no possible moves', () => {
       // Create a board setup where no moves are possible
-      const boardImport: BackgammonCheckercontainerImport[] = [
+      const boardImport: BackgammonCheckerContainerImport[] = [
         {
           position: { clockwise: 1, counterclockwise: 24 },
           checkers: { qty: 1, color: 'white' },
@@ -160,7 +160,7 @@ describe('Play', () => {
 
   describe('move functionality', () => {
     test('should execute a valid move', () => {
-      const boardImport: BackgammonCheckercontainerImport[] = [
+      const boardImport: BackgammonCheckerContainerImport[] = [
         {
           position: { clockwise: 1, counterclockwise: 24 },
           checkers: { qty: 1, color: 'white' },
@@ -196,7 +196,7 @@ describe('Play', () => {
 
     describe('reenter moves', () => {
       test('should execute a valid reenter move from bar', () => {
-        const boardImport: BackgammonCheckercontainerImport[] = [
+        const boardImport: BackgammonCheckerContainerImport[] = [
           {
             position: 'bar',
             direction: 'clockwise',
@@ -278,7 +278,7 @@ describe('Play', () => {
       })
 
       test('should prioritize bar moves when checker is on bar', () => {
-        const boardImport: BackgammonCheckercontainerImport[] = [
+        const boardImport: BackgammonCheckerContainerImport[] = [
           {
             position: { clockwise: 1, counterclockwise: 24 },
             checkers: { qty: 1, color: 'white' },

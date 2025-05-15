@@ -1,11 +1,11 @@
 import { randomBackgammonColor } from '../..'
-import { BackgammonCheckercontainerImport } from 'nodots-backgammon-types'
+import { BackgammonCheckerContainerImport } from 'nodots-backgammon-types'
 
 const defaultClockwiseColor = 'white'
 const defaultCounterclockwiseColor =
   defaultClockwiseColor === 'white' ? 'black' : 'white'
 
-export const BOARD_IMPORT_DEFAULT: BackgammonCheckercontainerImport[] = [
+export const BOARD_IMPORT_DEFAULT: BackgammonCheckerContainerImport[] = [
   {
     position: {
       clockwise: 1,

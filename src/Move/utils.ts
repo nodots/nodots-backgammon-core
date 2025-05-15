@@ -1,7 +1,7 @@
 import { Move } from '.'
 import {
   BackgammonBoard,
-  BackgammonCheckercontainer,
+  BackgammonCheckerContainer,
   BackgammonDieValue,
   BackgammonMoveDirection,
   BackgammonOff,
@@ -10,7 +10,7 @@ import {
 } from 'nodots-backgammon-types'
 
 export function getDestination(
-  origin: BackgammonCheckercontainer,
+  origin: BackgammonCheckerContainer,
   board: BackgammonBoard,
   player: BackgammonPlayerMoving,
   dieValue: BackgammonDieValue
