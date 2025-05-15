@@ -1,5 +1,3 @@
-import { Board, Dice, generateId } from '..'
-import { Play } from '../Play'
 import {
   BackgammonBar,
   BackgammonBoard,
@@ -7,7 +5,6 @@ import {
   BackgammonDice,
   BackgammonDiceRolled,
   BackgammonMoveDirection,
-  BackgammonMoveOrigin,
   BackgammonMoveResult,
   BackgammonPlayer,
   BackgammonPlayerMoved,
@@ -19,9 +16,10 @@ import {
   BackgammonPlayerStateKind,
   BackgammonPlayerWinner,
   BackgammonPlayMoving,
-  BackgammonPlayRolled,
   BackgammonPoint,
 } from 'nodots-backgammon-types'
+import { Board, Dice, generateId } from '..'
+import { Play } from '../Play'
 
 export class Player {
   id: string = generateId()
