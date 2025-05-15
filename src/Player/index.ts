@@ -1,6 +1,7 @@
 import { Board, Dice, generateId } from '..'
 import { Play } from '../Play'
 import {
+  BackgammonBar,
   BackgammonBoard,
   BackgammonColor,
   BackgammonDice,
@@ -19,6 +20,7 @@ import {
   BackgammonPlayerWinner,
   BackgammonPlayMoving,
   BackgammonPlayRolled,
+  BackgammonPoint,
 } from 'nodots-backgammon-types'
 
 export class Player {
@@ -127,13 +129,24 @@ export class Player {
   public static move = function move(
     board: Board,
     play: BackgammonPlayMoving,
-    origin: BackgammonMoveOrigin
+    originId: string
   ): BackgammonMoveResult {
-    const moveResults = Play.move(board, play, origin)
-
-    return {
-      ...moveResults,
+    let moveResults: BackgammonMoveResult | undefined = undefined
+    const origin = Board.getCheckerContainer(board, originId)
+    switch (origin.kind) {
+      case 'bar':
+        const bar = origin as BackgammonBar
+        moveResults = Play.move(board, play, bar)
+        break
+      case 'point':
+        const point = origin as BackgammonPoint
+        moveResults = Play.move(board, play, point)
+        break
+      case 'off':
+        throw Error('Cannot move from the Off position')
     }
+
+    return moveResults
   }
 
   public static getHomeBoard = function getHomeBoard(

@@ -220,7 +220,7 @@ export class Game {
 
   public static move = function move(
     game: BackgammonGameMoving | BackgammonGameRolled,
-    origin: BackgammonMoveOrigin
+    originId: string
   ): BackgammonGameMoving {
     const { players, cube, activeColor, activePlay } = game
     let board = game.board
@@ -228,7 +228,7 @@ export class Game {
     if (activePlay.stateKind !== 'moving') {
       throw new Error('activePlay must be in moving state to make a move')
     }
-    const playResult = Player.move(board, activePlay, origin)
+    const playResult = Player.move(board, activePlay, originId)
     board = playResult.board
     return {
       ...game,

@@ -72,7 +72,7 @@ function simulateGame() {
     }
     let gameMoved: BackgammonGameMoving = Game.move(
       gameRolled,
-      firstMove.origin
+      firstMove.origin.id
     )
     let moveCount = 1
 
@@ -152,7 +152,7 @@ function simulateGame() {
       )
 
       try {
-        gameMoved = Game.move(gameMoved, origin)
+        gameMoved = Game.move(gameMoved, origin.id)
         console.log('\nBoard after move:')
         console.log(Board.getAsciiBoard(gameMoved.board))
 

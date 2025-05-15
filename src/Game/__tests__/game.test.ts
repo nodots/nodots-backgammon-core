@@ -232,7 +232,7 @@ describe('Game', () => {
       if (firstMove.origin) {
         // Only call Game.move if gameMoving is a valid BackgammonGameMoving
         if ((gameMoving as any).stateKind === 'moving') {
-          const gameMoved = Game.move(gameMoving, firstMove.origin)
+          const gameMoved = Game.move(gameMoving, firstMove.origin.id)
           // Check for a move with moveKind: 'no-move' and stateKind: 'completed' in the moves set
           const noMove = Array.from(
             (gameMoved as any).activePlay.moves as any[]

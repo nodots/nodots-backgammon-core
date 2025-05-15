@@ -136,7 +136,7 @@ export async function runSimulation(maxTurns: number = 100) {
     // Only call Game.move if there is a valid move origin
     const firstMove = Array.from(gameRolled.activePlay.moves)[0]
     if (firstMove && firstMove.origin) {
-      gameMoved = Game.move(gameRolled, firstMove.origin)
+      gameMoved = Game.move(gameRolled, firstMove.origin.id)
       moveCount++
     }
 
@@ -244,7 +244,7 @@ export async function runSimulation(maxTurns: number = 100) {
         Board.displayAsciiBoard(gameMoved.board)
 
         try {
-          const moveResult = Game.move(gameMoved, origin)
+          const moveResult = Game.move(gameMoved, origin.id)
           if ('board' in moveResult) {
             gameMoved = moveResult as BackgammonGameMoving
             moveCount++
