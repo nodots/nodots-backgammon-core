@@ -112,6 +112,7 @@ export class Player {
           pipCount: 0,
         } as BackgammonPlayerWinner
     }
+    throw new Error(`Unhandled player stateKind: ${stateKind}`)
   }
 
   public static roll = function roll(

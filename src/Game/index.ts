@@ -112,6 +112,10 @@ export class Game {
         throw new Error('Game cannot be initialized in the moved state')
       case 'completed':
         throw new Error('Game cannot be initialized in the completed state')
+      case 'doubling':
+        throw new Error('Game cannot be initialized in the doubling state')
+      case 'doubled':
+        throw new Error('Game cannot be initialized in the doubled state')
     }
     // Exhaustiveness check
     const _exhaustiveCheck: never = stateKind
@@ -222,23 +226,24 @@ export class Game {
     game: BackgammonGameMoving | BackgammonGameRolled,
     originId: string
   ): BackgammonGameMoving {
-    const { players, cube, activeColor, activePlay } = game
-    let board = game.board
-    const activePlayer = Game.activePlayer(game)
+    let { activePlay, board } = game
+
+    // If in 'rolled', transition to 'moving'
+    if (activePlay.stateKind === 'rolled') {
+      // You may need to create a PlayMoving from PlayRolled
+      activePlay = Play.startMove(activePlay)
+      game = Game.startMove(game as BackgammonGameRolled, activePlay)
+    }
+
     if (activePlay.stateKind !== 'moving') {
       throw new Error('activePlay must be in moving state to make a move')
     }
+
     const playResult = Player.move(board, activePlay, originId)
     board = playResult.board
     return {
       ...game,
       stateKind: 'moving',
-      players,
-      board,
-      cube,
-      activePlay,
-      activeColor,
-      activePlayer,
     } as BackgammonGameMoving
   }
 

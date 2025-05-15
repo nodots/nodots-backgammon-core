@@ -56,6 +56,18 @@ describe('Player', () => {
       expect(winnerPlayer.stateKind).toBe('winner')
       expect(winnerPlayer.pipCount).toBe(0)
     })
+
+    it('should initialize a player with moved state', () => {
+      const movedPlayer = Player.initialize(
+        color,
+        direction,
+        undefined,
+        undefined,
+        'moved'
+      )
+      expect(movedPlayer.stateKind).toBe('moved')
+      expect(movedPlayer.pipCount).toBe(167)
+    })
   })
 
   describe('roll', () => {
