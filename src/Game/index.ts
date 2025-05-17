@@ -262,12 +262,9 @@ export class Game {
     // If the move just made was a bear-off and this brings the total to 15, end the game
     const lastMoveKind = playResult.move && playResult.move.moveKind
     // Debug output for win condition
-    console.log('[DEBUG] playerCheckersOff:', playerCheckersOff)
-    console.log('[DEBUG] lastMoveKind:', lastMoveKind)
-    console.log(
-      '[DEBUG] playerOff.checkers:',
-      JSON.stringify(playerOff.checkers)
-    )
+    // console.log('[DEBUG] playerCheckersOff:', playerCheckersOff)
+    // console.log('[DEBUG] lastMoveKind:', lastMoveKind)
+    // console.log('[DEBUG] playerOff.checkers:', JSON.stringify(playerOff.checkers))
     if (playerCheckersOff === 15 && lastMoveKind === 'bear-off') {
       // Player has borne off all checkers, they win
       const winner = Player.initialize(

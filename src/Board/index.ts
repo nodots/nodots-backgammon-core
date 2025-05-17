@@ -194,18 +194,18 @@ export class Board implements BackgammonBoard {
 
     // If player has checkers on the bar, they must move those first
     if (bar.checkers.length > 0) {
-      const reentryPoint =
-        playerDirection === 'clockwise' ? 25 - dieValue : dieValue
+      let reentryPoint: number
+      if (playerDirection === 'clockwise') {
+        reentryPoint = dieValue
+      } else {
+        reentryPoint = 25 - dieValue
+      }
       const possibleDestination = Board.getPoints(board).find(
         (p: BackgammonPoint) =>
-          // Point must be empty or have only one opponent checker
-          (p.checkers.length === 0 ||
-            (p.checkers.length === 1 &&
-              p.checkers[0].color !== player.color)) &&
-          // Point must match the reentry point based on direction
-          (playerDirection === 'clockwise'
-            ? p.position.clockwise === reentryPoint
-            : p.position.counterclockwise === reentryPoint)
+          // Point is not blocked by 2+ opponent checkers
+          (p.checkers.length < 2 || p.checkers[0].color === player.color) &&
+          // Point must match the reentry point for the player's direction (always use clockwise numbering)
+          p.position.clockwise === reentryPoint
       )
       if (possibleDestination) {
         possibleMoves.push({
@@ -251,6 +251,56 @@ export class Board implements BackgammonBoard {
         })
       }
     })
+
+    // Bear-off logic: allow bearing off if all checkers are in the home board
+    // Home board is points 1-6 for clockwise, 19-24 for counterclockwise (in their direction)
+    const homeBoardPoints = Board.getPoints(board).filter((p) => {
+      return playerDirection === 'clockwise'
+        ? p.position.clockwise >= 1 && p.position.clockwise <= 6
+        : p.position.counterclockwise >= 1 && p.position.counterclockwise <= 6
+    })
+    const allCheckersInHome = playerPoints.every((p) =>
+      homeBoardPoints.includes(p)
+    )
+    if (allCheckersInHome) {
+      // For each point in the home board, check if a checker can bear off
+      homeBoardPoints.forEach((point) => {
+        if (
+          point.checkers.length > 0 &&
+          point.checkers[0].color === player.color
+        ) {
+          const position = point.position[playerDirection]
+          // Can bear off if die matches the point position
+          if (position === dieValue) {
+            const off = board.off[playerDirection]
+            possibleMoves.push({
+              origin: point,
+              destination: off,
+              dieValue,
+              direction: playerDirection,
+            })
+          }
+          // Can bear off with a higher die if no checker on higher points
+          if (position < dieValue) {
+            const higherPoints = homeBoardPoints.filter(
+              (p2) => p2.position[playerDirection] > position
+            )
+            const hasCheckerOnHigher = higherPoints.some((p2) =>
+              p2.checkers.some((c) => c.color === player.color)
+            )
+            if (!hasCheckerOnHigher) {
+              const off = board.off[playerDirection]
+              possibleMoves.push({
+                origin: point,
+                destination: off,
+                dieValue,
+                direction: playerDirection,
+              })
+            }
+          }
+        }
+      })
+    }
 
     return possibleMoves
   }
@@ -565,7 +615,10 @@ export class Board implements BackgammonBoard {
     return Board.buildBoard(boardImport)
   }
 
-  public static getAsciiBoard = (board: BackgammonBoard): string => ascii(board)
+  public static getAsciiBoard = (
+    board: BackgammonBoard,
+    players?: any[]
+  ): string => ascii(board, players)
 
   public static displayAsciiBoard = (
     board: BackgammonBoard | undefined

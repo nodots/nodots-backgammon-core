@@ -5,10 +5,26 @@ import {
   BackgammonOff,
 } from 'nodots-backgammon-types'
 
-export const ascii = (board: BackgammonBoard): string => {
+export const ascii = (board: BackgammonBoard, players?: any[]): string => {
   const points = board.BackgammonPoints
   const bar = board.bar
   const off = board.off
+
+  // Enhanced legend for player symbols, color, and direction
+  let boardDisplay = ''
+  if (players && players.length === 2) {
+    const getSymbol = (color: string) => (color === 'black' ? 'X' : 'O')
+    boardDisplay += 'LEGEND:'
+    for (const player of players) {
+      boardDisplay += ` ${player.color.toUpperCase()} (${getSymbol(
+        player.color
+      )}) [${player.direction}] `
+    }
+    boardDisplay += '\n'
+  } else {
+    boardDisplay += 'LEGEND: BLACK (X), WHITE (O)\n'
+  }
+  boardDisplay += ' +-13-14-15-16-17-18--------19-20-21-22-23-24-+ \n'
 
   const displayPoint = (point: BackgammonPoint, row: number): string => {
     const checkers = point.checkers
@@ -36,8 +52,6 @@ export const ascii = (board: BackgammonBoard): string => {
     const symbol = color === 'black' ? 'X' : 'O'
     return `${symbol}`
   }
-
-  let boardDisplay = ' +-13-14-15-16-17-18--------19-20-21-22-23-24-+ \n'
 
   for (let row = 0; row < 5; row++) {
     boardDisplay += ' |'
