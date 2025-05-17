@@ -16,6 +16,7 @@ import {
   BackgammonPlayStateKind,
 } from 'nodots-backgammon-types'
 import { Board, generateId } from '..'
+import { BearOff } from '../Move/MoveKinds/BearOff'
 
 const allowedMoveKinds = ['point-to-point', 'reenter', 'bear-off'] as const
 type AllowedMoveKind = (typeof allowedMoveKinds)[number]
@@ -71,6 +72,22 @@ export class Play {
         move: noMove,
       }
     }
+
+    // --- PATCH: Handle bear-off moves using BearOff.move ---
+    if (move.moveKind === 'bear-off') {
+      // Delegate to BearOff.move for correct moveKind and stateKind
+      const bearOffResult = BearOff.move(board, move)
+      return {
+        play: {
+          ...play,
+          moves: [bearOffResult.move],
+          board: bearOffResult.board,
+        } as any,
+        board: bearOffResult.board,
+        move: bearOffResult.move,
+      }
+    }
+    // --- END PATCH ---
 
     const possibleMoves = Board.getPossibleMoves(
       board,

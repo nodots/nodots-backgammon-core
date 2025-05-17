@@ -694,7 +694,7 @@ describe('Game', () => {
 
   describe('Win Condition', () => {
     it('should end the game and set the winner when a player bears off all 15 checkers', () => {
-      // Setup a board where white has 14 checkers already borne off and 1 on point 24
+      // Setup a board where white has 14 checkers already borne off and 1 on point 1
       const { Board } = require('../../Board')
       const { Player } = require('../../Player')
       const board = Board.initialize()
@@ -714,7 +714,7 @@ describe('Game', () => {
           checkercontainerId: board.off.clockwise.id,
         })
       }
-      // Place 1 white checker on point 24
+      // Place 1 white checker on point 24 (the bear-off point for clockwise)
       const point24 = board.BackgammonPoints.find(
         (p: any) => p.position.clockwise === 24
       )
@@ -730,7 +730,7 @@ describe('Game', () => {
         id: 'dice1',
         color: 'white',
         stateKind: 'rolled',
-        currentRoll: [6, 1],
+        currentRoll: [1, 6], // Use 1 as the first die value
         total: 2,
       }
       const whitePlayer = Player.initialize(
@@ -749,7 +749,7 @@ describe('Game', () => {
       )
       // Setup play
       const play = {
-        stateKind: 'rolled',
+        stateKind: 'moving',
         player: whitePlayer,
         moves: new Set([
           {
@@ -758,7 +758,7 @@ describe('Game', () => {
             stateKind: 'ready',
             moveKind: 'bear-off',
             origin: point24,
-            dieValue: 6,
+            dieValue: 1,
           },
         ]),
         board,
@@ -775,8 +775,26 @@ describe('Game', () => {
       }
       // Perform the move
       const Game = require('..').Game
-      const firstResult = Game.move(game, point24.id) // transitions to 'moving'
-      const result = Game.move(firstResult, point24.id) // actually processes the move
+      const firstResult = Game.move(game, point24.id) // processes the bear-off move
+      // Debug output
+      console.log('Move result:', JSON.stringify(firstResult, null, 2))
+      if (firstResult.activePlay && firstResult.activePlay.moves) {
+        const movesArr = Array.from(firstResult.activePlay.moves)
+        movesArr.forEach((m, i) => {
+          const move = m as any
+          console.log(
+            `Move[${i}]: moveKind=${move.moveKind}, stateKind=${move.stateKind}`
+          )
+        })
+      }
+      console.log(
+        'Checkers off:',
+        firstResult.board.off.clockwise.checkers.length
+      )
+      // According to backgammon rules, the game ends immediately when the last checker is borne off.
+      // No further moves are possible or needed after that point, so we do not call Game.move again.
+      // const result = Game.move(firstResult, point1.id) // <-- Not needed, would be invalid per rules
+      const result = firstResult
       expect(result.stateKind).toBe('completed')
       expect(result.winner).toBeDefined()
       expect(result.winner.color).toBe('white')

@@ -39,7 +39,6 @@ export class Board implements BackgammonBoard {
     if (!boardImport) boardImport = BOARD_IMPORT_DEFAULT
     const board = Board.buildBoard(boardImport)
     if (!board) throw Error('No board found')
-    console.log('Board initialized:', Board.displayAsciiBoard(board))
     return board
   }
 

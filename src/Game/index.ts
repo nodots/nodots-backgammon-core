@@ -248,14 +248,27 @@ export class Game {
         ? playResult.move.player
         : game.activePlayer
 
+    // Always update activePlay from playResult (fallback to activePlay if undefined)
+    const updatedActivePlay = (playResult as any).play || activePlay
+
     // --- WIN CONDITION CHECK ---
-    // Check if the player has won (all checkers off)
+    // Check if the player has won (all checkers off) AFTER the move is processed
+    // IMPORTANT: This check must happen after the checker is moved off the board
     const direction = movedPlayer.direction
     const playerOff = board.off[direction]
     const playerCheckersOff = playerOff.checkers.filter(
       (c) => c.color === movedPlayer.color
     ).length
-    if (playerCheckersOff === 15) {
+    // If the move just made was a bear-off and this brings the total to 15, end the game
+    const lastMoveKind = playResult.move && playResult.move.moveKind
+    // Debug output for win condition
+    console.log('[DEBUG] playerCheckersOff:', playerCheckersOff)
+    console.log('[DEBUG] lastMoveKind:', lastMoveKind)
+    console.log(
+      '[DEBUG] playerOff.checkers:',
+      JSON.stringify(playerOff.checkers)
+    )
+    if (playerCheckersOff === 15 && lastMoveKind === 'bear-off') {
       // Player has borne off all checkers, they win
       const winner = Player.initialize(
         movedPlayer.color,
@@ -270,6 +283,7 @@ export class Game {
         winner,
         board,
         activePlayer: winner,
+        activePlay: updatedActivePlay,
       } as any // TODO: type as BackgammonGameCompleted
     }
     // --- END WIN CONDITION CHECK ---
@@ -279,6 +293,7 @@ export class Game {
       stateKind: 'moving',
       board,
       activePlayer: movedPlayer,
+      activePlay: updatedActivePlay,
     } as BackgammonGameMoving
   }
 
