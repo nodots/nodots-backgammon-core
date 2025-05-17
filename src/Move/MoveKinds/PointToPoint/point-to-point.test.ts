@@ -47,6 +47,7 @@ describe('PointToPoint', () => {
 
     it('should move a checker from one point to another', () => {
       const origin = board.BackgammonPoints[12] // Point 13
+      board.BackgammonPoints[11].checkers = [] // Ensure destination is empty
       const move: BackgammonMoveReady = {
         id: generateId(),
         stateKind: 'ready',

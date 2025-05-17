@@ -17,6 +17,7 @@ import {
   BackgammonPlayerWinner,
   BackgammonPlayMoving,
   BackgammonPoint,
+  BackgammonPlayerDoubled,
 } from 'nodots-backgammon-types'
 import { Board, Dice, generateId } from '..'
 import { Play } from '../Play'
@@ -109,6 +110,15 @@ export class Player {
           dice,
           pipCount: 0,
         } as BackgammonPlayerWinner
+      case 'doubled':
+        return {
+          id,
+          color,
+          direction,
+          stateKind: 'doubled',
+          dice: dice as BackgammonDiceRolled,
+          pipCount: 167,
+        } as BackgammonPlayerDoubled
     }
     throw new Error(`Unhandled player stateKind: ${stateKind}`)
   }

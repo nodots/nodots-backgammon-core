@@ -17,6 +17,12 @@ import {
 } from 'nodots-backgammon-types'
 import { Board, generateId } from '..'
 
+const allowedMoveKinds = ['point-to-point', 'reenter', 'bear-off'] as const
+type AllowedMoveKind = (typeof allowedMoveKinds)[number]
+function isAllowedMoveKind(kind: any): kind is AllowedMoveKind {
+  return allowedMoveKinds.includes(kind)
+}
+
 export interface PlayProps {
   id?: string
   cube?: BackgammonCube
@@ -103,7 +109,9 @@ export class Play {
       player: move.player,
       dieValue: move.dieValue,
       stateKind: 'ready',
-      moveKind: origin.kind === 'bar' ? 'reenter' : 'point-to-point',
+      moveKind: isAllowedMoveKind(move.moveKind)
+        ? move.moveKind
+        : 'point-to-point',
       origin,
     }
 
@@ -120,7 +128,9 @@ export class Play {
       player: move.player,
       dieValue: move.dieValue,
       stateKind: 'completed',
-      moveKind: origin.kind === 'bar' ? 'reenter' : 'point-to-point',
+      moveKind: isAllowedMoveKind(move.moveKind)
+        ? move.moveKind
+        : 'point-to-point',
       origin,
       destination: destinationMove.destination,
       isHit: false,

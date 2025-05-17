@@ -444,4 +444,348 @@ describe('Game', () => {
       ).toThrow('Players not found')
     })
   })
+
+  describe('Doubling Cube', () => {
+    const clockwiseColor = randomBackgammonColor()
+    const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
+    const players: BackgammonPlayers = [
+      Player.initialize(clockwiseColor, 'clockwise'),
+      Player.initialize(counterclockwiseColor, 'counterclockwise'),
+    ]
+
+    it('should allow a player to offer a double if allowed', () => {
+      const gameStart = Game.initialize(
+        players
+      ) as BackgammonGameRollingForStart
+      const gameRolling = Game.rollForStart(gameStart)
+      const [activePlayer, inactivePlayer] = Game.getPlayersForColor(
+        gameRolling.players,
+        gameRolling.activeColor
+      )
+      // Simulate rolling
+      const rolledGame = {
+        ...gameRolling,
+        stateKind: 'rolling' as const,
+        activePlayer: activePlayer as BackgammonPlayerActive,
+        inactivePlayer: inactivePlayer as BackgammonPlayerInactive,
+        activeColor: activePlayer.color,
+      } as any
+      expect(
+        Game.canOfferDouble(rolledGame, activePlayer as BackgammonPlayerActive)
+      ).toBe(true)
+      const doubledGame = Game.offerDouble(
+        rolledGame,
+        activePlayer as BackgammonPlayerActive
+      )
+      expect(doubledGame.stateKind).toBe('doubling')
+      expect(doubledGame.cube.stateKind).toBe('offered')
+      expect(doubledGame.cube.offeredBy).toBeDefined()
+      expect(doubledGame.cube.owner).toBeDefined()
+    })
+
+    it('should not allow a player to offer a double if they own the cube', () => {
+      const gameStart = Game.initialize(
+        players
+      ) as BackgammonGameRollingForStart
+      const gameRolling = Game.rollForStart(gameStart)
+      const [activePlayer, inactivePlayer] = Game.getPlayersForColor(
+        gameRolling.players,
+        gameRolling.activeColor
+      )
+      // Simulate rolling and offering
+      const rolledGame = {
+        ...gameRolling,
+        stateKind: 'rolling' as const,
+        activePlayer: activePlayer as BackgammonPlayerActive,
+        inactivePlayer: inactivePlayer as BackgammonPlayerInactive,
+        activeColor: activePlayer.color,
+        cube: {
+          ...gameRolling.cube,
+          stateKind: 'doubled' as const,
+          owner: activePlayer,
+          value: 2,
+        },
+      } as any
+      expect(
+        Game.canOfferDouble(rolledGame, activePlayer as BackgammonPlayerActive)
+      ).toBe(false)
+      expect(() =>
+        Game.offerDouble(rolledGame, activePlayer as BackgammonPlayerActive)
+      ).toThrow()
+    })
+
+    it('should allow the opponent to accept a double and transfer ownership', () => {
+      const gameStart = Game.initialize(
+        players
+      ) as BackgammonGameRollingForStart
+      const gameRolling = Game.rollForStart(gameStart)
+      const [activePlayer, origInactivePlayer] = Game.getPlayersForColor(
+        gameRolling.players,
+        gameRolling.activeColor
+      )
+      // Make the opponent an active player for doubling
+      const inactivePlayer = Player.initialize(
+        origInactivePlayer.color,
+        origInactivePlayer.direction,
+        undefined,
+        origInactivePlayer.id,
+        'rolling'
+      ) as BackgammonPlayerActive
+      // Simulate rolling and offering
+      const rolledGame = {
+        ...gameRolling,
+        stateKind: 'rolling' as const,
+        activePlayer: activePlayer as BackgammonPlayerActive,
+        inactivePlayer,
+        activeColor: activePlayer.color,
+      } as any
+      const doubledGame = Game.offerDouble(
+        rolledGame,
+        activePlayer as BackgammonPlayerActive
+      )
+      expect(Game.canAcceptDouble(doubledGame, inactivePlayer)).toBe(true)
+      const acceptedGame = Game.acceptDouble(doubledGame, inactivePlayer)
+      expect(acceptedGame.stateKind).toBe('doubled')
+      expect(acceptedGame.cube.owner!.id).toBe(inactivePlayer.id)
+      expect(acceptedGame.cube.value).toBe(4) // 2 doubled to 4
+    })
+
+    it('should end the game and declare the offering player as winner if double is refused', () => {
+      const gameStart = Game.initialize(
+        players
+      ) as BackgammonGameRollingForStart
+      const gameRolling = Game.rollForStart(gameStart)
+      const [activePlayer, origInactivePlayer] = Game.getPlayersForColor(
+        gameRolling.players,
+        gameRolling.activeColor
+      )
+      // Make the opponent an active player for doubling
+      const inactivePlayer = Player.initialize(
+        origInactivePlayer.color,
+        origInactivePlayer.direction,
+        undefined,
+        origInactivePlayer.id,
+        'rolling'
+      ) as BackgammonPlayerActive
+      // Simulate rolling and offering
+      const rolledGame = {
+        ...gameRolling,
+        stateKind: 'rolling' as const,
+        activePlayer: activePlayer as BackgammonPlayerActive,
+        inactivePlayer,
+        activeColor: activePlayer.color,
+      } as any
+      const doubledGame = Game.offerDouble(
+        rolledGame,
+        activePlayer as BackgammonPlayerActive
+      )
+      expect(Game.canRefuseDouble(doubledGame, inactivePlayer)).toBe(true)
+      const completedGame = Game.refuseDouble(doubledGame, inactivePlayer)
+      expect(completedGame.stateKind).toBe('completed')
+      expect(completedGame.winner!.color).toBe(activePlayer.color)
+      expect(completedGame.winner!.stateKind).toBe('winner')
+    })
+
+    it('should not allow a player to accept their own double', () => {
+      const gameStart = Game.initialize(
+        players
+      ) as BackgammonGameRollingForStart
+      const gameRolling = Game.rollForStart(gameStart)
+      const [activePlayer, inactivePlayer] = Game.getPlayersForColor(
+        gameRolling.players,
+        gameRolling.activeColor
+      )
+      // Simulate rolling and offering
+      const rolledGame = {
+        ...gameRolling,
+        stateKind: 'rolling' as const,
+        activePlayer: activePlayer as BackgammonPlayerActive,
+        inactivePlayer: inactivePlayer as BackgammonPlayerInactive,
+        activeColor: activePlayer.color,
+      } as any
+      const doubledGame = Game.offerDouble(
+        rolledGame,
+        activePlayer as BackgammonPlayerActive
+      )
+      expect(
+        Game.canAcceptDouble(
+          doubledGame,
+          activePlayer as BackgammonPlayerActive
+        )
+      ).toBe(false)
+      expect(() =>
+        Game.acceptDouble(doubledGame, activePlayer as BackgammonPlayerActive)
+      ).toThrow()
+    })
+
+    it('should not allow a player to refuse their own double', () => {
+      const gameStart = Game.initialize(
+        players
+      ) as BackgammonGameRollingForStart
+      const gameRolling = Game.rollForStart(gameStart)
+      const [activePlayer, inactivePlayer] = Game.getPlayersForColor(
+        gameRolling.players,
+        gameRolling.activeColor
+      )
+      // Simulate rolling and offering
+      const rolledGame = {
+        ...gameRolling,
+        stateKind: 'rolling' as const,
+        activePlayer: activePlayer as BackgammonPlayerActive,
+        inactivePlayer: inactivePlayer as BackgammonPlayerInactive,
+        activeColor: activePlayer.color,
+      } as any
+      const doubledGame = Game.offerDouble(
+        rolledGame,
+        activePlayer as BackgammonPlayerActive
+      )
+      expect(
+        Game.canRefuseDouble(
+          doubledGame,
+          activePlayer as BackgammonPlayerActive
+        )
+      ).toBe(false)
+      expect(() =>
+        Game.refuseDouble(doubledGame, activePlayer as BackgammonPlayerActive)
+      ).toThrow()
+    })
+
+    it('should end the game if the cube is maxxed (64) when accepted', () => {
+      const gameStart = Game.initialize(
+        players
+      ) as BackgammonGameRollingForStart
+      const gameRolling = Game.rollForStart(gameStart)
+      const [activePlayer, origInactivePlayer] = Game.getPlayersForColor(
+        gameRolling.players,
+        gameRolling.activeColor
+      )
+      // Make the opponent an active player for doubling
+      const inactivePlayer = Player.initialize(
+        origInactivePlayer.color,
+        origInactivePlayer.direction,
+        undefined,
+        origInactivePlayer.id,
+        'rolling'
+      ) as BackgammonPlayerActive
+      // Simulate rolling and offering at 32
+      const rolledGame = {
+        ...gameRolling,
+        stateKind: 'rolling' as const,
+        activePlayer: activePlayer as BackgammonPlayerActive,
+        inactivePlayer,
+        activeColor: activePlayer.color,
+        cube: {
+          ...gameRolling.cube,
+          stateKind: 'offered' as const,
+          owner: activePlayer,
+          value: 32,
+          offeredBy: activePlayer,
+        },
+      } as any
+      // Accept double to reach 64
+      const acceptedGame = Game.acceptDouble(rolledGame, inactivePlayer)
+      expect(acceptedGame.stateKind).toBe('completed')
+      expect(acceptedGame.winner!.color).toBe(inactivePlayer.color)
+      expect(acceptedGame.winner!.stateKind).toBe('winner')
+      expect(acceptedGame.cube.value).toBe(64)
+      expect(acceptedGame.cube.stateKind).toBe('maxxed')
+    })
+  })
+
+  describe('Win Condition', () => {
+    it('should end the game and set the winner when a player bears off all 15 checkers', () => {
+      // Setup a board where white has 14 checkers already borne off and 1 on point 24
+      const { Board } = require('../../Board')
+      const { Player } = require('../../Player')
+      const board = Board.initialize()
+      // Clear all checkers
+      board.BackgammonPoints.forEach((point: any) => {
+        point.checkers = []
+      })
+      board.bar.clockwise.checkers = []
+      board.bar.counterclockwise.checkers = []
+      board.off.clockwise.checkers = []
+      board.off.counterclockwise.checkers = []
+      // Place 14 white checkers in off position
+      for (let i = 0; i < 14; i++) {
+        board.off.clockwise.checkers.push({
+          id: `w${i}`,
+          color: 'white',
+          checkercontainerId: board.off.clockwise.id,
+        })
+      }
+      // Place 1 white checker on point 24
+      const point24 = board.BackgammonPoints.find(
+        (p: any) => p.position.clockwise === 24
+      )
+      point24.checkers = [
+        {
+          id: 'w15',
+          color: 'white',
+          checkercontainerId: point24.id,
+        },
+      ]
+      // Setup players
+      const dice = {
+        id: 'dice1',
+        color: 'white',
+        stateKind: 'rolled',
+        currentRoll: [6, 1],
+        total: 2,
+      }
+      const whitePlayer = Player.initialize(
+        'white',
+        'clockwise',
+        dice,
+        undefined,
+        'rolled'
+      )
+      const blackPlayer = Player.initialize(
+        'black',
+        'counterclockwise',
+        undefined,
+        undefined,
+        'inactive'
+      )
+      // Setup play
+      const play = {
+        stateKind: 'rolled',
+        player: whitePlayer,
+        moves: new Set([
+          {
+            id: 'move1',
+            player: whitePlayer,
+            stateKind: 'ready',
+            moveKind: 'bear-off',
+            origin: point24,
+            dieValue: 6,
+          },
+        ]),
+        board,
+      }
+      // Setup game
+      const game = {
+        stateKind: 'rolled',
+        players: [whitePlayer, blackPlayer],
+        activePlayer: whitePlayer,
+        inactivePlayer: blackPlayer,
+        activeColor: 'white',
+        activePlay: play,
+        board,
+      }
+      // Perform the move
+      const Game = require('..').Game
+      const firstResult = Game.move(game, point24.id) // transitions to 'moving'
+      const result = Game.move(firstResult, point24.id) // actually processes the move
+      expect(result.stateKind).toBe('completed')
+      expect(result.winner).toBeDefined()
+      expect(result.winner.color).toBe('white')
+      expect(result.winner.stateKind).toBe('winner')
+      expect(
+        result.board.off.clockwise.checkers.filter(
+          (c: any) => c.color === 'white'
+        ).length
+      ).toBe(15)
+    })
+  })
 })

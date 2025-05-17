@@ -90,19 +90,22 @@ export class Board implements BackgammonBoard {
           color: hitCheckerColor,
           checkercontainerId: opponentBarClone.id,
         })
+        // Place the moving checker with its original color
+        destinationClone.checkers = [
+          {
+            id: checker.id,
+            color: movingCheckerColor,
+            checkercontainerId: destinationClone.id,
+          },
+        ]
       } else {
-        // Clear the destination if it's not a hit
-        destinationClone.checkers = []
-      }
-
-      // Place the moving checker with its original color
-      destinationClone.checkers = [
-        {
+        // Append the moving checker to the destination if not a hit
+        destinationClone.checkers.push({
           id: checker.id,
           color: movingCheckerColor,
           checkercontainerId: destinationClone.id,
-        },
-      ]
+        })
+      }
     } else if (destination.kind === 'off') {
       // For off moves, append the checker to the existing checkers array
       destinationClone.checkers.push({

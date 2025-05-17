@@ -183,6 +183,36 @@ describe('Reenter', () => {
         'Invalid reenter move'
       )
     })
+
+    it('should throw error if no valid destination exists for reentry', () => {
+      const { board, player } = setupTest('white', 'clockwise', [1, 2])
+      // Remove all checkers from the bar and set up the bar for reentry
+      const bar = board.bar[player.direction]
+      bar.checkers = [
+        {
+          id: generateId(),
+          color: player.color,
+          checkercontainerId: bar.id,
+        },
+      ]
+      // Block all possible reentry points (points 24 for dieValue 1)
+      const destPoint = board.BackgammonPoints[23] // Point 24
+      destPoint.checkers = [
+        { id: generateId(), color: 'black', checkercontainerId: destPoint.id },
+        { id: generateId(), color: 'black', checkercontainerId: destPoint.id },
+      ]
+      const move: BackgammonMoveReady = {
+        id: generateId(),
+        player,
+        origin: bar,
+        stateKind: 'ready',
+        dieValue: 1,
+        moveKind: 'reenter',
+      }
+      expect(() => Reenter.getDestination(board, move)).toThrow(
+        'Invalid reenter move: no valid destination found'
+      )
+    })
   })
 
   describe('move', () => {
@@ -361,6 +391,49 @@ describe('Reenter', () => {
         expect(result.move.destination.checkers.length).toBe(1) // One checker should be on destination point
         expect(result.move.destination.checkers[0].color).toBe(player.color)
       }
+    })
+
+    // This test is artificial and only exists to cover the defensive check in Reenter.move
+    // In normal gameplay, the destination point should always exist after a move.
+    it('should throw error if destination point is missing after move (artificial test for coverage)', () => {
+      const { board, player } = setupTest('white', 'clockwise', [1, 2])
+      const bar = board.bar[player.direction]
+      bar.checkers = [
+        {
+          id: generateId(),
+          color: player.color,
+          checkercontainerId: bar.id,
+        },
+      ]
+      const move: BackgammonMoveReady = {
+        id: generateId(),
+        player,
+        origin: bar,
+        stateKind: 'ready',
+        dieValue: 1,
+        moveKind: 'reenter',
+      }
+      // Save original moveChecker
+      const originalMoveChecker = Board.moveChecker
+      // Mock moveChecker to replace the destination point with a dummy id
+      Board.moveChecker = (b, o, d, dir) => {
+        const dummyPoint = {
+          ...(d as any),
+          id: 'dummy-id',
+          kind: 'point',
+          position: { ...(d as any).position },
+          checkers: [],
+        }
+        const updatedPoints = b.BackgammonPoints.map((p) =>
+          p.id === d.id ? dummyPoint : p
+        )
+        return { ...b, BackgammonPoints: updatedPoints } as typeof b
+      }
+      expect(() => Reenter.move(board, move)).toThrow(
+        'Could not find destination point after move'
+      )
+      // Restore original moveChecker
+      Board.moveChecker = originalMoveChecker
     })
   })
 
