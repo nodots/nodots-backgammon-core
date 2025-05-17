@@ -23,8 +23,22 @@ function simulateGame(verbose = false): {
   const clockwiseColor = randomBackgammonColor()
   const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
   const players: BackgammonPlayers = [
-    Player.initialize(clockwiseColor, 'clockwise'),
-    Player.initialize(counterclockwiseColor, 'counterclockwise'),
+    Player.initialize(
+      clockwiseColor,
+      'clockwise',
+      undefined,
+      undefined,
+      'inactive',
+      true
+    ),
+    Player.initialize(
+      counterclockwiseColor,
+      'counterclockwise',
+      undefined,
+      undefined,
+      'inactive',
+      true
+    ),
   ]
 
   // Start game

@@ -133,9 +133,17 @@ export class Game {
             p.direction,
             undefined,
             p.id,
-            'rolled-for-start'
+            'rolled-for-start',
+            true
           )
-        : Player.initialize(p.color, p.direction, undefined, p.id, 'inactive')
+        : Player.initialize(
+            p.color,
+            p.direction,
+            undefined,
+            p.id,
+            'inactive',
+            true
+          )
     ) as BackgammonPlayers
     const activePlayer = rollingPlayers.find(
       (p) => p.color === activeColor
@@ -166,7 +174,8 @@ export class Game {
             p.direction,
             undefined,
             p.id,
-            'rolling'
+            'rolling',
+            true
           )
         }
         return Player.initialize(
@@ -174,7 +183,8 @@ export class Game {
           p.direction,
           undefined,
           p.id,
-          'inactive'
+          'inactive',
+          true
         )
       }) as BackgammonPlayers
       const newActivePlayer = rollingPlayers.find(
@@ -272,7 +282,8 @@ export class Game {
         movedPlayer.direction,
         movedPlayer.dice,
         movedPlayer.id,
-        'winner'
+        'winner',
+        true
       )
       return {
         ...game,
@@ -385,7 +396,8 @@ export class Game {
       player.direction,
       player.dice,
       player.id,
-      'doubled'
+      'doubled',
+      true
     )
     const inactivePlayer = opponent as BackgammonPlayerInactive
     // Create a BackgammonPlayDoubled (for now, reuse activePlay)
@@ -439,14 +451,16 @@ export class Game {
       player.direction,
       player.dice,
       player.id,
-      'doubled'
+      'doubled',
+      true
     )
     const inactivePlayer = Player.initialize(
       offeringPlayer.color,
       offeringPlayer.direction,
       offeringPlayer.dice,
       offeringPlayer.id,
-      'inactive'
+      'inactive',
+      true
     )
     // Create a BackgammonPlayDoubled (for now, reuse activePlay)
     const activePlay = game.activePlay as any // TODO: ensure correct type
@@ -457,7 +471,8 @@ export class Game {
         player.direction,
         player.dice,
         player.id,
-        'winner'
+        'winner',
+        true
       )
       return {
         ...game,
@@ -511,7 +526,8 @@ export class Game {
       offeringPlayer.direction,
       offeringPlayer.dice,
       offeringPlayer.id,
-      'winner'
+      'winner',
+      true
     )
     return {
       ...game,

@@ -30,6 +30,7 @@ describe('Move', () => {
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
+        isRobot: true,
       }
 
       const board = Board.initialize()
@@ -68,6 +69,7 @@ describe('Move', () => {
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
+        isRobot: true,
       }
 
       const point: BackgammonPoint = {
@@ -97,6 +99,7 @@ describe('Move', () => {
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
+        isRobot: true,
       }
 
       const point: BackgammonPoint = {
@@ -132,6 +135,7 @@ describe('Move', () => {
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
+        isRobot: true,
       }
 
       const point: BackgammonPoint = {
@@ -172,6 +176,7 @@ describe('Move', () => {
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
+        isRobot: true,
       }
 
       const point: BackgammonPoint = {

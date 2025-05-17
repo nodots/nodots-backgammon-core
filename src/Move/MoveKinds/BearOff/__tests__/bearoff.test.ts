@@ -67,6 +67,7 @@ describe('BearOff', () => {
       dice: rolledDice,
       direction,
       pipCount: 15, // All checkers in home board
+      isRobot: true,
     }
     return { board, player, currentRoll }
   }

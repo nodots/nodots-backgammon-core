@@ -33,7 +33,8 @@ export class Player {
     direction: BackgammonMoveDirection,
     dice: BackgammonDice = Dice.initialize(color),
     id: string = generateId(),
-    stateKind: BackgammonPlayerStateKind = 'inactive'
+    stateKind: BackgammonPlayerStateKind = 'inactive',
+    isRobot: boolean = true
   ): BackgammonPlayer {
     switch (stateKind) {
       case 'inactive':
@@ -44,6 +45,7 @@ export class Player {
           stateKind,
           dice: Dice.initialize(color),
           pipCount: 167,
+          isRobot,
         } as BackgammonPlayer
       case 'rolling-for-start':
         return {
@@ -53,6 +55,7 @@ export class Player {
           stateKind,
           dice: Dice.initialize(color),
           pipCount: 167,
+          isRobot,
         } as BackgammonPlayerRollingForStart
       case 'rolled-for-start': {
         return {
@@ -62,6 +65,7 @@ export class Player {
           stateKind,
           dice: Dice.initialize(color),
           pipCount: 167,
+          isRobot,
         } as BackgammonPlayerRolledForStart
       }
       case 'rolling':
@@ -72,6 +76,7 @@ export class Player {
           stateKind,
           dice,
           pipCount: 167,
+          isRobot,
         } as BackgammonPlayerRolling
       case 'rolled':
         const rolledDice = dice as BackgammonDiceRolled
@@ -82,6 +87,7 @@ export class Player {
           stateKind,
           dice: rolledDice,
           pipCount: 167,
+          isRobot,
         } as BackgammonPlayerRolled
       case 'moving':
         return {
@@ -91,6 +97,7 @@ export class Player {
           stateKind,
           dice,
           pipCount: 167,
+          isRobot,
         } as BackgammonPlayerMoving
       case 'moved':
         return {
@@ -100,6 +107,7 @@ export class Player {
           stateKind,
           dice,
           pipCount: 167,
+          isRobot,
         } as BackgammonPlayerMoved
       case 'winner':
         return {
@@ -109,6 +117,7 @@ export class Player {
           stateKind: 'winner',
           dice,
           pipCount: 0,
+          isRobot,
         } as BackgammonPlayerWinner
       case 'doubled':
         return {
@@ -118,6 +127,7 @@ export class Player {
           stateKind: 'doubled',
           dice: dice as BackgammonDiceRolled,
           pipCount: 167,
+          isRobot,
         } as BackgammonPlayerDoubled
     }
     throw new Error(`Unhandled player stateKind: ${stateKind}`)

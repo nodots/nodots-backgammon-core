@@ -21,8 +21,22 @@ describe('Game', () => {
       const counterclockwiseColor =
         clockwiseColor === 'black' ? 'white' : 'black'
       const players: BackgammonPlayers = [
-        Player.initialize(clockwiseColor, 'clockwise'),
-        Player.initialize(counterclockwiseColor, 'counterclockwise'),
+        Player.initialize(
+          clockwiseColor,
+          'clockwise',
+          undefined,
+          undefined,
+          'inactive',
+          true
+        ),
+        Player.initialize(
+          counterclockwiseColor,
+          'counterclockwise',
+          undefined,
+          undefined,
+          'inactive',
+          true
+        ),
       ]
 
       const game = Game.initialize(players) as BackgammonGameRollingForStart
@@ -39,8 +53,22 @@ describe('Game', () => {
 
     it('should throw error when initializing in completed state', () => {
       const players: BackgammonPlayers = [
-        Player.initialize('black', 'clockwise'),
-        Player.initialize('white', 'counterclockwise'),
+        Player.initialize(
+          'black',
+          'clockwise',
+          undefined,
+          undefined,
+          'inactive',
+          true
+        ),
+        Player.initialize(
+          'white',
+          'counterclockwise',
+          undefined,
+          undefined,
+          'inactive',
+          true
+        ),
       ]
       expect(() => Game.initialize(players, undefined, 'completed')).toThrow(
         'Game cannot be initialized in the completed state'
@@ -49,8 +77,22 @@ describe('Game', () => {
 
     it('should throw error when initializing in rolled-for-start state without required properties', () => {
       const players: BackgammonPlayers = [
-        Player.initialize('black', 'clockwise'),
-        Player.initialize('white', 'counterclockwise'),
+        Player.initialize(
+          'black',
+          'clockwise',
+          undefined,
+          undefined,
+          'inactive',
+          true
+        ),
+        Player.initialize(
+          'white',
+          'counterclockwise',
+          undefined,
+          undefined,
+          'inactive',
+          true
+        ),
       ]
       expect(() =>
         Game.initialize(players, undefined, 'rolled-for-start')
@@ -59,8 +101,22 @@ describe('Game', () => {
 
     it('should throw error when initializing in rolling state without required properties', () => {
       const players: BackgammonPlayers = [
-        Player.initialize('black', 'clockwise'),
-        Player.initialize('white', 'counterclockwise'),
+        Player.initialize(
+          'black',
+          'clockwise',
+          undefined,
+          undefined,
+          'inactive',
+          true
+        ),
+        Player.initialize(
+          'white',
+          'counterclockwise',
+          undefined,
+          undefined,
+          'inactive',
+          true
+        ),
       ]
       expect(() => Game.initialize(players, undefined, 'rolling')).toThrow(
         'Active color must be provided'
@@ -69,8 +125,22 @@ describe('Game', () => {
 
     it('should throw error when initializing in moving state without required properties', () => {
       const players: BackgammonPlayers = [
-        Player.initialize('black', 'clockwise'),
-        Player.initialize('white', 'counterclockwise'),
+        Player.initialize(
+          'black',
+          'clockwise',
+          undefined,
+          undefined,
+          'inactive',
+          true
+        ),
+        Player.initialize(
+          'white',
+          'counterclockwise',
+          undefined,
+          undefined,
+          'inactive',
+          true
+        ),
       ]
       expect(() => Game.initialize(players, undefined, 'moving')).toThrow(
         'Active color must be provided'
@@ -79,8 +149,22 @@ describe('Game', () => {
 
     it('should throw error when initializing in moving state without active play', () => {
       const players: BackgammonPlayers = [
-        Player.initialize('black', 'clockwise'),
-        Player.initialize('white', 'counterclockwise'),
+        Player.initialize(
+          'black',
+          'clockwise',
+          undefined,
+          undefined,
+          'inactive',
+          true
+        ),
+        Player.initialize(
+          'white',
+          'counterclockwise',
+          undefined,
+          undefined,
+          'inactive',
+          true
+        ),
       ]
       const activePlayer = {
         ...players[0],
@@ -111,8 +195,22 @@ describe('Game', () => {
     const clockwiseColor = randomBackgammonColor()
     const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
     const players: BackgammonPlayers = [
-      Player.initialize(clockwiseColor, 'clockwise'),
-      Player.initialize(counterclockwiseColor, 'counterclockwise'),
+      Player.initialize(
+        clockwiseColor,
+        'clockwise',
+        undefined,
+        undefined,
+        'inactive',
+        true
+      ),
+      Player.initialize(
+        counterclockwiseColor,
+        'counterclockwise',
+        undefined,
+        undefined,
+        'inactive',
+        true
+      ),
     ]
 
     it('should transition from rolling-for-start to rolled-for-start', () => {
@@ -146,7 +244,8 @@ describe('Game', () => {
         foundPlayer.direction,
         undefined,
         foundPlayer.id,
-        'rolled-for-start'
+        'rolled-for-start',
+        true
       ) as BackgammonPlayerRolledForStart
       const inactivePlayerObj = rollingPlayers.find(
         (p) => p.color !== gameRolling.activeColor
@@ -156,7 +255,8 @@ describe('Game', () => {
         inactivePlayerObj.direction,
         undefined,
         inactivePlayerObj.id,
-        'inactive'
+        'inactive',
+        true
       ) as BackgammonPlayerInactive
       const rolledForStartGame: BackgammonGameRolledForStart = {
         ...gameRolling,
@@ -195,7 +295,8 @@ describe('Game', () => {
         foundPlayer.direction,
         undefined,
         foundPlayer.id,
-        'rolled-for-start'
+        'rolled-for-start',
+        true
       ) as BackgammonPlayerRolledForStart
       const inactivePlayerObj = rollingPlayers.find(
         (p) => p.color !== gameRolling.activeColor
@@ -205,7 +306,8 @@ describe('Game', () => {
         inactivePlayerObj.direction,
         undefined,
         inactivePlayerObj.id,
-        'inactive'
+        'inactive',
+        true
       ) as BackgammonPlayerInactive
       const rolledForStartGame: BackgammonGameRolledForStart = {
         ...gameRolling,
@@ -268,14 +370,16 @@ describe('Game', () => {
             gameRolling.activePlayer.direction,
             undefined,
             gameRolling.activePlayer.id,
-            'rolled-for-start'
+            'rolled-for-start',
+            true
           ) as BackgammonPlayerRolledForStart,
           Player.initialize(
             gameRolling.inactivePlayer.color,
             gameRolling.inactivePlayer.direction,
             undefined,
             gameRolling.inactivePlayer.id,
-            'inactive'
+            'inactive',
+            true
           ) as BackgammonPlayerInactive,
         ] as BackgammonPlayers,
       } as BackgammonGameRolledForStart
@@ -288,8 +392,22 @@ describe('Game', () => {
     const clockwiseColor = randomBackgammonColor()
     const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
     const players: BackgammonPlayers = [
-      Player.initialize(clockwiseColor, 'clockwise'),
-      Player.initialize(counterclockwiseColor, 'counterclockwise'),
+      Player.initialize(
+        clockwiseColor,
+        'clockwise',
+        undefined,
+        undefined,
+        'inactive',
+        true
+      ),
+      Player.initialize(
+        counterclockwiseColor,
+        'counterclockwise',
+        undefined,
+        undefined,
+        'inactive',
+        true
+      ),
     ]
 
     it('should get players for color correctly', () => {
@@ -327,7 +445,8 @@ describe('Game', () => {
         foundPlayer.direction,
         undefined,
         foundPlayer.id,
-        'rolled-for-start'
+        'rolled-for-start',
+        true
       ) as BackgammonPlayerRolledForStart
       const inactivePlayerObj = rollingPlayers.find(
         (p) => p.color !== gameRolling.activeColor
@@ -337,7 +456,8 @@ describe('Game', () => {
         inactivePlayerObj.direction,
         undefined,
         inactivePlayerObj.id,
-        'inactive'
+        'inactive',
+        true
       ) as BackgammonPlayerInactive
       const rolledForStartGame: BackgammonGameRolledForStart = {
         ...gameRolling,
@@ -372,7 +492,8 @@ describe('Game', () => {
         foundPlayer.direction,
         undefined,
         foundPlayer.id,
-        'rolled-for-start'
+        'rolled-for-start',
+        true
       ) as BackgammonPlayerRolledForStart
       const inactivePlayerObj = rollingPlayers.find(
         (p) => p.color !== gameRolling.activeColor
@@ -382,7 +503,8 @@ describe('Game', () => {
         inactivePlayerObj.direction,
         undefined,
         inactivePlayerObj.id,
-        'inactive'
+        'inactive',
+        true
       ) as BackgammonPlayerInactive
       const rolledForStartGame: BackgammonGameRolledForStart = {
         ...gameRolling,
@@ -449,8 +571,22 @@ describe('Game', () => {
     const clockwiseColor = randomBackgammonColor()
     const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
     const players: BackgammonPlayers = [
-      Player.initialize(clockwiseColor, 'clockwise'),
-      Player.initialize(counterclockwiseColor, 'counterclockwise'),
+      Player.initialize(
+        clockwiseColor,
+        'clockwise',
+        undefined,
+        undefined,
+        'inactive',
+        true
+      ),
+      Player.initialize(
+        counterclockwiseColor,
+        'counterclockwise',
+        undefined,
+        undefined,
+        'inactive',
+        true
+      ),
     ]
 
     it('should allow a player to offer a double if allowed', () => {
@@ -529,7 +665,8 @@ describe('Game', () => {
         origInactivePlayer.direction,
         undefined,
         origInactivePlayer.id,
-        'rolling'
+        'rolling',
+        true
       ) as BackgammonPlayerActive
       // Simulate rolling and offering
       const rolledGame = {
@@ -565,7 +702,8 @@ describe('Game', () => {
         origInactivePlayer.direction,
         undefined,
         origInactivePlayer.id,
-        'rolling'
+        'rolling',
+        true
       ) as BackgammonPlayerActive
       // Simulate rolling and offering
       const rolledGame = {
@@ -665,7 +803,8 @@ describe('Game', () => {
         origInactivePlayer.direction,
         undefined,
         origInactivePlayer.id,
-        'rolling'
+        'rolling',
+        true
       ) as BackgammonPlayerActive
       // Simulate rolling and offering at 32
       const rolledGame = {
@@ -738,14 +877,16 @@ describe('Game', () => {
         'clockwise',
         dice,
         undefined,
-        'rolled'
+        'rolled',
+        true
       )
       const blackPlayer = Player.initialize(
         'black',
         'counterclockwise',
         undefined,
         undefined,
-        'inactive'
+        'inactive',
+        true
       )
       // Setup play
       const play = {

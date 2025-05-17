@@ -20,7 +20,14 @@ describe('Player', () => {
   const direction: BackgammonMoveDirection = 'clockwise'
 
   beforeEach(() => {
-    player = Player.initialize(color, direction)
+    player = Player.initialize(
+      color,
+      direction,
+      undefined,
+      undefined,
+      'inactive',
+      true
+    )
     board = Board.initialize()
   })
 
@@ -40,8 +47,9 @@ describe('Player', () => {
         direction,
         undefined,
         undefined,
-        'rolling'
-      )
+        'rolling',
+        true
+      ) as BackgammonPlayerRolling
       expect(rollingPlayer.stateKind).toBe('rolling')
     })
 
@@ -51,7 +59,8 @@ describe('Player', () => {
         direction,
         undefined,
         undefined,
-        'winner'
+        'winner',
+        true
       )
       expect(winnerPlayer.stateKind).toBe('winner')
       expect(winnerPlayer.pipCount).toBe(0)
@@ -63,7 +72,8 @@ describe('Player', () => {
         direction,
         undefined,
         undefined,
-        'moved'
+        'moved',
+        true
       )
       expect(movedPlayer.stateKind).toBe('moved')
       expect(movedPlayer.pipCount).toBe(167)
@@ -77,7 +87,8 @@ describe('Player', () => {
         direction,
         undefined,
         undefined,
-        'rolling'
+        'rolling',
+        true
       ) as BackgammonPlayerRolling
       const rolledPlayer = Player.roll(rollingPlayer)
 
@@ -108,7 +119,11 @@ describe('Player', () => {
     it('should return correct home board points for counterclockwise direction', () => {
       const counterClockwisePlayer = Player.initialize(
         'black',
-        'counterclockwise'
+        'counterclockwise',
+        undefined,
+        undefined,
+        'inactive',
+        true
       )
       const homeBoard = Player.getHomeBoard(board, counterClockwisePlayer)
       expect(homeBoard.length).toBe(6)
@@ -134,7 +149,11 @@ describe('Player', () => {
     it('should return correct opponent board points for counterclockwise direction', () => {
       const counterClockwisePlayer = Player.initialize(
         'black',
-        'counterclockwise'
+        'counterclockwise',
+        undefined,
+        undefined,
+        'inactive',
+        true
       )
       const opponentBoard = Player.getOpponentBoard(
         board,

@@ -33,6 +33,7 @@ describe('BearOff', () => {
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
+        isRobot: true,
       }
     })
 
