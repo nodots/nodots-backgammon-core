@@ -1,17 +1,15 @@
-import { Player } from '..'
-import { Board, Dice } from '../..'
+import { beforeEach, describe, expect, it } from '@jest/globals'
 import {
   BackgammonBoard,
   BackgammonColor,
-  BackgammonDice,
   BackgammonDiceRolled,
   BackgammonMoveDirection,
   BackgammonPlayer,
-  BackgammonPlayerRolled,
   BackgammonPlayerRolling,
   BackgammonPoint,
 } from 'nodots-backgammon-types'
-import { describe, it, expect, beforeEach } from '@jest/globals'
+import { Player } from '..'
+import { Board } from '../..'
 
 describe('Player', () => {
   let player: BackgammonPlayer
@@ -165,8 +163,8 @@ describe('Player', () => {
     })
   })
 
-  describe('selectBestMove', () => {
-    it('should select a move from possible ready moves', () => {
+  describe('getBestMove', () => {
+    it('should get a move from possible ready moves', () => {
       const playerMoving = Player.initialize(
         color,
         direction,
@@ -206,7 +204,7 @@ describe('Player', () => {
           moves,
           stateKind: 'moving',
         }
-      const move = Player.selectBestMove(playMoving)
+      const move = Player.getBestMove(playMoving)
       expect(move).toBeDefined()
       expect(['move1', 'move2']).toContain(move!.id)
       expect(move!.stateKind).toBe('ready')
@@ -229,7 +227,7 @@ describe('Player', () => {
           moves: new Set(),
           stateKind: 'moving',
         }
-      const move = Player.selectBestMove(playMoving)
+      const move = Player.getBestMove(playMoving)
       expect(move).toBeUndefined()
     })
   })
