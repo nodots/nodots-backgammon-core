@@ -22,6 +22,11 @@ import {
 import { Board, Dice, generateId } from '..'
 import { Play } from '../Play'
 
+/**
+ * Supported move selection strategies.
+ */
+export type BackgammonMoveStrategy = 'random' | 'furthest-checker'
+
 export class Player {
   id: string = generateId()
   stateKind: BackgammonPlayerStateKind = 'inactive'
@@ -208,5 +213,66 @@ export class Player {
       player.id,
       'moving'
     ) as BackgammonPlayerMoving
+  }
+
+  /**
+   * Selects the best move from possible moves using the specified strategy.
+   * @param play BackgammonPlayMoving containing possible moves
+   * @param strategy The move selection strategy ('random' | 'furthest-checker'). Defaults to 'random'.
+   * @returns A selected BackgammonMoveReady, or undefined if no moves
+   */
+  public static getBestMove = function getBestMove(
+    play: BackgammonPlayMoving,
+    strategy: BackgammonMoveStrategy = 'random'
+  ): import('nodots-backgammon-types').BackgammonMoveReady | undefined {
+    if (!play.moves || play.moves.size === 0) return undefined
+    const readyMoves = Array.from(play.moves).filter(
+      (move) => move.stateKind === 'ready'
+    ) as import('nodots-backgammon-types').BackgammonMoveReady[]
+    if (readyMoves.length === 0) return undefined
+
+    if (strategy === 'random') {
+      // Randomly select a move
+      const idx = Math.floor(Math.random() * readyMoves.length)
+      return readyMoves[idx]
+    }
+
+    if (strategy === 'furthest-checker') {
+      // Select the move that starts with the checker furthest away from off
+      // For clockwise: highest clockwise position; for counterclockwise: highest counterclockwise position
+      const direction = ((play.player && (play.player as any).direction) ||
+        'clockwise') as 'clockwise' | 'counterclockwise'
+      const furthestMove = readyMoves.reduce((furthest, move) => {
+        if (!furthest) return move
+        const posA =
+          move.origin &&
+          typeof move.origin.position === 'object' &&
+          (direction === 'clockwise' || direction === 'counterclockwise')
+            ? (
+                move.origin.position as {
+                  clockwise: number
+                  counterclockwise: number
+                }
+              )[direction]
+            : 0
+        const posB =
+          furthest.origin &&
+          typeof furthest.origin.position === 'object' &&
+          (direction === 'clockwise' || direction === 'counterclockwise')
+            ? (
+                furthest.origin.position as {
+                  clockwise: number
+                  counterclockwise: number
+                }
+              )[direction]
+            : 0
+        return posA > posB ? move : furthest
+      }, undefined as (typeof readyMoves)[0] | undefined)
+      return furthestMove
+    }
+
+    // If strategy is unknown, default to random
+    const idx = Math.floor(Math.random() * readyMoves.length)
+    return readyMoves[idx]
   }
 }

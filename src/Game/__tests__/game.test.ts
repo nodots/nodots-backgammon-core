@@ -917,21 +917,6 @@ describe('Game', () => {
       // Perform the move
       const Game = require('..').Game
       const firstResult = Game.move(game, point24.id) // processes the bear-off move
-      // Debug output
-      console.log('Move result:', JSON.stringify(firstResult, null, 2))
-      if (firstResult.activePlay && firstResult.activePlay.moves) {
-        const movesArr = Array.from(firstResult.activePlay.moves)
-        movesArr.forEach((m, i) => {
-          const move = m as any
-          console.log(
-            `Move[${i}]: moveKind=${move.moveKind}, stateKind=${move.stateKind}`
-          )
-        })
-      }
-      console.log(
-        'Checkers off:',
-        firstResult.board.off.clockwise.checkers.length
-      )
       // According to backgammon rules, the game ends immediately when the last checker is borne off.
       // No further moves are possible or needed after that point, so we do not call Game.move again.
       // const result = Game.move(firstResult, point1.id) // <-- Not needed, would be invalid per rules

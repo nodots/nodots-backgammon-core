@@ -1,6 +1,5 @@
 import {
   BackgammonGame,
-  BackgammonGameMoving,
   BackgammonGameRolled,
   BackgammonGameRollingForStart,
   BackgammonPlayers,
@@ -8,10 +7,9 @@ import {
 import { randomBackgammonColor } from '..'
 import { Board } from '../Board'
 import { Game } from '../Game'
-import { Player } from '../Player'
-import { Play } from '../Play'
+import { BackgammonMoveStrategy, Player } from '../Player'
 
-const NUM_GAMES = 5000 // Set how many games to simulate
+const NUM_GAMES = 100 // Set how many games to simulate
 
 function simulateGame(verbose = false): {
   winner: 'black' | 'white' | null
@@ -147,11 +145,46 @@ function simulateGame(verbose = false): {
           }
         }
         if (possibleMoves.length > 0) {
-          // Pick a move (random or best)
-          const move =
-            possibleMoves[Math.floor(Math.random() * possibleMoves.length)]
-          const origin = move.origin
-          const destination = move.destination
+          // Ensure player is BackgammonPlayerMoving (stateKind: 'moving')
+          const playerMoving = {
+            ...gameRolled.activePlayer,
+            stateKind: 'moving',
+          } as unknown as import('nodots-backgammon-types').BackgammonPlayerMoving
+          const movesSet = new Set<
+            import('nodots-backgammon-types').BackgammonMoveReady
+          >(
+            possibleMoves.map((m, idx) => ({
+              id: `move_${i}_${idx}`,
+              player: playerMoving,
+              dieValue: die,
+              stateKind: 'ready',
+              moveKind: 'point-to-point',
+              origin: m.origin,
+            }))
+          )
+          const playMoving: import('nodots-backgammon-types').BackgammonPlayMoving =
+            {
+              id: `play_${i}`,
+              player: playerMoving,
+              board: gameRolled.board,
+              moves: movesSet,
+              stateKind: 'moving',
+            }
+          // Pick a move using Player.getBestMove
+          const strategy: BackgammonMoveStrategy =
+            playerMoving.direction === 'clockwise'
+              ? 'furthest-checker'
+              : 'random'
+          const selectedMove = Player.getBestMove(playMoving, strategy)
+          let origin, destination
+          if (selectedMove) {
+            origin = selectedMove.origin
+            destination = undefined // BackgammonMoveReady does not have destination
+          } else {
+            // fallback to first possible move (BackgammonMoveSkeleton)
+            origin = possibleMoves[0].origin
+            destination = possibleMoves[0].destination
+          }
           moveCount++
           if (verbose) {
             console.log(
@@ -160,7 +193,7 @@ function simulateGame(verbose = false): {
                   ? origin.position[gameRolled.activePlayer.direction]
                   : 'bar'
               } to ${
-                destination.kind === 'point'
+                destination && destination.kind === 'point'
                   ? destination.position[gameRolled.activePlayer.direction]
                   : 'off'
               } (die: ${die})`

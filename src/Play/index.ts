@@ -165,7 +165,7 @@ export class Play {
     player: BackgammonPlayerRolled
   ): BackgammonPlayRolled {
     const roll = player.dice.currentRoll
-    const moves = new Set<BackgammonMoveReady>()
+    const movesArr: BackgammonMoveReady[] = []
 
     // Check if player has checkers on the bar
     const bar =
@@ -176,121 +176,72 @@ export class Play {
       (checker: BackgammonChecker) => checker.color === player.color
     )
 
-    // Handle checkers on the bar
-    if (playerCheckersOnBar.length > 0) {
-      // Player must move checkers from the bar first
-      const possibleMoves = roll.map((dieValue) =>
-        Board.getPossibleMoves(board, player, dieValue)
-      )
-      const hasNoMoves = possibleMoves.every((moves) => moves.length === 0)
+    // Debug: Print player state before move generation
+    console.log('[DEBUG Play.initialize] player:', {
+      color: player.color,
+      direction: player.direction,
+      stateKind: player.stateKind,
+      isRobot: (player as any).isRobot,
+      dice: player.dice && player.dice.currentRoll,
+    })
 
-      if (hasNoMoves) {
-        // If no reentry moves are possible for any die, create a single no-move move
-        const noMove: BackgammonMoveReady = {
+    // ---
+    // BULLET-PROOF BAR HANDLING LOGIC:
+    // Always iterate for the full number of move slots (2 or 4).
+    // For each slot:
+    //   - If there are checkers on the bar:
+    //       - If reentry is possible, add 'reenter' and decrement barCheckersLeft.
+    //       - If not, add 'no-move' (do not decrement barCheckersLeft).
+    //   - If no checkers left on the bar, add 'no-move'.
+    // This guarantees the move array is always the correct length and only decrements barCheckersLeft when a checker actually reenters.
+    const isDoubles = roll[0] === roll[1]
+    const moveCount = isDoubles ? 4 : 2
+    let barCheckersLeft = playerCheckersOnBar.length
+    for (let i = 0; i < moveCount; i++) {
+      const dieValue = roll[i % 2]
+      if (barCheckersLeft > 0) {
+        const possibleMoves = Board.getPossibleMoves(board, player, dieValue)
+        if (possibleMoves.length > 0) {
+          // Reentry is possible for this die: add 'reenter' and remove checker from bar
+          movesArr.push({
+            id: generateId(),
+            player,
+            dieValue,
+            stateKind: 'ready',
+            moveKind: 'reenter',
+            origin: bar,
+          })
+          barCheckersLeft-- // Only decrement if a reentry actually happens
+        } else {
+          // No reentry possible for this die: add 'no-move', checker stays on bar
+          movesArr.push({
+            id: generateId(),
+            player,
+            dieValue,
+            stateKind: 'ready',
+            moveKind: 'no-move',
+            origin: bar,
+          })
+          // barCheckersLeft is NOT decremented here
+        }
+      } else {
+        // No checkers left on the bar, fill with 'no-move'
+        movesArr.push({
           id: generateId(),
           player,
-          dieValue: roll[0], // Use first die value for the no-move
+          dieValue,
           stateKind: 'ready',
           moveKind: 'no-move',
           origin: bar,
-        }
-        moves.add(noMove)
-      } else {
-        // Add reentry moves for each die that has possible moves
-        roll.forEach((dieValue, index) => {
-          if (possibleMoves[index].length > 0) {
-            const move: BackgammonMoveReady = {
-              id: generateId(),
-              player,
-              dieValue,
-              stateKind: 'ready',
-              moveKind: 'reenter',
-              origin: bar,
-            }
-            moves.add(move)
-          }
         })
       }
-    } else {
-      // Handle regular moves
-      const possibleMoves = roll.map((dieValue) =>
-        Board.getPossibleMoves(board, player, dieValue)
-      )
-      const hasNoMoves = possibleMoves.every((moves) => moves.length === 0)
-
-      if (hasNoMoves) {
-        // If no moves are possible for any die, create a single no-move move
-        const noMove: BackgammonMoveReady = {
-          id: generateId(),
-          player,
-          dieValue: roll[0], // Use first die value for the no-move
-          stateKind: 'ready',
-          moveKind: 'no-move',
-          origin: board.BackgammonPoints[0], // Use first point as origin for no-move
-        }
-        moves.add(noMove)
-      } else {
-        // For doubles, we want exactly 4 moves
-        if (roll[0] === roll[1]) {
-          const dieValue = roll[0] // Both dice are the same
-          const firstMoves = Board.getPossibleMoves(board, player, dieValue)
-
-          if (firstMoves.length === 0) {
-            // If no moves are possible, create a single no-move move
-            const noMove: BackgammonMoveReady = {
-              id: generateId(),
-              player,
-              dieValue: roll[0], // Use first die value for the no-move
-              stateKind: 'ready',
-              moveKind: 'no-move',
-              origin: board.BackgammonPoints[0], // Use first point as origin for no-move
-            }
-            moves.add(noMove)
-          } else {
-            // Add all possible first moves
-            firstMoves.forEach((skeleton) => {
-              // For each first move, we can potentially move the same checker again
-              // or move a different checker. We'll add all possibilities up to 4 moves.
-              const move: BackgammonMoveReady = {
-                id: generateId(),
-                player,
-                dieValue,
-                stateKind: 'ready',
-                moveKind: 'point-to-point',
-                origin: skeleton.origin,
-              }
-              moves.add(move)
-              moves.add({ ...move, id: generateId() })
-              moves.add({ ...move, id: generateId() })
-              moves.add({ ...move, id: generateId() })
-            })
-          }
-        } else {
-          // Add moves for each die that has possible moves
-          roll.forEach((dieValue, index) => {
-            if (possibleMoves[index].length > 0) {
-              possibleMoves[index].forEach((skeleton) => {
-                const move: BackgammonMoveReady = {
-                  id: generateId(),
-                  player,
-                  dieValue,
-                  stateKind: 'ready',
-                  moveKind: 'point-to-point',
-                  origin: skeleton.origin,
-                }
-                moves.add(move)
-              })
-            }
-          })
-        }
-      }
     }
-
+    // Always return the correct number of moves for doubles/regular
     return {
       id: generateId(),
       board,
       player,
-      moves: Array.from(moves),
+      moves: movesArr,
       stateKind: 'rolled',
     } as any
   }
