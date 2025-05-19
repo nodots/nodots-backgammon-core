@@ -115,11 +115,6 @@ describe('Dice', () => {
           Math.abs(actualProbability - expectedProbability) /
           expectedProbability
         expect(deviation).toBeLessThan(0.1) // Allowing 10% deviation
-        console.log(
-          `Total ${total}: Expected ${(expectedProbability * 100).toFixed(
-            2
-          )}%, Actual ${(actualProbability * 100).toFixed(2)}%`
-        )
       }
     })
   })
