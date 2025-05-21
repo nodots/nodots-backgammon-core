@@ -33,6 +33,7 @@ describe('Reenter', () => {
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
+        isRobot: true,
       }
 
       // Clear the reentry point (point 24 for clockwise)

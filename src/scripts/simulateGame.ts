@@ -1,30 +1,43 @@
 import {
   BackgammonGame,
-  BackgammonGameMoving,
   BackgammonGameRolled,
   BackgammonGameRollingForStart,
   BackgammonPlayers,
 } from 'nodots-backgammon-types'
 import { randomBackgammonColor } from '..'
 import { Board } from '../Board'
+import { exportToGnuPositionId } from '../Board/gnuPositionId'
 import { Game } from '../Game'
 import { Player } from '../Player'
-import { Play } from '../Play'
 
-const NUM_GAMES = 5000 // Set how many games to simulate
+const NUM_GAMES = 5 // Set how many games to simulate
 
-function simulateGame(verbose = false): {
+async function simulateGame(verbose = false): Promise<{
   winner: 'black' | 'white' | null
   turnCount: number
   gameId: string
   stuck?: boolean
-} {
+}> {
   // Initial game setup
   const clockwiseColor = randomBackgammonColor()
   const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
   const players: BackgammonPlayers = [
-    Player.initialize(clockwiseColor, 'clockwise'),
-    Player.initialize(counterclockwiseColor, 'counterclockwise'),
+    Player.initialize(
+      clockwiseColor,
+      'clockwise',
+      undefined,
+      undefined,
+      'inactive',
+      true
+    ),
+    Player.initialize(
+      counterclockwiseColor,
+      'counterclockwise',
+      undefined,
+      undefined,
+      'inactive',
+      true
+    ),
   ]
 
   // Start game
@@ -133,11 +146,60 @@ function simulateGame(verbose = false): {
           }
         }
         if (possibleMoves.length > 0) {
-          // Pick a move (random or best)
-          const move =
-            possibleMoves[Math.floor(Math.random() * possibleMoves.length)]
-          const origin = move.origin
-          const destination = move.destination
+          // Ensure player is BackgammonPlayerMoving (stateKind: 'moving')
+          const playerMoving = {
+            ...gameRolled.activePlayer,
+            stateKind: 'moving',
+          } as unknown as import('nodots-backgammon-types').BackgammonPlayerMoving
+          const movesSet = new Set<
+            import('nodots-backgammon-types').BackgammonMoveReady
+          >(
+            possibleMoves.map((m, idx) => ({
+              id: `move_${i}_${idx}`,
+              player: playerMoving,
+              dieValue: die,
+              stateKind: 'ready',
+              moveKind: 'point-to-point',
+              origin: m.origin,
+            }))
+          )
+          const playMoving: import('nodots-backgammon-types').BackgammonPlayMoving =
+            {
+              id: `play_${i}`,
+              player: playerMoving,
+              board: gameRolled.board,
+              moves: movesSet,
+              stateKind: 'moving',
+            }
+          // Always generate a fresh positionId for gnubg (for logging/debugging if needed)
+          const positionId = exportToGnuPositionId({
+            board: playMoving.board,
+            players: gameRolled.players,
+            stateKind: 'rolled',
+            activePlayer: playMoving.player,
+            inactivePlayer:
+              gameRolled.players.find(
+                (p: any) => p.id !== playMoving.player.id
+              ) || playMoving.player,
+            activeColor: playMoving.player.color,
+          } as any)
+          // Optionally log or use positionId for debugging
+          // console.log('Current GNU Position ID:', positionId);
+
+          const selectedMove = await Player.getBestMove(
+            playMoving,
+            'gnubg',
+            gameRolled.players
+          )
+          let origin, destination
+          if (selectedMove) {
+            origin = selectedMove.origin
+            destination = undefined // BackgammonMoveReady does not have destination
+          } else {
+            // fallback to first possible move (BackgammonMoveSkeleton)
+            origin = possibleMoves[0].origin
+            destination = possibleMoves[0].destination
+          }
           moveCount++
           if (verbose) {
             console.log(
@@ -146,7 +208,7 @@ function simulateGame(verbose = false): {
                   ? origin.position[gameRolled.activePlayer.direction]
                   : 'bar'
               } to ${
-                destination.kind === 'point'
+                destination && destination.kind === 'point'
                   ? destination.position[gameRolled.activePlayer.direction]
                   : 'off'
               } (die: ${die})`
@@ -385,7 +447,7 @@ function simulateGame(verbose = false): {
   return { winner, turnCount, gameId }
 }
 
-function runSimulations(numGames = NUM_GAMES) {
+async function runSimulations(numGames = NUM_GAMES) {
   const startTime = process.hrtime.bigint()
   const stats = {
     totalGames: 0,
@@ -393,7 +455,7 @@ function runSimulations(numGames = NUM_GAMES) {
     turns: [] as number[],
   }
   for (let i = 0; i < numGames; i++) {
-    const { winner, turnCount, gameId, stuck } = simulateGame(false)
+    const { winner, turnCount, gameId, stuck } = await simulateGame(false)
     stats.totalGames++
     if (winner === 'black' || winner === 'white') {
       stats.wins[winner]++
@@ -430,4 +492,6 @@ function runSimulations(numGames = NUM_GAMES) {
 }
 
 // Run the simulations
-runSimulations(NUM_GAMES)
+;(async () => {
+  await runSimulations(NUM_GAMES)
+})()

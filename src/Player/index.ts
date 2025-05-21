@@ -21,6 +21,21 @@ import {
 } from 'nodots-backgammon-types'
 import { Board, Dice, generateId } from '..'
 import { Play } from '../Play'
+// Import AI analyzers and selector
+import {
+  selectMoveFromList,
+  getGnubgMoveHint,
+} from 'nodots-backgammon-ai/dist/nodots-backgammon-ai/src'
+import {
+  RandomMoveAnalyzer,
+  FurthestFromOffMoveAnalyzer,
+} from 'nodots-backgammon-ai/dist/nodots-backgammon-ai/src/moveAnalyzers'
+import { exportToGnuPositionId } from '../Board/gnuPositionId'
+
+/**
+ * Supported move selection strategies.
+ */
+export type BackgammonMoveStrategy = 'random' | 'furthest-checker' | 'gnubg'
 
 export class Player {
   id: string = generateId()
@@ -33,7 +48,8 @@ export class Player {
     direction: BackgammonMoveDirection,
     dice: BackgammonDice = Dice.initialize(color),
     id: string = generateId(),
-    stateKind: BackgammonPlayerStateKind = 'inactive'
+    stateKind: BackgammonPlayerStateKind = 'inactive',
+    isRobot: boolean = true
   ): BackgammonPlayer {
     switch (stateKind) {
       case 'inactive':
@@ -44,6 +60,7 @@ export class Player {
           stateKind,
           dice: Dice.initialize(color),
           pipCount: 167,
+          isRobot,
         } as BackgammonPlayer
       case 'rolling-for-start':
         return {
@@ -53,6 +70,7 @@ export class Player {
           stateKind,
           dice: Dice.initialize(color),
           pipCount: 167,
+          isRobot,
         } as BackgammonPlayerRollingForStart
       case 'rolled-for-start': {
         return {
@@ -62,6 +80,7 @@ export class Player {
           stateKind,
           dice: Dice.initialize(color),
           pipCount: 167,
+          isRobot,
         } as BackgammonPlayerRolledForStart
       }
       case 'rolling':
@@ -72,6 +91,7 @@ export class Player {
           stateKind,
           dice,
           pipCount: 167,
+          isRobot,
         } as BackgammonPlayerRolling
       case 'rolled':
         const rolledDice = dice as BackgammonDiceRolled
@@ -82,6 +102,7 @@ export class Player {
           stateKind,
           dice: rolledDice,
           pipCount: 167,
+          isRobot,
         } as BackgammonPlayerRolled
       case 'moving':
         return {
@@ -91,6 +112,7 @@ export class Player {
           stateKind,
           dice,
           pipCount: 167,
+          isRobot,
         } as BackgammonPlayerMoving
       case 'moved':
         return {
@@ -100,6 +122,7 @@ export class Player {
           stateKind,
           dice,
           pipCount: 167,
+          isRobot,
         } as BackgammonPlayerMoved
       case 'winner':
         return {
@@ -109,6 +132,7 @@ export class Player {
           stateKind: 'winner',
           dice,
           pipCount: 0,
+          isRobot,
         } as BackgammonPlayerWinner
       case 'doubled':
         return {
@@ -118,6 +142,7 @@ export class Player {
           stateKind: 'doubled',
           dice: dice as BackgammonDiceRolled,
           pipCount: 167,
+          isRobot,
         } as BackgammonPlayerDoubled
     }
     throw new Error(`Unhandled player stateKind: ${stateKind}`)
@@ -198,5 +223,65 @@ export class Player {
       player.id,
       'moving'
     ) as BackgammonPlayerMoving
+  }
+
+  /**
+   * Selects the best move from possible moves using the specified strategy.
+   * @param play BackgammonPlayMoving containing possible moves
+   * @param strategy The move selection strategy ('random' | 'furthest-checker' | 'gnubg'). Defaults to 'random'.
+   * @param players Optional array of BackgammonPlayers
+   * @returns A selected BackgammonMoveReady, or undefined if no moves
+   */
+  public static getBestMove = async function getBestMove(
+    play: BackgammonPlayMoving,
+    strategy: BackgammonMoveStrategy = 'random',
+    players?: import('nodots-backgammon-types').BackgammonPlayers
+  ): Promise<
+    import('nodots-backgammon-types').BackgammonMoveReady | undefined
+  > {
+    if (!play.moves || play.moves.size === 0) return undefined
+    const readyMoves = Array.from(play.moves).filter(
+      (move) => move.stateKind === 'ready'
+    ) as import('nodots-backgammon-types').BackgammonMoveReady[]
+    if (readyMoves.length === 0) return undefined
+
+    if (strategy === 'gnubg') {
+      try {
+        // Use provided players if available, otherwise fallback to [play.player]
+        const gamePlayers = players || [play.player]
+        const game = {
+          board: play.board,
+          players: gamePlayers,
+          stateKind: 'rolled',
+          activePlayer: play.player,
+          inactivePlayer:
+            gamePlayers.find((p: any) => p.id !== play.player.id) ||
+            play.player,
+          activeColor: play.player.color,
+        } as any
+        const positionId = exportToGnuPositionId(game)
+        const bestMoveStr = await getGnubgMoveHint(positionId)
+        const normalized = (move: any) =>
+          `${move.origin?.position?.clockwise}/${move.destination?.position?.clockwise}`
+        const bestMove = readyMoves.find((move) =>
+          bestMoveStr.includes(normalized(move))
+        )
+        return bestMove
+      } catch (e) {
+        console.error('Error using gnubg strategy:', e)
+        return undefined
+      }
+    }
+
+    let analyzer
+    if (strategy === 'furthest-checker') {
+      analyzer = new FurthestFromOffMoveAnalyzer()
+    } else {
+      analyzer = new RandomMoveAnalyzer()
+    }
+    const selected = await selectMoveFromList(readyMoves, analyzer)
+    return selected === null
+      ? undefined
+      : (selected as import('nodots-backgammon-types').BackgammonMoveReady)
   }
 }

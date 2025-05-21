@@ -44,6 +44,7 @@ describe('PointToPoint', () => {
       dice: rolledDice,
       direction,
       pipCount: 167,
+      isRobot: true,
     }
 
     return { board, player, currentRoll }

@@ -38,6 +38,7 @@ describe('Reenter', () => {
       dice: rolledDice,
       direction,
       pipCount: 167,
+      isRobot: true,
     }
     return { board, player, rolledDice }
   }

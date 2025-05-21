@@ -33,6 +33,7 @@ describe('PointToPoint', () => {
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
+        isRobot: true,
       }
 
       // Add a black checker to point 13 (index 12)
