@@ -21,11 +21,21 @@ import {
 } from 'nodots-backgammon-types'
 import { Board, Dice, generateId } from '..'
 import { Play } from '../Play'
+// Import AI analyzers and selector
+import {
+  selectMoveFromList,
+  getGnubgMoveHint,
+} from 'nodots-backgammon-ai/dist/nodots-backgammon-ai/src'
+import {
+  RandomMoveAnalyzer,
+  FurthestFromOffMoveAnalyzer,
+} from 'nodots-backgammon-ai/dist/nodots-backgammon-ai/src/moveAnalyzers'
+import { exportToGnuPositionId } from '../Board/gnuPositionId'
 
 /**
  * Supported move selection strategies.
  */
-export type BackgammonMoveStrategy = 'random' | 'furthest-checker'
+export type BackgammonMoveStrategy = 'random' | 'furthest-checker' | 'gnubg'
 
 export class Player {
   id: string = generateId()
@@ -218,61 +228,60 @@ export class Player {
   /**
    * Selects the best move from possible moves using the specified strategy.
    * @param play BackgammonPlayMoving containing possible moves
-   * @param strategy The move selection strategy ('random' | 'furthest-checker'). Defaults to 'random'.
+   * @param strategy The move selection strategy ('random' | 'furthest-checker' | 'gnubg'). Defaults to 'random'.
+   * @param players Optional array of BackgammonPlayers
    * @returns A selected BackgammonMoveReady, or undefined if no moves
    */
-  public static getBestMove = function getBestMove(
+  public static getBestMove = async function getBestMove(
     play: BackgammonPlayMoving,
-    strategy: BackgammonMoveStrategy = 'random'
-  ): import('nodots-backgammon-types').BackgammonMoveReady | undefined {
+    strategy: BackgammonMoveStrategy = 'random',
+    players?: import('nodots-backgammon-types').BackgammonPlayers
+  ): Promise<
+    import('nodots-backgammon-types').BackgammonMoveReady | undefined
+  > {
     if (!play.moves || play.moves.size === 0) return undefined
     const readyMoves = Array.from(play.moves).filter(
       (move) => move.stateKind === 'ready'
     ) as import('nodots-backgammon-types').BackgammonMoveReady[]
     if (readyMoves.length === 0) return undefined
 
-    if (strategy === 'random') {
-      // Randomly select a move
-      const idx = Math.floor(Math.random() * readyMoves.length)
-      return readyMoves[idx]
+    if (strategy === 'gnubg') {
+      try {
+        // Use provided players if available, otherwise fallback to [play.player]
+        const gamePlayers = players || [play.player]
+        const game = {
+          board: play.board,
+          players: gamePlayers,
+          stateKind: 'rolled',
+          activePlayer: play.player,
+          inactivePlayer:
+            gamePlayers.find((p: any) => p.id !== play.player.id) ||
+            play.player,
+          activeColor: play.player.color,
+        } as any
+        const positionId = exportToGnuPositionId(game)
+        const bestMoveStr = await getGnubgMoveHint(positionId)
+        const normalized = (move: any) =>
+          `${move.origin?.position?.clockwise}/${move.destination?.position?.clockwise}`
+        const bestMove = readyMoves.find((move) =>
+          bestMoveStr.includes(normalized(move))
+        )
+        return bestMove
+      } catch (e) {
+        console.error('Error using gnubg strategy:', e)
+        return undefined
+      }
     }
 
+    let analyzer
     if (strategy === 'furthest-checker') {
-      // Select the move that starts with the checker furthest away from off
-      // For clockwise: highest clockwise position; for counterclockwise: highest counterclockwise position
-      const direction = ((play.player && (play.player as any).direction) ||
-        'clockwise') as 'clockwise' | 'counterclockwise'
-      const furthestMove = readyMoves.reduce((furthest, move) => {
-        if (!furthest) return move
-        const posA =
-          move.origin &&
-          typeof move.origin.position === 'object' &&
-          (direction === 'clockwise' || direction === 'counterclockwise')
-            ? (
-                move.origin.position as {
-                  clockwise: number
-                  counterclockwise: number
-                }
-              )[direction]
-            : 0
-        const posB =
-          furthest.origin &&
-          typeof furthest.origin.position === 'object' &&
-          (direction === 'clockwise' || direction === 'counterclockwise')
-            ? (
-                furthest.origin.position as {
-                  clockwise: number
-                  counterclockwise: number
-                }
-              )[direction]
-            : 0
-        return posA > posB ? move : furthest
-      }, undefined as (typeof readyMoves)[0] | undefined)
-      return furthestMove
+      analyzer = new FurthestFromOffMoveAnalyzer()
+    } else {
+      analyzer = new RandomMoveAnalyzer()
     }
-
-    // If strategy is unknown, default to random
-    const idx = Math.floor(Math.random() * readyMoves.length)
-    return readyMoves[idx]
+    const selected = await selectMoveFromList(readyMoves, analyzer)
+    return selected === null
+      ? undefined
+      : (selected as import('nodots-backgammon-types').BackgammonMoveReady)
   }
 }

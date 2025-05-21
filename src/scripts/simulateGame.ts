@@ -6,17 +6,18 @@ import {
 } from 'nodots-backgammon-types'
 import { randomBackgammonColor } from '..'
 import { Board } from '../Board'
+import { exportToGnuPositionId } from '../Board/gnuPositionId'
 import { Game } from '../Game'
-import { BackgammonMoveStrategy, Player } from '../Player'
+import { Player } from '../Player'
 
-const NUM_GAMES = 100 // Set how many games to simulate
+const NUM_GAMES = 5 // Set how many games to simulate
 
-function simulateGame(verbose = false): {
+async function simulateGame(verbose = false): Promise<{
   winner: 'black' | 'white' | null
   turnCount: number
   gameId: string
   stuck?: boolean
-} {
+}> {
   // Initial game setup
   const clockwiseColor = randomBackgammonColor()
   const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
@@ -170,12 +171,26 @@ function simulateGame(verbose = false): {
               moves: movesSet,
               stateKind: 'moving',
             }
-          // Pick a move using Player.getBestMove
-          const strategy: BackgammonMoveStrategy =
-            playerMoving.direction === 'clockwise'
-              ? 'furthest-checker'
-              : 'random'
-          const selectedMove = Player.getBestMove(playMoving, strategy)
+          // Always generate a fresh positionId for gnubg (for logging/debugging if needed)
+          const positionId = exportToGnuPositionId({
+            board: playMoving.board,
+            players: gameRolled.players,
+            stateKind: 'rolled',
+            activePlayer: playMoving.player,
+            inactivePlayer:
+              gameRolled.players.find(
+                (p: any) => p.id !== playMoving.player.id
+              ) || playMoving.player,
+            activeColor: playMoving.player.color,
+          } as any)
+          // Optionally log or use positionId for debugging
+          // console.log('Current GNU Position ID:', positionId);
+
+          const selectedMove = await Player.getBestMove(
+            playMoving,
+            'gnubg',
+            gameRolled.players
+          )
           let origin, destination
           if (selectedMove) {
             origin = selectedMove.origin
@@ -432,7 +447,7 @@ function simulateGame(verbose = false): {
   return { winner, turnCount, gameId }
 }
 
-function runSimulations(numGames = NUM_GAMES) {
+async function runSimulations(numGames = NUM_GAMES) {
   const startTime = process.hrtime.bigint()
   const stats = {
     totalGames: 0,
@@ -440,7 +455,7 @@ function runSimulations(numGames = NUM_GAMES) {
     turns: [] as number[],
   }
   for (let i = 0; i < numGames; i++) {
-    const { winner, turnCount, gameId, stuck } = simulateGame(false)
+    const { winner, turnCount, gameId, stuck } = await simulateGame(false)
     stats.totalGames++
     if (winner === 'black' || winner === 'white') {
       stats.wins[winner]++
@@ -477,4 +492,6 @@ function runSimulations(numGames = NUM_GAMES) {
 }
 
 // Run the simulations
-runSimulations(NUM_GAMES)
+;(async () => {
+  await runSimulations(NUM_GAMES)
+})()

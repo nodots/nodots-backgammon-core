@@ -164,7 +164,7 @@ describe('Player', () => {
   })
 
   describe('getBestMove', () => {
-    it('should get a move from possible ready moves', () => {
+    it('should get a move from possible ready moves', async () => {
       const playerMoving = Player.initialize(
         color,
         direction,
@@ -204,13 +204,13 @@ describe('Player', () => {
           moves,
           stateKind: 'moving',
         }
-      const move = Player.getBestMove(playMoving)
+      const move = await Player.getBestMove(playMoving)
       expect(move).toBeDefined()
       expect(['move1', 'move2']).toContain(move!.id)
       expect(move!.stateKind).toBe('ready')
     })
 
-    it('should return undefined if no moves are available', () => {
+    it('should return undefined if no moves are available', async () => {
       const playerMoving = Player.initialize(
         color,
         direction,
@@ -227,7 +227,7 @@ describe('Player', () => {
           moves: new Set(),
           stateKind: 'moving',
         }
-      const move = Player.getBestMove(playMoving)
+      const move = await Player.getBestMove(playMoving)
       expect(move).toBeUndefined()
     })
   })
