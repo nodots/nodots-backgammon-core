@@ -101,8 +101,22 @@ function checkWinCondition(board: any): string | null {
 
 export async function runSimulation(maxTurns: number = 100) {
   // Initialize players
-  const whitePlayer = Player.initialize('white', 'clockwise')
-  const blackPlayer = Player.initialize('black', 'counterclockwise')
+  const whitePlayer = Player.initialize(
+    'white',
+    'clockwise',
+    undefined,
+    undefined,
+    'inactive',
+    true
+  )
+  const blackPlayer = Player.initialize(
+    'black',
+    'counterclockwise',
+    undefined,
+    undefined,
+    'inactive',
+    true
+  )
   const players = [whitePlayer, blackPlayer] as [
     typeof whitePlayer,
     typeof blackPlayer

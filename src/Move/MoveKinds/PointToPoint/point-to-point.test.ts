@@ -33,6 +33,7 @@ describe('PointToPoint', () => {
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
+        isRobot: true,
       }
 
       // Add a black checker to point 13 (index 12)
@@ -47,6 +48,7 @@ describe('PointToPoint', () => {
 
     it('should move a checker from one point to another', () => {
       const origin = board.BackgammonPoints[12] // Point 13
+      board.BackgammonPoints[11].checkers = [] // Ensure destination is empty
       const move: BackgammonMoveReady = {
         id: generateId(),
         stateKind: 'ready',

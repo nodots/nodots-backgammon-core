@@ -1,17 +1,15 @@
-import { Player } from '..'
-import { Board, Dice } from '../..'
+import { beforeEach, describe, expect, it } from '@jest/globals'
 import {
   BackgammonBoard,
   BackgammonColor,
-  BackgammonDice,
   BackgammonDiceRolled,
   BackgammonMoveDirection,
   BackgammonPlayer,
-  BackgammonPlayerRolled,
   BackgammonPlayerRolling,
   BackgammonPoint,
 } from 'nodots-backgammon-types'
-import { describe, it, expect, beforeEach } from '@jest/globals'
+import { Player } from '..'
+import { Board } from '../..'
 
 describe('Player', () => {
   let player: BackgammonPlayer
@@ -20,7 +18,14 @@ describe('Player', () => {
   const direction: BackgammonMoveDirection = 'clockwise'
 
   beforeEach(() => {
-    player = Player.initialize(color, direction)
+    player = Player.initialize(
+      color,
+      direction,
+      undefined,
+      undefined,
+      'inactive',
+      true
+    )
     board = Board.initialize()
   })
 
@@ -40,8 +45,9 @@ describe('Player', () => {
         direction,
         undefined,
         undefined,
-        'rolling'
-      )
+        'rolling',
+        true
+      ) as BackgammonPlayerRolling
       expect(rollingPlayer.stateKind).toBe('rolling')
     })
 
@@ -51,7 +57,8 @@ describe('Player', () => {
         direction,
         undefined,
         undefined,
-        'winner'
+        'winner',
+        true
       )
       expect(winnerPlayer.stateKind).toBe('winner')
       expect(winnerPlayer.pipCount).toBe(0)
@@ -63,7 +70,8 @@ describe('Player', () => {
         direction,
         undefined,
         undefined,
-        'moved'
+        'moved',
+        true
       )
       expect(movedPlayer.stateKind).toBe('moved')
       expect(movedPlayer.pipCount).toBe(167)
@@ -77,7 +85,8 @@ describe('Player', () => {
         direction,
         undefined,
         undefined,
-        'rolling'
+        'rolling',
+        true
       ) as BackgammonPlayerRolling
       const rolledPlayer = Player.roll(rollingPlayer)
 
@@ -108,7 +117,11 @@ describe('Player', () => {
     it('should return correct home board points for counterclockwise direction', () => {
       const counterClockwisePlayer = Player.initialize(
         'black',
-        'counterclockwise'
+        'counterclockwise',
+        undefined,
+        undefined,
+        'inactive',
+        true
       )
       const homeBoard = Player.getHomeBoard(board, counterClockwisePlayer)
       expect(homeBoard.length).toBe(6)
@@ -134,7 +147,11 @@ describe('Player', () => {
     it('should return correct opponent board points for counterclockwise direction', () => {
       const counterClockwisePlayer = Player.initialize(
         'black',
-        'counterclockwise'
+        'counterclockwise',
+        undefined,
+        undefined,
+        'inactive',
+        true
       )
       const opponentBoard = Player.getOpponentBoard(
         board,
@@ -143,6 +160,75 @@ describe('Player', () => {
       expect(opponentBoard.length).toBe(6)
       expect(opponentBoard[0].position.clockwise).toBe(19)
       expect(opponentBoard[5].position.clockwise).toBe(24)
+    })
+  })
+
+  describe('getBestMove', () => {
+    it('should get a move from possible ready moves', async () => {
+      const playerMoving = Player.initialize(
+        color,
+        direction,
+        undefined,
+        undefined,
+        'moving',
+        true
+      ) as import('nodots-backgammon-types').BackgammonPlayerMoving
+      // Use a valid BackgammonPoint from the board as origin
+      const origin1 = board.BackgammonPoints[0]
+      const origin2 = board.BackgammonPoints[1]
+      const moves = new Set<
+        import('nodots-backgammon-types').BackgammonMoveReady
+      >([
+        {
+          id: 'move1',
+          player: playerMoving,
+          dieValue: 3,
+          stateKind: 'ready',
+          moveKind: 'point-to-point',
+          origin: origin1,
+        },
+        {
+          id: 'move2',
+          player: playerMoving,
+          dieValue: 4,
+          stateKind: 'ready',
+          moveKind: 'point-to-point',
+          origin: origin2,
+        },
+      ])
+      const playMoving: import('nodots-backgammon-types').BackgammonPlayMoving =
+        {
+          id: 'play1',
+          player: playerMoving,
+          board,
+          moves,
+          stateKind: 'moving',
+        }
+      const move = await Player.getBestMove(playMoving)
+      expect(move).toBeDefined()
+      expect(['move1', 'move2']).toContain(move!.id)
+      expect(move!.stateKind).toBe('ready')
+    })
+
+    it('should return undefined if no moves are available', async () => {
+      const playerMoving = Player.initialize(
+        color,
+        direction,
+        undefined,
+        undefined,
+        'moving',
+        true
+      ) as import('nodots-backgammon-types').BackgammonPlayerMoving
+      const playMoving: import('nodots-backgammon-types').BackgammonPlayMoving =
+        {
+          id: 'play2',
+          player: playerMoving,
+          board,
+          moves: new Set(),
+          stateKind: 'moving',
+        }
+      const move = await Player.getBestMove(playMoving)
+      expect(move).toBeUndefined()
     })
   })
 })

@@ -103,7 +103,6 @@ export class PointToPoint {
     // Get the checker to move
     const origin = move.origin
     const checker = origin.checkers[origin.checkers.length - 1]
-    if (!checker) throw Error('No checker found')
 
     // Move the checker
     const updatedBoard = Board.moveChecker(

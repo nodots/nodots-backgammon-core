@@ -1,5 +1,10 @@
 import { Board } from '..'
-import { BackgammonBoard } from 'nodots-backgammon-types'
+import {
+  BackgammonBoard,
+  BackgammonPointValue,
+  BackgammonDieValue,
+  BackgammonColor,
+} from 'nodots-backgammon-types'
 import { BOARD_IMPORT_BOTH_BEAROFF } from '../imports'
 import { describe, beforeEach, it, expect } from '@jest/globals'
 
@@ -143,5 +148,70 @@ describe('Board', () => {
 
     expect(totalCheckers.black).toBeLessThanOrEqual(15)
     expect(totalCheckers.white).toBeLessThanOrEqual(15)
+  })
+
+  it('should generate bear-off moves when all checkers are in the home board (demonstrates missing behavior)', () => {
+    // Set up a board where all white checkers are in the home board (points 1-6 clockwise)
+    const boardImport = [
+      {
+        position: {
+          clockwise: 1 as BackgammonPointValue,
+          counterclockwise: 24 as BackgammonPointValue,
+        },
+        checkers: { qty: 3, color: 'white' as BackgammonColor },
+      },
+      {
+        position: {
+          clockwise: 2 as BackgammonPointValue,
+          counterclockwise: 23 as BackgammonPointValue,
+        },
+        checkers: { qty: 3, color: 'white' as BackgammonColor },
+      },
+      {
+        position: {
+          clockwise: 3 as BackgammonPointValue,
+          counterclockwise: 22 as BackgammonPointValue,
+        },
+        checkers: { qty: 3, color: 'white' as BackgammonColor },
+      },
+      {
+        position: {
+          clockwise: 4 as BackgammonPointValue,
+          counterclockwise: 21 as BackgammonPointValue,
+        },
+        checkers: { qty: 3, color: 'white' as BackgammonColor },
+      },
+      {
+        position: {
+          clockwise: 5 as BackgammonPointValue,
+          counterclockwise: 20 as BackgammonPointValue,
+        },
+        checkers: { qty: 2, color: 'white' as BackgammonColor },
+      },
+      {
+        position: {
+          clockwise: 6 as BackgammonPointValue,
+          counterclockwise: 19 as BackgammonPointValue,
+        },
+        checkers: { qty: 1, color: 'white' as BackgammonColor },
+      },
+    ]
+    const board = Board.initialize(boardImport)
+    const player = { color: 'white', direction: 'clockwise' } as any
+    // Try all die values for bearing off
+    let foundBearOffMove = false
+    for (
+      let die = 1 as BackgammonDieValue;
+      die <= 6;
+      die = (die + 1) as BackgammonDieValue
+    ) {
+      const moves = Board.getPossibleMoves(board, player, die)
+      if (moves.some((m) => m.destination && m.destination.kind === 'off')) {
+        foundBearOffMove = true
+        break
+      }
+    }
+    // This should fail, demonstrating the missing bear-off logic
+    expect(foundBearOffMove).toBe(true)
   })
 })
