@@ -16,7 +16,7 @@ The library implements the standard rules of backgammon, including:
 ## Installation
 
 ```bash
-npm install nodots-backgammon-core
+npm i @nodots-llc/backgammon-core
 ```
 
 ## Development Setup

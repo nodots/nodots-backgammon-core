@@ -1,4 +1,3 @@
-import { generateId } from '..'
 import {
   BackgammonBoard,
   BackgammonCheckerContainer,
@@ -7,7 +6,6 @@ import {
   BackgammonMoveConfirmed,
   BackgammonMoveConfirmedNoMove,
   BackgammonMoveConfirmedWithMove,
-  BackgammonMoveDryRunResult,
   BackgammonMoveInProgress,
   BackgammonMoveKind,
   BackgammonMoveOrigin,
@@ -19,11 +17,10 @@ import {
   BackgammonPlayerRolled,
   BackgammonPoint,
 } from 'nodots-backgammon-types'
+import { generateId } from '..'
 import { BearOff } from './MoveKinds/BearOff'
 import { PointToPoint } from './MoveKinds/PointToPoint'
 import { Reenter } from './MoveKinds/Reenter'
-
-export type MOVE_MODE = 'dry-run' | 'commit'
 
 export interface MoveProps {
   move: BackgammonMove

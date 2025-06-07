@@ -1,7 +1,7 @@
 {
-  "name": "nodots-backgammon-core",
+  "name": "@nodots-llc/backgammon-core",
   "version": "1.0.5",
-  "description": "Types and game logic for a backgammon game",
+  "description": "Game logic for backgammon",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -33,11 +33,12 @@
     "simulate": "ts-node src/scripts/simulate.ts",
     "simulate:game": "ts-node src/scripts/simulateGame.ts",
     "prepare": "npm run build",
-    "install:latest-types": "rm -rf node_modules package-lock.json && npm install"
+    "install:latest-types": "rm -rf node_modules package-lock.json && npm install",
+    "publish:npm": "npm publish --access public"
   },
   "dependencies": {
-    "nodots-backgammon-ai": "file://Users/kenr/Code/nodots-backgammon/nodots-backgammon-ai",
-    "nodots-backgammon-types": "file://Users/kenr/Code/nodots-backgammon/nodots-backgammon-types",
+    "@nodots-llc/backgammon-ai": "^1.0.0",
+    "@nodots-llc/backgammon-types": "^1.0.0",
     "uuid": "^11.0.5"
   },
   "devDependencies": {

@@ -22,10 +22,8 @@ import {
 import { Board, Dice, generateId } from '..'
 import { Play } from '../Play'
 // Import AI analyzers and selector
-import {
-  selectMoveFromList,
-  getGnubgMoveHint,
-} from 'nodots-backgammon-ai/dist/nodots-backgammon-ai/src'
+import { selectMoveFromList } from 'nodots-backgammon-ai/dist/nodots-backgammon-ai/src'
+import { getBestMoveFromGnubg } from 'nodots-backgammon-ai/dist/nodots-backgammon-ai/src/gnubgApi'
 import {
   RandomMoveAnalyzer,
   FurthestFromOffMoveAnalyzer,
@@ -227,14 +225,16 @@ export class Player {
 
   /**
    * Selects the best move from possible moves using the specified strategy.
+   * If the primary strategy fails (throws or returns undefined),
+   * it will automatically fall back to 'furthest-checker', then 'random'.
    * @param play BackgammonPlayMoving containing possible moves
-   * @param strategy The move selection strategy ('random' | 'furthest-checker' | 'gnubg'). Defaults to 'random'.
+   * @param strategy The move selection strategy ('random' | 'furthest-checker' | 'gnubg'). Defaults to 'gnubg'.
    * @param players Optional array of BackgammonPlayers
    * @returns A selected BackgammonMoveReady, or undefined if no moves
    */
   public static getBestMove = async function getBestMove(
     play: BackgammonPlayMoving,
-    strategy: BackgammonMoveStrategy = 'random',
+    strategy: BackgammonMoveStrategy = 'gnubg',
     players?: import('nodots-backgammon-types').BackgammonPlayers
   ): Promise<
     import('nodots-backgammon-types').BackgammonMoveReady | undefined
@@ -245,43 +245,63 @@ export class Player {
     ) as import('nodots-backgammon-types').BackgammonMoveReady[]
     if (readyMoves.length === 0) return undefined
 
-    if (strategy === 'gnubg') {
-      try {
-        // Use provided players if available, otherwise fallback to [play.player]
-        const gamePlayers = players || [play.player]
-        const game = {
-          board: play.board,
-          players: gamePlayers,
-          stateKind: 'rolled',
-          activePlayer: play.player,
-          inactivePlayer:
-            gamePlayers.find((p: any) => p.id !== play.player.id) ||
-            play.player,
-          activeColor: play.player.color,
-        } as any
-        const positionId = exportToGnuPositionId(game)
-        const bestMoveStr = await getGnubgMoveHint(positionId)
-        const normalized = (move: any) =>
-          `${move.origin?.position?.clockwise}/${move.destination?.position?.clockwise}`
-        const bestMove = readyMoves.find((move) =>
-          bestMoveStr.includes(normalized(move))
-        )
-        return bestMove
-      } catch (e) {
-        console.error('Error using gnubg strategy:', e)
-        return undefined
-      }
+    // Helper to select by analyzer
+    const selectByAnalyzer = async (analyzer: any) => {
+      const selected = await selectMoveFromList(readyMoves, analyzer)
+      return selected === null
+        ? undefined
+        : (selected as import('nodots-backgammon-types').BackgammonMoveReady)
     }
 
-    let analyzer
-    if (strategy === 'furthest-checker') {
-      analyzer = new FurthestFromOffMoveAnalyzer()
-    } else {
-      analyzer = new RandomMoveAnalyzer()
+    // Try primary strategy, then fallbacks
+    const strategies: BackgammonMoveStrategy[] =
+      strategy === 'gnubg'
+        ? ['gnubg', 'furthest-checker', 'random']
+        : strategy === 'furthest-checker'
+        ? ['furthest-checker', 'random']
+        : ['random']
+
+    for (const strat of strategies) {
+      try {
+        if (strat === 'gnubg') {
+          // Use provided players if available, otherwise fallback to [play.player]
+          const gamePlayers = players || [play.player]
+          const game = {
+            board: play.board,
+            players: gamePlayers,
+            stateKind: 'rolled',
+            activePlayer: play.player,
+            inactivePlayer:
+              gamePlayers.find((p: any) => p.id !== play.player.id) ||
+              play.player,
+            activeColor: play.player.color,
+          } as any
+          const positionId = exportToGnuPositionId(game)
+          const bestMoveStr = await getBestMoveFromGnubg(positionId)
+          const normalized = (move: any) =>
+            `${move.origin?.position?.clockwise}/${move.destination?.position?.clockwise}`
+          const bestMove = readyMoves.find((move) =>
+            bestMoveStr.includes(normalized(move))
+          )
+          if (bestMove) return bestMove
+          // If not found, fall through to next strategy
+        } else if (strat === 'furthest-checker') {
+          const move = await selectByAnalyzer(new FurthestFromOffMoveAnalyzer())
+          if (move) return move
+        } else if (strat === 'random') {
+          const move = await selectByAnalyzer(new RandomMoveAnalyzer())
+          if (move) return move
+        }
+      } catch (e) {
+        console.error(`Error using ${strat} strategy:`, e)
+        // Log failover event
+        if (strat !== strategies[strategies.length - 1]) {
+          console.warn(`Failing over from ${strat} to next strategy...`)
+        }
+        // Try next strategy
+      }
     }
-    const selected = await selectMoveFromList(readyMoves, analyzer)
-    return selected === null
-      ? undefined
-      : (selected as import('nodots-backgammon-types').BackgammonMoveReady)
+    // If all strategies fail
+    return undefined
   }
 }

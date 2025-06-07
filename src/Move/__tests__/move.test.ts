@@ -1,35 +1,28 @@
-import { describe, it, expect } from '@jest/globals'
+import { describe, expect, it } from '@jest/globals'
+import {
+  BackgammonChecker,
+  BackgammonCheckerContainerImport,
+  BackgammonColor,
+  BackgammonDiceStateKind,
+  BackgammonMoveDirection,
+  BackgammonMoveInProgress,
+  BackgammonMoveKind,
+  BackgammonMoveReady,
+  BackgammonMoveSkeleton,
+  BackgammonPlayer,
+  BackgammonPlayerMoving,
+  BackgammonPlayerRolled,
+  BackgammonPoint,
+  BackgammonPointValue,
+  BackgammonRoll,
+} from 'nodots-backgammon-types'
 import { Move } from '..'
 import { generateId } from '../..'
 import { Board } from '../../Board'
 import {
-  BOARD_IMPORT_DEFAULT,
   BOARD_IMPORT_BOTH_REENTER,
-  BOARD_IMPORT_BOTH_BEAROFF,
+  BOARD_IMPORT_DEFAULT,
 } from '../../Board/imports'
-import {
-  BackgammonBoard,
-  BackgammonChecker,
-  BackgammonColor,
-  BackgammonDiceInactive,
-  BackgammonDieValue,
-  BackgammonMoveInProgress,
-  BackgammonMoveReady,
-  BackgammonPlayer,
-  BackgammonPlayerRolled,
-  BackgammonPoint,
-  BackgammonRoll,
-  BackgammonPlayerMoving,
-  BackgammonMoveDirection,
-  BackgammonDiceStateKind,
-  BackgammonPlayerActive,
-  BackgammonPointValue,
-  BackgammonCheckerContainerImport,
-  BackgammonMoveSkeleton,
-  BackgammonMoveKind,
-  BackgammonMove,
-  BackgammonMoveStateKind,
-} from 'nodots-backgammon-types'
 
 describe('Move', () => {
   const setupTest = (
@@ -72,17 +65,6 @@ describe('Move', () => {
     origin: skeleton.origin,
     dieValue: skeleton.dieValue,
   })
-
-  const convertSkeletonsToMoves = (
-    skeletons: BackgammonMoveSkeleton[],
-    player: BackgammonPlayer,
-    moveKind: BackgammonMoveKind
-  ): Set<BackgammonMoveReady> =>
-    new Set(
-      skeletons.map((skeleton) =>
-        convertSkeletonToMove(skeleton, player, moveKind)
-      )
-    )
 
   describe('initialize', () => {
     it('should initialize a move with provided values', () => {

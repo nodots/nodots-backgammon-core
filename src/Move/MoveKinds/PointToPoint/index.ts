@@ -100,9 +100,7 @@ export class PointToPoint {
       destination.checkers.length === 1 &&
       destination.checkers[0].color !== move.player.color
 
-    // Get the checker to move
     const origin = move.origin
-    const checker = origin.checkers[origin.checkers.length - 1]
 
     // Move the checker
     const updatedBoard = Board.moveChecker(

@@ -495,3 +495,5 @@ async function runSimulations(numGames = NUM_GAMES) {
 ;(async () => {
   await runSimulations(NUM_GAMES)
 })()
+
+export { simulateGame }

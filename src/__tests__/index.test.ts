@@ -105,3 +105,22 @@ describe('Root utilities', () => {
     })
   })
 })
+
+describe('simulateGame script', () => {
+  it('should run 10 simulations without error', async () => {
+    // Import the function dynamically to avoid running the script on import
+    const simulateGameModule = await import('../scripts/simulateGame')
+    // runSimulations does not return stats, so we need to call simulateGame 10 times directly
+    const results = []
+    for (let i = 0; i < 10; i++) {
+      const result = await simulateGameModule.simulateGame(false)
+      results.push(result)
+    }
+    expect(results).toHaveLength(10)
+    results.forEach((result) => {
+      expect(result).toHaveProperty('winner')
+      expect(result).toHaveProperty('turnCount')
+      expect(result).toHaveProperty('gameId')
+    })
+  })
+})

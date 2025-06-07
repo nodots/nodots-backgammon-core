@@ -10,6 +10,13 @@ import {
 } from 'nodots-backgammon-types'
 import { Player } from '..'
 import { Board } from '../..'
+import * as gnubgApi from 'nodots-backgammon-ai/dist/nodots-backgammon-ai/src/gnubgApi'
+import {
+  FurthestFromOffMoveAnalyzer,
+  RandomMoveAnalyzer,
+} from 'nodots-backgammon-ai/dist/nodots-backgammon-ai/src/moveAnalyzers'
+
+jest.mock('nodots-backgammon-ai/dist/nodots-backgammon-ai/src/gnubgApi')
 
 describe('Player', () => {
   let player: BackgammonPlayer
@@ -186,7 +193,7 @@ describe('Player', () => {
           stateKind: 'ready',
           moveKind: 'point-to-point',
           origin: origin1,
-        },
+        } as unknown as import('nodots-backgammon-types').BackgammonMoveReady,
         {
           id: 'move2',
           player: playerMoving,
@@ -194,7 +201,7 @@ describe('Player', () => {
           stateKind: 'ready',
           moveKind: 'point-to-point',
           origin: origin2,
-        },
+        } as unknown as import('nodots-backgammon-types').BackgammonMoveReady,
       ])
       const playMoving: import('nodots-backgammon-types').BackgammonPlayMoving =
         {
@@ -204,7 +211,7 @@ describe('Player', () => {
           moves,
           stateKind: 'moving',
         }
-      const move = await Player.getBestMove(playMoving)
+      const move = await Player.getBestMove(playMoving, 'random')
       expect(move).toBeDefined()
       expect(['move1', 'move2']).toContain(move!.id)
       expect(move!.stateKind).toBe('ready')
@@ -229,6 +236,92 @@ describe('Player', () => {
         }
       const move = await Player.getBestMove(playMoving)
       expect(move).toBeUndefined()
+    })
+  })
+
+  describe('getBestMove failover', () => {
+    const color = 'white'
+    const direction = 'clockwise'
+    let playerMoving: import('nodots-backgammon-types').BackgammonPlayerMoving
+    let board: import('nodots-backgammon-types').BackgammonBoard
+    let origin1: any, origin2: any
+    let playMoving: import('nodots-backgammon-types').BackgammonPlayMoving
+
+    beforeEach(() => {
+      board = Board.initialize()
+      playerMoving = Player.initialize(
+        color,
+        direction,
+        undefined,
+        undefined,
+        'moving',
+        true
+      ) as import('nodots-backgammon-types').BackgammonPlayerMoving
+      origin1 = board.BackgammonPoints[0]
+      origin2 = board.BackgammonPoints[1]
+      const moves = new Set([
+        {
+          id: 'move1',
+          player: playerMoving,
+          dieValue: 3,
+          stateKind: 'ready',
+          moveKind: 'point-to-point',
+          origin: origin1,
+        } as unknown as import('nodots-backgammon-types').BackgammonMoveReady,
+        {
+          id: 'move2',
+          player: playerMoving,
+          dieValue: 4,
+          stateKind: 'ready',
+          moveKind: 'point-to-point',
+          origin: origin2,
+        } as unknown as import('nodots-backgammon-types').BackgammonMoveReady,
+      ])
+      playMoving = {
+        id: 'play1',
+        player: playerMoving,
+        board,
+        moves,
+        stateKind: 'moving',
+      }
+    })
+
+    it('falls back to furthest-checker if gnubg fails', async () => {
+      // Make gnubg fail
+      ;(gnubgApi.getBestMoveFromGnubg as jest.Mock).mockImplementation(() => {
+        throw new Error('fail')
+      })
+      // Spy on FurthestFromOffMoveAnalyzer
+      const furthestSpy = jest
+        .spyOn(FurthestFromOffMoveAnalyzer.prototype, 'selectMove')
+        .mockImplementation((moves) => Promise.resolve(moves[0]))
+      const move = await Player.getBestMove(playMoving, 'gnubg')
+      expect(move).toBeDefined()
+      expect(['move1', 'move2']).toContain(move!.id)
+      expect(furthestSpy).toHaveBeenCalled()
+      furthestSpy.mockRestore()
+    })
+
+    it('falls back to random if both gnubg and furthest-checker fail', async () => {
+      ;(gnubgApi.getBestMoveFromGnubg as jest.Mock).mockImplementation(() => {
+        throw new Error('fail')
+      })
+      // Make FurthestFromOffMoveAnalyzer fail
+      const furthestSpy = jest
+        .spyOn(FurthestFromOffMoveAnalyzer.prototype, 'selectMove')
+        .mockImplementation(() => {
+          throw new Error('fail2')
+        })
+      // Spy on RandomMoveAnalyzer
+      const randomSpy = jest
+        .spyOn(RandomMoveAnalyzer.prototype, 'selectMove')
+        .mockImplementation((moves) => Promise.resolve(moves[1]))
+      const move = await Player.getBestMove(playMoving, 'gnubg')
+      expect(move).toBeDefined()
+      expect(['move1', 'move2']).toContain(move!.id)
+      expect(randomSpy).toHaveBeenCalled()
+      furthestSpy.mockRestore()
+      randomSpy.mockRestore()
     })
   })
 })
