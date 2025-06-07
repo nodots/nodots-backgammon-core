@@ -6,7 +6,7 @@ import {
   BackgammonBoard,
   BackgammonChecker,
   BackgammonColor,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 import { BOARD_IMPORT_DEFAULT } from '../../Board/imports'
 describe('BackgammonChecker', () => {
   let board: BackgammonBoard

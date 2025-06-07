@@ -8,7 +8,7 @@ import {
   BackgammonPlayerRolling,
   BackgammonPlayRolled,
   BackgammonPoint,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 import { Play } from '..'
 import { Board, Dice, generateId, Player } from '../..'
 

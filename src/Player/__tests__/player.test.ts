@@ -7,14 +7,14 @@ import {
   BackgammonPlayer,
   BackgammonPlayerRolling,
   BackgammonPoint,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 import { Player } from '..'
 import { Board } from '../..'
-import * as gnubgApi from 'nodots-backgammon-ai/dist/nodots-backgammon-ai/src/gnubgApi'
+import * as gnubgApi from '@nodots-llc/backgammon-ai'
 import {
   FurthestFromOffMoveAnalyzer,
   RandomMoveAnalyzer,
-} from 'nodots-backgammon-ai/dist/nodots-backgammon-ai/src/moveAnalyzers'
+} from '@nodots-llc/backgammon-ai'
 
 jest.mock('nodots-backgammon-ai/dist/nodots-backgammon-ai/src/gnubgApi')
 
@@ -179,12 +179,12 @@ describe('Player', () => {
         undefined,
         'moving',
         true
-      ) as import('nodots-backgammon-types').BackgammonPlayerMoving
+      ) as import('@nodots-llc/backgammon-types').BackgammonPlayerMoving
       // Use a valid BackgammonPoint from the board as origin
       const origin1 = board.BackgammonPoints[0]
       const origin2 = board.BackgammonPoints[1]
       const moves = new Set<
-        import('nodots-backgammon-types').BackgammonMoveReady
+        import('@nodots-llc/backgammon-types').BackgammonMoveReady
       >([
         {
           id: 'move1',
@@ -193,7 +193,7 @@ describe('Player', () => {
           stateKind: 'ready',
           moveKind: 'point-to-point',
           origin: origin1,
-        } as unknown as import('nodots-backgammon-types').BackgammonMoveReady,
+        } as unknown as import('@nodots-llc/backgammon-types').BackgammonMoveReady,
         {
           id: 'move2',
           player: playerMoving,
@@ -201,9 +201,9 @@ describe('Player', () => {
           stateKind: 'ready',
           moveKind: 'point-to-point',
           origin: origin2,
-        } as unknown as import('nodots-backgammon-types').BackgammonMoveReady,
+        } as unknown as import('@nodots-llc/backgammon-types').BackgammonMoveReady,
       ])
-      const playMoving: import('nodots-backgammon-types').BackgammonPlayMoving =
+      const playMoving: import('@nodots-llc/backgammon-types').BackgammonPlayMoving =
         {
           id: 'play1',
           player: playerMoving,
@@ -225,8 +225,8 @@ describe('Player', () => {
         undefined,
         'moving',
         true
-      ) as import('nodots-backgammon-types').BackgammonPlayerMoving
-      const playMoving: import('nodots-backgammon-types').BackgammonPlayMoving =
+      ) as import('@nodots-llc/backgammon-types').BackgammonPlayerMoving
+      const playMoving: import('@nodots-llc/backgammon-types').BackgammonPlayMoving =
         {
           id: 'play2',
           player: playerMoving,
@@ -242,10 +242,10 @@ describe('Player', () => {
   describe('getBestMove failover', () => {
     const color = 'white'
     const direction = 'clockwise'
-    let playerMoving: import('nodots-backgammon-types').BackgammonPlayerMoving
-    let board: import('nodots-backgammon-types').BackgammonBoard
+    let playerMoving: import('@nodots-llc/backgammon-types').BackgammonPlayerMoving
+    let board: import('@nodots-llc/backgammon-types').BackgammonBoard
     let origin1: any, origin2: any
-    let playMoving: import('nodots-backgammon-types').BackgammonPlayMoving
+    let playMoving: import('@nodots-llc/backgammon-types').BackgammonPlayMoving
 
     beforeEach(() => {
       board = Board.initialize()
@@ -256,7 +256,7 @@ describe('Player', () => {
         undefined,
         'moving',
         true
-      ) as import('nodots-backgammon-types').BackgammonPlayerMoving
+      ) as import('@nodots-llc/backgammon-types').BackgammonPlayerMoving
       origin1 = board.BackgammonPoints[0]
       origin2 = board.BackgammonPoints[1]
       const moves = new Set([
@@ -267,7 +267,7 @@ describe('Player', () => {
           stateKind: 'ready',
           moveKind: 'point-to-point',
           origin: origin1,
-        } as unknown as import('nodots-backgammon-types').BackgammonMoveReady,
+        } as unknown as import('@nodots-llc/backgammon-types').BackgammonMoveReady,
         {
           id: 'move2',
           player: playerMoving,
@@ -275,7 +275,7 @@ describe('Player', () => {
           stateKind: 'ready',
           moveKind: 'point-to-point',
           origin: origin2,
-        } as unknown as import('nodots-backgammon-types').BackgammonMoveReady,
+        } as unknown as import('@nodots-llc/backgammon-types').BackgammonMoveReady,
       ])
       playMoving = {
         id: 'play1',

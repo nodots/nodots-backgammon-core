@@ -2,8 +2,11 @@ import {
   BackgammonGame,
   BackgammonGameRolled,
   BackgammonGameRollingForStart,
+  BackgammonPlayerMoving,
+  BackgammonMoveReady,
+  BackgammonPlayMoving,
   BackgammonPlayers,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 import { randomBackgammonColor } from '..'
 import { Board } from '../Board'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
@@ -150,10 +153,8 @@ async function simulateGame(verbose = false): Promise<{
           const playerMoving = {
             ...gameRolled.activePlayer,
             stateKind: 'moving',
-          } as unknown as import('nodots-backgammon-types').BackgammonPlayerMoving
-          const movesSet = new Set<
-            import('nodots-backgammon-types').BackgammonMoveReady
-          >(
+          } as unknown as BackgammonPlayerMoving
+          const movesSet = new Set<BackgammonMoveReady>(
             possibleMoves.map((m, idx) => ({
               id: `move_${i}_${idx}`,
               player: playerMoving,
@@ -163,14 +164,13 @@ async function simulateGame(verbose = false): Promise<{
               origin: m.origin,
             }))
           )
-          const playMoving: import('nodots-backgammon-types').BackgammonPlayMoving =
-            {
-              id: `play_${i}`,
-              player: playerMoving,
-              board: gameRolled.board,
-              moves: movesSet,
-              stateKind: 'moving',
-            }
+          const playMoving: BackgammonPlayMoving = {
+            id: `play_${i}`,
+            player: playerMoving,
+            board: gameRolled.board,
+            moves: movesSet,
+            stateKind: 'moving',
+          }
           // Always generate a fresh positionId for gnubg (for logging/debugging if needed)
           const positionId = exportToGnuPositionId({
             board: playMoving.board,

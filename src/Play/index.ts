@@ -14,7 +14,7 @@ import {
   BackgammonPlayResult,
   BackgammonPlayRolled,
   BackgammonPlayStateKind,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 import { Board, generateId } from '..'
 import { BearOff } from '../Move/MoveKinds/BearOff'
 

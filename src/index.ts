@@ -7,7 +7,7 @@ import {
   BackgammonGameRolling,
   BackgammonGameRollingForStart,
   BackgammonGameStateKind,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 
 export { v4 as generateId } from 'uuid'
 export type BackgammonEntity =
@@ -54,4 +54,4 @@ export {
   BackgammonGameRolling,
   BackgammonGameRollingForStart,
   BackgammonGameStateKind,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'

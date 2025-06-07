@@ -18,7 +18,7 @@ import {
   BackgammonPlayers,
   BackgammonPlayRolled,
   BackgammonPlayMoving,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 import { generateId, Player, randomBackgammonColor } from '..'
 import { Board } from '../Board'
 import { Cube } from '../Cube'

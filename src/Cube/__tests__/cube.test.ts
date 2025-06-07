@@ -6,7 +6,7 @@ import {
   BackgammonPlayerInactive,
   BackgammonPlayerRolled,
   BackgammonPlayers,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 import { describe, it, expect, beforeAll } from '@jest/globals'
 
 let cube: Cube

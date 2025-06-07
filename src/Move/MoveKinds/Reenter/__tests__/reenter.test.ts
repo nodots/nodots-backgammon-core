@@ -13,7 +13,7 @@ import {
   BackgammonPlayerRolled,
   BackgammonRoll,
   BackgammonDieValue,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 
 describe('Reenter', () => {
   const setupTest = (

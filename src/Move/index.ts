@@ -16,7 +16,7 @@ import {
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
   BackgammonPoint,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 import { generateId } from '..'
 import { BearOff } from './MoveKinds/BearOff'
 import { PointToPoint } from './MoveKinds/PointToPoint'

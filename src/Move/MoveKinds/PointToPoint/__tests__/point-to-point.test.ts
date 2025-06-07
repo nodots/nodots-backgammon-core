@@ -17,7 +17,7 @@ import {
   BackgammonColor,
   BackgammonMoveDirection,
   BackgammonDieValue,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 
 describe('PointToPoint', () => {
   const setupTestData = (

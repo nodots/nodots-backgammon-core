@@ -5,7 +5,7 @@ import {
   BackgammonColor,
   BackgammonGameRolled,
   BackgammonGameMoving,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 
 // GNU BG base64 alphabet
 const GNU_BASE64 =

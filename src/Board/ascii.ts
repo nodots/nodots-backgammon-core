@@ -3,7 +3,7 @@ import {
   BackgammonPoint,
   BackgammonBar,
   BackgammonOff,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 
 export const ascii = (board: BackgammonBoard, players?: any[]): string => {
   const points = board.BackgammonPoints

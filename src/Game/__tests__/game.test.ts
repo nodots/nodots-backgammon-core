@@ -8,7 +8,7 @@ import {
   BackgammonPlayerRolledForStart,
   BackgammonPlayerRolling,
   BackgammonPlayers,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 import { Game } from '..'
 import { randomBackgammonColor } from '../../'
 import { Player } from '../../Player'

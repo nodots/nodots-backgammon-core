@@ -15,7 +15,7 @@ import {
   BackgammonPoint,
   BackgammonPoints,
   BackgammonPointValue,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 import { ascii } from './ascii'
 import { BOARD_IMPORT_DEFAULT } from './imports'
 

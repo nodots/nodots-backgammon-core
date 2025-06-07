@@ -8,7 +8,7 @@ import {
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
   BackgammonPoint,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 
 export class BearOff {
   public static isA = function isABearOff(

@@ -18,16 +18,16 @@ import {
   BackgammonPlayMoving,
   BackgammonPoint,
   BackgammonPlayerDoubled,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 import { Board, Dice, generateId } from '..'
 import { Play } from '../Play'
 // Import AI analyzers and selector
-import { selectMoveFromList } from 'nodots-backgammon-ai/dist/nodots-backgammon-ai/src'
-import { getBestMoveFromGnubg } from 'nodots-backgammon-ai/dist/nodots-backgammon-ai/src/gnubgApi'
 import {
+  selectMoveFromList,
+  getBestMoveFromGnubg,
   RandomMoveAnalyzer,
   FurthestFromOffMoveAnalyzer,
-} from 'nodots-backgammon-ai/dist/nodots-backgammon-ai/src/moveAnalyzers'
+} from '@nodots-llc/backgammon-ai'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
 
 /**
@@ -235,14 +235,14 @@ export class Player {
   public static getBestMove = async function getBestMove(
     play: BackgammonPlayMoving,
     strategy: BackgammonMoveStrategy = 'gnubg',
-    players?: import('nodots-backgammon-types').BackgammonPlayers
+    players?: import('@nodots-llc/backgammon-types').BackgammonPlayers
   ): Promise<
-    import('nodots-backgammon-types').BackgammonMoveReady | undefined
+    import('@nodots-llc/backgammon-types').BackgammonMoveReady | undefined
   > {
     if (!play.moves || play.moves.size === 0) return undefined
     const readyMoves = Array.from(play.moves).filter(
       (move) => move.stateKind === 'ready'
-    ) as import('nodots-backgammon-types').BackgammonMoveReady[]
+    ) as import('@nodots-llc/backgammon-types').BackgammonMoveReady[]
     if (readyMoves.length === 0) return undefined
 
     // Helper to select by analyzer
@@ -250,7 +250,7 @@ export class Player {
       const selected = await selectMoveFromList(readyMoves, analyzer)
       return selected === null
         ? undefined
-        : (selected as import('nodots-backgammon-types').BackgammonMoveReady)
+        : (selected as import('@nodots-llc/backgammon-types').BackgammonMoveReady)
     }
 
     // Try primary strategy, then fallbacks

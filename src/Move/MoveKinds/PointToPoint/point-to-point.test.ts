@@ -11,7 +11,7 @@ import {
   BackgammonRoll,
   BackgammonBoard,
   BackgammonMoveCompleted,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 
 describe('PointToPoint', () => {
   describe('move', () => {

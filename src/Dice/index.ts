@@ -6,7 +6,7 @@ import {
   BackgammonDiceStateKind,
   BackgammonDieValue,
   BackgammonRoll,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 
 export class Dice {
   public static initialize = function initializeDice(

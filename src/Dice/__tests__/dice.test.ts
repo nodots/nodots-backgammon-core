@@ -5,7 +5,7 @@ import {
   BackgammonDiceInactive,
   BackgammonDiceRolled,
   BackgammonRoll,
-} from 'nodots-backgammon-types'
+} from '@nodots-llc/backgammon-types'
 
 const monteCarloRuns = 100000
 const randomColor = randomBackgammonColor()
