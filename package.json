@@ -1,7 +1,7 @@
 {
-  "name": "@nodots-llc/backgammon-core",
+  "name": "@nodots-llc/backgammon-types",
   "version": "1.0.6",
-  "description": "Game logic for backgammon",
+  "description": "Type definitions for nodots-backgammon projects.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -9,7 +9,7 @@
   ],
   "keywords": [
     "backgammon",
-    "game",
+    "types",
     "boardgame",
     "code library"
   ],
@@ -17,9 +17,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nodots/nodots-backgammon-core.git"
+    "url": "git+https://github.com/nodots/nodots-backgammon-types.git"
   },
-  "homepage": "https://github.com/nodots/nodots-backgammon-core#readme",
+  "homepage": "https://github.com/nodots/nodots-backgammon-types#readme",
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
@@ -37,8 +37,6 @@
     "publish:npm": "npm publish --access public"
   },
   "dependencies": {
-    "@nodots-llc/backgammon-ai": "^1.0.0",
-    "@nodots-llc/backgammon-types": "^1.0.0",
     "uuid": "^11.0.5"
   },
   "devDependencies": {
