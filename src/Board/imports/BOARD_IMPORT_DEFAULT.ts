@@ -1,5 +1,5 @@
 import { randomBackgammonColor } from '../..'
-import { BackgammonCheckerContainerImport } from '@nodots-llc/backgammon-types'
+import { BackgammonCheckerContainerImport } from '@nodots-llc/backgammon-types/dist'
 
 const defaultClockwiseColor = 'white'
 const defaultCounterclockwiseColor =

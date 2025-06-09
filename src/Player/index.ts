@@ -18,16 +18,18 @@ import {
   BackgammonPlayMoving,
   BackgammonPoint,
   BackgammonPlayerDoubled,
-} from '@nodots-llc/backgammon-types'
+  BackgammonPlayers,
+} from '@nodots-llc/backgammon-types/dist'
 import { Board, Dice, generateId } from '..'
 import { Play } from '../Play'
+export * from '../index'
 // Import AI analyzers and selector
-import {
-  selectMoveFromList,
-  getBestMoveFromGnubg,
-  RandomMoveAnalyzer,
-  FurthestFromOffMoveAnalyzer,
-} from '@nodots-llc/backgammon-ai'
+// import {
+//   selectMoveFromList,
+//   getBestMoveFromGnubg,
+//   RandomMoveAnalyzer,
+//   FurthestFromOffMoveAnalyzer,
+// } from '@nodots-llc/backgammon-ai'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
 
 /**
@@ -235,73 +237,24 @@ export class Player {
   public static getBestMove = async function getBestMove(
     play: BackgammonPlayMoving,
     strategy: BackgammonMoveStrategy = 'gnubg',
-    players?: import('@nodots-llc/backgammon-types').BackgammonPlayers
+    players?: import('@nodots-llc/backgammon-types/dist').BackgammonPlayers
   ): Promise<
-    import('@nodots-llc/backgammon-types').BackgammonMoveReady | undefined
+    import('@nodots-llc/backgammon-types/dist').BackgammonMoveReady | undefined
   > {
     if (!play.moves || play.moves.size === 0) return undefined
     const readyMoves = Array.from(play.moves).filter(
       (move) => move.stateKind === 'ready'
-    ) as import('@nodots-llc/backgammon-types').BackgammonMoveReady[]
+    ) as import('@nodots-llc/backgammon-types/dist').BackgammonMoveReady[]
     if (readyMoves.length === 0) return undefined
 
-    // Helper to select by analyzer
-    const selectByAnalyzer = async (analyzer: any) => {
-      const selected = await selectMoveFromList(readyMoves, analyzer)
-      return selected === null
-        ? undefined
-        : (selected as import('@nodots-llc/backgammon-types').BackgammonMoveReady)
-    }
+    return readyMoves[0]
+    // const selected = await chooseMove(play, players)
 
-    // Try primary strategy, then fallbacks
-    const strategies: BackgammonMoveStrategy[] =
-      strategy === 'gnubg'
-        ? ['gnubg', 'furthest-checker', 'random']
-        : strategy === 'furthest-checker'
-        ? ['furthest-checker', 'random']
-        : ['random']
-
-    for (const strat of strategies) {
-      try {
-        if (strat === 'gnubg') {
-          // Use provided players if available, otherwise fallback to [play.player]
-          const gamePlayers = players || [play.player]
-          const game = {
-            board: play.board,
-            players: gamePlayers,
-            stateKind: 'rolled',
-            activePlayer: play.player,
-            inactivePlayer:
-              gamePlayers.find((p: any) => p.id !== play.player.id) ||
-              play.player,
-            activeColor: play.player.color,
-          } as any
-          const positionId = exportToGnuPositionId(game)
-          const bestMoveStr = await getBestMoveFromGnubg(positionId)
-          const normalized = (move: any) =>
-            `${move.origin?.position?.clockwise}/${move.destination?.position?.clockwise}`
-          const bestMove = readyMoves.find((move) =>
-            bestMoveStr.includes(normalized(move))
-          )
-          if (bestMove) return bestMove
-          // If not found, fall through to next strategy
-        } else if (strat === 'furthest-checker') {
-          const move = await selectByAnalyzer(new FurthestFromOffMoveAnalyzer())
-          if (move) return move
-        } else if (strat === 'random') {
-          const move = await selectByAnalyzer(new RandomMoveAnalyzer())
-          if (move) return move
-        }
-      } catch (e) {
-        console.error(`Error using ${strat} strategy:`, e)
-        // Log failover event
-        if (strat !== strategies[strategies.length - 1]) {
-          console.warn(`Failing over from ${strat} to next strategy...`)
-        }
-        // Try next strategy
-      }
-    }
-    // If all strategies fail
-    return undefined
+    // if (strategy === 'human' || strategy === 'random') {
+    //   const selected = await chooseMove(play)
+    //   return selected === null
+    //     ? undefined
+    //     : (selected as import('@nodots-llc/backgammon-types/dist').BackgammonMoveReady)
+    // }
   }
 }

@@ -2,7 +2,7 @@ import { Board } from '../index'
 import { Game } from '../../Game'
 import { Player } from '../../Player'
 import { exportToGnuPositionId } from '../gnuPositionId'
-import { BackgammonPlayers } from '@nodots-llc/backgammon-types'
+import { BackgammonPlayers } from '@nodots-llc/backgammon-types/dist'
 
 describe('exportToGnuPositionId', () => {
   it('exports the default Nodots board to the correct GNU Position ID', () => {

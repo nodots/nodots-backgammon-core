@@ -12,10 +12,11 @@ import {
   BackgammonMoveSkeleton,
   BackgammonOff,
   BackgammonPlayer,
+  BackgammonPlayers,
   BackgammonPoint,
   BackgammonPoints,
   BackgammonPointValue,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots-llc/backgammon-types/dist'
 import { ascii } from './ascii'
 import { BOARD_IMPORT_DEFAULT } from './imports'
 
@@ -617,7 +618,7 @@ export class Board implements BackgammonBoard {
 
   public static getAsciiBoard = (
     board: BackgammonBoard,
-    players?: any[]
+    players?: BackgammonPlayers
   ): string => ascii(board, players)
 
   public static displayAsciiBoard = (

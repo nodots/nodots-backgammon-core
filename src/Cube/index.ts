@@ -8,7 +8,7 @@ import {
   BackgammonCubeValue,
   BackgammonPlayer,
   BackgammonPlayers,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots-llc/backgammon-types/dist'
 
 export interface CubeProps {
   id?: string

@@ -14,9 +14,11 @@ import {
   BackgammonPlayResult,
   BackgammonPlayRolled,
   BackgammonPlayStateKind,
-} from '@nodots-llc/backgammon-types'
+  BackgammonPoint,
+} from '@nodots-llc/backgammon-types/dist'
 import { Board, generateId } from '..'
 import { BearOff } from '../Move/MoveKinds/BearOff'
+export * from '../index'
 
 const allowedMoveKinds = ['point-to-point', 'reenter', 'bear-off'] as const
 type AllowedMoveKind = (typeof allowedMoveKinds)[number]

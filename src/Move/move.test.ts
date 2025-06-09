@@ -12,7 +12,7 @@ import {
   BackgammonRoll,
   BackgammonMoveSkeleton,
   BackgammonMoves,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots-llc/backgammon-types/dist'
 
 describe('Move', () => {
   describe('initialize', () => {

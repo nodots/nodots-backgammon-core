@@ -15,7 +15,7 @@ import {
   BackgammonPoint,
   BackgammonPointValue,
   BackgammonRoll,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots-llc/backgammon-types/dist'
 import { Move } from '..'
 import { generateId } from '../..'
 import { Board } from '../../Board'

@@ -1,5 +1,5 @@
 import { Board } from '.'
-import { BackgammonBoard } from '@nodots-llc/backgammon-types'
+import { BackgammonBoard } from '@nodots-llc/backgammon-types/dist'
 import { BOARD_IMPORT_BOTH_BEAROFF } from './imports'
 import { describe, beforeEach, it, expect } from '@jest/globals'
 

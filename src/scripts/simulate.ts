@@ -7,7 +7,7 @@ import {
   BackgammonPlayerInactive,
   BackgammonPlayerRolled,
   BackgammonPlayerRolling,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots-llc/backgammon-types/dist'
 import { Board, Game, Player } from '..'
 
 interface SimulationStats {

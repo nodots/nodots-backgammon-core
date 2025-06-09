@@ -7,7 +7,7 @@ import {
   BackgammonOff,
   BackgammonPlayerMoving,
   BackgammonPoint,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots-llc/backgammon-types/dist'
 
 export function getDestination(
   origin: BackgammonCheckerContainer,

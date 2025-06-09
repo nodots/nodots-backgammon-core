@@ -1,15 +1,8 @@
-import {
-  BackgammonColor,
-  BackgammonMoveDirection,
-  BackgammonGame,
-  BackgammonGameMoving,
-  BackgammonGameRolledForStart,
-  BackgammonGameRolling,
-  BackgammonGameRollingForStart,
-  BackgammonGameStateKind,
-} from '@nodots-llc/backgammon-types'
-
 export { v4 as generateId } from 'uuid'
+
+export type BackgammonColor = 'black' | 'white'
+export type BackgammonMoveDirection = 'clockwise' | 'counterclockwise'
+
 export type BackgammonEntity =
   | 'board'
   | 'checker'
@@ -43,15 +36,6 @@ export * from './Checker'
 export * from './Cube'
 export * from './Dice'
 export * from './Game'
+export * from './Move'
+export * from './Play'
 export * from './Player'
-
-export {
-  BackgammonColor,
-  BackgammonMoveDirection,
-  BackgammonGame,
-  BackgammonGameMoving,
-  BackgammonGameRolledForStart,
-  BackgammonGameRolling,
-  BackgammonGameRollingForStart,
-  BackgammonGameStateKind,
-} from '@nodots-llc/backgammon-types'

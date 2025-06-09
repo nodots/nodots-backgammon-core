@@ -3,7 +3,7 @@ import {
   BackgammonBoard,
   BackgammonChecker,
   BackgammonColor,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots-llc/backgammon-types/dist'
 
 export class Checker {
   public static getCheckers = function getCheckers(

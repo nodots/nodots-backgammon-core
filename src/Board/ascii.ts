@@ -1,14 +1,19 @@
 import {
-  BackgammonBoard,
-  BackgammonPoint,
   BackgammonBar,
+  BackgammonBoard,
+  BackgammonChecker,
   BackgammonOff,
-} from '@nodots-llc/backgammon-types'
+  BackgammonPlayer,
+  BackgammonPlayers,
+  BackgammonPoint,
+} from '@nodots-llc/backgammon-types/dist'
 
-export const ascii = (board: BackgammonBoard, players?: any[]): string => {
+export const ascii = (
+  board: BackgammonBoard,
+  players?: BackgammonPlayers
+): string => {
   const points = board.BackgammonPoints
   const bar = board.bar
-  const off = board.off
 
   // Enhanced legend for player symbols, color, and direction
   let boardDisplay = ''
@@ -44,15 +49,6 @@ export const ascii = (board: BackgammonBoard, players?: any[]): string => {
     return symbol
   }
 
-  const displayOff = (off: BackgammonOff, row: number): string => {
-    const checkers = off.checkers
-    const checker = checkers[row]
-    if (!checker) return ' '
-    const color = checker.color
-    const symbol = color === 'black' ? 'X' : 'O'
-    return `${symbol}`
-  }
-
   for (let row = 0; row < 5; row++) {
     boardDisplay += ' |'
     for (let i = 12; i < 18; i++) {
@@ -86,21 +82,33 @@ export const ascii = (board: BackgammonBoard, players?: any[]): string => {
 
   // Count checkers by color instead of direction
   const blackBarCount =
-    board.bar.clockwise.checkers.filter((c) => c.color === 'black').length +
-    board.bar.counterclockwise.checkers.filter((c) => c.color === 'black')
-      .length
+    board.bar.clockwise.checkers.filter(
+      (c: BackgammonChecker) => c.color === 'black'
+    ).length +
+    board.bar.counterclockwise.checkers.filter(
+      (c: BackgammonChecker) => c.color === 'black'
+    ).length
   const whiteBarCount =
-    board.bar.clockwise.checkers.filter((c) => c.color === 'white').length +
-    board.bar.counterclockwise.checkers.filter((c) => c.color === 'white')
-      .length
+    board.bar.clockwise.checkers.filter(
+      (c: BackgammonChecker) => c.color === 'white'
+    ).length +
+    board.bar.counterclockwise.checkers.filter(
+      (c: BackgammonChecker) => c.color === 'white'
+    ).length
   const blackOffCount =
-    board.off.clockwise.checkers.filter((c) => c.color === 'black').length +
-    board.off.counterclockwise.checkers.filter((c) => c.color === 'black')
-      .length
+    board.off.clockwise.checkers.filter(
+      (c: BackgammonChecker) => c.color === 'black'
+    ).length +
+    board.off.counterclockwise.checkers.filter(
+      (c: BackgammonChecker) => c.color === 'black'
+    ).length
   const whiteOffCount =
-    board.off.clockwise.checkers.filter((c) => c.color === 'white').length +
-    board.off.counterclockwise.checkers.filter((c) => c.color === 'white')
-      .length
+    board.off.clockwise.checkers.filter(
+      (c: BackgammonChecker) => c.color === 'white'
+    ).length +
+    board.off.counterclockwise.checkers.filter(
+      (c: BackgammonChecker) => c.color === 'white'
+    ).length
 
   boardDisplay += `       BLACK BAR: ${blackBarCount}          WHITE BAR: ${whiteBarCount}\n`
   boardDisplay += `       BLACK OFF: ${blackOffCount}          WHITE OFF: ${whiteOffCount}\n`

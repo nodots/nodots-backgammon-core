@@ -1,4 +1,4 @@
-import { BackgammonCheckerContainerImport } from '@nodots-llc/backgammon-types'
+import { BackgammonCheckerContainerImport } from '@nodots-llc/backgammon-types/dist'
 
 // Define colors explicitly to ensure consistency
 const clockwiseColor = 'white'

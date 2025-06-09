@@ -11,7 +11,7 @@ import {
   BackgammonMoveStateKind,
   BackgammonPoint,
   BackgammonMoveCompletedWithMove,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots-llc/backgammon-types/dist'
 
 export class Reenter {
   public static isA = function isAReenterMove(

@@ -12,7 +12,7 @@ import {
   BackgammonMoveCompletedWithMove,
   BackgammonPlayerMoving,
   BackgammonDiceRolled,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots-llc/backgammon-types/dist'
 
 export class PointToPoint {
   public static isA = function isAPointToPoint(

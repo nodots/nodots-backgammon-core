@@ -18,11 +18,12 @@ import {
   BackgammonPlayers,
   BackgammonPlayRolled,
   BackgammonPlayMoving,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots-llc/backgammon-types/dist'
 import { generateId, Player, randomBackgammonColor } from '..'
 import { Board } from '../Board'
 import { Cube } from '../Cube'
 import { Play } from '../Play'
+export * from '../index'
 
 export interface GameProps {
   players: BackgammonPlayers
@@ -31,7 +32,7 @@ export interface GameProps {
 }
 
 export class Game {
-  id!: string
+  id: string = generateId()
   stateKind!: BackgammonGameStateKind
   players!: BackgammonPlayers
   board!: Board

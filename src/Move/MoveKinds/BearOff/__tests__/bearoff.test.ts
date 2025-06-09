@@ -17,7 +17,7 @@ import {
   BackgammonMoveKind,
   BackgammonMoveSkeleton,
   BackgammonPlayer,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots-llc/backgammon-types/dist'
 import { BOARD_IMPORT_BOTH_BEAROFF } from '../../../../Board/imports'
 
 const convertSkeletonToMove = (

@@ -4,7 +4,7 @@ import {
   BackgammonPointValue,
   BackgammonDieValue,
   BackgammonColor,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots-llc/backgammon-types/dist'
 import { BOARD_IMPORT_BOTH_BEAROFF } from '../imports'
 import { describe, beforeEach, it, expect } from '@jest/globals'
 

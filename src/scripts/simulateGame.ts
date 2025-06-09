@@ -6,7 +6,7 @@ import {
   BackgammonMoveReady,
   BackgammonPlayMoving,
   BackgammonPlayers,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots-llc/backgammon-types/dist'
 import { randomBackgammonColor } from '..'
 import { Board } from '../Board'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
