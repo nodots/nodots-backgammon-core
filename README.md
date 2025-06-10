@@ -1,6 +1,6 @@
 # nodots-backgammon-core
 
-[![codecov](https://codecov.io/gh/nodots/nodots-backgammon-core/graph/badge.svg?token=cda6ea64-c598-4b15-a76d-1b8763968fe7)](https://codecov.io/gh/nodots/nodots-backgammon-core)
+[![codecov](https://codecov.io/gh/nodots/nodots-backgammon-core/graph/badge.svg)](https://codecov.io/gh/nodots/nodots-backgammon-core)
 [![Statements](https://img.shields.io/codecov/c/github/nodots/nodots-backgammon-core/main.svg?style=flat-square&label=Statements)](https://codecov.io/gh/nodots/nodots-backgammon-core)
 [![Branches](https://img.shields.io/codecov/c/github/nodots/nodots-backgammon-core/main.svg?style=flat-square&label=Branches)](https://codecov.io/gh/nodots/nodots-backgammon-core)
 [![Functions](https://img.shields.io/codecov/c/github/nodots/nodots-backgammon-core/main.svg?style=flat-square&label=Functions)](https://codecov.io/gh/nodots/nodots-backgammon-core)
@@ -105,6 +105,11 @@ The project uses Jest for testing. Tests are located in `__tests__` directories 
 ### Coverage
 
 The test coverage report provides the following metrics:
+
+- **Statements**: Percentage of statements in the code that have been executed.
+- **Branches**: Percentage of branches (e.g., if/else statements) that have been taken.
+- **Functions**: Percentage of functions that have been called.
+- **Lines**: Percentage of lines of code that have been executed.
 
 Run tests:
 
