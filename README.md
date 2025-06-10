@@ -13,6 +13,10 @@ The library implements the standard rules of backgammon, including:
 - Bearing off
 - Pip count tracking
 
+## Coverage
+
+[![Coverage Status](https://coveralls.io/repos/github/nodots/nodots-backgammon-core/badge.svg?branch=main)](https://coveralls.io/github/nodots/nodots-backgammon-core?branch=main)
+
 ## Installation
 
 ```bash
@@ -24,7 +28,7 @@ npm i @nodots-llc/backgammon-core
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/nodots-backgammon-core.git
+git clone https://github.com/nodots/nodots-backgammon-core.git
 cd nodots-backgammon-core
 ```
 
