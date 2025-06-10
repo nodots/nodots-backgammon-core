@@ -2,6 +2,10 @@
 
 Core game logic implementation for the nodots-backgammon project. This library handles all the game mechanics, move validation, and state management for a backgammon game.
 
+## Test Coverage
+
+[![Coverage Status](https://coveralls.io/repos/github/nodots/nodots-backgammon-core/badge.svg?branch=main)](https://coveralls.io/github/nodots/nodots-backgammon-core?branch=main)
+
 ## Overview
 
 The library implements the standard rules of backgammon, including:
@@ -12,10 +16,6 @@ The library implements the standard rules of backgammon, including:
 - Bar entry and re-entry
 - Bearing off
 - Pip count tracking
-
-## Coverage
-
-[![Coverage Status](https://coveralls.io/repos/github/nodots/nodots-backgammon-core/badge.svg?branch=main)](https://coveralls.io/github/nodots/nodots-backgammon-core?branch=main)
 
 ## Installation
 
@@ -125,7 +125,7 @@ npm test -- --coverage
 
 MIT License
 
-Copyright (c) 2024 nodots-backgammon
+Copyright (c) 2025 Ken Riley <kenr@nodots.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
