@@ -1,10 +1,12 @@
 # nodots-backgammon-core
 
+[![codecov](https://codecov.io/gh/nodots/nodots-backgammon-core/graph/badge.svg?token=cda6ea64-c598-4b15-a76d-1b8763968fe7)](https://codecov.io/gh/nodots/nodots-backgammon-core)
+[![Statements](https://img.shields.io/codecov/c/github/nodots/nodots-backgammon-core/main.svg?style=flat-square&label=Statements)](https://codecov.io/gh/nodots/nodots-backgammon-core)
+[![Branches](https://img.shields.io/codecov/c/github/nodots/nodots-backgammon-core/main.svg?style=flat-square&label=Branches)](https://codecov.io/gh/nodots/nodots-backgammon-core)
+[![Functions](https://img.shields.io/codecov/c/github/nodots/nodots-backgammon-core/main.svg?style=flat-square&label=Functions)](https://codecov.io/gh/nodots/nodots-backgammon-core)
+[![Lines](https://img.shields.io/codecov/c/github/nodots/nodots-backgammon-core/main.svg?style=flat-square&label=Lines)](https://codecov.io/gh/nodots/nodots-backgammon-core)
+
 Core game logic implementation for the nodots-backgammon project. This library handles all the game mechanics, move validation, and state management for a backgammon game.
-
-## Test Coverage
-
-[![Coverage Status](https://coveralls.io/repos/github/nodots/nodots-backgammon-core/badge.svg?branch=main)](https://coveralls.io/github/nodots/nodots-backgammon-core?branch=main)
 
 ## Overview
 
@@ -99,6 +101,10 @@ const play = Play.initialize(board, player)
 ## Testing
 
 The project uses Jest for testing. Tests are located in `__tests__` directories next to the code they test.
+
+### Coverage
+
+The test coverage report provides the following metrics:
 
 Run tests:
 
