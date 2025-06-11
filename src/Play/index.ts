@@ -179,13 +179,13 @@ export class Play {
     )
 
     // Debug: Print player state before move generation
-    console.log('[DEBUG Play.initialize] player:', {
-      color: player.color,
-      direction: player.direction,
-      stateKind: player.stateKind,
-      isRobot: (player as any).isRobot,
-      dice: player.dice && player.dice.currentRoll,
-    })
+    // console.log('[DEBUG Play.initialize] player:', {
+    //   color: player.color,
+    //   direction: player.direction,
+    //   stateKind: player.stateKind,
+    //   isRobot: (player as any).isRobot,
+    //   dice: player.dice && player.dice.currentRoll,
+    // })
 
     // ---
     // BULLET-PROOF BAR HANDLING LOGIC:
