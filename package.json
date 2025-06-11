@@ -29,7 +29,6 @@
     "lint:fix": "eslint src/**/*.ts --fix",
     "build": "tsc",
     "clean": "rm -rf dist coverage",
-    "codecov": "codecov",
     "simulate": "ts-node src/scripts/simulate.ts",
     "simulate:game": "ts-node src/scripts/simulateGame.ts",
     "install:latest-types": "rm -rf node_modules package-lock.json && npm install",

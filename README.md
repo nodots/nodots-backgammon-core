@@ -1,10 +1,10 @@
 # nodots-backgammon-core
 
-[![codecov](https://codecov.io/gh/nodots/nodots-backgammon-core/graph/badge.svg?token=YOUR_TOKEN_HERE&branch=development)](https://codecov.io/gh/nodots/nodots-backgammon-core)
-[![Statements](https://img.shields.io/codecov/c/github/nodots/nodots-backgammon-core/development.svg?style=flat-square&label=Statements)](https://codecov.io/gh/nodots/nodots-backgammon-core)
-[![Branches](https://img.shields.io/codecov/c/github/nodots/nodots-backgammon-core/development.svg?style=flat-square&label=Branches)](https://codecov.io/gh/nodots/nodots-backgammon-core)
-[![Functions](https://img.shields.io/codecov/c/github/nodots/nodots-backgammon-core/development.svg?style=flat-square&label=Functions)](https://codecov.io/gh/nodots/nodots-backgammon-core)
-[![Lines](https://img.shields.io/codecov/c/github/nodots/nodots-backgammon-core/development.svg?style=flat-square&label=Lines)](https://codecov.io/gh/nodots/nodots-backgammon-core)
+[![codecov](https://codecov.io/gh/nodots/nodots-backgammon-core/graph/badge.svg)](https://codecov.io/gh/nodots/nodots-backgammon-core)
+[![Statements](https://img.shields.io/codecov/c/github/nodots/nodots-backgammon-core/main.svg?style=flat-square&label=Statements)](https://codecov.io/gh/nodots/nodots-backgammon-core)
+[![Branches](https://img.shields.io/codecov/c/github/nodots/nodots-backgammon-core/main.svg?style=flat-square&label=Branches)](https://codecov.io/gh/nodots/nodots-backgammon-core)
+[![Functions](https://img.shields.io/codecov/c/github/nodots/nodots-backgammon-core/main.svg?style=flat-square&label=Functions)](https://codecov.io/gh/nodots/nodots-backgammon-core)
+[![Lines](https://img.shields.io/codecov/c/github/nodots/nodots-backgammon-core/main.svg?style=flat-square&label=Lines)](https://codecov.io/gh/nodots/nodots-backgammon-core)
 
 Core game logic implementation for the nodots-backgammon project. This library handles all the game mechanics, move validation, and state management for a backgammon game.
 
