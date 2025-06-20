@@ -1,12 +1,8 @@
 <!-- COVERAGE-START -->
-
-### Test Coverage
-
 ![Statements](https://img.shields.io/badge/Statements-86%25-green?style=flat-square)
 ![Branches](https://img.shields.io/badge/Branches-73%25-yellow?style=flat-square)
 ![Functions](https://img.shields.io/badge/Functions-92%25-brightgreen?style=flat-square)
 ![Lines](https://img.shields.io/badge/Lines-87%25-green?style=flat-square)
-
 <!-- COVERAGE-END -->
 
 # nodots-backgammon-core

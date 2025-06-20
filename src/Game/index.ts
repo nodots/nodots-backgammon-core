@@ -16,8 +16,8 @@ import {
   BackgammonPlayerRolledForStart,
   BackgammonPlayerRolling,
   BackgammonPlayers,
-  BackgammonPlayRolled,
   BackgammonPlayMoving,
+  BackgammonPlayRolled,
 } from '@nodots-llc/backgammon-types/dist'
 import { generateId, Player, randomBackgammonColor } from '..'
 import { Board } from '../Board'
@@ -224,9 +224,15 @@ export class Game {
       player: playerRolled,
     } as BackgammonPlayRolled
 
+    // Update the players array to include the rolled player
+    const updatedPlayers = players.map((p) =>
+      p.id === playerRolled.id ? playerRolled : p
+    ) as BackgammonPlayers
+
     return {
       ...game,
       stateKind: 'rolled',
+      players: updatedPlayers,
       activePlayer: playerRolled,
       activePlay: rolledPlay,
       board,
