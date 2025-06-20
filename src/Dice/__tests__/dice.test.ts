@@ -1,11 +1,11 @@
-import { describe, it, expect } from '@jest/globals'
-import { Dice } from '..'
-import { randomBackgammonColor } from '../..'
+import { describe, expect, it } from '@jest/globals'
 import {
-  BackgammonDiceInactive,
   BackgammonDiceRolled,
   BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
+import { Dice } from '..'
+import { randomBackgammonColor } from '../..'
+import { logger } from '../../utils/logger'
 
 const monteCarloRuns = 100000
 const randomColor = randomBackgammonColor()
@@ -69,12 +69,17 @@ describe('Dice', () => {
       counts.forEach((count, index) => {
         const deviation = Math.abs(count - expectedCount) / expectedCount
         expect(deviation).toBeLessThan(0.05) // Allowing 5% deviation
+        const percentage = ((count / (monteCarloRuns * 2)) * 100).toFixed(2)
         console.log(
-          `Die value ${index + 1} appeared ${count} times (${(
-            (count / (monteCarloRuns * 2)) *
-            100
-          ).toFixed(2)}%)`
+          `Die value ${index + 1} appeared ${count} times (${percentage}%)`
         )
+        logger.info('[Dice Test] Die distribution:', {
+          dieValue: index + 1,
+          count,
+          percentage: parseFloat(percentage),
+          expectedCount,
+          deviation,
+        })
       })
     })
 
@@ -116,6 +121,37 @@ describe('Dice', () => {
           expectedProbability
         expect(deviation).toBeLessThan(0.1) // Allowing 10% deviation
       }
+    })
+
+    test('should have correct probability of doubles', () => {
+      const dice = Dice.initialize(randomColor)
+      const rolls = []
+      for (let i = 0; i < monteCarloRuns; i++) {
+        const roll = Dice.roll(dice)
+        rolls.push(roll)
+      }
+
+      const doubles = rolls.filter((roll) =>
+        Dice.isDouble(roll as BackgammonDiceRolled)
+      )
+      const doublesProbability = doubles.length / monteCarloRuns
+      const expectedProbability = 1 / 6 // 6 possible doubles out of 36 possible rolls
+
+      const deviation =
+        Math.abs(doublesProbability - expectedProbability) / expectedProbability
+      expect(deviation).toBeLessThan(0.1) // Allowing 10% deviation
+      const expectedPercentage = (expectedProbability * 100).toFixed(2)
+      const actualPercentage = (doublesProbability * 100).toFixed(2)
+      console.log(
+        `Doubles probability: Expected ${expectedPercentage}%, Actual ${actualPercentage}%`
+      )
+      logger.info('[Dice Test] Doubles probability:', {
+        expectedProbability: parseFloat(expectedPercentage),
+        actualProbability: parseFloat(actualPercentage),
+        deviation,
+        totalRolls: monteCarloRuns,
+        doublesCount: doubles.length,
+      })
     })
   })
 
@@ -165,30 +201,6 @@ describe('Dice', () => {
         total: 7,
       }
       expect(Dice.isDouble(rolledDice)).toBe(false)
-    })
-
-    test('should have correct probability of doubles', () => {
-      const dice = Dice.initialize(randomColor)
-      const rolls = []
-      for (let i = 0; i < monteCarloRuns; i++) {
-        const roll = Dice.roll(dice)
-        rolls.push(roll)
-      }
-
-      const doubles = rolls.filter((roll) =>
-        Dice.isDouble(roll as BackgammonDiceRolled)
-      )
-      const doublesProbability = doubles.length / monteCarloRuns
-      const expectedProbability = 1 / 6 // 6 possible doubles out of 36 possible rolls
-
-      const deviation =
-        Math.abs(doublesProbability - expectedProbability) / expectedProbability
-      expect(deviation).toBeLessThan(0.1) // Allowing 10% deviation
-      console.log(
-        `Doubles probability: Expected ${(expectedProbability * 100).toFixed(
-          2
-        )}%, Actual ${(doublesProbability * 100).toFixed(2)}%`
-      )
     })
   })
 })

@@ -1,4 +1,3 @@
-import { Checker, generateId, Player } from '..'
 import {
   BackgammonBar,
   BackgammonBoard,
@@ -17,6 +16,8 @@ import {
   BackgammonPoints,
   BackgammonPointValue,
 } from '@nodots-llc/backgammon-types/dist'
+import { Checker, generateId } from '..'
+import { logger } from '../utils/logger'
 import { ascii } from './ascii'
 import { BOARD_IMPORT_DEFAULT } from './imports'
 
@@ -624,6 +625,13 @@ export class Board implements BackgammonBoard {
   public static displayAsciiBoard = (
     board: BackgammonBoard | undefined
   ): void => {
-    return board ? console.log(ascii(board)) : console.error('No board found')
+    if (board) {
+      logger.info('[Board] Displaying ASCII board:', {
+        boardId: board.id,
+        asciiBoard: ascii(board),
+      })
+    } else {
+      logger.error('[Board] No board found for display')
+    }
   }
 }

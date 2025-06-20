@@ -1,4 +1,3 @@
-import { Board, Player } from '../../..'
 import {
   BackgammonBoard,
   BackgammonMoveCompleted,
@@ -9,6 +8,8 @@ import {
   BackgammonPlayerRolled,
   BackgammonPoint,
 } from '@nodots-llc/backgammon-types/dist'
+import { Board, Player } from '../../..'
+import { logger } from '../../../utils/logger'
 
 export class BearOff {
   public static isA = function isABearOff(
@@ -133,13 +134,15 @@ export class BearOff {
             p.checkers.some((c) => c.color === player.color)
         )
         if (hasCheckerOnHigher) {
-          console.debug(
-            '[BearOff] Attempted to bear off with higher die value while checkers remain on higher points. Die:',
-            dieValue,
-            'Origin:',
-            originPoint.position[direction],
-            'DistanceToBearOff:',
-            distanceToBearOff
+          logger.debug(
+            '[BearOff] Attempted to bear off with higher die value while checkers remain on higher points:',
+            {
+              dieValue,
+              originPosition: originPoint.position[direction],
+              distanceToBearOff,
+              playerColor: player.color,
+              playerDirection: player.direction,
+            }
           )
           throw Error(
             'Cannot use higher number when checkers exist on higher points'

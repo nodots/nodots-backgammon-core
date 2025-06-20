@@ -1,8 +1,10 @@
 <!-- COVERAGE-START -->
+
 ![Statements](https://img.shields.io/badge/Statements-86%25-green?style=flat-square)
 ![Branches](https://img.shields.io/badge/Branches-73%25-yellow?style=flat-square)
 ![Functions](https://img.shields.io/badge/Functions-92%25-brightgreen?style=flat-square)
 ![Lines](https://img.shields.io/badge/Lines-87%25-green?style=flat-square)
+
 <!-- COVERAGE-END -->
 
 # nodots-backgammon-core
@@ -98,6 +100,112 @@ const newBoard = Board.moveChecker(board, origin, destination, direction)
 // Initialize a play with dice roll
 const play = Play.initialize(board, player)
 ```
+
+## Logging
+
+The backgammon-core package includes comprehensive logging capabilities for debugging game logic and monitoring game state changes. All logs are prefixed with `[Core]` for easy identification.
+
+### Logger Configuration
+
+```typescript
+import {
+  logger,
+  setLogLevel,
+  setConsoleEnabled,
+  setIncludeCallerInfo,
+  type LogLevel,
+} from '@nodots-llc/backgammon-core'
+
+// Set log level (debug, info, warn, error)
+setLogLevel('debug')
+
+// Disable console output (useful when using external logging)
+setConsoleEnabled(false)
+
+// Enable/disable caller information in logs
+setIncludeCallerInfo(true)
+```
+
+### Log Levels
+
+- **debug**: Detailed debugging information
+- **info**: General information about game state changes
+- **warn**: Warning messages for potential issues
+- **error**: Error messages for game logic failures
+
+### Usage Examples
+
+```typescript
+import { logger, debug, info, warn, error } from '@nodots-llc/backgammon-core'
+
+// Log game state changes
+logger.info('[Game] Game state changed:', {
+  fromState: previousState,
+  toState: newState,
+  gameId: game.id,
+})
+
+// Log move validation
+logger.info('[Move] Validating move:', {
+  fromPoint: move.from,
+  toPoint: move.to,
+  checkerId: move.checkerId,
+})
+
+// Log warnings
+logger.warn('[Move] Invalid move attempted:', {
+  reason: validationError,
+  move: move,
+})
+
+// Log errors
+logger.error('[Core] Game logic error:', {
+  error: error.message,
+  gameId: game.id,
+  context: 'move validation',
+})
+```
+
+### Log Output Format
+
+Logs follow this format:
+
+```
+[Core] [2024-01-15T10:30:45.123Z] [INFO] Game state changed | Called from: updateGameState (gameEngine.ts:45)
+[Core] [2024-01-15T10:30:46.456Z] [WARN] Invalid move attempted | Called from: validateMove (moveValidator.ts:123)
+[Core] [2024-01-15T10:30:47.789Z] [ERROR] Game logic error | Called from: processMove (gameEngine.ts:67)
+```
+
+### Environment Configuration
+
+For production environments, you may want to configure logging based on the environment:
+
+```typescript
+import { setLogLevel, setConsoleEnabled } from '@nodots-llc/backgammon-core'
+
+// Configure based on environment
+if (process.env.NODE_ENV === 'production') {
+  setLogLevel('warn') // Only show warnings and errors in production
+} else {
+  setLogLevel('debug') // Show all logs in development
+}
+
+// Optionally disable console if using external logging
+if (process.env.DISABLE_CORE_LOGGING === 'true') {
+  setConsoleEnabled(false)
+}
+```
+
+### Logged Events
+
+The logger tracks various game events:
+
+- **Game State Changes**: State transitions, turn changes, game completion
+- **Move Operations**: Move validation, execution, and completion
+- **Dice Rolling**: Roll results and available moves
+- **Rule Validation**: Move legality checks and rule violations
+- **Error Handling**: Game logic errors and exception handling
+- **Board Operations**: Checker movements and board state changes
 
 ## Testing
 

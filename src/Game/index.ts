@@ -23,6 +23,7 @@ import { generateId, Player, randomBackgammonColor } from '..'
 import { Board } from '../Board'
 import { Cube } from '../Cube'
 import { Play } from '../Play'
+import { logger } from '../utils/logger'
 export * from '../index'
 
 export interface GameProps {
@@ -279,9 +280,13 @@ export class Game {
     // If the move just made was a bear-off and this brings the total to 15, end the game
     const lastMoveKind = playResult.move && playResult.move.moveKind
     // Debug output for win condition
-    // console.log('[DEBUG] playerCheckersOff:', playerCheckersOff)
-    // console.log('[DEBUG] lastMoveKind:', lastMoveKind)
-    // console.log('[DEBUG] playerOff.checkers:', JSON.stringify(playerOff.checkers))
+    logger.debug('[Game] Checking win condition:', {
+      playerCheckersOff,
+      lastMoveKind,
+      playerOffCheckers: playerOff.checkers.length,
+      movedPlayerColor: movedPlayer.color,
+      movedPlayerDirection: movedPlayer.direction,
+    })
     if (playerCheckersOff === 15 && lastMoveKind === 'bear-off') {
       // Player has borne off all checkers, they win
       const winner = Player.initialize(

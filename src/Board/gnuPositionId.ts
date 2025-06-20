@@ -1,11 +1,12 @@
 import {
-  BackgammonGame,
   BackgammonBoard,
-  BackgammonPlayer,
   BackgammonColor,
-  BackgammonGameRolled,
+  BackgammonGame,
   BackgammonGameMoving,
+  BackgammonGameRolled,
+  BackgammonPlayer,
 } from '@nodots-llc/backgammon-types/dist'
+import { logger } from '../utils/logger'
 
 // GNU BG base64 alphabet
 const GNU_BASE64 =
@@ -101,7 +102,11 @@ export function exportToGnuPositionId(game: BackgammonGame): string {
 
   // 3. Pad to 80 bits
   if (bitString.length > 80) {
-    console.warn('Bit string too long: ' + bitString.length + '. Truncating.')
+    logger.warn('[GnuPositionId] Bit string too long, truncating:', {
+      originalLength: bitString.length,
+      maxLength: 80,
+      truncatedLength: 80,
+    })
     bitString = bitString.substring(0, 80)
   } else {
     bitString = bitString.padEnd(80, '0')

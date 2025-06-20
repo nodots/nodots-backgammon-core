@@ -2,8 +2,8 @@ import {
   BackgammonBoard,
   BackgammonChecker,
   BackgammonCube,
-  BackgammonMoveCompletedWithMove,
   BackgammonMoveCompletedNoMove,
+  BackgammonMoveCompletedWithMove,
   BackgammonMoveOrigin,
   BackgammonMoveReady,
   BackgammonMoves,
@@ -14,10 +14,10 @@ import {
   BackgammonPlayResult,
   BackgammonPlayRolled,
   BackgammonPlayStateKind,
-  BackgammonPoint,
 } from '@nodots-llc/backgammon-types/dist'
 import { Board, generateId } from '..'
 import { BearOff } from '../Move/MoveKinds/BearOff'
+import { logger } from '../utils/logger'
 export * from '../index'
 
 const allowedMoveKinds = ['point-to-point', 'reenter', 'bear-off'] as const
@@ -251,6 +251,13 @@ export class Play {
   public static startMove = function startMove(
     play: BackgammonPlayRolled
   ): BackgammonPlayMoving {
+    logger.debug('[Play] Starting move:', {
+      playId: play.id,
+      playerColor: play.player.color,
+      playerState: play.player.stateKind,
+      movesCount: play.moves.size,
+      stateKind: play.stateKind,
+    })
     return {
       ...play,
       stateKind: 'moving',

@@ -1,8 +1,8 @@
-import { Board } from '../index'
+import { BackgammonPlayers } from '@nodots-llc/backgammon-types/dist'
 import { Game } from '../../Game'
 import { Player } from '../../Player'
+import { logger } from '../../utils/logger'
 import { exportToGnuPositionId } from '../gnuPositionId'
-import { BackgammonPlayers } from '@nodots-llc/backgammon-types/dist'
 
 describe('exportToGnuPositionId', () => {
   it('exports the default Nodots board to the correct GNU Position ID', () => {
@@ -37,6 +37,14 @@ describe('exportToGnuPositionId', () => {
         // For now, logging a warning and proceeding. The test might fail if black is on roll.
         console.warn(
           "Warning: Black player is on roll. The expected ID '4HPwATDgc/ABMA' is for White on roll."
+        )
+        logger.warn(
+          '[GnuPositionId Test] Black player is on roll, expected white for standard ID:',
+          {
+            expectedId: '4HPwATDgc/ABMA',
+            actualActivePlayer: game.activePlayer.color,
+            gameState: game.stateKind,
+          }
         )
         // A common setup for such tests is to have a utility to create a specific game state.
         // Let's try to force game.activePlayer to be white for this test case.

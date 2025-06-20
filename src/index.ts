@@ -39,3 +39,16 @@ export * from './Game'
 export * from './Move'
 export * from './Play'
 export * from './Player'
+
+// Export logger utilities for consumers to configure
+export {
+  debug,
+  error,
+  info,
+  logger,
+  setConsoleEnabled,
+  setIncludeCallerInfo,
+  setLogLevel,
+  warn,
+  type LogLevel,
+} from './utils/logger'

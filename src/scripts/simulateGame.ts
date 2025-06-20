@@ -2,9 +2,9 @@ import {
   BackgammonGame,
   BackgammonGameRolled,
   BackgammonGameRollingForStart,
-  BackgammonPlayerMoving,
   BackgammonMoveReady,
   BackgammonPlayMoving,
+  BackgammonPlayerMoving,
   BackgammonPlayers,
 } from '@nodots-llc/backgammon-types/dist'
 import { randomBackgammonColor } from '..'
@@ -12,6 +12,7 @@ import { Board } from '../Board'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
 import { Game } from '../Game'
 import { Player } from '../Player'
+import { logger } from '../utils/logger'
 
 const NUM_GAMES = 5 // Set how many games to simulate
 
@@ -49,6 +50,7 @@ async function simulateGame(verbose = false): Promise<{
   if (verbose) {
     console.log('\nInitial board state:')
     console.log(Board.getAsciiBoard(game.board, players))
+    logger.info('[SimulateGame] Initial board state:', { gameId })
   }
 
   // Track board state history for repetition detection
@@ -71,6 +73,13 @@ async function simulateGame(verbose = false): Promise<{
       console.error(Board.getAsciiBoard((currentGame as any).board, players))
       console.error('Current active color:', (currentGame as any).activeColor)
       console.error('Current roll:', lastRoll ? lastRoll.join(', ') : 'N/A')
+      logger.error('[SimulateGame] Game exceeded max turns:', {
+        gameId,
+        turnCount,
+        maxTurns: MAX_TURNS,
+        activeColor: (currentGame as any).activeColor,
+        lastRoll,
+      })
       return { winner: null, turnCount, gameId, stuck: true }
     }
 
@@ -83,6 +92,7 @@ async function simulateGame(verbose = false): Promise<{
 
     if (verbose) {
       console.log(`\n=== Turn ${turnCount} ===`)
+      logger.info('[SimulateGame] Turn started:', { turnCount, gameId })
     }
 
     // Roll dice and advance state
@@ -103,6 +113,12 @@ async function simulateGame(verbose = false): Promise<{
     }
     if (verbose) {
       console.log(`\n${gameRolled.activeColor}'s roll: ${roll.join(', ')}`)
+      logger.info('[SimulateGame] Dice rolled:', {
+        gameId,
+        turnCount,
+        activeColor: gameRolled.activeColor,
+        roll,
+      })
     }
 
     // Refactored move loop: use as many dice as possible, mark unused as 'no-move', then end turn
@@ -120,6 +136,13 @@ async function simulateGame(verbose = false): Promise<{
         console.log(
           `\nBar (${gameRolled.activePlayer.direction}) before moves: [${barCheckers}] (count: ${bar.checkers.length})`
         )
+        logger.info('[SimulateGame] Bar state before moves:', {
+          gameId,
+          turnCount,
+          direction: gameRolled.activePlayer.direction,
+          barCheckers: bar.checkers.map((c: any) => c.color),
+          barCount: bar.checkers.length,
+        })
       }
       // Try each die, always using the latest gameRolled and activePlayer
       for (let i = 0; i < dice.length; i++) {
@@ -133,6 +156,12 @@ async function simulateGame(verbose = false): Promise<{
           console.log(`\nChecking possible moves for die ${die}:`)
           if (possibleMoves.length === 0) {
             console.log('  No possible moves.')
+            logger.info('[SimulateGame] No possible moves for die:', {
+              gameId,
+              turnCount,
+              die,
+              activeColor: gameRolled.activeColor,
+            })
           } else {
             possibleMoves.forEach((move, idx) => {
               const origin = move.origin
@@ -145,6 +174,13 @@ async function simulateGame(verbose = false): Promise<{
               console.log(
                 `  Option ${idx + 1}: from ${originPos} to ${destPos}`
               )
+            })
+            logger.info('[SimulateGame] Possible moves for die:', {
+              gameId,
+              turnCount,
+              die,
+              possibleMovesCount: possibleMoves.length,
+              activeColor: gameRolled.activeColor,
             })
           }
         }
@@ -213,6 +249,20 @@ async function simulateGame(verbose = false): Promise<{
                   : 'off'
               } (die: ${die})`
             )
+            logger.info('[SimulateGame] Move made:', {
+              gameId,
+              turnCount,
+              moveCount,
+              die,
+              origin:
+                origin.kind === 'point'
+                  ? origin.position[gameRolled.activePlayer.direction]
+                  : 'bar',
+              destination:
+                destination && destination.kind === 'point'
+                  ? destination.position[gameRolled.activePlayer.direction]
+                  : 'off',
+            })
           }
           try {
             const moveResult = Game.move(gameRolled, origin.id)
@@ -239,6 +289,13 @@ async function simulateGame(verbose = false): Promise<{
                 `Bar (${gameRolled.activePlayer.direction}) after move: [${barCheckers}] (count: ${bar.checkers.length})`
               )
               console.log(`Remaining dice: ${dice.join(', ')}`)
+              logger.info('[SimulateGame] Board after move:', {
+                gameId,
+                turnCount,
+                moveCount,
+                remainingDice: dice,
+                barState: bar.checkers.map((c: any) => c.color),
+              })
             }
             // WIN CONDITION CHECK: If either player has borne off all 15 checkers, declare winner
             const offClockwise = gameRolled.board.off.clockwise.checkers.length
@@ -270,6 +327,12 @@ async function simulateGame(verbose = false): Promise<{
           } catch (error) {
             if (verbose) {
               console.log(`\nCouldn't make move: ${error}`)
+              logger.error('[SimulateGame] Could not make move:', {
+                gameId,
+                turnCount,
+                die,
+                error: error instanceof Error ? error.message : String(error),
+              })
             }
             // Try next die
           }
@@ -302,6 +365,17 @@ async function simulateGame(verbose = false): Promise<{
             console.log(
               `DEBUG: Die ${die} re-entry for ${gameRolled.activePlayer.color} (${gameRolled.activePlayer.direction}): point ${reentryPoint} | checkers: [${entryCheckers}] (count: ${entryCount}) | blocked: ${blocked}`
             )
+            logger.debug('[SimulateGame] Re-entry check:', {
+              gameId,
+              turnCount,
+              die,
+              reentryPoint,
+              entryCheckers: entryPointObj
+                ? entryPointObj.checkers.map((c: any) => c.color)
+                : [],
+              entryCount,
+              blocked,
+            })
           }
         }
       }
@@ -311,6 +385,12 @@ async function simulateGame(verbose = false): Promise<{
         if (verbose && dice.length > 0) {
           console.log(`\nNo moves possible for dice: ${dice.join(', ')}`)
           console.log('Breaking out of move loop.')
+          logger.warn('[SimulateGame] No moves possible for dice:', {
+            gameId,
+            turnCount,
+            dice,
+            activeColor: gameRolled.activeColor,
+          })
         }
         break
       }
@@ -371,6 +451,17 @@ async function simulateGame(verbose = false): Promise<{
       console.error(Board.getAsciiBoard((currentGame as any).board, players))
       console.error('Current active color:', (currentGame as any).activeColor)
       console.error('Current roll:', lastRoll ? lastRoll.join(', ') : 'N/A')
+      logger.error(
+        '[SimulateGame] Game deadlocked - both players stuck on bar:',
+        {
+          gameId,
+          turnCount,
+          activeColor: (currentGame as any).activeColor,
+          lastRoll,
+          hasBlackOnBar,
+          hasWhiteOnBar,
+        }
+      )
       return { winner: null, turnCount, gameId, stuck: true }
     }
 
@@ -396,6 +487,17 @@ async function simulateGame(verbose = false): Promise<{
       console.error(Board.getAsciiBoard((currentGame as any).board, players))
       console.error('Current active color:', (currentGame as any).activeColor)
       console.error('Current roll:', lastRoll ? lastRoll.join(', ') : 'N/A')
+      logger.error(
+        '[SimulateGame] Game deadlocked - no legal moves for any player:',
+        {
+          gameId,
+          turnCount,
+          activeColor: (currentGame as any).activeColor,
+          lastRoll,
+          blackCanMove: playerCanMove[0],
+          whiteCanMove: playerCanMove[1],
+        }
+      )
       return { winner: null, turnCount, gameId, stuck: true }
     }
 
@@ -433,6 +535,12 @@ async function simulateGame(verbose = false): Promise<{
     )
     if (verbose) {
       console.log(`\nSwitching to ${currentGame.activeColor}'s turn`)
+      logger.info('[SimulateGame] Switching turns:', {
+        gameId,
+        turnCount,
+        fromColor: gameRolled.activeColor,
+        toColor: currentGame.activeColor,
+      })
     }
   }
 
@@ -443,6 +551,12 @@ async function simulateGame(verbose = false): Promise<{
     console.log('\nFinal board state:')
     console.log(Board.getAsciiBoard((currentGame as any).board, players))
     console.log(`\nGame completed in ${turnCount} turns`)
+    logger.info('[SimulateGame] Game completed:', {
+      gameId,
+      winner,
+      turnCount,
+      stuck: false,
+    })
   }
   return { winner, turnCount, gameId }
 }
@@ -489,6 +603,16 @@ async function runSimulations(numGames = NUM_GAMES) {
   console.log(`Max turns: ${maxTurns}`)
   console.log(`Total simulation time: ${totalMs.toFixed(2)} ms`)
   console.log(`Average time per game: ${avgMsPerGame.toFixed(4)} ms`)
+  logger.info('[SimulateGame] Simulation summary:', {
+    totalGames: stats.totalGames,
+    blackWins: stats.wins.black,
+    whiteWins: stats.wins.white,
+    averageTurns: avgTurns,
+    minTurns,
+    maxTurns,
+    totalSimulationTimeMs: totalMs,
+    averageTimePerGameMs: avgMsPerGame,
+  })
 }
 
 // Run the simulations

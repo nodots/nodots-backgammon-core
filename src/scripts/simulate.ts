@@ -1,14 +1,11 @@
 import {
   BackgammonGameMoving,
-  BackgammonGameRolledForStart,
   BackgammonGameRollingForStart,
   BackgammonMove,
   BackgammonMoveOrigin,
-  BackgammonPlayerInactive,
-  BackgammonPlayerRolled,
-  BackgammonPlayerRolling,
 } from '@nodots-llc/backgammon-types/dist'
 import { Board, Game, Player } from '..'
+import { logger } from '../utils/logger'
 
 interface SimulationStats {
   totalTurns: number
@@ -24,8 +21,15 @@ function displayTurnInfo(
   activeColor: string,
   roll: number[]
 ) {
-  console.log(`\n=== Turn ${turnNumber} ===\n`)
-  console.log(`${activeColor}'s roll: ${roll.join(', ')}\n`)
+  const message = `\n=== Turn ${turnNumber} ===\n\n${activeColor}'s roll: ${roll.join(
+    ', '
+  )}\n`
+  console.log(message)
+  logger.info('[Simulation] Turn info:', {
+    turnNumber,
+    activeColor,
+    roll,
+  })
 }
 
 function displayMoveInfo(
@@ -36,7 +40,15 @@ function displayMoveInfo(
   const originStr = origin.kind === 'point' ? origin.position.clockwise : 'bar'
   const destStr =
     destination.kind === 'point' ? destination.position.clockwise : 'off'
-  console.log(`Move ${moveNumber}: from ${originStr} to ${destStr}\n`)
+  const message = `Move ${moveNumber}: from ${originStr} to ${destStr}\n`
+  console.log(message)
+  logger.info('[Simulation] Move info:', {
+    moveNumber,
+    origin: originStr,
+    destination: destStr,
+    originKind: origin.kind,
+    destinationKind: destination.kind,
+  })
 }
 
 function getStats(board: any): SimulationStats {
@@ -72,13 +84,15 @@ function getStats(board: any): SimulationStats {
 }
 
 function displayStats(stats: SimulationStats) {
-  console.log('\n=== Simulation Statistics ===')
-  console.log(`Total Turns: ${stats.totalTurns}`)
-  console.log(`Total Moves: ${stats.totalMoves}`)
-  console.log(`White Checkers Captured: ${stats.whiteCheckersCaptured}`)
-  console.log(`Black Checkers Captured: ${stats.blackCheckersCaptured}`)
-  console.log(`White Checkers Off: ${stats.whiteCheckersOff}`)
-  console.log(`Black Checkers Off: ${stats.blackCheckersOff}`)
+  const message = `\n=== Simulation Statistics ===
+Total Turns: ${stats.totalTurns}
+Total Moves: ${stats.totalMoves}
+White Checkers Captured: ${stats.whiteCheckersCaptured}
+Black Checkers Captured: ${stats.blackCheckersCaptured}
+White Checkers Off: ${stats.whiteCheckersOff}
+Black Checkers Off: ${stats.blackCheckersOff}`
+  console.log(message)
+  logger.info('[Simulation] Statistics:', stats)
 }
 
 function checkWinCondition(board: any): string | null {
@@ -131,6 +145,7 @@ export async function runSimulation(maxTurns: number = 100) {
   // Roll for start
   let gameRolling = Game.rollForStart(game)
   console.log('Initial board state:')
+  logger.info('[Simulation] Initial board state')
   Board.displayAsciiBoard(gameRolling.board)
 
   // If maxTurns is 0, run until there's a winner
@@ -202,6 +217,10 @@ export async function runSimulation(maxTurns: number = 100) {
 
         // Display all possible moves for this die value
         console.log(`\nPossible moves for die value ${nextMove.dieValue}:`)
+        logger.info('[Simulation] Possible moves for die value:', {
+          dieValue: nextMove.dieValue,
+          possibleMovesCount: possibleMoves.length,
+        })
         possibleMoves.forEach((possibleMove, index) => {
           const fromPoint =
             possibleMove.origin.kind === 'point'
@@ -238,6 +257,7 @@ export async function runSimulation(maxTurns: number = 100) {
 
         if (!validMove) {
           console.log('\nNo valid moves with checkers found')
+          logger.warn('[Simulation] No valid moves with checkers found')
           break
         }
 
@@ -255,6 +275,7 @@ export async function runSimulation(maxTurns: number = 100) {
         )
 
         console.log('\nBoard before move:')
+        logger.info('[Simulation] Board before move')
         Board.displayAsciiBoard(gameMoved.board)
 
         try {
@@ -264,6 +285,7 @@ export async function runSimulation(maxTurns: number = 100) {
             moveCount++
 
             console.log('\nBoard after move:')
+            logger.info('[Simulation] Board after move')
             Board.displayAsciiBoard(gameMoved.board)
 
             // Show remaining moves
@@ -282,11 +304,21 @@ export async function runSimulation(maxTurns: number = 100) {
           }
         } catch (error) {
           console.log(`\nCouldn't make move: ${error}`)
+          logger.error('[Simulation] Could not make move:', {
+            error: error instanceof Error ? error.message : String(error),
+            origin: origin.id,
+            destination: destination.id,
+          })
           break
         }
       }
     } catch (error) {
       console.log(`Error during moves: ${error}\n`)
+      logger.error('[Simulation] Error during moves:', {
+        error: error instanceof Error ? error.message : String(error),
+        turnCount,
+        moveCount,
+      })
       // Use the last valid board state
       gameMoved = {
         ...gameMoved,
@@ -298,11 +330,20 @@ export async function runSimulation(maxTurns: number = 100) {
     const winner = checkWinCondition(lastBoard)
     if (winner) {
       console.log(`\n${winner.toUpperCase()} WINS!\n`)
+      logger.info('[Simulation] Game won:', {
+        winner,
+        turnCount,
+        totalMoves,
+      })
       break
     }
 
     // Switch turns
     console.log(`Switching to ${gameMoved.inactivePlayer.color}'s turn\n`)
+    logger.info('[Simulation] Switching turns:', {
+      fromColor: gameMoved.activeColor,
+      toColor: gameMoved.inactivePlayer.color,
+    })
     // Manually switch active/inactive players and update activeColor
     const newActiveColor = gameMoved.inactivePlayer.color
     const [newActivePlayer, newInactivePlayer] = Game.getPlayersForColor(
@@ -332,5 +373,11 @@ export async function runSimulation(maxTurns: number = 100) {
 // Allow running from command line with optional max turns argument
 if (require.main === module) {
   const maxTurns = process.argv[2] ? parseInt(process.argv[2]) : 100
-  runSimulation(maxTurns).catch(console.error)
+  runSimulation(maxTurns).catch((error) => {
+    console.error(error)
+    logger.error('[Simulation] Simulation failed:', {
+      error: error instanceof Error ? error.message : String(error),
+      maxTurns,
+    })
+  })
 }
