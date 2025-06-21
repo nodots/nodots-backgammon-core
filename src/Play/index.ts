@@ -250,7 +250,7 @@ export class Play {
               dieValue,
               stateKind: 'ready',
               moveKind: 'no-move',
-              origin: bar,
+              origin: undefined as any,
             })
           }
         } else {
@@ -261,7 +261,7 @@ export class Play {
             dieValue,
             stateKind: 'ready',
             moveKind: 'no-move',
-            origin: bar,
+            origin: undefined as any,
           })
         }
       }
