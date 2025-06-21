@@ -1,6 +1,6 @@
 <!-- COVERAGE-START -->
 ![Statements](https://img.shields.io/badge/Statements-85%25-green?style=flat-square)
-![Branches](https://img.shields.io/badge/Branches-72%25-yellow?style=flat-square)
+![Branches](https://img.shields.io/badge/Branches-73%25-yellow?style=flat-square)
 ![Functions](https://img.shields.io/badge/Functions-82%25-green?style=flat-square)
 ![Lines](https://img.shields.io/badge/Lines-86%25-green?style=flat-square)
 <!-- COVERAGE-END -->
