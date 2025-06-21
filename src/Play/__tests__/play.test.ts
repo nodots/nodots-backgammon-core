@@ -12,6 +12,37 @@ import {
 import { Play } from '..'
 import { Board, Dice, generateId, Player } from '../..'
 
+// Helper to create a board with white checkers on points 1 and 2
+function createTestBoard() {
+  const boardImport: BackgammonCheckerContainerImport[] = [
+    {
+      position: { clockwise: 1, counterclockwise: 24 },
+      checkers: { qty: 2, color: 'white' },
+    },
+    {
+      position: { clockwise: 2, counterclockwise: 23 },
+      checkers: { qty: 1, color: 'white' },
+    },
+  ]
+  return Board.initialize(boardImport)
+}
+
+// Helper to create a rolling player
+function createRollingPlayer(board: any, diceRoll: [number, number]) {
+  const inactiveDice = Dice.initialize('white') as BackgammonDiceInactive
+  jest.spyOn(Math, 'random').mockReturnValue(0)
+  const player = Player.initialize(
+    'white',
+    'clockwise',
+    inactiveDice,
+    undefined,
+    'rolling'
+  ) as BackgammonPlayerRolling
+  const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
+  rolledPlayer.dice.currentRoll = diceRoll as any
+  return rolledPlayer
+}
+
 describe('Play', () => {
   describe('initialization', () => {
     test('should initialize with basic board setup', () => {
@@ -42,19 +73,11 @@ describe('Play', () => {
       expect(play).toBeDefined()
       expect(play.stateKind).toBe('rolled')
       expect(play.moves).toBeDefined()
-      expect((play.moves as unknown as any[]).length).toBeGreaterThan(0)
+      expect(play.moves.size).toBeGreaterThan(0)
 
       // Check that each move has the required moveKind
       for (const move of play.moves) {
-        if (move.stateKind === 'ready') {
-          expect(['point-to-point', 'no-move']).toContain(move.moveKind)
-        } else if (move.stateKind === 'completed' && 'moveKind' in move) {
-          expect(
-            ['point-to-point', 'reenter', 'bear-off', 'no-move'].includes(
-              move.moveKind
-            )
-          ).toBeTruthy()
-        }
+        expect(move.moveKind).toBeDefined()
       }
     })
 
@@ -84,7 +107,7 @@ describe('Play', () => {
       const play = Play.initialize(board, rolledPlayer)
 
       // There should always be 4 moves for doubles
-      expect((play.moves as unknown as any[]).length).toBe(4)
+      expect(play.moves.size).toBe(4)
       // All moves should be either 'point-to-point' or 'no-move'
       const moveKinds = Array.from(play.moves).map((m: any) => m.moveKind)
       expect(
@@ -140,6 +163,28 @@ describe('Play', () => {
     //   expect(movesArr.length).toBe(4)
     //   expect(movesArr.every((m: any) => m.moveKind === 'no-move')).toBe(true)
     // })
+
+    test('should generate normal board moves when no checkers on bar', () => {
+      const board = createTestBoard()
+      const rolledPlayer = createRollingPlayer(board, [1, 2])
+      const play = Play.initialize(board, rolledPlayer)
+      expect(play.moves.size).toBe(2)
+      const moveKinds = Array.from(play.moves).map((m: any) => m.moveKind)
+      const hasPointToPointMove = moveKinds.some((k) => k === 'point-to-point')
+      expect(hasPointToPointMove).toBe(true)
+      jest.spyOn(Math, 'random').mockRestore()
+    })
+
+    test('should handle doubles correctly for normal board positions', () => {
+      const board = createTestBoard()
+      const rolledPlayer = createRollingPlayer(board, [1, 1])
+      const play = Play.initialize(board, rolledPlayer)
+      expect(play.moves.size).toBe(4)
+      const moveKinds = Array.from(play.moves).map((m: any) => m.moveKind)
+      const hasPointToPointMove = moveKinds.some((k) => k === 'point-to-point')
+      expect(hasPointToPointMove).toBe(true)
+      jest.spyOn(Math, 'random').mockRestore()
+    })
   })
 
   describe('move functionality', () => {

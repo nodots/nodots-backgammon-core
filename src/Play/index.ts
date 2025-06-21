@@ -69,10 +69,10 @@ export class Play {
         destination: undefined,
       }
       return {
-        play: { ...play, moves: [noMove] } as any,
+        play: { ...play, moves: new Set([noMove]) },
         board,
         move: noMove,
-      }
+      } as BackgammonPlayResult
     }
 
     // --- PATCH: Handle bear-off moves using BearOff.move ---
@@ -82,12 +82,12 @@ export class Play {
       return {
         play: {
           ...play,
-          moves: [bearOffResult.move],
+          moves: new Set([bearOffResult.move]),
           board: bearOffResult.board,
-        } as any,
+        },
         board: bearOffResult.board,
         move: bearOffResult.move,
-      }
+      } as BackgammonPlayResult
     }
     // --- END PATCH ---
 
@@ -110,10 +110,10 @@ export class Play {
         destination: undefined,
       }
       return {
-        play: { ...play, moves: [noMove] } as any,
+        play: { ...play, moves: new Set([noMove]) },
         board,
         move: noMove,
-      }
+      } as BackgammonPlayResult
     }
 
     board = Board.moveChecker(
@@ -140,7 +140,7 @@ export class Play {
       ...play,
       moves: updatedMoves,
       board,
-    }
+    } as BackgammonPlayMoving
 
     const completedMove: BackgammonMoveCompletedWithMove = {
       id: move.id,
@@ -156,10 +156,10 @@ export class Play {
     }
 
     return {
-      play: { ...play, moves: Array.from(play.moves) } as any,
+      play: { ...play, moves: new Set(Array.from(play.moves)) },
       board,
       move: completedMove,
-    }
+    } as BackgammonPlayResult
   }
 
   public static initialize = function initialize(
@@ -178,30 +178,15 @@ export class Play {
       (checker: BackgammonChecker) => checker.color === player.color
     )
 
-    // Debug: Print player state before move generation
-    // console.log('[DEBUG Play.initialize] player:', {
-    //   color: player.color,
-    //   direction: player.direction,
-    //   stateKind: player.stateKind,
-    //   isRobot: (player as any).isRobot,
-    //   dice: player.dice && player.dice.currentRoll,
-    // })
-
-    // ---
-    // BULLET-PROOF BAR HANDLING LOGIC:
-    // Always iterate for the full number of move slots (2 or 4).
-    // For each slot:
-    //   - If there are checkers on the bar:
-    //       - If reentry is possible, add 'reenter' and decrement barCheckersLeft.
-    //       - If not, add 'no-move' (do not decrement barCheckersLeft).
-    //   - If no checkers left on the bar, add 'no-move'.
-    // This guarantees the move array is always the correct length and only decrements barCheckersLeft when a checker actually reenters.
     const isDoubles = roll[0] === roll[1]
     const moveCount = isDoubles ? 4 : 2
     let barCheckersLeft = playerCheckersOnBar.length
+
     for (let i = 0; i < moveCount; i++) {
       const dieValue = roll[i % 2]
+
       if (barCheckersLeft > 0) {
+        // Handle checkers on the bar
         const possibleMoves = Board.getPossibleMoves(board, player, dieValue)
         if (possibleMoves.length > 0) {
           // Reentry is possible for this die: add 'reenter' and remove checker from bar
@@ -227,25 +212,69 @@ export class Play {
           // barCheckersLeft is NOT decremented here
         }
       } else {
-        // No checkers left on the bar, fill with 'no-move'
-        movesArr.push({
-          id: generateId(),
-          player,
-          dieValue,
-          stateKind: 'ready',
-          moveKind: 'no-move',
-          origin: bar,
-        })
+        // No checkers on the bar - generate moves for normal board positions
+        const possibleMoves = Board.getPossibleMoves(board, player, dieValue)
+
+        if (possibleMoves.length > 0) {
+          // Find the first valid move with a checker of the player's color
+          const validMove = possibleMoves.find((move) => {
+            if (move.origin.kind === 'point') {
+              return (
+                move.origin.checkers.length > 0 &&
+                move.origin.checkers[0].color === player.color
+              )
+            }
+            return false
+          })
+
+          if (validMove) {
+            // Determine move kind based on destination
+            let moveKind: 'point-to-point' | 'bear-off' = 'point-to-point'
+            if (validMove.destination.kind === 'off') {
+              moveKind = 'bear-off'
+            }
+
+            movesArr.push({
+              id: generateId(),
+              player,
+              dieValue,
+              stateKind: 'ready',
+              moveKind,
+              origin: validMove.origin,
+            })
+          } else {
+            // No valid moves found
+            movesArr.push({
+              id: generateId(),
+              player,
+              dieValue,
+              stateKind: 'ready',
+              moveKind: 'no-move',
+              origin: bar,
+            })
+          }
+        } else {
+          // No possible moves for this die
+          movesArr.push({
+            id: generateId(),
+            player,
+            dieValue,
+            stateKind: 'ready',
+            moveKind: 'no-move',
+            origin: bar,
+          })
+        }
       }
     }
+
     // Always return the correct number of moves for doubles/regular
     return {
       id: generateId(),
       board,
       player,
-      moves: movesArr,
+      moves: new Set(movesArr),
       stateKind: 'rolled',
-    } as any
+    } as BackgammonPlayRolled
   }
 
   public static startMove = function startMove(
@@ -262,7 +291,7 @@ export class Play {
       ...play,
       stateKind: 'moving',
       player: { ...play.player, stateKind: 'moving' },
-      moves: Array.from(play.moves),
-    } as any
+      moves: new Set(Array.from(play.moves)),
+    } as BackgammonPlayMoving
   }
 }

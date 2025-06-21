@@ -72,7 +72,7 @@ export class Move {
     const { moveKind } = move
     const { player } = move
     if (!player) throw Error('Player not found')
-    if (player.stateKind !== 'rolled')
+    if (player.stateKind !== 'rolled' && player.stateKind !== 'moving')
       throw Error('Invalid player state for move')
 
     switch (moveKind) {
