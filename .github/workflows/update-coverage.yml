@@ -52,8 +52,8 @@ jobs:
       - name: Commit changes
         if: steps.verify-changed-files.outputs.changed == 'true'
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.name "nodots"
+          git config --local user.email "nodots@users.noreply.github.com"
           git add README.md
           git commit -m "chore: update coverage table [skip ci]"
           git push origin HEAD:${{ github.ref_name }}
