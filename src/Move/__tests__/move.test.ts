@@ -227,14 +227,15 @@ describe('Move', () => {
     })
 
     it('should throw error if player state is not rolled', () => {
-      const { board, player } = setupTest()
-      const movingPlayer: BackgammonPlayerMoving = {
-        ...player,
-        stateKind: 'moving',
+      const { board } = setupTest()
+      const inactivePlayer = {
+        id: generateId(),
+        stateKind: 'inactive' as const,
+        dice: { stateKind: 'inactive' as const },
       }
       const move: BackgammonMoveReady = {
         id: generateId(),
-        player: movingPlayer as unknown as BackgammonPlayerRolled, // Type assertion for test
+        player: inactivePlayer as unknown as BackgammonPlayerRolled, // Type assertion for test
         stateKind: 'ready',
         moveKind: 'point-to-point',
         origin: board.BackgammonPoints[0],

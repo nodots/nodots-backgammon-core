@@ -11,8 +11,8 @@ import {
 } from '@nodots-llc/backgammon-types/dist'
 import { Game } from '..'
 import { randomBackgammonColor } from '../../'
-import { Player } from '../../Player'
 import { Play } from '../../Play'
+import { Player } from '../../Player'
 
 describe('Game', () => {
   describe('Initialization', () => {
@@ -273,7 +273,7 @@ describe('Game', () => {
       expect((gameRolled as any).board).toBeDefined()
       expect((gameRolled as any).activePlayer.dice.currentRoll).toBeDefined()
       expect(
-        ((gameRolled as any).activePlay.moves as unknown as any[]).length
+        ((gameRolled as any).activePlay.moves as Set<any>).size
       ).toBeGreaterThan(0)
     })
 
@@ -323,10 +323,10 @@ describe('Game', () => {
       const gameMoving = Game.startMove(gameRolled, movingPlay)
       // Get the first available move
       expect(
-        ((gameMoving as any).activePlay.moves as unknown as any[]).length
+        ((gameMoving as any).activePlay.moves as Set<any>).size
       ).toBeGreaterThan(0)
       const firstMove = Array.from(
-        (gameMoving as any).activePlay.moves as any[]
+        (gameMoving as any).activePlay.moves as Set<any>
       )[0] as any
       expect(firstMove).toBeDefined()
       // Get the move's origin and make the move
@@ -337,7 +337,7 @@ describe('Game', () => {
           const gameMoved = Game.move(gameMoving, firstMove.origin.id)
           // Check for a move with moveKind: 'no-move' and stateKind: 'completed' in the moves set
           const noMove = Array.from(
-            (gameMoved as any).activePlay.moves as any[]
+            (gameMoved as any).activePlay.moves as Set<any>
           ).find(
             (m: any) => m.moveKind === 'no-move' && m.stateKind === 'completed'
           )
@@ -348,7 +348,7 @@ describe('Game', () => {
             expect(gameMoved).toBeDefined()
             expect((gameMoved as any).stateKind).toBe('moving')
             expect(
-              ((gameMoved as any).activePlay.moves as unknown as any[]).length
+              ((gameMoved as any).activePlay.moves as Set<any>).size
             ).toBeGreaterThan(0)
           }
         }

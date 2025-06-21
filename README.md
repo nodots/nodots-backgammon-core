@@ -1,10 +1,8 @@
 <!-- COVERAGE-START -->
-
-![Statements](https://img.shields.io/badge/Statements-86%25-green?style=flat-square)
-![Branches](https://img.shields.io/badge/Branches-73%25-yellow?style=flat-square)
-![Functions](https://img.shields.io/badge/Functions-92%25-brightgreen?style=flat-square)
-![Lines](https://img.shields.io/badge/Lines-87%25-green?style=flat-square)
-
+![Statements](https://img.shields.io/badge/Statements-85%25-green?style=flat-square)
+![Branches](https://img.shields.io/badge/Branches-72%25-yellow?style=flat-square)
+![Functions](https://img.shields.io/badge/Functions-82%25-green?style=flat-square)
+![Lines](https://img.shields.io/badge/Lines-86%25-green?style=flat-square)
 <!-- COVERAGE-END -->
 
 # nodots-backgammon-core
@@ -84,6 +82,13 @@ When a player rolls doubles:
 - They get 4 moves of the same value
 - Moves can be used by different checkers or the same checker multiple times
 - All valid moves must be used if possible
+
+### Improved Move Generation (vNEXT)
+
+- The core library now always generates valid moves for all dice rolls, including doubles.
+- Move generation fully analyzes the board state and dice, ensuring all possible moves are found for the player, including when rolling doubles (4 moves).
+- If no valid moves are possible for a die, a 'no-move' entry is generated for that die slot.
+- This ensures compliance with backgammon rules and prevents the game from getting stuck on doubles or blocked positions.
 
 ## API Examples
 
