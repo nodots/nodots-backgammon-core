@@ -42,6 +42,13 @@ jobs:
         if: steps.verify-changed-files.outputs.changed == 'true'
         run: git remote set-url origin https://x-access-token:${{ secrets.NODOTS_DEPLOY }}@github.com/nodots/nodots-backgammon-core.git
 
+      - name: Debug git status
+        if: steps.verify-changed-files.outputs.changed == 'true'
+        run: |
+          git status
+          git remote -v
+          echo "Current branch: ${{ github.ref_name }}"
+
       - name: Commit changes
         if: steps.verify-changed-files.outputs.changed == 'true'
         run: |
@@ -49,4 +56,4 @@ jobs:
           git config --local user.name "GitHub Action"
           git add README.md
           git commit -m "chore: update coverage table [skip ci]"
-          git push
+          git push origin HEAD:${{ github.ref_name }}
