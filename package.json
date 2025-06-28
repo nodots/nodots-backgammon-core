@@ -36,9 +36,9 @@
     "publish:npm": "npm publish --access public"
   },
   "dependencies": {
-    "@nodots-llc/backgammon-ai": "^2.2.1",
-    "@nodots-llc/backgammon-types": "^2.2.1",
-    "uuid": "^11.0.5"
+    "@nodots-llc/backgammon-ai": "file:../nodots-backgammon-ai",
+    "@nodots-llc/backgammon-types": "file:../nodots-backgammon-types",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.2.0",

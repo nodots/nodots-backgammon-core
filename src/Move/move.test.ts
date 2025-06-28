@@ -1,24 +1,22 @@
-import { Board } from '../Board'
-import { Move } from '.'
-import { generateId } from '..'
 import {
+  BackgammonColor,
+  BackgammonDiceRolled,
+  BackgammonMoveDirection,
   BackgammonMoveReady,
   BackgammonPlayerRolled,
-  BackgammonColor,
-  BackgammonMoveDirection,
   BackgammonPoint,
-  BackgammonDieValue,
-  BackgammonDiceRolled,
   BackgammonRoll,
-  BackgammonMoveSkeleton,
-  BackgammonMoves,
 } from '@nodots-llc/backgammon-types/dist'
+import { Move } from '.'
+import { generateId } from '..'
+import { Board } from '../Board'
 
 describe('Move', () => {
   describe('initialize', () => {
     it('should initialize a move with default values', () => {
       const player: BackgammonPlayerRolled = {
         id: generateId(),
+        userId: generateId(),
         color: 'black' as BackgammonColor,
         direction: 'clockwise' as BackgammonMoveDirection,
         stateKind: 'rolled',
@@ -42,6 +40,7 @@ describe('Move', () => {
         moveKind: 'point-to-point',
         origin: board.BackgammonPoints[0],
         dieValue: 1,
+        possibleMoves: [],
       }
 
       const result = Move.initialize({ move, origin })
@@ -58,6 +57,7 @@ describe('Move', () => {
     it('should return true for empty point', () => {
       const player: BackgammonPlayerRolled = {
         id: generateId(),
+        userId: generateId(),
         color: 'black',
         direction: 'clockwise',
         stateKind: 'rolled',
@@ -88,6 +88,7 @@ describe('Move', () => {
     it('should return true for point with one checker of different color', () => {
       const player: BackgammonPlayerRolled = {
         id: generateId(),
+        userId: generateId(),
         color: 'black',
         direction: 'clockwise',
         stateKind: 'rolled',
@@ -124,6 +125,7 @@ describe('Move', () => {
     it('should return true for point with multiple checkers of same color', () => {
       const player: BackgammonPlayerRolled = {
         id: generateId(),
+        userId: generateId(),
         color: 'black',
         direction: 'clockwise',
         stateKind: 'rolled',
@@ -165,6 +167,7 @@ describe('Move', () => {
     it('should return false for point with multiple checkers of different color', () => {
       const player: BackgammonPlayerRolled = {
         id: generateId(),
+        userId: generateId(),
         color: 'black',
         direction: 'clockwise',
         stateKind: 'rolled',

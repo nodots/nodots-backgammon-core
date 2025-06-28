@@ -43,6 +43,7 @@ describe('Move', () => {
     }
     const player: BackgammonPlayerRolled = {
       id: generateId(),
+      userId: generateId(),
       color,
       stateKind: 'rolled',
       dice: rolledDice,
@@ -64,6 +65,7 @@ describe('Move', () => {
     moveKind,
     origin: skeleton.origin,
     dieValue: skeleton.dieValue,
+    possibleMoves: [],
   })
 
   describe('initialize', () => {
@@ -77,6 +79,7 @@ describe('Move', () => {
         moveKind: 'point-to-point',
         origin: board.BackgammonPoints[0],
         dieValue: 1,
+        possibleMoves: [],
       }
 
       const result = Move.initialize({
@@ -98,6 +101,7 @@ describe('Move', () => {
         moveKind: 'point-to-point',
         origin: board.BackgammonPoints[0],
         dieValue: 1,
+        possibleMoves: [],
       }
 
       const result = Move.initialize({
@@ -118,6 +122,7 @@ describe('Move', () => {
         moveKind: 'point-to-point',
         origin: board.BackgammonPoints[0],
         dieValue: 1,
+        possibleMoves: [],
       }
 
       const result = Move.initialize({
@@ -219,6 +224,7 @@ describe('Move', () => {
         moveKind: 'point-to-point',
         origin: board.BackgammonPoints[0],
         dieValue: 1,
+        possibleMoves: [],
       }
       // Cast to unknown first, then to BackgammonMoveReady to avoid type checking
       const move = partialMove as unknown as BackgammonMoveReady
@@ -240,6 +246,7 @@ describe('Move', () => {
         moveKind: 'point-to-point',
         origin: board.BackgammonPoints[0],
         dieValue: 1,
+        possibleMoves: [],
       }
 
       expect(() => Move.move(board, move)).toThrow(
@@ -256,6 +263,7 @@ describe('Move', () => {
         moveKind: 'point-to-point',
         origin: board.BackgammonPoints[23], // Point 24 (has 2 white checkers)
         dieValue: 1,
+        possibleMoves: [],
       }
 
       const result = Move.move(board, move)
@@ -280,6 +288,7 @@ describe('Move', () => {
         moveKind: 'reenter',
         origin: board.bar[player.direction],
         dieValue: 1,
+        possibleMoves: [],
       }
 
       const result = Move.move(board, move)
@@ -348,6 +357,7 @@ describe('Move', () => {
         moveKind: 'bear-off',
         origin: board.BackgammonPoints[23], // Point 24 (has 4 white checkers)
         dieValue: 1,
+        possibleMoves: [],
       }
 
       const result = Move.move(board, move)
@@ -367,6 +377,7 @@ describe('Move', () => {
         moveKind: 'no-move' as BackgammonMoveKind,
         origin: board.BackgammonPoints[0],
         dieValue: 1,
+        possibleMoves: [],
       }
 
       const result = Move.move(board, move)
@@ -383,6 +394,7 @@ describe('Move', () => {
         moveKind: 'no-move' as BackgammonMoveKind,
         origin: board.BackgammonPoints[0],
         dieValue: 1,
+        possibleMoves: [],
       }
 
       const result = Move.move(board, move)
@@ -406,6 +418,7 @@ describe('Move', () => {
         origin: board.BackgammonPoints[23], // Point 24
         destination: board.BackgammonPoints[22], // Point 23
         dieValue: 1,
+        possibleMoves: [],
       }
 
       const result = Move.confirmMove(move)

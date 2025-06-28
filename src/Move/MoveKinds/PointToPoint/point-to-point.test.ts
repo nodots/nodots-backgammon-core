@@ -1,17 +1,17 @@
-import { Board } from '../../../Board'
-import { generateId } from '../../..'
-import { PointToPoint } from '.'
 import {
+  BackgammonBoard,
+  BackgammonColor,
+  BackgammonDiceRolled,
+  BackgammonDieValue,
+  BackgammonMoveCompleted,
+  BackgammonMoveDirection,
   BackgammonMoveReady,
   BackgammonPlayerRolled,
-  BackgammonColor,
-  BackgammonMoveDirection,
-  BackgammonDieValue,
-  BackgammonDiceRolled,
   BackgammonRoll,
-  BackgammonBoard,
-  BackgammonMoveCompleted,
 } from '@nodots-llc/backgammon-types/dist'
+import { PointToPoint } from '.'
+import { generateId } from '../../..'
+import { Board } from '../../../Board'
 
 describe('PointToPoint', () => {
   describe('move', () => {
@@ -22,6 +22,7 @@ describe('PointToPoint', () => {
       board = Board.initialize()
       player = {
         id: generateId(),
+        userId: generateId(),
         color: 'black' as BackgammonColor,
         direction: 'clockwise' as BackgammonMoveDirection,
         stateKind: 'rolled',
@@ -56,6 +57,7 @@ describe('PointToPoint', () => {
         dieValue: 1 as BackgammonDieValue,
         moveKind: 'point-to-point',
         origin,
+        possibleMoves: [],
       }
 
       const result = PointToPoint.move(board, move)
@@ -87,6 +89,7 @@ describe('PointToPoint', () => {
         dieValue: 1 as BackgammonDieValue,
         moveKind: 'point-to-point',
         origin,
+        possibleMoves: [],
       }
 
       const result = PointToPoint.move(board, move)
@@ -125,6 +128,7 @@ describe('PointToPoint', () => {
         dieValue: 1 as BackgammonDieValue,
         moveKind: 'point-to-point',
         origin,
+        possibleMoves: [],
       }
 
       const result = PointToPoint.move(board, move)

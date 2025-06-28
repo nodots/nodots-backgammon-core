@@ -16,15 +16,28 @@ import {
   BackgammonPoints,
   BackgammonPointValue,
 } from '@nodots-llc/backgammon-types/dist'
-import { Checker, generateId } from '..'
+import { Checker, generateId, Player, randomBackgammonColor } from '..'
 import { logger } from '../utils/logger'
 import { ascii } from './ascii'
 import { BOARD_IMPORT_DEFAULT } from './imports'
 
+// Helper function to generate a default GNU position ID for boards created without game context
+function generateDefaultGnuPositionId(): string {
+  // Return empty string as default - this will be updated when board is used in game context
+  return ''
+}
+
 export const BOARD_POINT_COUNT = 24
+
+export interface RandomGameSetup {
+  board: BackgammonBoard
+  players: BackgammonPlayers
+  activeColor: BackgammonColor
+}
 
 export class Board implements BackgammonBoard {
   id!: string
+  gnuPositionId!: string
   BackgammonPoints!: BackgammonPoints
   bar!: {
     clockwise: BackgammonBar
@@ -224,8 +237,8 @@ export class Board implements BackgammonBoard {
     playerPoints.forEach(function mapPlayerPoints(point) {
       const destinationPoint =
         playerDirection === 'clockwise'
-          ? point.position.clockwise + dieValue
-          : point.position.counterclockwise - dieValue
+          ? point.position.clockwise - dieValue // Clockwise moves from 24→1, so subtract
+          : point.position.counterclockwise - dieValue // Counterclockwise also moves from 24→1, so subtract
 
       // Skip if destination point is out of bounds
       if (destinationPoint < 1 || destinationPoint > 24) {
@@ -378,6 +391,7 @@ export class Board implements BackgammonBoard {
 
     const board: BackgammonBoard = {
       id: generateId(),
+      gnuPositionId: generateDefaultGnuPositionId(),
       BackgammonPoints: points,
       bar,
       off,
@@ -525,7 +539,26 @@ export class Board implements BackgammonBoard {
     }
   }
 
-  public static generateRandomBoard = (): BackgammonBoard => {
+  /**
+   * Generates a random board with random players and active color
+   * @deprecated Use generateRandomGameSetup() for more explicit return type
+   */
+  public static generateRandomBoard = (): BackgammonBoard & {
+    players: BackgammonPlayers
+    activeColor: BackgammonColor
+  } => {
+    const setup = Board.generateRandomGameSetup()
+    return {
+      ...setup.board,
+      players: setup.players,
+      activeColor: setup.activeColor,
+    }
+  }
+
+  /**
+   * Generates only a random board configuration (original behavior)
+   */
+  public static generateRandomBoardOnly = (): BackgammonBoard => {
     const boardImport: BackgammonCheckerContainerImport[] = []
 
     const addCheckersToImport = (
@@ -617,10 +650,88 @@ export class Board implements BackgammonBoard {
     return Board.buildBoard(boardImport)
   }
 
+  /**
+   * Generates a complete random game setup with board, players, and active color
+   */
+  public static generateRandomGameSetup = (): RandomGameSetup => {
+    // Generate random board
+    const board = Board.generateRandomBoardOnly()
+
+    // Generate random colors and directions for players
+    const activeColor = randomBackgammonColor()
+    const inactiveColor = activeColor === 'black' ? 'white' : 'black'
+
+    // Randomly assign directions
+    const clockwiseColor = randomBackgammonColor()
+    const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
+
+    // Create players with random assignments
+    const players: BackgammonPlayers = [
+      Player.initialize(
+        clockwiseColor,
+        'clockwise',
+        undefined,
+        undefined,
+        clockwiseColor === activeColor ? 'rolling' : 'inactive',
+        true
+      ),
+      Player.initialize(
+        counterclockwiseColor,
+        'counterclockwise',
+        undefined,
+        undefined,
+        counterclockwiseColor === activeColor ? 'rolling' : 'inactive',
+        true
+      ),
+    ]
+
+    return {
+      board,
+      players,
+      activeColor,
+    }
+  }
+
   public static getAsciiBoard = (
     board: BackgammonBoard,
     players?: BackgammonPlayers
   ): string => ascii(board, players)
+
+  public static getAsciiGameBoard = (
+    board: BackgammonBoard,
+    players?: BackgammonPlayers,
+    activeColor?: BackgammonColor,
+    gameStateKind?: string
+  ): string => {
+    const baseAscii = ascii(board, players)
+
+    // Add game state information
+    let gameInfo = '\n'
+
+    if (gameStateKind) {
+      gameInfo += `GAME STATE: ${gameStateKind.toUpperCase()}\n`
+    }
+
+    if (activeColor && players) {
+      const activePlayer = players.find((p) => p.color === activeColor)
+      if (activePlayer) {
+        gameInfo += `ACTIVE PLAYER: ${activeColor.toUpperCase()} (${
+          activeColor === 'black' ? 'X' : 'O'
+        }) [${activePlayer.direction}]\n`
+
+        // Show dice roll if available
+        if (activePlayer.dice && activePlayer.dice.currentRoll) {
+          gameInfo += `DICE ROLL: [${activePlayer.dice.currentRoll.join(
+            ', '
+          )}] (Total: ${activePlayer.dice.total || 'Unknown'})\n`
+        } else if (activePlayer.dice && activePlayer.dice.stateKind) {
+          gameInfo += `DICE STATE: ${activePlayer.dice.stateKind.toUpperCase()}\n`
+        }
+      }
+    }
+
+    return baseAscii + gameInfo
+  }
 
   public static displayAsciiBoard = (
     board: BackgammonBoard | undefined
@@ -633,5 +744,61 @@ export class Board implements BackgammonBoard {
     } else {
       logger.error('[Board] No board found for display')
     }
+  }
+
+  /**
+   * Creates a board setup that matches the given player color assignments
+   * @param clockwiseColor - Color of the player moving clockwise
+   * @param counterclockwiseColor - Color of the player moving counterclockwise
+   */
+  public static createBoardForPlayers = function createBoardForPlayers(
+    clockwiseColor: BackgammonColor,
+    counterclockwiseColor: BackgammonColor
+  ): BackgammonBoard {
+    // DEBUG LOGGING
+    console.log(
+      `[DEBUG] createBoardForPlayers called with clockwiseColor=${clockwiseColor}, counterclockwiseColor=${counterclockwiseColor}`
+    )
+
+    // Standard backgammon starting positions
+    // Both players start with: 2 on 24, 5 on 13, 3 on 8, 5 on 6
+    const boardImport: BackgammonCheckerContainerImport[] = [
+      // Clockwise player's starting positions
+      {
+        position: { clockwise: 24, counterclockwise: 1 },
+        checkers: { qty: 2, color: clockwiseColor },
+      },
+      {
+        position: { clockwise: 13, counterclockwise: 12 },
+        checkers: { qty: 5, color: clockwiseColor },
+      },
+      {
+        position: { clockwise: 8, counterclockwise: 17 },
+        checkers: { qty: 3, color: clockwiseColor },
+      },
+      {
+        position: { clockwise: 6, counterclockwise: 19 },
+        checkers: { qty: 5, color: clockwiseColor },
+      },
+      // Counterclockwise player's starting positions
+      {
+        position: { clockwise: 1, counterclockwise: 24 },
+        checkers: { qty: 2, color: counterclockwiseColor },
+      },
+      {
+        position: { clockwise: 12, counterclockwise: 13 },
+        checkers: { qty: 5, color: counterclockwiseColor },
+      },
+      {
+        position: { clockwise: 17, counterclockwise: 8 },
+        checkers: { qty: 3, color: counterclockwiseColor },
+      },
+      {
+        position: { clockwise: 19, counterclockwise: 6 },
+        checkers: { qty: 5, color: counterclockwiseColor },
+      },
+    ]
+
+    return Board.buildBoard(boardImport)
   }
 }

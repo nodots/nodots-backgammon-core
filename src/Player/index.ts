@@ -7,6 +7,7 @@ import {
   BackgammonMoveDirection,
   BackgammonMoveResult,
   BackgammonPlayer,
+  BackgammonPlayerDoubled,
   BackgammonPlayerMoved,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
@@ -17,8 +18,6 @@ import {
   BackgammonPlayerWinner,
   BackgammonPlayMoving,
   BackgammonPoint,
-  BackgammonPlayerDoubled,
-  BackgammonPlayers,
 } from '@nodots-llc/backgammon-types/dist'
 import { Board, Dice, generateId } from '..'
 import { Play } from '../Play'
@@ -30,7 +29,6 @@ export * from '../index'
 //   RandomMoveAnalyzer,
 //   FurthestFromOffMoveAnalyzer,
 // } from '@nodots-llc/backgammon-ai'
-import { exportToGnuPositionId } from '../Board/gnuPositionId'
 
 /**
  * Supported move selection strategies.
@@ -49,12 +47,16 @@ export class Player {
     dice: BackgammonDice = Dice.initialize(color),
     id: string = generateId(),
     stateKind: BackgammonPlayerStateKind = 'inactive',
-    isRobot: boolean = true
+    isRobot: boolean = true,
+    userId?: string
   ): BackgammonPlayer {
+    const playerUserId = userId || generateId()
+
     switch (stateKind) {
       case 'inactive':
         return {
           id,
+          userId: playerUserId,
           color,
           direction,
           stateKind,
@@ -65,6 +67,7 @@ export class Player {
       case 'rolling-for-start':
         return {
           id,
+          userId: playerUserId,
           color,
           direction,
           stateKind,
@@ -75,6 +78,7 @@ export class Player {
       case 'rolled-for-start': {
         return {
           id,
+          userId: playerUserId,
           color,
           direction,
           stateKind,
@@ -86,6 +90,7 @@ export class Player {
       case 'rolling':
         return {
           id,
+          userId: playerUserId,
           color,
           direction,
           stateKind,
@@ -97,6 +102,7 @@ export class Player {
         const rolledDice = dice as BackgammonDiceRolled
         return {
           id,
+          userId: playerUserId,
           color,
           direction,
           stateKind,
@@ -107,6 +113,7 @@ export class Player {
       case 'moving':
         return {
           id,
+          userId: playerUserId,
           color,
           direction,
           stateKind,
@@ -117,6 +124,7 @@ export class Player {
       case 'moved':
         return {
           id,
+          userId: playerUserId,
           color,
           direction,
           stateKind,
@@ -127,6 +135,7 @@ export class Player {
       case 'winner':
         return {
           id,
+          userId: playerUserId,
           color,
           direction,
           stateKind: 'winner',
@@ -137,6 +146,7 @@ export class Player {
       case 'doubled':
         return {
           id,
+          userId: playerUserId,
           color,
           direction,
           stateKind: 'doubled',

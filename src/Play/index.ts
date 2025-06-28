@@ -64,6 +64,7 @@ export class Play {
         dieValue: play.player.dice.currentRoll[0],
         stateKind: 'completed',
         moveKind: 'no-move',
+        possibleMoves: [],
         isHit: false,
         origin: undefined,
         destination: undefined,
@@ -96,7 +97,7 @@ export class Play {
       move.player,
       move.dieValue
     )
-    const destinationMove = possibleMoves.find((m) => m.origin === origin)
+    const destinationMove = possibleMoves.find((m) => m.origin.id === origin.id)
 
     if (!destinationMove) {
       const noMove: BackgammonMoveCompletedNoMove = {
@@ -105,6 +106,7 @@ export class Play {
         dieValue: move.dieValue,
         stateKind: 'completed',
         moveKind: 'no-move',
+        possibleMoves: [],
         isHit: false,
         origin: undefined,
         destination: undefined,
@@ -131,6 +133,7 @@ export class Play {
       moveKind: isAllowedMoveKind(move.moveKind)
         ? move.moveKind
         : 'point-to-point',
+      possibleMoves: [],
       origin,
     }
 
@@ -150,6 +153,7 @@ export class Play {
       moveKind: isAllowedMoveKind(move.moveKind)
         ? move.moveKind
         : 'point-to-point',
+      possibleMoves: [],
       origin,
       destination: destinationMove.destination,
       isHit: false,
@@ -189,13 +193,14 @@ export class Play {
         // Handle checkers on the bar
         const possibleMoves = Board.getPossibleMoves(board, player, dieValue)
         if (possibleMoves.length > 0) {
-          // Reentry is possible for this die: add 'reenter' and remove checker from bar
+          // Reentry is possible for this die: add 'reenter' move with possibleMoves
           movesArr.push({
             id: generateId(),
             player,
             dieValue,
             stateKind: 'ready',
             moveKind: 'reenter',
+            possibleMoves: possibleMoves, // Store the actual possible moves
             origin: bar,
           })
           barCheckersLeft-- // Only decrement if a reentry actually happens
@@ -207,6 +212,7 @@ export class Play {
             dieValue,
             stateKind: 'ready',
             moveKind: 'no-move',
+            possibleMoves: [], // No moves possible
             origin: bar,
           })
           // barCheckersLeft is NOT decremented here
@@ -216,43 +222,30 @@ export class Play {
         const possibleMoves = Board.getPossibleMoves(board, player, dieValue)
 
         if (possibleMoves.length > 0) {
-          // Find the first valid move with a checker of the player's color
-          const validMove = possibleMoves.find((move) => {
-            if (move.origin.kind === 'point') {
-              return (
-                move.origin.checkers.length > 0 &&
-                move.origin.checkers[0].color === player.color
-              )
-            }
-            return false
-          })
+          // Determine move kind based on the possible moves
+          let moveKind: 'point-to-point' | 'bear-off' | 'reenter' =
+            'point-to-point'
 
-          if (validMove) {
-            // Determine move kind based on destination
-            let moveKind: 'point-to-point' | 'bear-off' = 'point-to-point'
-            if (validMove.destination.kind === 'off') {
-              moveKind = 'bear-off'
-            }
-
-            movesArr.push({
-              id: generateId(),
-              player,
-              dieValue,
-              stateKind: 'ready',
-              moveKind,
-              origin: validMove.origin,
-            })
-          } else {
-            // No valid moves found
-            movesArr.push({
-              id: generateId(),
-              player,
-              dieValue,
-              stateKind: 'ready',
-              moveKind: 'no-move',
-              origin: undefined as any,
-            })
+          // Check if any of the possible moves are bear-offs
+          const hasBearOffMove = possibleMoves.some(
+            (move) => move.destination.kind === 'off'
+          )
+          if (hasBearOffMove) {
+            moveKind = 'bear-off'
           }
+
+          // Use the first possible move's origin as the move's origin
+          const firstMove = possibleMoves[0]
+
+          movesArr.push({
+            id: generateId(),
+            player,
+            dieValue,
+            stateKind: 'ready',
+            moveKind,
+            possibleMoves: possibleMoves, // Store all possible moves
+            origin: firstMove.origin, // Use first move's origin as the move's origin
+          })
         } else {
           // No possible moves for this die
           movesArr.push({
@@ -261,6 +254,7 @@ export class Play {
             dieValue,
             stateKind: 'ready',
             moveKind: 'no-move',
+            possibleMoves: [], // No moves possible
             origin: undefined as any,
           })
         }

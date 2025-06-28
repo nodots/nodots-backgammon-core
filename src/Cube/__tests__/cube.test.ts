@@ -1,13 +1,14 @@
-import { Cube } from '..'
-import { generateId, randomBackgammonColor } from '../..'
+import { beforeAll, describe, expect, it } from '@jest/globals'
 import {
   BackgammonCubeDoubled,
   BackgammonCubeInitialized,
   BackgammonPlayerInactive,
   BackgammonPlayerRolled,
   BackgammonPlayers,
+  BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
-import { describe, it, expect, beforeAll } from '@jest/globals'
+import { Cube } from '..'
+import { generateId, randomBackgammonColor } from '../..'
 
 let cube: Cube
 let players: BackgammonPlayers | undefined = undefined
@@ -19,6 +20,7 @@ describe('Cube', () => {
     const counterclockwiseColor = clockwiseColor === 'white' ? 'black' : 'white'
     const player: BackgammonPlayerRolled = {
       id: generateId(),
+      userId: generateId(),
       stateKind: 'rolled',
       color: clockwiseColor,
       direction: 'clockwise',
@@ -26,7 +28,7 @@ describe('Cube', () => {
         id: generateId(),
         color: clockwiseColor,
         stateKind: 'rolled',
-        currentRoll: [1, 2],
+        currentRoll: [1, 2] as BackgammonRoll,
         total: 3,
       },
       pipCount: 167,
@@ -34,6 +36,7 @@ describe('Cube', () => {
     }
     const opponent: BackgammonPlayerInactive = {
       id: generateId(),
+      userId: generateId(),
       stateKind: 'inactive',
       color: counterclockwiseColor,
       direction: 'clockwise',
@@ -63,6 +66,7 @@ describe('Cube', () => {
 
     const player: BackgammonPlayerRolled = {
       id: generateId(),
+      userId: generateId(),
       stateKind: 'rolled',
       color: clockwiseColor,
       direction: 'clockwise',
@@ -70,7 +74,7 @@ describe('Cube', () => {
         id: generateId(),
         color: clockwiseColor,
         stateKind: 'rolled',
-        currentRoll: [1, 2],
+        currentRoll: [1, 2] as BackgammonRoll,
         total: 3,
       },
       pipCount: 167,
@@ -78,6 +82,7 @@ describe('Cube', () => {
     }
     const opponent: BackgammonPlayerInactive = {
       id: generateId(),
+      userId: generateId(),
       stateKind: 'inactive',
       color: counterclockwiseColor,
       direction: 'clockwise',
@@ -102,6 +107,7 @@ describe('Cube', () => {
     const counterclockwiseColor = clockwiseColor === 'white' ? 'black' : 'white'
     const player: BackgammonPlayerRolled = {
       id: generateId(),
+      userId: generateId(),
       stateKind: 'rolled',
       color: clockwiseColor,
       direction: 'clockwise',
@@ -109,7 +115,7 @@ describe('Cube', () => {
         id: generateId(),
         color: clockwiseColor,
         stateKind: 'rolled',
-        currentRoll: [1, 2],
+        currentRoll: [1, 2] as BackgammonRoll,
         total: 3,
       },
       pipCount: 167,
@@ -117,6 +123,7 @@ describe('Cube', () => {
     }
     const opponent: BackgammonPlayerInactive = {
       id: generateId(),
+      userId: generateId(),
       stateKind: 'inactive',
       color: counterclockwiseColor,
       direction: 'clockwise',

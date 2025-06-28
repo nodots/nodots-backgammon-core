@@ -1,17 +1,16 @@
-import { Board } from '../../../Board'
-import { generateId } from '../../..'
-import { BearOff } from '.'
 import {
+  BackgammonBoard,
+  BackgammonColor,
+  BackgammonDiceRolled,
+  BackgammonDieValue,
+  BackgammonMoveDirection,
   BackgammonMoveReady,
   BackgammonPlayerRolled,
-  BackgammonColor,
-  BackgammonMoveDirection,
-  BackgammonDieValue,
-  BackgammonDiceRolled,
   BackgammonRoll,
-  BackgammonBoard,
-  BackgammonMoveCompleted,
 } from '@nodots-llc/backgammon-types/dist'
+import { BearOff } from '.'
+import { generateId } from '../../..'
+import { Board } from '../../../Board'
 
 describe('BearOff', () => {
   describe('move', () => {
@@ -22,6 +21,7 @@ describe('BearOff', () => {
       board = Board.initialize()
       player = {
         id: generateId(),
+        userId: generateId(),
         color: 'black' as BackgammonColor,
         direction: 'clockwise' as BackgammonMoveDirection,
         stateKind: 'rolled',
@@ -92,6 +92,7 @@ describe('BearOff', () => {
         moveKind: 'bear-off',
         origin: nonHomePoint,
         dieValue: 1 as BackgammonDieValue,
+        possibleMoves: [],
       }
 
       expect(() => BearOff.move(board, move)).toThrow()
@@ -124,6 +125,7 @@ describe('BearOff', () => {
         moveKind: 'bear-off',
         origin: homePoint,
         dieValue: 1 as BackgammonDieValue,
+        possibleMoves: [],
       }
 
       expect(() => BearOff.move(board, move)).toThrow()

@@ -198,6 +198,7 @@ async function simulateGame(verbose = false): Promise<{
               stateKind: 'ready',
               moveKind: 'point-to-point',
               origin: m.origin,
+              possibleMoves: [],
             }))
           )
           const playMoving: BackgammonPlayMoving = {

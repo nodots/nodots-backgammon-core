@@ -1,24 +1,20 @@
-import { describe, it, expect } from '@jest/globals'
+import { describe, expect, it } from '@jest/globals'
+import {
+  BackgammonCheckerContainerImport,
+  BackgammonColor,
+  BackgammonDiceInactive,
+  BackgammonDiceStateKind,
+  BackgammonMoveKind,
+  BackgammonMoveReady,
+  BackgammonMoveSkeleton,
+  BackgammonPlayer,
+  BackgammonPlayerRolled,
+  BackgammonPoint,
+  BackgammonRoll,
+} from '@nodots-llc/backgammon-types/dist'
 import { BearOff } from '..'
 import { Dice, generateId } from '../../../../'
 import { Board } from '../../../../Board'
-import {
-  BackgammonDiceInactive,
-  BackgammonDiceStateKind,
-  BackgammonMoveReady,
-  BackgammonPlayerRolled,
-  BackgammonRoll,
-  BackgammonPoint,
-  BackgammonCheckerContainerImport,
-  BackgammonBoard,
-  BackgammonColor,
-  BackgammonDieValue,
-  BackgammonMoveDirection,
-  BackgammonMoveKind,
-  BackgammonMoveSkeleton,
-  BackgammonPlayer,
-} from '@nodots-llc/backgammon-types/dist'
-import { BOARD_IMPORT_BOTH_BEAROFF } from '../../../../Board/imports'
 
 const convertSkeletonToMove = (
   skeleton: BackgammonMoveSkeleton,
@@ -31,6 +27,7 @@ const convertSkeletonToMove = (
   moveKind,
   origin: skeleton.origin,
   dieValue: skeleton.dieValue,
+  possibleMoves: [],
 })
 
 const convertSkeletonsToMoves = (
@@ -61,11 +58,18 @@ describe('BearOff', () => {
       total: 2,
     }
     const player: BackgammonPlayerRolled = {
-      id: '1',
-      color,
+      id: generateId(),
+      userId: generateId(),
+      color: 'white',
       stateKind: 'rolled',
-      dice: rolledDice,
-      direction,
+      dice: {
+        id: generateId(),
+        stateKind: 'rolled',
+        currentRoll: [6, 6] as BackgammonRoll,
+        total: 12,
+        color: 'white' as BackgammonColor,
+      },
+      direction: 'clockwise',
       pipCount: 15, // All checkers in home board
       isRobot: true,
     }
@@ -99,6 +103,7 @@ describe('BearOff', () => {
         moveKind: 'bear-off',
         origin,
         dieValue: 6,
+        possibleMoves: [],
       }
 
       const moveResult = BearOff.move(board, move)
@@ -138,6 +143,7 @@ describe('BearOff', () => {
         moveKind: 'bear-off',
         origin,
         dieValue: 6, // Using higher dice value
+        possibleMoves: [],
       }
 
       const moveResult = BearOff.move(board, move)
@@ -183,6 +189,7 @@ describe('BearOff', () => {
         moveKind: 'bear-off',
         origin,
         dieValue: 4,
+        possibleMoves: [],
       }
 
       expect(() => BearOff.move(board, move)).toThrow(
@@ -220,6 +227,7 @@ describe('BearOff', () => {
         moveKind: 'bear-off',
         origin,
         dieValue: 6, // Trying to use higher dice value
+        possibleMoves: [],
       }
 
       expect(() => BearOff.move(board, move)).toThrow(
@@ -248,6 +256,7 @@ describe('BearOff', () => {
         moveKind: 'bear-off',
         origin,
         dieValue: 4,
+        possibleMoves: [],
       }
 
       expect(() => BearOff.move(board, move)).toThrow('No checker to bear off')
@@ -281,6 +290,7 @@ describe('BearOff', () => {
         moveKind: 'bear-off',
         origin,
         dieValue: 6,
+        possibleMoves: [],
       }
 
       const moveResult = BearOff.move(board, move)

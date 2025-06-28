@@ -1,23 +1,18 @@
-import { describe, it, expect } from '@jest/globals'
-import { PointToPoint } from '..'
+import { describe, expect, it } from '@jest/globals'
 import {
-  Dice,
-  generateId,
-  randomBackgammonColor,
-  randomBackgammonDirection,
-} from '../../../../'
-import { Board } from '../../../../Board'
-import { BOARD_IMPORT_DEFAULT } from '../../../../Board/imports'
-import {
+  BackgammonColor,
   BackgammonDiceInactive,
   BackgammonDiceStateKind,
+  BackgammonDieValue,
+  BackgammonMoveDirection,
   BackgammonMoveReady,
   BackgammonPlayerRolled,
   BackgammonRoll,
-  BackgammonColor,
-  BackgammonMoveDirection,
-  BackgammonDieValue,
 } from '@nodots-llc/backgammon-types/dist'
+import { PointToPoint } from '..'
+import { Dice, generateId } from '../../../../'
+import { Board } from '../../../../Board'
+import { BOARD_IMPORT_DEFAULT } from '../../../../Board/imports'
 
 describe('PointToPoint', () => {
   const setupTestData = (
@@ -38,11 +33,18 @@ describe('PointToPoint', () => {
       total: 2,
     }
     const player: BackgammonPlayerRolled = {
-      id: '1',
-      color,
+      id: generateId(),
+      userId: generateId(),
+      color: color,
       stateKind: 'rolled',
-      dice: rolledDice,
-      direction,
+      dice: {
+        id: generateId(),
+        stateKind: 'rolled',
+        currentRoll: [1, 2] as BackgammonRoll,
+        total: 3,
+        color: color,
+      },
+      direction: direction,
       pipCount: 167,
       isRobot: true,
     }
@@ -62,6 +64,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
 
       expect(PointToPoint.isA(move)).toBe(false)
@@ -82,6 +85,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
 
       expect(PointToPoint.isA(move)).toBe(false)
@@ -97,6 +101,7 @@ describe('PointToPoint', () => {
         origin,
         stateKind: 'ready',
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
 
       expect(PointToPoint.isA(move)).toBe(false)
@@ -114,6 +119,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
 
       const result = PointToPoint.isA(move)
@@ -134,6 +140,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
       expect(PointToPoint.isA(move)).toBe(false)
     })
@@ -151,6 +158,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
 
       const destination = PointToPoint.getDestination(board, move)
@@ -168,6 +176,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
 
       const destination = PointToPoint.getDestination(board, move)
@@ -188,6 +197,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 2,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
       expect(() => PointToPoint.getDestination(board, move)).toThrow(
         'Invalid destination point'
@@ -205,6 +215,7 @@ describe('PointToPoint', () => {
         dieValue: 1,
         moveKind: 'point-to-point',
         origin: board.BackgammonPoints[0],
+        possibleMoves: [],
       }
 
       expect(() => PointToPoint.move(null as any, move)).toThrow(
@@ -231,6 +242,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
 
       const result = PointToPoint.move(board, move)
@@ -257,6 +269,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
       const result = PointToPoint.move(board, move)
       expect(result.move.moveKind).toBe('no-move')
@@ -276,6 +289,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
       // Save original moveChecker
       const originalMoveChecker = Board.moveChecker
@@ -356,6 +370,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
       const result = PointToPoint.move(board, move)
       expect(result.move.isHit).toBe(true)
@@ -377,6 +392,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
       // Should throw via isA or move
       expect(() => PointToPoint.move(board, move)).toThrow()
@@ -386,6 +402,13 @@ describe('PointToPoint', () => {
       const { board, player } = setupTestData('white', 'clockwise', 1)
       const origin = board.BackgammonPoints[5]
       const destination = board.BackgammonPoints[4]
+
+      // Ensure origin has white checkers
+      origin.checkers = [
+        { color: 'white', id: 'wo1', checkercontainerId: origin.id },
+        { color: 'white', id: 'wo2', checkercontainerId: origin.id },
+      ]
+
       // Set up destination with 2 white checkers
       destination.checkers = [
         { color: 'white', id: 'w1', checkercontainerId: destination.id },
@@ -400,6 +423,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
       const result = PointToPoint.move(board, move)
       expect(result.move.stateKind).toBe('completed')
@@ -416,6 +440,13 @@ describe('PointToPoint', () => {
       const { board, player } = setupTestData('white', 'clockwise', 1)
       const origin = board.BackgammonPoints[5]
       const destination = board.BackgammonPoints[4]
+
+      // Ensure origin has white checkers
+      origin.checkers = [
+        { color: 'white', id: 'wo1', checkercontainerId: origin.id },
+        { color: 'white', id: 'wo2', checkercontainerId: origin.id },
+      ]
+
       // Set up destination with 2 black checkers
       destination.checkers = [
         { color: 'black', id: 'b1', checkercontainerId: destination.id },
@@ -428,6 +459,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
       const result = PointToPoint.move(board, move)
       expect(result.move.moveKind).toBe('no-move')
@@ -440,23 +472,27 @@ describe('PointToPoint', () => {
     it('should allow moving to an empty point', () => {
       const { board, player } = setupTestData('white', 'clockwise', 1)
       const origin = board.BackgammonPoints[5]
-      // Find an empty destination
-      const destination = board.BackgammonPoints.find(
-        (p) => p.checkers.length === 0
-      )!
+
+      // Ensure origin has white checkers
+      origin.checkers = [
+        { color: 'white', id: 'wo1', checkercontainerId: origin.id },
+        { color: 'white', id: 'wo2', checkercontainerId: origin.id },
+      ]
+
+      // Use a specific empty destination that works with dieValue 1
+      const destination = board.BackgammonPoints[4] // Position 5 from clockwise position 6
+      destination.checkers = [] // Ensure it's empty
+
       const move: BackgammonMoveReady = {
         id: '1',
         player,
         origin,
         stateKind: 'ready',
-        dieValue: (destination.position.clockwise -
-          origin.position.clockwise) as BackgammonDieValue,
+        dieValue: 1, // Move from position 6 to position 5
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
-      // Adjust dieValue so the move is legal
-      move.dieValue = Math.abs(
-        origin.position.clockwise - destination.position.clockwise
-      ) as BackgammonDieValue
+
       const result = PointToPoint.move(board, move)
       expect(result.move.stateKind).toBe('completed')
       expect(result.move.destination?.id).toBe(destination.id)
@@ -474,6 +510,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 0,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
       expect(() => PointToPoint.move(board, moveZero)).toThrow()
       // dieValue undefined
@@ -483,6 +520,7 @@ describe('PointToPoint', () => {
         origin,
         stateKind: 'ready',
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
       expect(() => PointToPoint.move(board, moveUndef)).toThrow()
     })
@@ -500,6 +538,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
       expect(() => PointToPoint.move(board, move)).toThrow()
     })
@@ -515,6 +554,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
       expect(() => PointToPoint.move(board, moveBar)).toThrow()
       // Use the off as origin
@@ -526,6 +566,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
+        possibleMoves: [],
       }
       expect(() => PointToPoint.move(board, moveOff)).toThrow()
     })

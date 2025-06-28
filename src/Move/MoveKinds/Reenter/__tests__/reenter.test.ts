@@ -1,19 +1,18 @@
-import { describe, it, expect } from '@jest/globals'
-import { Reenter } from '..'
-import { Dice, generateId } from '../../../../'
-import { Board } from '../../../../Board'
-import { BOARD_IMPORT_REENTER_TEST } from '../../../../Board/imports'
+import { describe, expect, it } from '@jest/globals'
 import {
   BackgammonChecker,
   BackgammonColor,
   BackgammonDiceInactive,
-  BackgammonDiceStateKind,
+  BackgammonDieValue,
   BackgammonMoveDirection,
   BackgammonMoveReady,
   BackgammonPlayerRolled,
   BackgammonRoll,
-  BackgammonDieValue,
 } from '@nodots-llc/backgammon-types/dist'
+import { Reenter } from '..'
+import { Dice, generateId } from '../../../../'
+import { Board } from '../../../../Board'
+import { BOARD_IMPORT_REENTER_TEST } from '../../../../Board/imports'
 
 describe('Reenter', () => {
   const setupTest = (
@@ -33,6 +32,7 @@ describe('Reenter', () => {
     }
     const player: BackgammonPlayerRolled = {
       id: generateId(),
+      userId: generateId(),
       color,
       stateKind: 'rolled',
       dice: rolledDice,
@@ -53,6 +53,7 @@ describe('Reenter', () => {
         moveKind: 'reenter',
         origin: board.bar[player.direction],
         dieValue: 1,
+        possibleMoves: [],
       }
       const result = Reenter.isA(move)
       expect(result).toBeTruthy()
@@ -71,6 +72,7 @@ describe('Reenter', () => {
         moveKind: 'reenter',
         origin: board.BackgammonPoints[0],
         dieValue: 1,
+        possibleMoves: [],
       }
       expect(Reenter.isA(move)).toBe(false)
     })
@@ -85,6 +87,7 @@ describe('Reenter', () => {
         moveKind: 'reenter',
         origin: board.bar[player.direction],
         dieValue: 1,
+        possibleMoves: [],
       }
       expect(Reenter.isA(move)).toBe(false)
     })
@@ -100,6 +103,7 @@ describe('Reenter', () => {
         moveKind: 'reenter',
         origin: board.bar[player.direction],
         dieValue: 1,
+        possibleMoves: [],
       }
       expect(Reenter.isA(move)).toBe(false)
     })
@@ -124,6 +128,7 @@ describe('Reenter', () => {
         moveKind: 'reenter',
         origin: board.bar[player.direction],
         dieValue: 1,
+        possibleMoves: [],
       }
 
       const result = Reenter.move(board, move)
@@ -151,6 +156,7 @@ describe('Reenter', () => {
         moveKind: 'reenter',
         origin: board.bar[player.direction],
         dieValue: 1,
+        possibleMoves: [],
       }
       const destination = Reenter.getDestination(board, move)
       expect(destination).toBeDefined()
@@ -179,6 +185,7 @@ describe('Reenter', () => {
         moveKind: 'reenter',
         origin: board.bar[player.direction],
         dieValue: 1,
+        possibleMoves: [],
       }
       expect(() => Reenter.getDestination(board, move)).toThrow(
         'Invalid reenter move'
@@ -209,6 +216,7 @@ describe('Reenter', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'reenter',
+        possibleMoves: [],
       }
       expect(() => Reenter.getDestination(board, move)).toThrow(
         'Invalid reenter move: no valid destination found'
@@ -230,6 +238,7 @@ describe('Reenter', () => {
         moveKind: 'reenter',
         origin: board.bar[player.direction],
         dieValue: 1,
+        possibleMoves: [],
       }
 
       const result = Reenter.move(board, move)
@@ -255,6 +264,7 @@ describe('Reenter', () => {
         moveKind: 'reenter',
         origin: board.bar[player.direction],
         dieValue: 1,
+        possibleMoves: [],
       }
       expect(() => Reenter.move(null as any, move)).toThrow('Invalid board')
     })
@@ -286,6 +296,7 @@ describe('Reenter', () => {
         moveKind: 'reenter',
         origin: board.bar[player.direction],
         dieValue: 1,
+        possibleMoves: [],
       }
       expect(() => Reenter.move(board, move)).toThrow('Invalid reenter move')
     })
@@ -307,12 +318,14 @@ describe('Reenter', () => {
         moveKind: 'reenter',
         origin: board.bar[player.direction],
         dieValue: 1,
+        possibleMoves: [],
       }
 
       // Attempt to move the regular checker instead of the bar checker
       const invalidMove: BackgammonMoveReady = {
         ...move,
         origin: board.BackgammonPoints[0],
+        possibleMoves: [],
       }
 
       expect(Reenter.isA(invalidMove)).toBe(false) // Should reject non-bar move when checkers are on bar
@@ -346,6 +359,7 @@ describe('Reenter', () => {
         moveKind: 'reenter',
         origin: board.bar[player.direction],
         dieValue: 1,
+        possibleMoves: [],
       }
 
       const result = Reenter.move(board, move)
@@ -378,6 +392,7 @@ describe('Reenter', () => {
         moveKind: 'reenter',
         origin: board.bar[player.direction],
         dieValue: 1,
+        possibleMoves: [],
       }
 
       const result = Reenter.move(board, move)
@@ -413,6 +428,7 @@ describe('Reenter', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'reenter',
+        possibleMoves: [],
       }
       // Save original moveChecker
       const originalMoveChecker = Board.moveChecker
@@ -465,6 +481,7 @@ describe('Reenter', () => {
           moveKind: 'reenter',
           origin: board.bar[player.direction],
           dieValue,
+          possibleMoves: [],
         }
 
         const result = Reenter.move(board, move)
@@ -503,6 +520,7 @@ describe('Reenter', () => {
         moveKind: 'reenter',
         origin: board.bar[player.direction],
         dieValue: 1,
+        possibleMoves: [],
       }
 
       // Should be able to reenter multiple checkers using doubles

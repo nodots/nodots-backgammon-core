@@ -1,17 +1,17 @@
-import { Board } from '../../../Board'
-import { generateId } from '../../..'
-import { Reenter } from '.'
 import {
+  BackgammonBoard,
+  BackgammonColor,
+  BackgammonDiceRolled,
+  BackgammonDieValue,
+  BackgammonMoveCompleted,
+  BackgammonMoveDirection,
   BackgammonMoveReady,
   BackgammonPlayerRolled,
-  BackgammonColor,
-  BackgammonMoveDirection,
-  BackgammonDieValue,
-  BackgammonDiceRolled,
   BackgammonRoll,
-  BackgammonBoard,
-  BackgammonMoveCompleted,
 } from '@nodots-llc/backgammon-types/dist'
+import { Reenter } from '.'
+import { generateId } from '../../..'
+import { Board } from '../../../Board'
 
 describe('Reenter', () => {
   describe('move', () => {
@@ -22,6 +22,7 @@ describe('Reenter', () => {
       board = Board.initialize()
       player = {
         id: generateId(),
+        userId: generateId(),
         color: 'black' as BackgammonColor,
         direction: 'clockwise' as BackgammonMoveDirection,
         stateKind: 'rolled',
@@ -57,6 +58,7 @@ describe('Reenter', () => {
         dieValue: 1 as BackgammonDieValue,
         moveKind: 'reenter',
         origin: board.bar.clockwise,
+        possibleMoves: [],
       }
 
       const result = Reenter.move(board, move)
@@ -96,6 +98,7 @@ describe('Reenter', () => {
         dieValue: 1 as BackgammonDieValue,
         moveKind: 'reenter',
         origin: board.bar.clockwise,
+        possibleMoves: [],
       }
 
       const result = Reenter.move(board, move)
@@ -142,6 +145,7 @@ describe('Reenter', () => {
         dieValue: 1 as BackgammonDieValue,
         moveKind: 'reenter',
         origin: board.bar.clockwise,
+        possibleMoves: [],
       }
 
       expect(() => Reenter.move(board, move)).toThrow(

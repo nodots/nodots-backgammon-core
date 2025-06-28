@@ -1,5 +1,6 @@
 import {
   BackgammonBoard,
+  BackgammonChecker,
   BackgammonColor,
   BackgammonCube,
   BackgammonGame,
@@ -21,6 +22,7 @@ import {
 } from '@nodots-llc/backgammon-types/dist'
 import { generateId, Player, randomBackgammonColor } from '..'
 import { Board } from '../Board'
+import { Checker } from '../Checker'
 import { Cube } from '../Cube'
 import { Play } from '../Play'
 import { logger } from '../utils/logger'
@@ -42,6 +44,120 @@ export class Game {
   activePlay!: BackgammonPlay
   activePlayer!: BackgammonPlayerActive
   inactivePlayer!: BackgammonPlayerInactive
+
+  /**
+   * Creates a new game between two players
+   * This is the main entry point for creating games - handles all player assignments and board setup
+   *
+   * @param player1UserId - User ID for player 1
+   * @param player2UserId - User ID for player 2
+   * @param autoRollForStart - Whether to auto roll for start
+   * @param player1IsRobot - Whether player 1 is a robot
+   * @param player2IsRobot - Whether player 2 is a robot
+   * @param colorDirectionConfig - Optional: { blackDirection, whiteDirection, blackFirst } for explicit control (for tests)
+   */
+  public static createNewGame = function createNewGame(
+    player1UserId: string,
+    player2UserId: string,
+    autoRollForStart: boolean = true,
+    player1IsRobot: boolean = true,
+    player2IsRobot: boolean = true,
+    colorDirectionConfig?: {
+      blackDirection: 'clockwise' | 'counterclockwise'
+      whiteDirection: 'clockwise' | 'counterclockwise'
+      blackFirst?: boolean
+    }
+  ): BackgammonGame {
+    // Determine color and direction assignments
+    let blackDirection: 'clockwise' | 'counterclockwise'
+    let whiteDirection: 'clockwise' | 'counterclockwise'
+    let blackFirst: boolean
+
+    if (colorDirectionConfig) {
+      blackDirection = colorDirectionConfig.blackDirection
+      whiteDirection = colorDirectionConfig.whiteDirection
+      blackFirst = colorDirectionConfig.blackFirst ?? true
+    } else {
+      // Randomize directions for real games
+      if (Math.random() < 0.5) {
+        blackDirection = 'clockwise'
+        whiteDirection = 'counterclockwise'
+        blackFirst = true
+      } else {
+        blackDirection = 'counterclockwise'
+        whiteDirection = 'clockwise'
+        blackFirst = false
+      }
+    }
+
+    // Assign user IDs and robot flags to colors
+    const playerConfigs = blackFirst
+      ? [
+          {
+            color: 'black',
+            direction: blackDirection,
+            userId: player1UserId,
+            isRobot: player1IsRobot,
+          },
+          {
+            color: 'white',
+            direction: whiteDirection,
+            userId: player2UserId,
+            isRobot: player2IsRobot,
+          },
+        ]
+      : [
+          {
+            color: 'white',
+            direction: whiteDirection,
+            userId: player1UserId,
+            isRobot: player1IsRobot,
+          },
+          {
+            color: 'black',
+            direction: blackDirection,
+            userId: player2UserId,
+            isRobot: player2IsRobot,
+          },
+        ]
+
+    const players = playerConfigs.map((cfg) =>
+      Player.initialize(
+        cfg.color as BackgammonColor,
+        cfg.direction,
+        undefined,
+        generateId(),
+        'inactive',
+        cfg.isRobot,
+        cfg.userId
+      )
+    )
+
+    // Ensure players is a tuple of length 2
+    const playersTuple = players as [(typeof players)[0], (typeof players)[1]]
+
+    // Create board with proper dual numbering system
+    // The board expects: createBoardForPlayers(clockwiseColor, counterclockwiseColor)
+    const board = Board.createBoardForPlayers(
+      blackDirection === 'clockwise' ? 'black' : 'white',
+      blackDirection === 'counterclockwise' ? 'black' : 'white'
+    )
+
+    // Initialize game
+    let game: BackgammonGame = Game.initialize(
+      playersTuple,
+      generateId(),
+      'rolling-for-start',
+      board
+    ) as BackgammonGameRollingForStart
+
+    // Auto roll for start if requested
+    if (autoRollForStart) {
+      game = Game.rollForStart(game as BackgammonGameRollingForStart)
+    }
+
+    return game
+  }
 
   public static initialize = function initializeGame(
     players: BackgammonPlayers,
@@ -136,7 +252,8 @@ export class Game {
             undefined,
             p.id,
             'rolled-for-start',
-            true
+            true,
+            p.userId
           )
         : Player.initialize(
             p.color,
@@ -144,7 +261,8 @@ export class Game {
             undefined,
             p.id,
             'inactive',
-            true
+            true,
+            p.userId
           )
     ) as BackgammonPlayers
     const activePlayer = rollingPlayers.find(
@@ -167,7 +285,7 @@ export class Game {
     game: BackgammonGameRolledForStart | BackgammonGameRolling
   ): BackgammonGameRolled {
     if (game.stateKind === 'rolled-for-start') {
-      const { players, board, cube, activeColor, activePlayer } = game
+      const { players, activeColor } = game
       const rollingPlayers = players.map((p) => {
         if (p.color === activeColor) {
           if (p.stateKind === 'rolling') return p
@@ -177,7 +295,8 @@ export class Game {
             undefined,
             p.id,
             'rolling',
-            true
+            true,
+            p.userId
           )
         }
         return Player.initialize(
@@ -186,7 +305,8 @@ export class Game {
           undefined,
           p.id,
           'inactive',
-          true
+          true,
+          p.userId
         )
       }) as BackgammonPlayers
       const newActivePlayer = rollingPlayers.find(
@@ -248,7 +368,7 @@ export class Game {
 
     // If in 'rolled', transition to 'moving'
     if (activePlay.stateKind === 'rolled') {
-      // You may need to create a PlayMoving from PlayRolled
+      // FIXME: You may need to create a PlayMoving from PlayRolled
       activePlay = Play.startMove(activePlay)
       game = Game.startMove(game as BackgammonGameRolled, activePlay)
     }
@@ -295,7 +415,8 @@ export class Game {
         movedPlayer.dice,
         movedPlayer.id,
         'winner',
-        true
+        true,
+        movedPlayer.userId
       )
       return {
         ...game,
@@ -359,13 +480,6 @@ export class Game {
     ]
   }
 
-  private static sanityCheckMovingGame = (
-    game: BackgammonGame
-  ): BackgammonGameMoving | false => {
-    if (game.stateKind !== 'moving') return false
-    return game as BackgammonGameMoving
-  }
-
   public static startMove = function startMove(
     game: BackgammonGameRolled,
     movingPlay: BackgammonPlayMoving
@@ -393,6 +507,69 @@ export class Game {
     )
   }
 
+  // --- Player Management ---
+
+  /**
+   * Validates if rolling is allowed in the current game state
+   */
+  public static canRoll(game: BackgammonGame): boolean {
+    return game.stateKind === 'rolled-for-start' || game.stateKind === 'rolling'
+  }
+
+  /**
+   * Validates if rolling for start is allowed in the current game state
+   */
+  public static canRollForStart(game: BackgammonGame): boolean {
+    return game.stateKind === 'rolling-for-start'
+  }
+
+  /**
+   * Validates if the specified player can roll in the current game state
+   */
+  public static canPlayerRoll(game: BackgammonGame, playerId: string): boolean {
+    if (!Game.canRoll(game)) {
+      return false
+    }
+
+    // Check if the player is the active player
+    if (game.activeColor) {
+      const activePlayer = game.players.find(
+        (p) => p.color === game.activeColor
+      )
+      if (!activePlayer || activePlayer.id !== playerId) {
+        return false
+      }
+    }
+
+    return true
+  }
+
+  /**
+   * Validates if moves can be calculated for the current game state
+   */
+  public static canGetPossibleMoves(game: BackgammonGame): boolean {
+    return game.stateKind === 'rolled'
+  }
+
+  // --- Checker Management ---
+
+  /**
+   * Finds a checker in the game board by ID
+   * @param game - The game containing the board to search
+   * @param checkerId - The ID of the checker to find
+   * @returns The checker object or null if not found
+   */
+  public static findChecker(
+    game: BackgammonGame,
+    checkerId: string
+  ): BackgammonChecker | null {
+    try {
+      return Checker.getChecker(game.board, checkerId)
+    } catch {
+      return null
+    }
+  }
+
   public static offerDouble(
     game: BackgammonGame,
     player: BackgammonPlayerActive
@@ -409,7 +586,8 @@ export class Game {
       player.dice,
       player.id,
       'doubled',
-      true
+      true,
+      player.userId
     )
     const inactivePlayer = opponent as BackgammonPlayerInactive
     // Create a BackgammonPlayDoubled (for now, reuse activePlay)
@@ -464,7 +642,8 @@ export class Game {
       player.dice,
       player.id,
       'doubled',
-      true
+      true,
+      player.userId
     )
     const inactivePlayer = Player.initialize(
       offeringPlayer.color,
@@ -472,7 +651,8 @@ export class Game {
       offeringPlayer.dice,
       offeringPlayer.id,
       'inactive',
-      true
+      true,
+      offeringPlayer.userId
     )
     // Create a BackgammonPlayDoubled (for now, reuse activePlay)
     const activePlay = game.activePlay as any // TODO: ensure correct type
@@ -484,7 +664,8 @@ export class Game {
         player.dice,
         player.id,
         'winner',
-        true
+        true,
+        player.userId
       )
       return {
         ...game,
@@ -539,7 +720,8 @@ export class Game {
       offeringPlayer.dice,
       offeringPlayer.id,
       'winner',
-      true
+      true,
+      offeringPlayer.userId
     )
     return {
       ...game,
