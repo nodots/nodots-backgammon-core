@@ -108,12 +108,12 @@ describe('Play', () => {
 
       // There should always be 4 moves for doubles
       expect(play.moves.size).toBe(4)
-      // All moves should be either 'point-to-point' or 'no-move'
+      // All moves should be either 'bear-off' or 'no-move' since checkers are in home board
       const moveKinds = Array.from(play.moves).map((m: any) => m.moveKind)
-      expect(
-        moveKinds.every((k) => k === 'point-to-point' || k === 'no-move')
-      ).toBe(true)
-      // There can be 0 to 4 'point-to-point' moves, rest are 'no-move'
+      expect(moveKinds.every((k) => k === 'bear-off' || k === 'no-move')).toBe(
+        true
+      )
+      // There can be 0 to 4 'bear-off' moves, rest are 'no-move'
       expect(moveKinds.length).toBe(4)
 
       // Cleanup
@@ -170,8 +170,8 @@ describe('Play', () => {
       const play = Play.initialize(board, rolledPlayer)
       expect(play.moves.size).toBe(2)
       const moveKinds = Array.from(play.moves).map((m: any) => m.moveKind)
-      const hasPointToPointMove = moveKinds.some((k) => k === 'point-to-point')
-      expect(hasPointToPointMove).toBe(true)
+      const hasBearOffMove = moveKinds.some((k) => k === 'bear-off')
+      expect(hasBearOffMove).toBe(true)
       jest.spyOn(Math, 'random').mockRestore()
     })
 
@@ -181,8 +181,8 @@ describe('Play', () => {
       const play = Play.initialize(board, rolledPlayer)
       expect(play.moves.size).toBe(4)
       const moveKinds = Array.from(play.moves).map((m: any) => m.moveKind)
-      const hasPointToPointMove = moveKinds.some((k) => k === 'point-to-point')
-      expect(hasPointToPointMove).toBe(true)
+      const hasBearOffMove = moveKinds.some((k) => k === 'bear-off')
+      expect(hasBearOffMove).toBe(true)
       jest.spyOn(Math, 'random').mockRestore()
     })
   })
@@ -191,12 +191,12 @@ describe('Play', () => {
     test('should execute a valid move', () => {
       const boardImport: BackgammonCheckerContainerImport[] = [
         {
-          position: { clockwise: 1, counterclockwise: 24 },
+          position: { clockwise: 6, counterclockwise: 19 },
           checkers: { qty: 1, color: 'white' },
         },
       ]
 
-      const board = Board.initialize(boardImport)
+      const board = Board.buildBoard(boardImport)
       const inactiveDice = Dice.initialize('white') as BackgammonDiceInactive
       const player = Player.initialize(
         'white',
@@ -210,7 +210,7 @@ describe('Play', () => {
       const play = Play.initialize(board, rolledPlayer) as BackgammonPlayRolled
 
       const origin = board.BackgammonPoints.find(
-        (p) => p.position.clockwise === 1 && p.position.counterclockwise === 24
+        (p) => p.position.clockwise === 6 && p.position.counterclockwise === 19
       ) as BackgammonPoint
 
       const result = Play.move(board, play, origin)

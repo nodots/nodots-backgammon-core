@@ -261,7 +261,7 @@ describe('Move', () => {
         player,
         stateKind: 'ready',
         moveKind: 'point-to-point',
-        origin: board.BackgammonPoints[23], // Point 24 (has 2 white checkers)
+        origin: board.BackgammonPoints[5], // Point 6 (has 5 white checkers)
         dieValue: 1,
         possibleMoves: [],
       }
@@ -269,9 +269,9 @@ describe('Move', () => {
       const result = Move.move(board, move)
       expect(result.board).toBeDefined()
       expect(result.move.stateKind).toBe('completed')
-      // Verify checker moved from point 24 to point 23
-      expect(result.board.BackgammonPoints[23].checkers.length).toBe(1) // One checker left on point 24
-      expect(result.board.BackgammonPoints[22].checkers.length).toBe(1) // One checker moved to point 23
+      // Verify checker moved from point 6 to point 5
+      expect(result.board.BackgammonPoints[5].checkers.length).toBe(4) // Four checkers left on point 6
+      expect(result.board.BackgammonPoints[4].checkers.length).toBe(1) // One checker moved to point 5 (was empty)
     })
 
     it('should handle reenter move', () => {

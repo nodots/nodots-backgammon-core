@@ -247,10 +247,10 @@ export class Board implements BackgammonBoard {
 
       const possibleDestination = Board.getPoints(board).find(
         (p: BackgammonPoint) =>
-          // Point must be empty or have only one opponent checker
+          // Point must be empty, have only one opponent checker (hit), or have player's own checkers (stacking)
           (p.checkers.length === 0 ||
-            (p.checkers.length === 1 &&
-              p.checkers[0].color !== player.color)) &&
+            (p.checkers.length === 1 && p.checkers[0].color !== player.color) ||
+            (p.checkers.length > 0 && p.checkers[0].color === player.color)) &&
           // Point must match the destination point based on direction
           (playerDirection === 'clockwise'
             ? p.position.clockwise === destinationPoint
