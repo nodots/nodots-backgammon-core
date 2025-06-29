@@ -266,7 +266,11 @@ async function simulateGame(verbose = false): Promise<{
             })
           }
           try {
-            const moveResult = Game.move(gameRolled, origin.id)
+            // Transition to moving state first
+            const gameMoving = Game.startMoving(gameRolled)
+
+            // Execute the move
+            const moveResult = Game.move(gameMoving, origin.id)
             if ((moveResult as any).stateKind === 'completed') {
               winner = (moveResult as any).winner.color
               currentGame = moveResult as any

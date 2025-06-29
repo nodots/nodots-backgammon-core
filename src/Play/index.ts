@@ -125,26 +125,6 @@ export class Play {
       move.player.direction
     )
 
-    const readyMove: BackgammonMoveReady = {
-      id: move.id,
-      player: move.player,
-      dieValue: move.dieValue,
-      stateKind: 'ready',
-      moveKind: isAllowedMoveKind(move.moveKind)
-        ? move.moveKind
-        : 'point-to-point',
-      possibleMoves: [],
-      origin,
-    }
-
-    const updatedMoves: BackgammonMoves = new Set([readyMove])
-
-    play = {
-      ...play,
-      moves: updatedMoves,
-      board,
-    } as BackgammonPlayMoving
-
     const completedMove: BackgammonMoveCompletedWithMove = {
       id: move.id,
       player: move.player,
@@ -159,8 +139,41 @@ export class Play {
       isHit: false,
     }
 
+    // CRITICAL FIX: Properly manage all moves - replace the consumed ready move with completed move
+    // Use filter + add approach to ensure proper move replacement
+    const allMoves = Array.from(play.moves)
+    const otherMoves = allMoves.filter((m) => m.id !== move.id) // Remove the executed move by ID
+
+    // 🔧 CORE LOGIC BUG FIX: Recalculate possibleMoves for remaining ready moves
+    // After a move executes, board state changes, so we must recalculate possible moves
+    // for remaining dice to reflect the new positions
+    const updatedOtherMoves = otherMoves.map((remainingMove) => {
+      if (remainingMove.stateKind === 'ready') {
+        // Recalculate possible moves based on updated board state
+        const freshPossibleMoves = Board.getPossibleMoves(
+          board, // Use the updated board state
+          remainingMove.player,
+          remainingMove.dieValue
+        )
+
+        // Update the move with fresh possible moves
+        return {
+          ...remainingMove,
+          possibleMoves: freshPossibleMoves,
+          // Update origin if needed - use first possible move's origin or keep existing
+          origin:
+            freshPossibleMoves.length > 0
+              ? freshPossibleMoves[0].origin
+              : remainingMove.origin,
+        }
+      }
+      return remainingMove // Keep completed moves unchanged
+    })
+
+    const finalMoves = new Set([...updatedOtherMoves, completedMove]) // Add updated moves + completed move
+
     return {
-      play: { ...play, moves: new Set(Array.from(play.moves)) },
+      play: { ...play, moves: finalMoves, board },
       board,
       move: completedMove,
     } as BackgammonPlayResult

@@ -17,6 +17,7 @@ import {
   BackgammonMoveReady,
   BackgammonMoveResult,
   BackgammonMoveStateKind,
+  BackgammonPlay,
   BackgammonPlayer,
   BackgammonPlayerMoving,
   BackgammonPlayerRolled,
@@ -209,50 +210,168 @@ export class Move {
         }
       }
 
-      // 6. If only one move possible, execute it
+      // 6. If only one move possible, execute it using proper game state management
       if (availableMoves.length === 1) {
         const moveToExecute = availableMoves[0]
         const specificMove = moveToExecute.possibleMoves[0] // Use the first (and only) possible move
 
-        try {
-          const moveResult = Move.move(game.board, {
-            ...moveToExecute,
-            origin: specificMove.origin,
-          })
+        console.log(
+          `[DEBUG] Single move available: die ${
+            moveToExecute.dieValue
+          }, origin ${
+            specificMove.origin.kind === 'point'
+              ? 'point-' + specificMove.origin.position.clockwise
+              : specificMove.origin.kind
+          }`
+        )
 
-          // Update the game with the new board state
-          const updatedGame: BackgammonGame = {
-            ...game,
-            board: moveResult.board,
-            // TODO: Update other game state as needed (player dice, etc.)
-          }
-
-          return {
-            success: true,
-            game: updatedGame,
-          }
-        } catch (moveError) {
-          return {
-            success: false,
-            error: `Move execution failed: ${
-              moveError instanceof Error ? moveError.message : 'Unknown error'
-            }`,
-          }
-        }
+        return Move.executeRobotMove(game, specificMove.origin.id)
       }
 
-      // 7. If multiple moves possible, return them for user to choose
-      return {
-        success: true,
-        possibleMoves: availableMoves,
-        game: game,
-        error: 'Multiple moves possible. Please specify which move to make.',
+      // 7. If multiple moves possible, check if robot or human player
+      // Find the active player to check if it's a robot
+      const activePlayer = game.players.find(
+        (p) => p.color === game.activeColor
+      )
+
+      if (activePlayer?.isRobot) {
+        // Robot player: auto-execute the first available move
+        const moveToExecute = availableMoves[0]
+        const specificMove = moveToExecute.possibleMoves[0]
+
+        console.log(
+          `[DEBUG] Robot auto-selecting move: die ${
+            moveToExecute.dieValue
+          }, origin ${
+            specificMove.origin.kind === 'point'
+              ? 'point-' + specificMove.origin.position.clockwise
+              : specificMove.origin.kind
+          }`
+        )
+
+        // For robots, execute the move directly using the existing game flow
+        // This should properly update dice, active play, and all game state
+        return Move.executeRobotMove(game, specificMove.origin.id)
+      } else {
+        // Human player: return multiple options for user to choose
+        return {
+          success: true,
+          possibleMoves: availableMoves,
+          game: game,
+          error: 'Multiple moves possible. Please specify which move to make.',
+        }
       }
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
       }
+    }
+  }
+
+  /**
+   * Execute a move for a robot player with explicit state management
+   */
+  private static executeRobotMove = async function executeRobotMove(
+    game: BackgammonGame,
+    originId: string
+  ): Promise<SimpleMoveResult> {
+    try {
+      // Import Game class to use proper game state management
+      const { Game } = await import('..')
+
+      console.log('[DEBUG] Robot executing move:', {
+        gameState: game.stateKind,
+        activePlayState: game.activePlay?.stateKind,
+        originId,
+      })
+
+      // Ensure we have a valid game state
+      if (!game.activePlay) {
+        console.log('[DEBUG] Robot move failed: No active play found')
+        throw new Error('No active play found for robot move')
+      }
+
+      let workingGame = game
+
+      // Explicit state transition: rolled → moving
+      if (workingGame.stateKind === 'rolled') {
+        console.log('[DEBUG] Robot transitioning from rolled to moving state')
+        try {
+          workingGame = Game.startMoving(workingGame as any)
+          console.log('[DEBUG] Transition completed:', {
+            newGameState: workingGame.stateKind,
+            newActivePlayState: workingGame.activePlay?.stateKind,
+          })
+        } catch (startMovingError: unknown) {
+          console.log(
+            '[DEBUG] Robot startMoving failed:',
+            startMovingError instanceof Error
+              ? startMovingError.message
+              : 'Unknown error'
+          )
+          throw new Error(
+            `Failed to start moving: ${
+              startMovingError instanceof Error
+                ? startMovingError.message
+                : 'Unknown error'
+            }`
+          )
+        }
+      }
+
+      // Validate we're now in moving state
+      if (workingGame.stateKind !== 'moving') {
+        console.log(
+          '[DEBUG] Robot move failed: Invalid game state after transition:',
+          workingGame.stateKind
+        )
+        throw new Error(
+          `Invalid game state for robot move: ${workingGame.stateKind}`
+        )
+      }
+
+      // Execute the move (now requires moving state)
+      console.log('[DEBUG] Robot calling Game.move with:', {
+        gameState: workingGame.stateKind,
+        originId,
+      })
+
+      let finalGame
+      try {
+        finalGame = Game.move(workingGame as any, originId)
+        console.log('[DEBUG] Robot move completed:', {
+          finalGameState: (finalGame as any).stateKind,
+          finalActivePlayState: (finalGame as any).activePlay?.stateKind,
+        })
+      } catch (gameError: unknown) {
+        console.log(
+          '[DEBUG] Robot Game.move failed:',
+          gameError instanceof Error ? gameError.message : 'Unknown error'
+        )
+        throw new Error(
+          `Game.move failed: ${
+            gameError instanceof Error ? gameError.message : 'Unknown error'
+          }`
+        )
+      }
+
+      console.log('[DEBUG] Robot move SUCCESS - returning game result')
+      return {
+        success: true,
+        game: finalGame as any,
+      }
+    } catch (moveError: unknown) {
+      // Core should barf on illegal input - throw the error up
+      console.log(
+        '[DEBUG] Robot move EXCEPTION caught:',
+        moveError instanceof Error ? moveError.message : 'Unknown error'
+      )
+      throw new Error(
+        `Robot move execution failed: ${
+          moveError instanceof Error ? moveError.message : 'Unknown error'
+        }`
+      )
     }
   }
 
@@ -325,8 +444,11 @@ export class Move {
       const { activePlayer, board } = game
       const possibleMoves: BackgammonMoveReady[] = []
 
-      // Get available dice values
-      const availableDice = Move.getAvailableDice(activePlayer.dice)
+      // Get available dice values (pass activePlay to track consumed dice)
+      const availableDice = Move.getAvailableDice(
+        activePlayer.dice,
+        game.activePlay
+      )
 
       // For each die value, check if a move is possible
       for (const dieValue of availableDice) {
@@ -359,19 +481,74 @@ export class Move {
    * Helper method to get available dice values
    */
   private static getAvailableDice = function getAvailableDice(
-    dice: BackgammonDice
+    dice: BackgammonDice,
+    activePlay?: BackgammonPlay
   ): BackgammonDieValue[] {
-    // This is a simplified implementation - in reality, you'd need to track
-    // which dice have been used in the current turn
-    if (dice.stateKind === 'rolled') {
-      const values: BackgammonDieValue[] = []
-      if (dice.currentRoll) {
-        values.push(dice.currentRoll[0])
-        values.push(dice.currentRoll[1])
-      }
-      return values
+    if (dice.stateKind !== 'rolled' || !dice.currentRoll) {
+      return []
     }
-    return []
+
+    // Get original dice values
+    const originalValues: BackgammonDieValue[] = []
+    const [die1, die2] = dice.currentRoll
+
+    // Handle doubles (same value on both dice)
+    if (die1 === die2) {
+      // Doubles: player gets 4 moves of the same value
+      originalValues.push(die1, die1, die1, die1)
+    } else {
+      // Regular roll: player gets 2 moves
+      originalValues.push(die1, die2)
+    }
+
+    // If no activePlay, return all original values
+    if (!activePlay) {
+      return originalValues
+    }
+
+    // Check if activePlay has moves property (it's a play with moves, not a move itself)
+    if (!('moves' in activePlay) || !activePlay.moves) {
+      return originalValues
+    }
+
+    // Track consumed dice by examining moves in activePlay
+    const consumedDice: BackgammonDieValue[] = []
+    const movesArray = Array.from(activePlay.moves)
+
+    for (const move of movesArray) {
+      // Type guard: ensure move has the properties we need
+      if (
+        move &&
+        typeof move === 'object' &&
+        'stateKind' in move &&
+        'dieValue' in move
+      ) {
+        // Count moves that have been executed:
+        // 1. Completed or confirmed moves
+        // 2. Ready moves with no possible moves (possibleMovesCount: 0 indicates it was executed)
+        const isExecuted =
+          move.stateKind === 'completed' ||
+          move.stateKind === 'confirmed' ||
+          (move.stateKind === 'ready' &&
+            'possibleMoves' in move &&
+            (!move.possibleMoves || move.possibleMoves.length === 0))
+
+        if (isExecuted) {
+          consumedDice.push(move.dieValue as BackgammonDieValue)
+        }
+      }
+    }
+
+    // Remove consumed dice from available dice
+    let availableDice = [...originalValues]
+    for (const consumedDie of consumedDice) {
+      const index = availableDice.indexOf(consumedDie)
+      if (index !== -1) {
+        availableDice.splice(index, 1)
+      }
+    }
+
+    return availableDice
   }
 
   /**

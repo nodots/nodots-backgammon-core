@@ -165,7 +165,11 @@ export async function runSimulation(maxTurns: number = 100) {
     // Only call Game.move if there is a valid move origin
     const firstMove = Array.from(gameRolled.activePlay.moves)[0]
     if (firstMove && firstMove.origin) {
-      gameMoved = Game.move(gameRolled, firstMove.origin.id)
+      // Transition to moving state first
+      const gameMoving = Game.startMoving(gameRolled)
+
+      // Execute first move
+      gameMoved = Game.move(gameMoving, firstMove.origin.id)
       moveCount++
     }
 

@@ -5,12 +5,14 @@ import {
   BackgammonCube,
   BackgammonGame,
   BackgammonGameMoving,
+  BackgammonGamePreparingMove,
   BackgammonGameRolled,
   BackgammonGameRolledForStart,
   BackgammonGameRolling,
   BackgammonGameRollingForStart,
   BackgammonGameStateKind,
   BackgammonMoveOrigin,
+  BackgammonMoveSkeleton,
   BackgammonPlay,
   BackgammonPlayerActive,
   BackgammonPlayerInactive,
@@ -208,6 +210,22 @@ export class Game {
           activePlayer,
           inactivePlayer,
         } as BackgammonGameRolling
+      case 'preparing-move':
+        if (!activeColor) throw new Error('Active color must be provided')
+        if (!activePlayer) throw new Error('Active player must be provided')
+        if (!inactivePlayer) throw new Error('Inactive player must be provided')
+        if (!activePlay) throw new Error('Active play must be provided')
+        return {
+          id,
+          stateKind,
+          players,
+          board,
+          cube,
+          activeColor,
+          activePlayer,
+          inactivePlayer,
+          activePlay,
+        } as BackgammonGamePreparingMove
       case 'moving':
         if (!activeColor) throw new Error('Active color must be provided')
         if (!activePlayer) throw new Error('Active player must be provided')
@@ -360,21 +378,55 @@ export class Game {
     } as BackgammonGameRolled
   }
 
+  /**
+   * Transition from 'rolled' to 'preparing-move' state
+   * This represents the player selecting a move but not yet executing it
+   */
+  public static prepareMove = function prepareMove(
+    game: BackgammonGameRolled
+  ): BackgammonGamePreparingMove {
+    if (game.stateKind !== 'rolled') {
+      throw new Error(`Cannot prepare move from ${game.stateKind} state`)
+    }
+
+    // The preparing-move state maintains the same play and player state
+    // but indicates that a move selection is in progress
+    return {
+      ...game,
+      stateKind: 'preparing-move',
+    } as BackgammonGamePreparingMove
+  }
+
+  /**
+   * Explicitly transition from 'rolled' or 'preparing-move' to 'moving' state
+   * This must be called before any moves can be made
+   */
+  public static startMoving = function startMoving(
+    game: BackgammonGameRolled | BackgammonGamePreparingMove
+  ): BackgammonGameMoving {
+    const isValidState =
+      game.stateKind === 'rolled' || game.stateKind === 'preparing-move'
+    if (!isValidState) {
+      throw new Error(
+        `Cannot start moving from ${(game as any).stateKind} state`
+      )
+    }
+
+    const movingPlay = Play.startMove(game.activePlay)
+    return Game.startMove(game, movingPlay)
+  }
+
   public static move = function move(
-    game: BackgammonGameMoving | BackgammonGameRolled,
+    game: BackgammonGameMoving,
     originId: string
   ): BackgammonGameMoving | BackgammonGame {
     let { activePlay, board } = game
 
-    // If in 'rolled', transition to 'moving'
-    if (activePlay.stateKind === 'rolled') {
-      // FIXME: You may need to create a PlayMoving from PlayRolled
-      activePlay = Play.startMove(activePlay)
-      game = Game.startMove(game as BackgammonGameRolled, activePlay)
-    }
-
+    // Require explicit moving state - no automatic transitions
     if (activePlay.stateKind !== 'moving') {
-      throw new Error('activePlay must be in moving state to make a move')
+      throw new Error(
+        `Cannot move from ${activePlay.stateKind} state. Call Game.startMoving() first.`
+      )
     }
 
     const playResult = Player.move(board, activePlay, originId)
@@ -481,14 +533,13 @@ export class Game {
   }
 
   public static startMove = function startMove(
-    game: BackgammonGameRolled,
+    game: BackgammonGameRolled | BackgammonGamePreparingMove,
     movingPlay: BackgammonPlayMoving
   ): BackgammonGameMoving {
     return {
       ...game,
       stateKind: 'moving',
       activePlay: movingPlay,
-      activePlayer: Player.toMoving(game.activePlayer),
     } as BackgammonGameMoving
   }
 
@@ -498,9 +549,12 @@ export class Game {
     game: BackgammonGame,
     player: BackgammonPlayerActive
   ): boolean {
-    // Only before rolling, and only if player does not own the cube and cube is not maxxed or already offered
+    // Allow doubling from rolling, rolled-for-start, or preparing-move states
+    // Only if player does not own the cube and cube is not maxxed or already offered
     return (
-      (game.stateKind === 'rolling' || game.stateKind === 'rolled-for-start') &&
+      (game.stateKind === 'rolling' ||
+        game.stateKind === 'rolled-for-start' ||
+        game.stateKind === 'preparing-move') &&
       game.cube.stateKind !== 'maxxed' &&
       game.cube.stateKind !== 'offered' &&
       (!game.cube.owner || game.cube.owner.id !== player.id)
@@ -728,5 +782,136 @@ export class Game {
       stateKind: 'completed',
       winner,
     } as any // TODO: type as BackgammonGameCompleted
+  }
+
+  public static getPossibleMoves = function getPossibleMoves(
+    game: BackgammonGame,
+    playerId?: string
+  ): {
+    success: boolean
+    error?: string
+    possibleMoves?: BackgammonMoveSkeleton[]
+    playerId?: string
+    playerColor?: string
+    updatedGame?: BackgammonGame
+  } {
+    // Validate game state
+    if (game.stateKind !== 'rolled' && game.stateKind !== 'moving') {
+      return {
+        success: false,
+        error: 'Game is not in a state where possible moves can be calculated',
+      }
+    }
+
+    // Get the target player
+    let targetPlayer
+    if (playerId) {
+      targetPlayer = game.players.find((p) => p.id === playerId)
+      if (!targetPlayer) {
+        return {
+          success: false,
+          error: 'Player is not part of this game',
+        }
+      }
+    } else if (game.activeColor) {
+      targetPlayer = game.players.find((p) => p.color === game.activeColor)
+    }
+
+    if (!targetPlayer) {
+      return {
+        success: false,
+        error: 'Unable to determine target player',
+      }
+    }
+
+    // Get activePlay and moves
+    const activePlay = game.activePlay
+    if (!activePlay || !activePlay.moves) {
+      return {
+        success: false,
+        error: 'No active play found',
+      }
+    }
+
+    const movesArr = Array.isArray(activePlay.moves)
+      ? activePlay.moves
+      : Array.from(activePlay.moves)
+
+    // Calculate possible moves based on current move states (respects dice consumption)
+    let possibleMoves: BackgammonMoveSkeleton[] = []
+    if (movesArr && movesArr.length > 0) {
+      possibleMoves = movesArr.flatMap((move) => {
+        // Only include moves that are still ready to be made
+        if (move.stateKind === 'ready') {
+          // Recalculate possible moves based on current board state
+          const currentPossibleMoves = Board.getPossibleMoves(
+            game.board,
+            targetPlayer,
+            move.dieValue
+          )
+          return currentPossibleMoves
+        }
+        return []
+      })
+
+      // Auto-complete turn when no legal moves remain
+      if (
+        possibleMoves.length === 0 &&
+        movesArr.every((m) => m.stateKind === 'ready')
+      ) {
+        logger.debug('[Game] Auto-completing turn: no legal moves remain')
+
+        // Mark all remaining moves as completed with no-move
+        const completedMoves = movesArr.map((move) => ({
+          ...move,
+          stateKind: 'completed',
+          moveKind: 'no-move',
+          possibleMoves: [],
+          isHit: false,
+          origin: undefined,
+          destination: undefined,
+        }))
+
+        // Update activePlay with completed moves
+        const completedActivePlay = {
+          ...activePlay,
+          moves: new Set(completedMoves),
+          stateKind: 'completed',
+        }
+
+        // Transition game to next player's turn
+        const updatedGame = {
+          ...game,
+          activePlay: completedActivePlay,
+          stateKind: 'rolling',
+          activeColor: game.activeColor === 'white' ? 'black' : 'white',
+        }
+
+        // Update players: current becomes inactive, other becomes rolling
+        const updatedPlayers = game.players.map((player) => {
+          if (player.color === game.activeColor) {
+            return { ...player, stateKind: 'inactive' as const }
+          } else {
+            return { ...player, stateKind: 'rolling' as const }
+          }
+        })
+        updatedGame.players = updatedPlayers as any
+
+        return {
+          success: true,
+          possibleMoves: [],
+          playerId: targetPlayer.id,
+          playerColor: targetPlayer.color,
+          updatedGame: updatedGame as BackgammonGame,
+        }
+      }
+    }
+
+    return {
+      success: true,
+      possibleMoves,
+      playerId: targetPlayer.id,
+      playerColor: targetPlayer.color,
+    }
   }
 }
