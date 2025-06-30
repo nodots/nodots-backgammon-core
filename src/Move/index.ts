@@ -82,8 +82,8 @@ export class Move {
         hasActivePlay: !!game.activePlay,
       })
 
-      // 2. Validate game state (must be 'rolled' or 'moving')
-      if (game.stateKind !== 'rolled' && game.stateKind !== 'moving') {
+      // 2. Validate game state (must be 'rolled', 'preparing-move', or 'moving')
+      if (game.stateKind !== 'rolled' && game.stateKind !== 'preparing-move' && game.stateKind !== 'moving') {
         return {
           success: false,
           error: `Game is not in a state where moving is allowed. Current state: ${game.stateKind}`,
@@ -294,7 +294,7 @@ export class Move {
 
       let workingGame = game
 
-      // Explicit state transition: rolled → preparing-move → moving
+      // Explicit state transition: rolled → preparing-move → moving OR preparing-move → moving
       if (workingGame.stateKind === 'rolled') {
         console.log(
           '[DEBUG] Robot transitioning from rolled to preparing-move to moving state'
@@ -321,6 +321,32 @@ export class Move {
           )
           throw new Error(
             `Failed to transition to moving state: ${
+              transitionError instanceof Error
+                ? transitionError.message
+                : 'Unknown error'
+            }`
+          )
+        }
+      } else if (workingGame.stateKind === 'preparing-move') {
+        console.log(
+          '[DEBUG] Robot transitioning from preparing-move to moving state'
+        )
+        try {
+          // Direct transition from preparing-move to moving
+          workingGame = Game.toMoving(workingGame as any)
+          console.log('[DEBUG] Transition completed:', {
+            newGameState: workingGame.stateKind,
+            newActivePlayState: workingGame.activePlay?.stateKind,
+          })
+        } catch (transitionError: unknown) {
+          console.log(
+            '[DEBUG] Robot state transition from preparing-move failed:',
+            transitionError instanceof Error
+              ? transitionError.message
+              : 'Unknown error'
+          )
+          throw new Error(
+            `Failed to transition from preparing-move to moving state: ${
               transitionError instanceof Error
                 ? transitionError.message
                 : 'Unknown error'
