@@ -165,8 +165,9 @@ export async function runSimulation(maxTurns: number = 100) {
     // Only call Game.move if there is a valid move origin
     const firstMove = Array.from(gameRolled.activePlay.moves)[0]
     if (firstMove && firstMove.origin) {
-      // Transition to moving state first
-      const gameMoving = Game.startMoving(gameRolled)
+      // Transition through proper state flow: rolled -> preparing-move -> moving
+      const preparingGame = Game.prepareMove(gameRolled)
+      const gameMoving = Game.toMoving(preparingGame)
 
       // Execute first move
       gameMoved = Game.move(gameMoving, firstMove.origin.id)
@@ -283,7 +284,12 @@ export async function runSimulation(maxTurns: number = 100) {
         Board.displayAsciiBoard(gameMoved.board)
 
         try {
-          const moveResult = Game.move(gameMoved, origin.id)
+          // Ensure proper state transition before move
+          let gameToMove = gameMoved
+          if (gameMoved.stateKind === 'preparing-move') {
+            gameToMove = Game.toMoving(gameMoved)
+          }
+          const moveResult = Game.move(gameToMove, origin.id)
           if ('board' in moveResult) {
             gameMoved = moveResult as BackgammonGameMoving
             moveCount++
