@@ -266,8 +266,9 @@ async function simulateGame(verbose = false): Promise<{
             })
           }
           try {
-            // Transition to moving state first
-            const gameMoving = Game.startMoving(gameRolled)
+            // Transition through proper state flow: rolled -> preparing-move -> moving
+            const preparingGame = Game.prepareMove(gameRolled)
+            const gameMoving = Game.toMoving(preparingGame)
 
             // Execute the move
             const moveResult = Game.move(gameMoving, origin.id)

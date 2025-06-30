@@ -294,26 +294,35 @@ export class Move {
 
       let workingGame = game
 
-      // Explicit state transition: rolled → moving
+      // Explicit state transition: rolled → preparing-move → moving
       if (workingGame.stateKind === 'rolled') {
-        console.log('[DEBUG] Robot transitioning from rolled to moving state')
+        console.log(
+          '[DEBUG] Robot transitioning from rolled to preparing-move to moving state'
+        )
         try {
-          workingGame = Game.startMoving(workingGame as any)
+          // First transition to preparing-move
+          const preparingGame = Game.prepareMove(workingGame as any)
+          console.log('[DEBUG] Transitioned to preparing-move:', {
+            gameState: preparingGame.stateKind,
+          })
+
+          // Then transition to moving
+          workingGame = Game.toMoving(preparingGame)
           console.log('[DEBUG] Transition completed:', {
             newGameState: workingGame.stateKind,
             newActivePlayState: workingGame.activePlay?.stateKind,
           })
-        } catch (startMovingError: unknown) {
+        } catch (transitionError: unknown) {
           console.log(
-            '[DEBUG] Robot startMoving failed:',
-            startMovingError instanceof Error
-              ? startMovingError.message
+            '[DEBUG] Robot state transition failed:',
+            transitionError instanceof Error
+              ? transitionError.message
               : 'Unknown error'
           )
           throw new Error(
-            `Failed to start moving: ${
-              startMovingError instanceof Error
-                ? startMovingError.message
+            `Failed to transition to moving state: ${
+              transitionError instanceof Error
+                ? transitionError.message
                 : 'Unknown error'
             }`
           )

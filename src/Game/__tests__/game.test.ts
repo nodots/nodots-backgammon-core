@@ -318,9 +318,10 @@ describe('Game', () => {
         activeColor: gameRolling.activeColor!,
       }
       const gameRolled = Game.roll(rolledForStartGame)
-      // Transition play to 'moving' state
-      const movingPlay = Play.startMove((gameRolled as any).activePlay)
-      const gameMoving = Game.startMove(gameRolled, movingPlay)
+      // Transition through proper state flow: rolled -> preparing-move -> moving
+      const preparingGame = Game.prepareMove(gameRolled)
+      const movingPlay = Play.startMove((preparingGame as any).activePlay)
+      const gameMoving = Game.startMove(preparingGame, movingPlay)
       // Get the first available move
       expect(
         ((gameMoving as any).activePlay.moves as Set<any>).size
@@ -594,23 +595,22 @@ describe('Game', () => {
         players
       ) as BackgammonGameRollingForStart
       const gameRolling = Game.rollForStart(gameStart)
+      // Simulate the full flow: roll -> preparing-move -> double
+      const rolledGame = Game.roll(gameRolling)
+      const preparingGame = Game.prepareMove(rolledGame)
       const [activePlayer, inactivePlayer] = Game.getPlayersForColor(
-        gameRolling.players,
-        gameRolling.activeColor
+        preparingGame.players,
+        preparingGame.activeColor
       )
-      // Simulate rolling
-      const rolledGame = {
-        ...gameRolling,
-        stateKind: 'rolling' as const,
-        activePlayer: activePlayer as BackgammonPlayerActive,
-        inactivePlayer: inactivePlayer as BackgammonPlayerInactive,
-        activeColor: activePlayer.color,
-      } as any
+
       expect(
-        Game.canOfferDouble(rolledGame, activePlayer as BackgammonPlayerActive)
+        Game.canOfferDouble(
+          preparingGame,
+          activePlayer as BackgammonPlayerActive
+        )
       ).toBe(true)
       const doubledGame = Game.offerDouble(
-        rolledGame,
+        preparingGame,
         activePlayer as BackgammonPlayerActive
       )
       expect(doubledGame.stateKind).toBe('doubling')
@@ -624,29 +624,32 @@ describe('Game', () => {
         players
       ) as BackgammonGameRollingForStart
       const gameRolling = Game.rollForStart(gameStart)
+      // Simulate the full flow: roll -> preparing-move
+      const rolledGame = Game.roll(gameRolling)
       const [activePlayer, inactivePlayer] = Game.getPlayersForColor(
-        gameRolling.players,
-        gameRolling.activeColor
+        rolledGame.players,
+        rolledGame.activeColor
       )
-      // Simulate rolling and offering
-      const rolledGame = {
-        ...gameRolling,
-        stateKind: 'rolling' as const,
-        activePlayer: activePlayer as BackgammonPlayerActive,
-        inactivePlayer: inactivePlayer as BackgammonPlayerInactive,
-        activeColor: activePlayer.color,
+
+      // Create preparing game with cube owned by active player
+      const preparingGame = {
+        ...Game.prepareMove(rolledGame),
         cube: {
-          ...gameRolling.cube,
+          ...rolledGame.cube,
           stateKind: 'doubled' as const,
           owner: activePlayer,
           value: 2,
         },
       } as any
+
       expect(
-        Game.canOfferDouble(rolledGame, activePlayer as BackgammonPlayerActive)
+        Game.canOfferDouble(
+          preparingGame,
+          activePlayer as BackgammonPlayerActive
+        )
       ).toBe(false)
       expect(() =>
-        Game.offerDouble(rolledGame, activePlayer as BackgammonPlayerActive)
+        Game.offerDouble(preparingGame, activePlayer as BackgammonPlayerActive)
       ).toThrow()
     })
 
@@ -655,9 +658,12 @@ describe('Game', () => {
         players
       ) as BackgammonGameRollingForStart
       const gameRolling = Game.rollForStart(gameStart)
+      // Simulate the full flow: roll -> preparing-move -> double
+      const rolledGame = Game.roll(gameRolling)
+      const preparingGame = Game.prepareMove(rolledGame)
       const [activePlayer, origInactivePlayer] = Game.getPlayersForColor(
-        gameRolling.players,
-        gameRolling.activeColor
+        preparingGame.players,
+        preparingGame.activeColor
       )
       // Make the opponent an active player for doubling
       const inactivePlayer = Player.initialize(
@@ -668,16 +674,9 @@ describe('Game', () => {
         'rolling',
         true
       ) as BackgammonPlayerActive
-      // Simulate rolling and offering
-      const rolledGame = {
-        ...gameRolling,
-        stateKind: 'rolling' as const,
-        activePlayer: activePlayer as BackgammonPlayerActive,
-        inactivePlayer,
-        activeColor: activePlayer.color,
-      } as any
+
       const doubledGame = Game.offerDouble(
-        rolledGame,
+        preparingGame,
         activePlayer as BackgammonPlayerActive
       )
       expect(Game.canAcceptDouble(doubledGame, inactivePlayer)).toBe(true)
@@ -692,9 +691,12 @@ describe('Game', () => {
         players
       ) as BackgammonGameRollingForStart
       const gameRolling = Game.rollForStart(gameStart)
+      // Simulate the full flow: roll -> preparing-move -> double
+      const rolledGame = Game.roll(gameRolling)
+      const preparingGame = Game.prepareMove(rolledGame)
       const [activePlayer, origInactivePlayer] = Game.getPlayersForColor(
-        gameRolling.players,
-        gameRolling.activeColor
+        preparingGame.players,
+        preparingGame.activeColor
       )
       // Make the opponent an active player for doubling
       const inactivePlayer = Player.initialize(
@@ -705,16 +707,9 @@ describe('Game', () => {
         'rolling',
         true
       ) as BackgammonPlayerActive
-      // Simulate rolling and offering
-      const rolledGame = {
-        ...gameRolling,
-        stateKind: 'rolling' as const,
-        activePlayer: activePlayer as BackgammonPlayerActive,
-        inactivePlayer,
-        activeColor: activePlayer.color,
-      } as any
+
       const doubledGame = Game.offerDouble(
-        rolledGame,
+        preparingGame,
         activePlayer as BackgammonPlayerActive
       )
       expect(Game.canRefuseDouble(doubledGame, inactivePlayer)).toBe(true)
@@ -729,20 +724,16 @@ describe('Game', () => {
         players
       ) as BackgammonGameRollingForStart
       const gameRolling = Game.rollForStart(gameStart)
+      // Simulate the full flow: roll -> preparing-move -> double
+      const rolledGame = Game.roll(gameRolling)
+      const preparingGame = Game.prepareMove(rolledGame)
       const [activePlayer, inactivePlayer] = Game.getPlayersForColor(
-        gameRolling.players,
-        gameRolling.activeColor
+        preparingGame.players,
+        preparingGame.activeColor
       )
-      // Simulate rolling and offering
-      const rolledGame = {
-        ...gameRolling,
-        stateKind: 'rolling' as const,
-        activePlayer: activePlayer as BackgammonPlayerActive,
-        inactivePlayer: inactivePlayer as BackgammonPlayerInactive,
-        activeColor: activePlayer.color,
-      } as any
+
       const doubledGame = Game.offerDouble(
-        rolledGame,
+        preparingGame,
         activePlayer as BackgammonPlayerActive
       )
       expect(
@@ -761,20 +752,16 @@ describe('Game', () => {
         players
       ) as BackgammonGameRollingForStart
       const gameRolling = Game.rollForStart(gameStart)
+      // Simulate the full flow: roll -> preparing-move -> double
+      const rolledGame = Game.roll(gameRolling)
+      const preparingGame = Game.prepareMove(rolledGame)
       const [activePlayer, inactivePlayer] = Game.getPlayersForColor(
-        gameRolling.players,
-        gameRolling.activeColor
+        preparingGame.players,
+        preparingGame.activeColor
       )
-      // Simulate rolling and offering
-      const rolledGame = {
-        ...gameRolling,
-        stateKind: 'rolling' as const,
-        activePlayer: activePlayer as BackgammonPlayerActive,
-        inactivePlayer: inactivePlayer as BackgammonPlayerInactive,
-        activeColor: activePlayer.color,
-      } as any
+
       const doubledGame = Game.offerDouble(
-        rolledGame,
+        preparingGame,
         activePlayer as BackgammonPlayerActive
       )
       expect(

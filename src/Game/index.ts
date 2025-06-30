@@ -4,6 +4,7 @@ import {
   BackgammonColor,
   BackgammonCube,
   BackgammonGame,
+  BackgammonGameDoubled,
   BackgammonGameMoving,
   BackgammonGamePreparingMove,
   BackgammonGameRolled,
@@ -26,7 +27,7 @@ import { generateId, Player, randomBackgammonColor } from '..'
 import { Board } from '../Board'
 import { Checker } from '../Checker'
 import { Cube } from '../Cube'
-import { Play } from '../Play'
+import { BackgammonMoveDirection, Play } from '../Play'
 import { logger } from '../utils/logger'
 export * from '../index'
 
@@ -65,14 +66,14 @@ export class Game {
     player1IsRobot: boolean = true,
     player2IsRobot: boolean = true,
     colorDirectionConfig?: {
-      blackDirection: 'clockwise' | 'counterclockwise'
-      whiteDirection: 'clockwise' | 'counterclockwise'
+      blackDirection: BackgammonMoveDirection
+      whiteDirection: BackgammonMoveDirection
       blackFirst?: boolean
     }
   ): BackgammonGame {
     // Determine color and direction assignments
-    let blackDirection: 'clockwise' | 'counterclockwise'
-    let whiteDirection: 'clockwise' | 'counterclockwise'
+    let blackDirection: BackgammonMoveDirection
+    let whiteDirection: BackgammonMoveDirection
     let blackFirst: boolean
 
     if (colorDirectionConfig) {
@@ -96,13 +97,13 @@ export class Game {
     const playerConfigs = blackFirst
       ? [
           {
-            color: 'black',
+            color: 'black' as BackgammonColor,
             direction: blackDirection,
             userId: player1UserId,
             isRobot: player1IsRobot,
           },
           {
-            color: 'white',
+            color: 'white' as BackgammonColor,
             direction: whiteDirection,
             userId: player2UserId,
             isRobot: player2IsRobot,
@@ -110,13 +111,13 @@ export class Game {
         ]
       : [
           {
-            color: 'white',
+            color: 'white' as BackgammonColor,
             direction: whiteDirection,
             userId: player1UserId,
             isRobot: player1IsRobot,
           },
           {
-            color: 'black',
+            color: 'black' as BackgammonColor,
             direction: blackDirection,
             userId: player2UserId,
             isRobot: player2IsRobot,
@@ -380,7 +381,7 @@ export class Game {
 
   /**
    * Transition from 'rolled' to 'preparing-move' state
-   * This represents the player selecting a move but not yet executing it
+   * This represents the player about to make a decision (move or double)
    */
   public static prepareMove = function prepareMove(
     game: BackgammonGameRolled
@@ -390,7 +391,7 @@ export class Game {
     }
 
     // The preparing-move state maintains the same play and player state
-    // but indicates that a move selection is in progress
+    // but indicates that a decision (move or double) is about to be made
     return {
       ...game,
       stateKind: 'preparing-move',
@@ -398,22 +399,44 @@ export class Game {
   }
 
   /**
-   * Explicitly transition from 'rolled' or 'preparing-move' to 'moving' state
+   * Transition from 'preparing-move' or 'doubled' to 'moving' state
    * This must be called before any moves can be made
    */
-  public static startMoving = function startMoving(
-    game: BackgammonGameRolled | BackgammonGamePreparingMove
+  public static toMoving = function toMoving(
+    game: BackgammonGamePreparingMove | BackgammonGameDoubled
   ): BackgammonGameMoving {
     const isValidState =
-      game.stateKind === 'rolled' || game.stateKind === 'preparing-move'
+      game.stateKind === 'preparing-move' || game.stateKind === 'doubled'
+
     if (!isValidState) {
       throw new Error(
-        `Cannot start moving from ${(game as any).stateKind} state`
+        `Cannot start moving from ${
+          (game as any).stateKind
+        } state. Must be in 'preparing-move' or 'doubled' state.`
       )
     }
 
     const movingPlay = Play.startMove(game.activePlay)
     return Game.startMove(game, movingPlay)
+  }
+
+  /**
+   * Transition from 'preparing-move' to 'doubling' state
+   * This represents offering a double to the opponent
+   */
+  public static toDoubling = function toDoubling(
+    game: BackgammonGamePreparingMove
+  ): BackgammonGame {
+    if (game.stateKind !== 'preparing-move') {
+      throw new Error(
+        `Cannot start doubling from ${
+          (game as any).stateKind
+        } state. Must be in 'preparing-move' state.`
+      )
+    }
+
+    // Delegate to the existing offerDouble logic
+    return Game.offerDouble(game, game.activePlayer)
   }
 
   public static move = function move(
@@ -425,7 +448,7 @@ export class Game {
     // Require explicit moving state - no automatic transitions
     if (activePlay.stateKind !== 'moving') {
       throw new Error(
-        `Cannot move from ${activePlay.stateKind} state. Call Game.startMoving() first.`
+        `Cannot move from ${activePlay.stateKind} state. Call Game.toMoving() first.`
       )
     }
 
@@ -533,7 +556,7 @@ export class Game {
   }
 
   public static startMove = function startMove(
-    game: BackgammonGameRolled | BackgammonGamePreparingMove,
+    game: BackgammonGamePreparingMove | BackgammonGameDoubled,
     movingPlay: BackgammonPlayMoving
   ): BackgammonGameMoving {
     return {
@@ -549,12 +572,10 @@ export class Game {
     game: BackgammonGame,
     player: BackgammonPlayerActive
   ): boolean {
-    // Allow doubling from rolling, rolled-for-start, or preparing-move states
+    // Allow doubling from preparing-move state only (after rolling)
     // Only if player does not own the cube and cube is not maxxed or already offered
     return (
-      (game.stateKind === 'rolling' ||
-        game.stateKind === 'rolled-for-start' ||
-        game.stateKind === 'preparing-move') &&
+      game.stateKind === 'preparing-move' &&
       game.cube.stateKind !== 'maxxed' &&
       game.cube.stateKind !== 'offered' &&
       (!game.cube.owner || game.cube.owner.id !== player.id)
@@ -602,7 +623,7 @@ export class Game {
    * Validates if moves can be calculated for the current game state
    */
   public static canGetPossibleMoves(game: BackgammonGame): boolean {
-    return game.stateKind === 'rolled'
+    return game.stateKind === 'rolled' || game.stateKind === 'preparing-move'
   }
 
   // --- Checker Management ---
@@ -796,7 +817,11 @@ export class Game {
     updatedGame?: BackgammonGame
   } {
     // Validate game state
-    if (game.stateKind !== 'rolled' && game.stateKind !== 'moving') {
+    if (
+      game.stateKind !== 'rolled' &&
+      game.stateKind !== 'preparing-move' &&
+      game.stateKind !== 'moving'
+    ) {
       return {
         success: false,
         error: 'Game is not in a state where possible moves can be calculated',
