@@ -183,8 +183,8 @@ describe('Player', () => {
         true
       ) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayerMoving
       // Use a valid BackgammonPoint from the board as origin
-      const origin1 = board.BackgammonPoints[0]
-      const origin2 = board.BackgammonPoints[1]
+      const origin1 = board.points[0]
+      const origin2 = board.points[1]
       const moves = new Set<
         import('@nodots-llc/backgammon-types/dist').BackgammonMoveReady
       >([
@@ -259,8 +259,8 @@ describe('Player', () => {
   //       'moving',
   //       true
   //     ) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayerMoving
-  //     origin1 = board.BackgammonPoints[0]
-  //     origin2 = board.BackgammonPoints[1]
+  //     origin1 = board.points[0]
+  //     origin2 = board.points[1]
   //     const moves = new Set<
   //       import('@nodots-llc/backgammon-types/dist').BackgammonMoveReady
   //     >([

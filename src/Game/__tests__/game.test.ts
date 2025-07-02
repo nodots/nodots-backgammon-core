@@ -825,7 +825,7 @@ describe('Game', () => {
       const { Player } = require('../../Player')
       const board = Board.initialize()
       // Clear all checkers
-      board.BackgammonPoints.forEach((point: any) => {
+      board.points.forEach((point: any) => {
         point.checkers = []
       })
       board.bar.clockwise.checkers = []
@@ -841,7 +841,7 @@ describe('Game', () => {
         })
       }
       // Place 1 white checker on point 24 (the bear-off point for clockwise)
-      const point24 = board.BackgammonPoints.find(
+      const point24 = board.points.find(
         (p: any) => p.position.clockwise === 24
       )
       point24.checkers = [

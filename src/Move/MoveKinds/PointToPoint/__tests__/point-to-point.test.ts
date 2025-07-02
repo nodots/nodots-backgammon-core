@@ -55,7 +55,7 @@ describe('PointToPoint', () => {
   describe('isA', () => {
     it('should return false for move with empty origin point', () => {
       const { board, player } = setupTestData()
-      const emptyPoint = board.BackgammonPoints[2] // An empty point
+      const emptyPoint = board.points[2] // An empty point
 
       const move = {
         id: '1',
@@ -73,7 +73,7 @@ describe('PointToPoint', () => {
     it('should return false for move with wrong color checker', () => {
       const { board, player } = setupTestData('white')
       // Find a point with black checkers
-      const originWithBlackChecker = board.BackgammonPoints.find(
+      const originWithBlackChecker = board.points.find(
         (point) =>
           point.checkers.length > 0 && point.checkers[0].color === 'black'
       )
@@ -93,7 +93,7 @@ describe('PointToPoint', () => {
 
     it('should return false for move without dieValue', () => {
       const { board, player } = setupTestData()
-      const origin = board.BackgammonPoints[5] // Point with checkers
+      const origin = board.points[5] // Point with checkers
 
       const move = {
         id: '1',
@@ -109,8 +109,8 @@ describe('PointToPoint', () => {
 
     it('should return valid move for correct point-to-point setup', () => {
       const { board, player } = setupTestData()
-      const origin = board.BackgammonPoints[5]
-      const destination = board.BackgammonPoints[4]
+      const origin = board.points[5]
+      const destination = board.points[4]
 
       const move: BackgammonMoveReady = {
         id: '1',
@@ -132,7 +132,7 @@ describe('PointToPoint', () => {
 
     it('should return false for move with origin.kind not equal to "point"', () => {
       const { board, player } = setupTestData()
-      const origin = { ...board.BackgammonPoints[5], kind: 'bar' }
+      const origin = { ...board.points[5], kind: 'bar' }
       const move = {
         id: '1',
         player,
@@ -149,7 +149,7 @@ describe('PointToPoint', () => {
   describe('getDestination', () => {
     it('should calculate correct destination for clockwise movement', () => {
       const { board, player } = setupTestData('white', 'clockwise', 1)
-      const origin = board.BackgammonPoints[5] // Point 6
+      const origin = board.points[5] // Point 6
 
       const move: BackgammonMoveReady = {
         id: '1',
@@ -167,7 +167,7 @@ describe('PointToPoint', () => {
 
     it('should calculate correct destination for counterclockwise movement', () => {
       const { board, player } = setupTestData('black', 'counterclockwise', 1)
-      const origin = board.BackgammonPoints[18] // A point with black checkers
+      const origin = board.points[18] // A point with black checkers
 
       const move: BackgammonMoveReady = {
         id: '1',
@@ -187,7 +187,7 @@ describe('PointToPoint', () => {
 
     it('should throw error if destination point does not exist', () => {
       const { board, player } = setupTestData('white', 'clockwise', 1)
-      const origin = { ...board.BackgammonPoints[5] }
+      const origin = { ...board.points[5] }
       // Set up origin so that destination position will not match any point
       origin.position = { ...origin.position, clockwise: 1 }
       const move: BackgammonMoveReady = {
@@ -214,7 +214,7 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
-        origin: board.BackgammonPoints[0],
+        origin: board.points[0],
         possibleMoves: [],
       }
 
@@ -232,7 +232,7 @@ describe('PointToPoint', () => {
 
     it('should perform a valid move', () => {
       const { board, player } = setupTestData()
-      const origin = board.BackgammonPoints[5]
+      const origin = board.points[5]
       const initialCheckerCount = origin.checkers.length
 
       const move: BackgammonMoveReady = {
@@ -248,16 +248,16 @@ describe('PointToPoint', () => {
       const result = PointToPoint.move(board, move)
       expect(result.board).toBeTruthy()
       expect(result.move.stateKind).toBe('completed')
-      expect(result.board.BackgammonPoints[5].checkers.length).toBe(
+      expect(result.board.points[5].checkers.length).toBe(
         initialCheckerCount - 1
       )
     })
 
     it('should return a no-move result if destination is blocked by 2+ opponent checkers', () => {
       const { board, player } = setupTestData('white', 'clockwise', 1)
-      const origin = board.BackgammonPoints[5]
+      const origin = board.points[5]
       // Set up destination with 2 black checkers
-      const destination = board.BackgammonPoints[4]
+      const destination = board.points[4]
       destination.checkers = [
         { color: 'black', id: 'b1', checkercontainerId: destination.id },
         { color: 'black', id: 'b2', checkercontainerId: destination.id },
@@ -281,7 +281,7 @@ describe('PointToPoint', () => {
 
     it('should throw error if destination point is missing after move', () => {
       const { board, player } = setupTestData('white', 'clockwise', 1)
-      const origin = board.BackgammonPoints[5]
+      const origin = board.points[5]
       const move: BackgammonMoveReady = {
         id: '1',
         player,
@@ -302,10 +302,10 @@ describe('PointToPoint', () => {
           position: { ...(d as any).position },
           checkers: [],
         }
-        const updatedPoints = b.BackgammonPoints.map((p) =>
+        const updatedPoints = b.points.map((p) =>
           p.id === d.id ? dummyPoint : p
         )
-        return { ...b, BackgammonPoints: updatedPoints } as typeof b
+        return { ...b, points: updatedPoints } as typeof b
       }
       expect(() => PointToPoint.move(board, move)).toThrow(
         'Could not find destination point after move'
@@ -316,9 +316,9 @@ describe('PointToPoint', () => {
 
     it('should hit a blot and send opponent checker to the bar', () => {
       const { board, player } = setupTestData('white', 'clockwise', 1)
-      const origin = board.BackgammonPoints[5]
+      const origin = board.points[5]
       // Set up destination with 1 black checker (a blot)
-      const destination = board.BackgammonPoints[4]
+      const destination = board.points[4]
       destination.checkers = [
         { color: 'black', id: 'b1', checkercontainerId: destination.id },
       ]
@@ -327,7 +327,7 @@ describe('PointToPoint', () => {
       // Mock moveChecker to simulate sending the checker to the bar
       Board.moveChecker = (b, o, d, dir) => {
         // Remove checker from destination and add to the correct bar
-        const updatedPoints = b.BackgammonPoints.map((p) => {
+        const updatedPoints = b.points.map((p) => {
           if (p.id === d.id) {
             // Place the moving checker (from origin) on the destination
             return {
@@ -359,7 +359,7 @@ describe('PointToPoint', () => {
         }
         return {
           ...b,
-          BackgammonPoints: updatedPoints,
+          points: updatedPoints,
           bar: updatedBar,
         } as typeof b
       }
@@ -381,7 +381,7 @@ describe('PointToPoint', () => {
     it('should not allow moving from a point with no checkers', () => {
       const { board, player } = setupTestData('white', 'clockwise', 1)
       // Find an empty point
-      const emptyPoint = board.BackgammonPoints.find(
+      const emptyPoint = board.points.find(
         (p) => p.checkers.length === 0
       )
       expect(emptyPoint).toBeDefined()
@@ -400,8 +400,8 @@ describe('PointToPoint', () => {
 
     it('should allow moving to a point occupied by own checkers', () => {
       const { board, player } = setupTestData('white', 'clockwise', 1)
-      const origin = board.BackgammonPoints[5]
-      const destination = board.BackgammonPoints[4]
+      const origin = board.points[5]
+      const destination = board.points[4]
 
       // Ensure origin has white checkers
       origin.checkers = [
@@ -428,18 +428,18 @@ describe('PointToPoint', () => {
       const result = PointToPoint.move(board, move)
       expect(result.move.stateKind).toBe('completed')
       expect(result.move.destination?.checkers[0].color).toBe('white')
-      expect(result.board.BackgammonPoints[5].checkers.length).toBe(
+      expect(result.board.points[5].checkers.length).toBe(
         initialOriginCount - 1
       )
-      expect(result.board.BackgammonPoints[4].checkers.length).toBe(
+      expect(result.board.points[4].checkers.length).toBe(
         initialDestCount + 1
       )
     })
 
     it('should not allow moving to a point blocked by 2+ opponent checkers', () => {
       const { board, player } = setupTestData('white', 'clockwise', 1)
-      const origin = board.BackgammonPoints[5]
-      const destination = board.BackgammonPoints[4]
+      const origin = board.points[5]
+      const destination = board.points[4]
 
       // Ensure origin has white checkers
       origin.checkers = [
@@ -471,7 +471,7 @@ describe('PointToPoint', () => {
 
     it('should allow moving to an empty point', () => {
       const { board, player } = setupTestData('white', 'clockwise', 1)
-      const origin = board.BackgammonPoints[5]
+      const origin = board.points[5]
 
       // Ensure origin has white checkers
       origin.checkers = [
@@ -480,7 +480,7 @@ describe('PointToPoint', () => {
       ]
 
       // Use a specific empty destination that works with dieValue 1
-      const destination = board.BackgammonPoints[4] // Position 5 from clockwise position 6
+      const destination = board.points[4] // Position 5 from clockwise position 6
       destination.checkers = [] // Ensure it's empty
 
       const move: BackgammonMoveReady = {
@@ -501,7 +501,7 @@ describe('PointToPoint', () => {
 
     it('should not allow moving with dieValue 0 or undefined', () => {
       const { board, player } = setupTestData('white', 'clockwise', 1)
-      const origin = board.BackgammonPoints[5]
+      const origin = board.points[5]
       // dieValue 0
       const moveZero: any = {
         id: '1',
@@ -528,7 +528,7 @@ describe('PointToPoint', () => {
     it('should not allow moving from a point with an opponent checker', () => {
       const { board, player } = setupTestData('white', 'clockwise', 1)
       // Find a point with a black checker
-      const origin = board.BackgammonPoints.find(
+      const origin = board.points.find(
         (p) => p.checkers.length > 0 && p.checkers[0].color === 'black'
       )!
       const move: BackgammonMoveReady = {

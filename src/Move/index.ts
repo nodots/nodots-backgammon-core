@@ -6,6 +6,7 @@ import {
   BackgammonDieValue,
   BackgammonGame,
   BackgammonGameMoving,
+  BackgammonGamePreparingMove,
   BackgammonGameRolled,
   BackgammonMove,
   BackgammonMoveConfirmed,
@@ -83,7 +84,11 @@ export class Move {
       })
 
       // 2. Validate game state (must be 'rolled', 'preparing-move', or 'moving')
-      if (game.stateKind !== 'rolled' && game.stateKind !== 'preparing-move' && game.stateKind !== 'moving') {
+      if (
+        game.stateKind !== 'rolled' &&
+        game.stateKind !== 'preparing-move' &&
+        game.stateKind !== 'moving'
+      ) {
         return {
           success: false,
           error: `Game is not in a state where moving is allowed. Current state: ${game.stateKind}`,
@@ -294,76 +299,106 @@ export class Move {
 
       let workingGame = game
 
-      // Explicit state transition: rolled → preparing-move → moving OR preparing-move → moving
-      if (workingGame.stateKind === 'rolled') {
-        console.log(
-          '[DEBUG] Robot transitioning from rolled to preparing-move to moving state'
-        )
-        try {
-          // First transition to preparing-move
-          const preparingGame = Game.prepareMove(workingGame as any)
-          console.log('[DEBUG] Transitioned to preparing-move:', {
-            gameState: preparingGame.stateKind,
-          })
+      // Handle state transitions using functional switch statement with early returns
+      const transitionGameToMoving = (
+        game: BackgammonGame
+      ): BackgammonGameMoving => {
+        switch (game.stateKind) {
+          case 'rolled': {
+            console.log(
+              '[DEBUG] Robot transitioning from rolled to preparing-move to moving state'
+            )
+            try {
+              // First transition to preparing-move
+              const preparingGame = Game.prepareMove(
+                game as BackgammonGameRolled
+              )
+              console.log('[DEBUG] Transitioned to preparing-move:', {
+                gameState: preparingGame.stateKind,
+              })
 
-          // Then transition to moving
-          workingGame = Game.toMoving(preparingGame)
-          console.log('[DEBUG] Transition completed:', {
-            newGameState: workingGame.stateKind,
-            newActivePlayState: workingGame.activePlay?.stateKind,
-          })
-        } catch (transitionError: unknown) {
-          console.log(
-            '[DEBUG] Robot state transition failed:',
-            transitionError instanceof Error
-              ? transitionError.message
-              : 'Unknown error'
-          )
-          throw new Error(
-            `Failed to transition to moving state: ${
-              transitionError instanceof Error
-                ? transitionError.message
-                : 'Unknown error'
-            }`
-          )
-        }
-      } else if (workingGame.stateKind === 'preparing-move') {
-        console.log(
-          '[DEBUG] Robot transitioning from preparing-move to moving state'
-        )
-        try {
-          // Direct transition from preparing-move to moving
-          workingGame = Game.toMoving(workingGame as any)
-          console.log('[DEBUG] Transition completed:', {
-            newGameState: workingGame.stateKind,
-            newActivePlayState: workingGame.activePlay?.stateKind,
-          })
-        } catch (transitionError: unknown) {
-          console.log(
-            '[DEBUG] Robot state transition from preparing-move failed:',
-            transitionError instanceof Error
-              ? transitionError.message
-              : 'Unknown error'
-          )
-          throw new Error(
-            `Failed to transition from preparing-move to moving state: ${
-              transitionError instanceof Error
-                ? transitionError.message
-                : 'Unknown error'
-            }`
-          )
+              // Then transition to moving
+              const movingGame = Game.toMoving(preparingGame)
+              console.log('[DEBUG] Transition completed:', {
+                newGameState: movingGame.stateKind,
+                newActivePlayState: movingGame.activePlay?.stateKind,
+              })
+              return movingGame
+            } catch (transitionError: unknown) {
+              const errorMessage =
+                transitionError instanceof Error
+                  ? transitionError.message
+                  : 'Unknown error'
+              console.log(
+                '[DEBUG] Robot state transition failed:',
+                errorMessage
+              )
+              throw new Error(
+                `Failed to transition to moving state: ${errorMessage}`
+              )
+            }
+          }
+
+          case 'preparing-move': {
+            console.log(
+              '[DEBUG] Robot transitioning from preparing-move to moving state'
+            )
+            try {
+              // Direct transition from preparing-move to moving
+              const movingGame = Game.toMoving(
+                game as BackgammonGamePreparingMove
+              )
+              console.log('[DEBUG] Transition completed:', {
+                newGameState: movingGame.stateKind,
+                newActivePlayState: movingGame.activePlay?.stateKind,
+              })
+              return movingGame
+            } catch (transitionError: unknown) {
+              const errorMessage =
+                transitionError instanceof Error
+                  ? transitionError.message
+                  : 'Unknown error'
+              console.log(
+                '[DEBUG] Robot state transition from preparing-move failed:',
+                errorMessage
+              )
+              throw new Error(
+                `Failed to transition from preparing-move to moving state: ${errorMessage}`
+              )
+            }
+          }
+
+          case 'moving': {
+            console.log(
+              '[DEBUG] Robot: Game already in moving state, no transition needed'
+            )
+            // Already in moving state for subsequent moves in the same turn
+            return game as BackgammonGameMoving
+          }
+
+          default: {
+            console.log(
+              '[DEBUG] Robot move failed: Invalid initial game state:',
+              (game as any).stateKind
+            )
+            throw new Error(
+              `Invalid game state for robot move: ${
+                (game as any).stateKind
+              }. Expected 'rolled', 'preparing-move', or 'moving'.`
+            )
+          }
         }
       }
+
+      workingGame = transitionGameToMoving(workingGame)
 
       // Validate we're now in moving state
       if (workingGame.stateKind !== 'moving') {
         console.log(
           '[DEBUG] Robot move failed: Invalid game state after transition:',
-          workingGame.stateKind
+          JSON.stringify(workingGame)
         )
-        throw new Error(
-          `Invalid game state for robot move: ${workingGame.stateKind}`
-        )
+        throw new Error(JSON.stringify(workingGame))
       }
 
       // Execute the move (now requires moving state)
@@ -372,13 +407,15 @@ export class Move {
         originId,
       })
 
-      let finalGame
       try {
-        finalGame = Game.move(workingGame as any, originId)
-        console.log('[DEBUG] Robot move completed:', {
-          finalGameState: (finalGame as any).stateKind,
-          finalActivePlayState: (finalGame as any).activePlay?.stateKind,
-        })
+        const finalGame = Game.move(workingGame as any, originId)
+        console.log('[DEBUG] Robot move completed successfully')
+
+        console.log('[DEBUG] Robot move SUCCESS - returning game result')
+        return {
+          success: true,
+          game: finalGame as any,
+        }
       } catch (gameError: unknown) {
         console.log(
           '[DEBUG] Robot Game.move failed:',
@@ -389,12 +426,6 @@ export class Move {
             gameError instanceof Error ? gameError.message : 'Unknown error'
           }`
         )
-      }
-
-      console.log('[DEBUG] Robot move SUCCESS - returning game result')
-      return {
-        success: true,
-        game: finalGame as any,
       }
     } catch (moveError: unknown) {
       // Core should barf on illegal input - throw the error up
@@ -421,7 +452,7 @@ export class Move {
     container: BackgammonCheckerContainer
   } | null {
     // Search all points
-    for (const point of board.BackgammonPoints) {
+    for (const point of board.points) {
       const checker = point.checkers.find((c) => c.id === checkerId)
       if (checker) {
         return { checker, container: point }
@@ -558,17 +589,15 @@ export class Move {
         'stateKind' in move &&
         'dieValue' in move
       ) {
-        // Count moves that have been executed:
-        // 1. Completed or confirmed moves
-        // 2. Ready moves with no possible moves (possibleMovesCount: 0 indicates it was executed)
-        const isExecuted =
-          move.stateKind === 'completed' ||
-          move.stateKind === 'confirmed' ||
-          (move.stateKind === 'ready' &&
-            'possibleMoves' in move &&
-            (!move.possibleMoves || move.possibleMoves.length === 0))
+        const moveKind = 'moveKind' in move ? move.moveKind : 'unknown'
+        const isNoMove = moveKind === 'no-move'
+        const isCompleted =
+          move.stateKind === 'completed' || move.stateKind === 'confirmed'
 
-        if (isExecuted) {
+        // Count moves that have been executed:
+        // Only moves that actually moved a checker should consume dice
+        // 'no-move' moves should NEVER consume dice regardless of their state
+        if (!isNoMove && isCompleted) {
           consumedDice.push(move.dieValue as BackgammonDieValue)
         }
       }
@@ -582,7 +611,6 @@ export class Move {
         availableDice.splice(index, 1)
       }
     }
-
     return availableDice
   }
 

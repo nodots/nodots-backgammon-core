@@ -12,12 +12,12 @@ describe('Board', () => {
 
   it('should initialize the board', () => {
     expect(board.id).toBeDefined()
-    expect(board.BackgammonPoints.length).toBe(24)
+    expect(board.points.length).toBe(24)
     expect(board.bar.clockwise.checkers).toEqual([])
     expect(board.bar.counterclockwise.checkers).toEqual([])
     expect(board.off.clockwise.checkers).toEqual([])
     expect(board.off.counterclockwise.checkers).toEqual([])
-    const totalCheckers = board.BackgammonPoints.reduce(
+    const totalCheckers = board.points.reduce(
       (acc, point) => {
         acc.black += point.checkers.filter(
           (checker) => checker.color === 'black'
@@ -50,12 +50,12 @@ describe('Board', () => {
   const bearOffBoard = Board.buildBoard(BOARD_IMPORT_BOTH_BEAROFF)
   it('should build a board with both players bearing off', () => {
     expect(bearOffBoard.id).toBeDefined()
-    expect(bearOffBoard.BackgammonPoints.length).toBe(24)
+    expect(bearOffBoard.points.length).toBe(24)
     expect(bearOffBoard.bar.clockwise.checkers).toEqual([])
     expect(bearOffBoard.bar.counterclockwise.checkers).toEqual([])
     expect(bearOffBoard.off.clockwise.checkers).toEqual([])
     expect(bearOffBoard.off.counterclockwise.checkers).toEqual([])
-    const totalCheckers = bearOffBoard.BackgammonPoints.reduce(
+    const totalCheckers = bearOffBoard.points.reduce(
       (acc, point) => {
         acc.black += point.checkers.filter(
           (checker) => checker.color === 'black'
@@ -102,8 +102,8 @@ describe('Board', () => {
   Board.displayAsciiBoard(randomBoard)
   it('should generate a random board', () => {
     expect(randomBoard.id).toBeDefined()
-    expect(randomBoard.BackgammonPoints.length).toBe(24)
-    let totalCheckers = randomBoard.BackgammonPoints.reduce(
+    expect(randomBoard.points.length).toBe(24)
+    let totalCheckers = randomBoard.points.reduce(
       (acc, point) => {
         acc.black += point.checkers.filter(
           (checker) => checker.color === 'black'

@@ -1,12 +1,12 @@
-import { Board } from '..'
+import { beforeEach, describe, expect, it } from '@jest/globals'
 import {
   BackgammonBoard,
-  BackgammonPointValue,
-  BackgammonDieValue,
   BackgammonColor,
+  BackgammonDieValue,
+  BackgammonPointValue,
 } from '@nodots-llc/backgammon-types/dist'
+import { Board } from '..'
 import { BOARD_IMPORT_BOTH_BEAROFF } from '../imports'
-import { describe, beforeEach, it, expect } from '@jest/globals'
 
 describe('Board', () => {
   let board: BackgammonBoard
@@ -17,12 +17,12 @@ describe('Board', () => {
 
   it('should initialize the board', () => {
     expect(board.id).toBeDefined()
-    expect(board.BackgammonPoints.length).toBe(24)
+    expect(board.points.length).toBe(24)
     expect(board.bar.clockwise.checkers).toEqual([])
     expect(board.bar.counterclockwise.checkers).toEqual([])
     expect(board.off.clockwise.checkers).toEqual([])
     expect(board.off.counterclockwise.checkers).toEqual([])
-    const totalCheckers = board.BackgammonPoints.reduce(
+    const totalCheckers = board.points.reduce(
       (acc, point) => {
         acc.black += point.checkers.filter(
           (checker) => checker.color === 'black'
@@ -55,12 +55,12 @@ describe('Board', () => {
   const bearOffBoard = Board.buildBoard(BOARD_IMPORT_BOTH_BEAROFF)
   it('should build a board with both players bearing off', () => {
     expect(bearOffBoard.id).toBeDefined()
-    expect(bearOffBoard.BackgammonPoints.length).toBe(24)
+    expect(bearOffBoard.points.length).toBe(24)
     expect(bearOffBoard.bar.clockwise.checkers).toEqual([])
     expect(bearOffBoard.bar.counterclockwise.checkers).toEqual([])
     expect(bearOffBoard.off.clockwise.checkers).toEqual([])
     expect(bearOffBoard.off.counterclockwise.checkers).toEqual([])
-    const totalCheckers = bearOffBoard.BackgammonPoints.reduce(
+    const totalCheckers = bearOffBoard.points.reduce(
       (acc, point) => {
         acc.black += point.checkers.filter(
           (checker) => checker.color === 'black'
@@ -107,8 +107,8 @@ describe('Board', () => {
   Board.displayAsciiBoard(randomBoard)
   it('should generate a random board', () => {
     expect(randomBoard.id).toBeDefined()
-    expect(randomBoard.BackgammonPoints.length).toBe(24)
-    let totalCheckers = randomBoard.BackgammonPoints.reduce(
+    expect(randomBoard.points.length).toBe(24)
+    let totalCheckers = randomBoard.points.reduce(
       (acc, point) => {
         acc.black += point.checkers.filter(
           (checker) => checker.color === 'black'
@@ -151,53 +151,56 @@ describe('Board', () => {
   })
 
   it('should generate bear-off moves when all checkers are in the home board (demonstrates missing behavior)', () => {
-    // Set up a board where all white checkers are in the home board (points 1-6 clockwise)
+    console.log('TEST STARTED: Bear-off test')
+    // Set up a board where all white checkers are in the home board (points 19-24 clockwise)
     const boardImport = [
       {
         position: {
-          clockwise: 1 as BackgammonPointValue,
-          counterclockwise: 24 as BackgammonPointValue,
+          clockwise: 19 as BackgammonPointValue,
+          counterclockwise: 6 as BackgammonPointValue,
         },
         checkers: { qty: 3, color: 'white' as BackgammonColor },
       },
       {
         position: {
-          clockwise: 2 as BackgammonPointValue,
-          counterclockwise: 23 as BackgammonPointValue,
+          clockwise: 20 as BackgammonPointValue,
+          counterclockwise: 5 as BackgammonPointValue,
         },
         checkers: { qty: 3, color: 'white' as BackgammonColor },
       },
       {
         position: {
-          clockwise: 3 as BackgammonPointValue,
-          counterclockwise: 22 as BackgammonPointValue,
+          clockwise: 21 as BackgammonPointValue,
+          counterclockwise: 4 as BackgammonPointValue,
         },
         checkers: { qty: 3, color: 'white' as BackgammonColor },
       },
       {
         position: {
-          clockwise: 4 as BackgammonPointValue,
-          counterclockwise: 21 as BackgammonPointValue,
+          clockwise: 22 as BackgammonPointValue,
+          counterclockwise: 3 as BackgammonPointValue,
         },
         checkers: { qty: 3, color: 'white' as BackgammonColor },
       },
       {
         position: {
-          clockwise: 5 as BackgammonPointValue,
-          counterclockwise: 20 as BackgammonPointValue,
+          clockwise: 23 as BackgammonPointValue,
+          counterclockwise: 2 as BackgammonPointValue,
         },
         checkers: { qty: 2, color: 'white' as BackgammonColor },
       },
       {
         position: {
-          clockwise: 6 as BackgammonPointValue,
-          counterclockwise: 19 as BackgammonPointValue,
+          clockwise: 24 as BackgammonPointValue,
+          counterclockwise: 1 as BackgammonPointValue,
         },
         checkers: { qty: 1, color: 'white' as BackgammonColor },
       },
     ]
     const board = Board.initialize(boardImport)
     const player = { color: 'white', direction: 'clockwise' } as any
+    // Print the ASCII board for debugging
+    console.log(require('../ascii').ascii(board))
     // Try all die values for bearing off
     let foundBearOffMove = false
     for (
@@ -206,12 +209,18 @@ describe('Board', () => {
       die = (die + 1) as BackgammonDieValue
     ) {
       const moves = Board.getPossibleMoves(board, player, die)
-      if (moves.some((m) => m.destination && m.destination.kind === 'off')) {
+      console.log(`Die: ${die}`, JSON.stringify(moves, null, 2))
+      const hasBearOffMove = moves.some(
+        (m) => m.destination && m.destination.kind === 'off'
+      )
+      console.log(`Die ${die} has bear-off move:`, hasBearOffMove)
+      if (hasBearOffMove) {
         foundBearOffMove = true
+        console.log(`Found bear-off move on die ${die}, breaking`)
         break
       }
     }
-    // This should fail, demonstrating the missing bear-off logic
+    // This should pass, demonstrating that bear-off logic is working
     expect(foundBearOffMove).toBe(true)
   })
 })

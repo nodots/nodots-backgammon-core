@@ -1,5 +1,7 @@
 import {
   BackgammonGame,
+  BackgammonGameMoving,
+  BackgammonGamePreparingMove,
   BackgammonGameRolled,
   BackgammonGameRollingForStart,
   BackgammonMoveReady,
@@ -266,9 +268,46 @@ async function simulateGame(verbose = false): Promise<{
             })
           }
           try {
-            // Transition through proper state flow: rolled -> preparing-move -> moving
-            const preparingGame = Game.prepareMove(gameRolled)
-            const gameMoving = Game.toMoving(preparingGame)
+            // Handle state transitions using functional switch statement with early returns
+            const transitionGameToMoving = (
+              game:
+                | BackgammonGameRolled
+                | BackgammonGamePreparingMove
+                | BackgammonGameMoving
+            ): BackgammonGameMoving => {
+              switch (game.stateKind) {
+                case 'rolled': {
+                  // First move of the turn: rolled -> preparing-move -> moving
+                  const preparingGame = Game.prepareMove(
+                    game as BackgammonGameRolled
+                  )
+                  return Game.toMoving(preparingGame)
+                }
+
+                case 'preparing-move': {
+                  // Direct transition from preparing-move to moving
+                  return Game.toMoving(game as BackgammonGamePreparingMove)
+                }
+
+                case 'moving': {
+                  // Already in moving state for subsequent moves in the same turn
+                  return game as BackgammonGameMoving
+                }
+
+                default: {
+                  throw new Error(
+                    `Invalid game state for move: ${(game as any).stateKind}`
+                  )
+                }
+              }
+            }
+
+            const gameMoving = transitionGameToMoving(
+              gameRolled as
+                | BackgammonGameRolled
+                | BackgammonGamePreparingMove
+                | BackgammonGameMoving
+            )
 
             // Execute the move
             const moveResult = Game.move(gameMoving, origin.id)
@@ -340,6 +379,83 @@ async function simulateGame(verbose = false): Promise<{
                 error: error instanceof Error ? error.message : String(error),
               })
             }
+
+            // Check if this is a state transition error
+            if (
+              error instanceof Error &&
+              error.message.includes('Cannot move from rolled state')
+            ) {
+              console.error(`\n🚨 GAME STUCK - State Management Error!`)
+              console.error(`Game ID: ${gameId}`)
+              console.error(`Turn: ${turnCount}`)
+              console.error(`Active Color: ${gameRolled.activeColor}`)
+              console.error(`Game State: ${gameRolled.stateKind}`)
+              console.error(
+                `Active Play State: ${
+                  gameRolled.activePlay?.stateKind || 'N/A'
+                }`
+              )
+              console.error(`Die: ${die}`)
+              console.error(
+                `Origin: ${
+                  origin.kind === 'point'
+                    ? `point-${
+                        origin.position[gameRolled.activePlayer.direction]
+                      }`
+                    : origin.kind
+                }`
+              )
+              console.error(`Error: ${error.message}`)
+
+              // Log current board state
+              console.error('\n📋 Current Board State:')
+              console.error(Board.getAsciiBoard(gameRolled.board, players))
+
+              // Log move state details
+              console.error('\n🎲 Move State Details:')
+              const movesArray = Array.from(gameRolled.activePlay?.moves || [])
+              movesArray.forEach((move, index) => {
+                console.error(
+                  `  Move ${index + 1}: stateKind=${move.stateKind}, dieValue=${
+                    move.dieValue
+                  }, moveKind=${move.moveKind || 'N/A'}`
+                )
+              })
+
+              // Log dice state
+              console.error('\n🎯 Dice State:')
+              console.error(
+                `  Current Roll: ${
+                  gameRolled.activePlayer.dice.currentRoll?.join(', ') || 'N/A'
+                }`
+              )
+              console.error(
+                `  Dice State: ${gameRolled.activePlayer.dice.stateKind}`
+              )
+
+              logger.error(
+                '[SimulateGame] Game stuck due to state management error:',
+                {
+                  gameId,
+                  turnCount,
+                  activeColor: gameRolled.activeColor,
+                  gameState: gameRolled.stateKind,
+                  activePlayState: gameRolled.activePlay?.stateKind,
+                  die,
+                  originKind: origin.kind,
+                  errorMessage: error.message,
+                  movesState: movesArray.map((m) => ({
+                    stateKind: m.stateKind,
+                    dieValue: m.dieValue,
+                    moveKind: m.moveKind,
+                  })),
+                  diceState: gameRolled.activePlayer.dice,
+                }
+              )
+
+              return { winner: null, turnCount, gameId, stuck: true }
+            }
+
             // Try next die
           }
         }

@@ -48,10 +48,10 @@ function getPlayerAndOpponent(game: BackgammonGame): {
 function getCheckersOnPoint(
   board: BackgammonBoard,
   playerColor: BackgammonColor,
-  pointIndex: number // 0-23, mapping to board.BackgammonPoints
+  pointIndex: number // 0-23, mapping to board.points
 ): number {
   if (pointIndex < 0 || pointIndex > 23) return 0
-  const point = board.BackgammonPoints[pointIndex]
+  const point = board.points[pointIndex]
   return point.checkers.filter((c) => c.color === playerColor).length
 }
 

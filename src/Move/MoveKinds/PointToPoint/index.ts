@@ -1,18 +1,12 @@
-import { Board } from '../../../Board'
 import {
   BackgammonBoard,
-  BackgammonMoveCompleted,
   BackgammonMoveDirection,
-  BackgammonMoveDryRunResult,
   BackgammonMoveInProgress,
-  BackgammonMoveKind,
   BackgammonMoveReady,
   BackgammonMoveResult,
   BackgammonPoint,
-  BackgammonMoveCompletedWithMove,
-  BackgammonPlayerMoving,
-  BackgammonDiceRolled,
 } from '@nodots-llc/backgammon-types/dist'
+import { Board } from '../../../Board'
 
 export class PointToPoint {
   public static isA = function isAPointToPoint(
@@ -47,7 +41,7 @@ export class PointToPoint {
     const originPoint = move.origin as BackgammonPoint
     const originPosition = originPoint.position[direction]
     const destinationPosition = originPosition - dieValue
-    const destination = board.BackgammonPoints.find(
+    const destination = board.points.find(
       (point) => point.position[direction] === destinationPosition
     )
     if (!destination) {
@@ -111,7 +105,7 @@ export class PointToPoint {
     )
 
     // Get the updated destination point from the updated board
-    const updatedDestination = updatedBoard.BackgammonPoints.find(
+    const updatedDestination = updatedBoard.points.find(
       (p) => p.id === destination.id
     )
     if (!updatedDestination) {

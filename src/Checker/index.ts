@@ -1,16 +1,16 @@
-import { Board, generateId } from '..'
 import {
   BackgammonBoard,
   BackgammonChecker,
   BackgammonColor,
 } from '@nodots-llc/backgammon-types/dist'
+import { Board, generateId } from '..'
 
 export class Checker {
   public static getCheckers = function getCheckers(
     board: BackgammonBoard
   ): BackgammonChecker[] {
     const checkers: BackgammonChecker[] = []
-    for (const point of board.BackgammonPoints) {
+    for (const point of board.points) {
       for (const checker of point.checkers) {
         checkers.push(checker)
       }

@@ -12,19 +12,35 @@ import {
 import { Play } from '..'
 import { Board, Dice, generateId, Player } from '../..'
 
-// Helper to create a board with white checkers on points 1 and 2
+// Helper to create a board with all 15 white checkers in the home board (points 19-24 for clockwise)
 function createTestBoard() {
   const boardImport: BackgammonCheckerContainerImport[] = [
     {
-      position: { clockwise: 1, counterclockwise: 24 },
+      position: { clockwise: 19, counterclockwise: 6 },
       checkers: { qty: 2, color: 'white' },
     },
     {
-      position: { clockwise: 2, counterclockwise: 23 },
-      checkers: { qty: 1, color: 'white' },
+      position: { clockwise: 20, counterclockwise: 5 },
+      checkers: { qty: 3, color: 'white' },
+    },
+    {
+      position: { clockwise: 21, counterclockwise: 4 },
+      checkers: { qty: 3, color: 'white' },
+    },
+    {
+      position: { clockwise: 22, counterclockwise: 3 },
+      checkers: { qty: 3, color: 'white' },
+    },
+    {
+      position: { clockwise: 23, counterclockwise: 2 },
+      checkers: { qty: 2, color: 'white' },
+    },
+    {
+      position: { clockwise: 24, counterclockwise: 1 },
+      checkers: { qty: 2, color: 'white' },
     },
   ]
-  return Board.initialize(boardImport)
+  return Board.buildBoard(boardImport)
 }
 
 // Helper to create a rolling player
@@ -82,19 +98,9 @@ describe('Play', () => {
     })
 
     test('should handle doubles correctly', () => {
-      const boardImport: BackgammonCheckerContainerImport[] = [
-        {
-          position: { clockwise: 1, counterclockwise: 24 },
-          checkers: { qty: 2, color: 'white' },
-        },
-      ]
-
-      const board = Board.initialize(boardImport)
+      const board = createTestBoard()
       const inactiveDice = Dice.initialize('white') as BackgammonDiceInactive
-
-      // Mock the dice roll to always return doubles
       jest.spyOn(Math, 'random').mockReturnValue(0) // This will make both dice roll 1
-
       const player = Player.initialize(
         'white',
         'clockwise',
@@ -102,21 +108,19 @@ describe('Play', () => {
         undefined,
         'rolling'
       ) as BackgammonPlayerRolling
-
       const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
       const play = Play.initialize(board, rolledPlayer)
-
-      // There should always be 4 moves for doubles
       expect(play.moves.size).toBe(4)
-      // All moves should be either 'bear-off' or 'no-move' since checkers are in home board
       const moveKinds = Array.from(play.moves).map((m: any) => m.moveKind)
       expect(moveKinds.every((k) => k === 'bear-off' || k === 'no-move')).toBe(
         true
       )
-      // There can be 0 to 4 'bear-off' moves, rest are 'no-move'
-      expect(moveKinds.length).toBe(4)
-
-      // Cleanup
+      // Print the ASCII board after a successful test
+      // eslint-disable-next-line no-console
+      console.log(
+        '\nASCII board after successful doubles test:\n' +
+          Board.getAsciiBoard(board)
+      )
       jest.spyOn(Math, 'random').mockRestore()
     })
 
@@ -172,6 +176,12 @@ describe('Play', () => {
       const moveKinds = Array.from(play.moves).map((m: any) => m.moveKind)
       const hasBearOffMove = moveKinds.some((k) => k === 'bear-off')
       expect(hasBearOffMove).toBe(true)
+      // Print the ASCII board after a successful test
+      // Only print if the assertion passes
+      // eslint-disable-next-line no-console
+      console.log(
+        '\nASCII board after successful test:\n' + Board.getAsciiBoard(board)
+      )
       jest.spyOn(Math, 'random').mockRestore()
     })
 
@@ -183,6 +193,12 @@ describe('Play', () => {
       const moveKinds = Array.from(play.moves).map((m: any) => m.moveKind)
       const hasBearOffMove = moveKinds.some((k) => k === 'bear-off')
       expect(hasBearOffMove).toBe(true)
+      // Print the ASCII board after a successful test
+      // eslint-disable-next-line no-console
+      console.log(
+        '\nASCII board after successful doubles (normal) test:\n' +
+          Board.getAsciiBoard(board)
+      )
       jest.spyOn(Math, 'random').mockRestore()
     })
   })
@@ -209,7 +225,7 @@ describe('Play', () => {
       const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
       const play = Play.initialize(board, rolledPlayer) as BackgammonPlayRolled
 
-      const origin = board.BackgammonPoints.find(
+      const origin = board.points.find(
         (p) => p.position.clockwise === 6 && p.position.counterclockwise === 19
       ) as BackgammonPoint
 

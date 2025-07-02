@@ -1,17 +1,14 @@
-import { Board } from '../../..'
-import { Player } from '../../../Player'
 import {
   BackgammonBar,
   BackgammonBoard,
   BackgammonMoveDirection,
-  BackgammonMoveDryRunResult,
   BackgammonMoveInProgress,
   BackgammonMoveReady,
   BackgammonMoveResult,
   BackgammonMoveStateKind,
   BackgammonPoint,
-  BackgammonMoveCompletedWithMove,
 } from '@nodots-llc/backgammon-types/dist'
+import { Board } from '../../..'
 
 export class Reenter {
   public static isA = function isAReenterMove(
@@ -45,7 +42,7 @@ export class Reenter {
         : dieValue // For counterclockwise, count up from 1 (e.g., die value 1 means point 1)
 
     // Find the point in opponent's home board
-    const destination = board.BackgammonPoints.find((p: BackgammonPoint) => {
+    const destination = board.points.find((p: BackgammonPoint) => {
       // Position must match the die value from the player's perspective
       const isCorrectPosition = p.position[direction] === targetPosition
 
@@ -104,7 +101,7 @@ export class Reenter {
     )
 
     // Get the updated destination point from the updated board
-    const updatedDestination = updatedBoard.BackgammonPoints.find(
+    const updatedDestination = updatedBoard.points.find(
       (p) => p.id === destination.id
     )
     if (!updatedDestination) {

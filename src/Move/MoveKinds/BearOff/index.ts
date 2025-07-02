@@ -24,17 +24,19 @@ export class BearOff {
       return false
     }
 
-    // Check all points for player's checkers outside home board (distance > 6)
+    // Check all points for player's checkers outside home board
     let outsideHomeBoard = false
-    board.BackgammonPoints.forEach((point) => {
+    board.points.forEach((point) => {
       if (point.checkers.length > 0) {
         point.checkers.forEach((checker) => {
           if (checker.color === player.color) {
-            const distance =
+            const pos = point.position[player.direction]
+            // Home board is positions 19-24 for clockwise, 1-6 for counterclockwise
+            const inHomeBoard =
               player.direction === 'clockwise'
-                ? 25 - point.position.clockwise
-                : point.position.counterclockwise
-            if (distance > 6) {
+                ? pos >= 19 && pos <= 24
+                : pos >= 1 && pos <= 6
+            if (!inHomeBoard) {
               outsideHomeBoard = true
             }
           }
@@ -47,7 +49,7 @@ export class BearOff {
 
     // Must have at least one checker in play (not all borne off)
     let checkersInPlay = 0
-    board.BackgammonPoints.forEach((point) => {
+    board.points.forEach((point) => {
       if (point.checkers.length > 0) {
         point.checkers.forEach((checker) => {
           if (checker.color === player.color) {

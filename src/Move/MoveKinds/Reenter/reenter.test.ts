@@ -38,7 +38,7 @@ describe('Reenter', () => {
       }
 
       // Clear the reentry point (point 24 for clockwise)
-      board.BackgammonPoints[23].checkers = []
+      board.points[23].checkers = []
     })
 
     it('should reenter a checker from the bar', () => {
@@ -67,8 +67,8 @@ describe('Reenter', () => {
       expect(completedMove.stateKind).toBe('completed')
       expect(completedMove.isHit).toBe(false)
       expect(result.board.bar.clockwise.checkers.length).toBe(0) // Bar should be empty
-      expect(result.board.BackgammonPoints[23].checkers.length).toBe(1) // Point 24 should have one checker
-      expect(result.board.BackgammonPoints[23].checkers[0].color).toBe('black')
+      expect(result.board.points[23].checkers.length).toBe(1) // Point 24 should have one checker
+      expect(result.board.points[23].checkers[0].color).toBe('black')
     })
 
     it('should hit an opponent checker when reentering', () => {
@@ -82,7 +82,7 @@ describe('Reenter', () => {
       ]
 
       // Add an opponent checker to the reentry point
-      const reentryPoint = board.BackgammonPoints[23] // Point 24 for clockwise
+      const reentryPoint = board.points[23] // Point 24 for clockwise
       reentryPoint.checkers = [
         {
           id: generateId(),
@@ -107,8 +107,8 @@ describe('Reenter', () => {
       expect(completedMove.stateKind).toBe('completed')
       expect(completedMove.isHit).toBe(true)
       expect(result.board.bar.clockwise.checkers.length).toBe(0) // Bar should be empty
-      expect(result.board.BackgammonPoints[23].checkers.length).toBe(1) // Point 24 should have one checker
-      expect(result.board.BackgammonPoints[23].checkers[0].color).toBe('black')
+      expect(result.board.points[23].checkers.length).toBe(1) // Point 24 should have one checker
+      expect(result.board.points[23].checkers[0].color).toBe('black')
       expect(result.board.bar.counterclockwise.checkers.length).toBe(1) // Hit checker should be on opponent's bar
       expect(result.board.bar.counterclockwise.checkers[0].color).toBe('white')
     })
@@ -124,7 +124,7 @@ describe('Reenter', () => {
       ]
 
       // Add two opponent checkers to the reentry point
-      const reentryPoint = board.BackgammonPoints[23] // Point 24 for clockwise
+      const reentryPoint = board.points[23] // Point 24 for clockwise
       reentryPoint.checkers = [
         {
           id: generateId(),

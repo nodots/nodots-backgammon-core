@@ -38,7 +38,7 @@ export interface RandomGameSetup {
 export class Board implements BackgammonBoard {
   id!: string
   gnuPositionId!: string
-  BackgammonPoints!: BackgammonPoints
+  points!: BackgammonPoints
   bar!: {
     clockwise: BackgammonBar
     counterclockwise: BackgammonBar
@@ -154,7 +154,7 @@ export class Board implements BackgammonBoard {
   static getPoints = function getPoints(
     board: BackgammonBoard
   ): BackgammonPoint[] {
-    return board.BackgammonPoints
+    return board.points
   }
 
   static getBars = function getBars(board: BackgammonBoard): BackgammonBar[] {
@@ -219,8 +219,8 @@ export class Board implements BackgammonBoard {
         (p: BackgammonPoint) =>
           // Point is not blocked by 2+ opponent checkers
           (p.checkers.length < 2 || p.checkers[0].color === player.color) &&
-          // Point must match the reentry point for the player's direction (always use clockwise numbering)
-          p.position.clockwise === reentryPoint
+          // Point must match the reentry point for the player's direction
+          p.position[playerDirection] === reentryPoint
       )
       if (possibleDestination) {
         possibleMoves.push({
@@ -237,8 +237,8 @@ export class Board implements BackgammonBoard {
     playerPoints.forEach(function mapPlayerPoints(point) {
       const destinationPoint =
         playerDirection === 'clockwise'
-          ? point.position.clockwise - dieValue // Clockwise moves from 24→1, so subtract
-          : point.position.counterclockwise - dieValue // Counterclockwise also moves from 24→1, so subtract
+          ? point.position.clockwise + dieValue // Clockwise player moves from 1→24, so add
+          : point.position.clockwise - dieValue // Counterclockwise player moves from 24→1, so subtract (using clockwise position)
 
       // Skip if destination point is out of bounds
       if (destinationPoint < 1 || destinationPoint > 24) {
@@ -251,10 +251,8 @@ export class Board implements BackgammonBoard {
           (p.checkers.length === 0 ||
             (p.checkers.length === 1 && p.checkers[0].color !== player.color) ||
             (p.checkers.length > 0 && p.checkers[0].color === player.color)) &&
-          // Point must match the destination point based on direction
-          (playerDirection === 'clockwise'
-            ? p.position.clockwise === destinationPoint
-            : p.position.counterclockwise === destinationPoint)
+          // Point must match the destination point using clockwise position for both players
+          p.position.clockwise === destinationPoint
       )
 
       if (possibleDestination) {
@@ -268,11 +266,12 @@ export class Board implements BackgammonBoard {
     })
 
     // Bear-off logic: allow bearing off if all checkers are in the home board
-    // Home board is points 1-6 for clockwise, 19-24 for counterclockwise (in their direction)
+    // Home board is positions 19-24 for clockwise, 1-6 for counterclockwise
     const homeBoardPoints = Board.getPoints(board).filter((p) => {
+      const pos = p.position[playerDirection]
       return playerDirection === 'clockwise'
-        ? p.position.clockwise >= 1 && p.position.clockwise <= 6
-        : p.position.counterclockwise >= 1 && p.position.counterclockwise <= 6
+        ? pos >= 19 && pos <= 24
+        : pos >= 1 && pos <= 6
     })
     const allCheckersInHome = playerPoints.every((p) =>
       homeBoardPoints.includes(p)
@@ -285,8 +284,14 @@ export class Board implements BackgammonBoard {
           point.checkers[0].color === player.color
         ) {
           const position = point.position[playerDirection]
-          // Can bear off if die matches the point position
-          if (position === dieValue) {
+          // Calculate distance to bear off (same logic as BearOff.move)
+          // For clockwise: distance = 25 - position
+          // For counterclockwise: distance = position
+          const distanceToBearOff =
+            playerDirection === 'clockwise' ? 25 - position : position
+
+          // Can bear off if die matches the distance
+          if (distanceToBearOff === dieValue) {
             const off = board.off[playerDirection]
             possibleMoves.push({
               origin: point,
@@ -296,7 +301,10 @@ export class Board implements BackgammonBoard {
             })
           }
           // Can bear off with a higher die if no checker on higher points
-          if (position < dieValue) {
+          // "Higher points" means points closer to the end of the board
+          // For clockwise: higher points are 24, 23, 22, etc. (higher position values)
+          // For counterclockwise: higher points are 6, 5, 4, etc. (higher position values)
+          if (dieValue > distanceToBearOff) {
             const higherPoints = homeBoardPoints.filter(
               (p2) => p2.position[playerDirection] > position
             )
@@ -392,7 +400,7 @@ export class Board implements BackgammonBoard {
     const board: BackgammonBoard = {
       id: generateId(),
       gnuPositionId: generateDefaultGnuPositionId(),
-      BackgammonPoints: points,
+      points: points,
       bar,
       off,
     }
@@ -694,16 +702,20 @@ export class Board implements BackgammonBoard {
 
   public static getAsciiBoard = (
     board: BackgammonBoard,
-    players?: BackgammonPlayers
-  ): string => ascii(board, players)
+    players?: BackgammonPlayers,
+    activePlayer?: BackgammonPlayer,
+    moveNotation?: string
+  ): string => ascii(board, players, activePlayer, moveNotation)
 
   public static getAsciiGameBoard = (
     board: BackgammonBoard,
     players?: BackgammonPlayers,
     activeColor?: BackgammonColor,
-    gameStateKind?: string
+    gameStateKind?: string,
+    moveNotation?: string
   ): string => {
-    const baseAscii = ascii(board, players)
+    const activePlayer = players?.find((p) => p.color === activeColor)
+    const baseAscii = ascii(board, players, activePlayer, moveNotation)
 
     // Add game state information
     let gameInfo = '\n'
@@ -713,7 +725,6 @@ export class Board implements BackgammonBoard {
     }
 
     if (activeColor && players) {
-      const activePlayer = players.find((p) => p.color === activeColor)
       if (activePlayer) {
         gameInfo += `ACTIVE PLAYER: ${activeColor.toUpperCase()} (${
           activeColor === 'black' ? 'X' : 'O'

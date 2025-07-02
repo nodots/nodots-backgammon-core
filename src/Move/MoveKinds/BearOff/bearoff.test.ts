@@ -40,14 +40,14 @@ describe('BearOff', () => {
     // TODO: Fix this test
     // it('should bear off a checker from the home board', () => {
     //   // Clear all checkers from the board
-    //   board.BackgammonPoints.forEach((point) => {
+    //   board.points.forEach((point) => {
     //     point.checkers = []
     //   })
     //   board.bar.clockwise.checkers = []
     //   board.bar.counterclockwise.checkers = []
 
     //   // Add a checker to the home board
-    //   const homePoint = board.BackgammonPoints[23] // Point 24 for clockwise
+    //   const homePoint = board.points[23] // Point 24 for clockwise
     //   homePoint.checkers = [
     //     {
     //       id: generateId(),
@@ -76,7 +76,7 @@ describe('BearOff', () => {
 
     it('should not allow bearing off when checkers are not in home board', () => {
       // Add a checker to a point outside home board
-      const nonHomePoint = board.BackgammonPoints[0] // Point 1 for clockwise
+      const nonHomePoint = board.points[0] // Point 1 for clockwise
       nonHomePoint.checkers = [
         {
           id: generateId(),
@@ -109,7 +109,7 @@ describe('BearOff', () => {
       ]
 
       // Add a checker to the home board
-      const homePoint = board.BackgammonPoints[23] // Point 24 for clockwise
+      const homePoint = board.points[23] // Point 24 for clockwise
       homePoint.checkers = [
         {
           id: generateId(),

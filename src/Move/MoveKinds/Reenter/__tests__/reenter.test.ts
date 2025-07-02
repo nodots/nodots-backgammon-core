@@ -70,7 +70,7 @@ describe('Reenter', () => {
         player,
         stateKind: 'ready',
         moveKind: 'reenter',
-        origin: board.BackgammonPoints[0],
+        origin: board.points[0],
         dieValue: 1,
         possibleMoves: [],
       }
@@ -113,11 +113,11 @@ describe('Reenter', () => {
       const { board, player } = setupTest('white', 'clockwise', [1, 2])
 
       // Ensure there's an opponent checker on point 24
-      board.BackgammonPoints[23].checkers = [
+      board.points[23].checkers = [
         {
           id: generateId(),
           color: 'black',
-          checkercontainerId: board.BackgammonPoints[23].id,
+          checkercontainerId: board.points[23].id,
         },
       ]
 
@@ -168,8 +168,8 @@ describe('Reenter', () => {
       // Block all opponent's home board points
       const opponentBoard =
         player.direction === 'clockwise'
-          ? board.BackgammonPoints.slice(18, 24) // Points 19-24
-          : board.BackgammonPoints.slice(0, 6) // Points 1-6
+          ? board.points.slice(18, 24) // Points 19-24
+          : board.points.slice(0, 6) // Points 1-6
       opponentBoard.forEach((point) => {
         const checker: BackgammonChecker = {
           id: generateId(),
@@ -204,7 +204,7 @@ describe('Reenter', () => {
         },
       ]
       // Block all possible reentry points (points 24 for dieValue 1)
-      const destPoint = board.BackgammonPoints[23] // Point 24
+      const destPoint = board.points[23] // Point 24
       destPoint.checkers = [
         { id: generateId(), color: 'black', checkercontainerId: destPoint.id },
         { id: generateId(), color: 'black', checkercontainerId: destPoint.id },
@@ -229,7 +229,7 @@ describe('Reenter', () => {
       const { board, player } = setupTest('white', 'clockwise', [1, 2])
 
       // Clear point 24 for reentry
-      board.BackgammonPoints[23].checkers = []
+      board.points[23].checkers = []
 
       const move: BackgammonMoveReady = {
         id: generateId(),
@@ -279,8 +279,8 @@ describe('Reenter', () => {
       // Block all opponent's home board points
       const opponentBoard =
         player.direction === 'clockwise'
-          ? board.BackgammonPoints.slice(18, 24) // Points 19-24
-          : board.BackgammonPoints.slice(0, 6) // Points 1-6
+          ? board.points.slice(18, 24) // Points 19-24
+          : board.points.slice(0, 6) // Points 1-6
       opponentBoard.forEach((point) => {
         const checker: BackgammonChecker = {
           id: generateId(),
@@ -305,10 +305,10 @@ describe('Reenter', () => {
       const { board, player } = setupTest('white', 'clockwise', [1, 2])
 
       // Add a regular checker that could move
-      board.BackgammonPoints[0].checkers.push({
+      board.points[0].checkers.push({
         id: generateId(),
         color: player.color,
-        checkercontainerId: board.BackgammonPoints[0].id,
+        checkercontainerId: board.points[0].id,
       })
 
       const move: BackgammonMoveReady = {
@@ -324,7 +324,7 @@ describe('Reenter', () => {
       // Attempt to move the regular checker instead of the bar checker
       const invalidMove: BackgammonMoveReady = {
         ...move,
-        origin: board.BackgammonPoints[0],
+        origin: board.points[0],
         possibleMoves: [],
       }
 
@@ -441,10 +441,10 @@ describe('Reenter', () => {
           position: { ...(d as any).position },
           checkers: [],
         }
-        const updatedPoints = b.BackgammonPoints.map((p) =>
+        const updatedPoints = b.points.map((p) =>
           p.id === d.id ? dummyPoint : p
         )
-        return { ...b, BackgammonPoints: updatedPoints } as typeof b
+        return { ...b, points: updatedPoints } as typeof b
       }
       expect(() => Reenter.move(board, move)).toThrow(
         'Could not find destination point after move'
@@ -472,7 +472,7 @@ describe('Reenter', () => {
 
         // Clear any checkers from the destination point
         const destPointIndex = pointNumber - 1
-        board.BackgammonPoints[destPointIndex].checkers = []
+        board.points[destPointIndex].checkers = []
 
         const move: BackgammonMoveReady = {
           id: generateId(),
@@ -511,7 +511,7 @@ describe('Reenter', () => {
       }
 
       // Clear point 24 for reentry
-      board.BackgammonPoints[23].checkers = []
+      board.points[23].checkers = []
 
       const move: BackgammonMoveReady = {
         id: generateId(),

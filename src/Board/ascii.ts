@@ -1,139 +1,228 @@
 import {
-  BackgammonBar,
   BackgammonBoard,
-  BackgammonChecker,
+  BackgammonPlayer,
   BackgammonPlayers,
   BackgammonPoint,
 } from '@nodots-llc/backgammon-types/dist'
 
+const MAX_VISIBLE_CHECKERS = 5
+
 export const ascii = (
   board: BackgammonBoard,
-  players?: BackgammonPlayers
+  players?: BackgammonPlayers,
+  activePlayer?: BackgammonPlayer,
+  moveNotation?: string
 ): string => {
-  const points = board.BackgammonPoints
+  const points = board.points
   const bar = board.bar
 
-  // Enhanced legend for player symbols, color, and direction
   let boardDisplay = ''
-  if (players && players.length === 2) {
-    const getSymbol = (color: string) => (color === 'black' ? 'X' : 'O')
-    boardDisplay += 'LEGEND:'
-    for (const player of players) {
-      boardDisplay += ` ${player.color.toUpperCase()} (${getSymbol(
-        player.color
-      )}) [${player.direction}] `
-    }
-    boardDisplay += '\n'
-  } else {
-    boardDisplay += 'LEGEND: BLACK (X), WHITE (O)\n'
-  }
-  boardDisplay += ' +-13-14-15-16-17-18--------19-20-21-22-23-24-+ \n'
 
-  // Create a mapping from visual position to actual point
-  // The ASCII board shows positions 13-24 on top row, 12-1 on bottom row
-  // Always use clockwise position for consistent mapping
+  // GNU-style header
+  boardDisplay += 'Nodots Backgammon Position ID: '
+  boardDisplay += '\n                 Match ID   : cAkAAAAAAAAA\n'
+
+  // Helper to get player label with color and symbol
+  const getPlayerLabel = (player: any, fallback: string) => {
+    const baseLabel = player?.email || player?.userId || fallback
+    const colorName = player?.color ? player.color.toUpperCase() : 'UNKNOWN'
+    const symbol = player?.color === 'black' ? 'X' : 'O'
+    const activeIndicator =
+      activePlayer && activePlayer.id === player?.id ? ' *ACTIVE*' : ''
+    return `${colorName} (${symbol})${activeIndicator} - ${baseLabel}`
+  }
+
+  // Top label (fixed GNU standard)
+  boardDisplay += ' +13-14-15-16-17-18------19-20-21-22-23-24-+'
+  if (players && players.length >= 2) {
+    const player1 = players[0]
+    const symbol1 = player1.color === 'black' ? 'X' : 'O'
+    boardDisplay += `     ${symbol1}: ${getPlayerLabel(player1, 'player1')}\n`
+  } else {
+    boardDisplay += '     O: player1\n'
+  }
+
+  // Helper to get point by visual position
   const getPointByVisualPosition = (
     visualPos: number
-  ): BackgammonPoint | null => {
-    // Find the point that has this visual position as clockwise position
-    return (
-      points.find((point) => point.position.clockwise === visualPos) || null
+  ): BackgammonPoint | null =>
+    points.find((point) => point.position.clockwise === visualPos) || null
+
+  // Helper to get checker symbol array for a point
+  const getCheckerSymbols = (visualPos: number) => {
+    const point = getPointByVisualPosition(visualPos)
+    if (!point) return []
+    return point.checkers.map((c) =>
+      c.color === 'black' ? 'X' : c.color === 'white' ? 'O' : '?'
     )
   }
 
-  const displayPoint = (visualPos: number, row: number): string => {
-    const point = getPointByVisualPosition(visualPos)
-    if (!point) return '   '
+  // Total number of checker rows (top + bottom)
+  const TOTAL_CHECKER_ROWS = MAX_VISIBLE_CHECKERS * 2
+  // The vertical center row index (0-based, across all checker rows)
+  const BAR_ROW_INDEX = Math.floor(TOTAL_CHECKER_ROWS / 2)
+  let checkerRowIndex = 0
 
-    const checkers = point.checkers
-    const checker = checkers[row]
-    if (!checker) return '   '
-
-    const color = checker.color
-    const symbol = color === 'black' ? ' X ' : ' O '
-    return `${symbol}`
-  }
-
-  const displayBar = (bar: BackgammonBar, row: number): string => {
-    const checkers = bar.checkers
-    const checker = checkers[row]
-    if (!checker) return ' '
-    const color = checker.color
-    const symbol = color === 'black' ? 'X' : 'O'
-    return symbol
-  }
-
-  // Top half of board (positions 13-18 and 19-24)
-  for (let row = 0; row < 5; row++) {
+  // Build top half (positions 13-18 | bar | 19-24)
+  for (let row = 0; row < MAX_VISIBLE_CHECKERS; row++, checkerRowIndex++) {
     boardDisplay += ' |'
-    // Left side: visual positions 13-18
+    // 13-18 (left half)
     for (let visualPos = 13; visualPos <= 18; visualPos++) {
-      boardDisplay += `${displayPoint(visualPos, row)}`
+      const symbols = getCheckerSymbols(visualPos)
+      let cell = '   '
+      if (symbols.length > MAX_VISIBLE_CHECKERS) {
+        // Stacked: show (n) at the BOTTOM cell for north side (closest to bar)
+        if (row === MAX_VISIBLE_CHECKERS - 1) {
+          cell = `(${symbols.length})`
+        } else if (row < MAX_VISIBLE_CHECKERS - 1) {
+          cell = ' ' + symbols[row] + ' '
+        }
+      } else if (row < symbols.length) {
+        cell = ' ' + symbols[row] + ' '
+      }
+      cell = cell.padEnd(3).slice(0, 3)
+      boardDisplay += cell
     }
-    boardDisplay += ' | '
-    // Display bar checkers - using clockwise bar for top half
-    boardDisplay += displayBar(bar.clockwise, row)
-    boardDisplay += ' | '
-    // Right side: visual positions 19-24
+    boardDisplay += '|'
+    // Bar column: always spaces in checker rows
+    boardDisplay += '   |'
+    // 19-24 (right half)
     for (let visualPos = 19; visualPos <= 24; visualPos++) {
-      boardDisplay += `${displayPoint(visualPos, row)}`
+      const symbols = getCheckerSymbols(visualPos)
+      let cell = '   '
+      if (symbols.length > MAX_VISIBLE_CHECKERS) {
+        if (row === MAX_VISIBLE_CHECKERS - 1) {
+          cell = `(${symbols.length})`
+        } else if (row < MAX_VISIBLE_CHECKERS - 1) {
+          cell = ' ' + symbols[row] + ' '
+        }
+      } else if (row < symbols.length) {
+        cell = ' ' + symbols[row] + ' '
+      }
+      cell = cell.padEnd(3).slice(0, 3)
+      boardDisplay += cell
     }
-    boardDisplay += ' |\n'
+    boardDisplay += '|\n'
   }
 
-  boardDisplay += 'v|                   |BAR|                    |\n'
+  // Bar/points info line (GNU uses v| ... |)
+  boardDisplay += 'v|                  |BAR|                  |'
+  if (players && players.length >= 2) {
+    const player1 = players[0]
+    const player1Off =
+      board.off.clockwise.checkers.filter((c) => c.color === player1.color)
+        .length +
+      board.off.counterclockwise.checkers.filter(
+        (c) => c.color === player1.color
+      ).length
+    boardDisplay += `     ${player1Off} points\n`
+  } else {
+    boardDisplay += '     0 points\n'
+  }
 
-  // Bottom half of board (positions 12-7 and 6-1)
-  for (let row = 4; row >= 0; row--) {
+  // Build bottom half (positions 12-7 | bar | 6-1)
+  for (let row = MAX_VISIBLE_CHECKERS - 1; row >= 0; row--, checkerRowIndex++) {
     boardDisplay += ' |'
-    // Left side: visual positions 12 down to 7
+    // 12-7 (left half)
     for (let visualPos = 12; visualPos >= 7; visualPos--) {
-      boardDisplay += `${displayPoint(visualPos, row)}`
+      const symbols = getCheckerSymbols(visualPos)
+      let cell = '   '
+      if (symbols.length > MAX_VISIBLE_CHECKERS) {
+        // Stacked: show (n) at the TOP cell for south side (closest to bar)
+        if (row === MAX_VISIBLE_CHECKERS - 1) {
+          cell = `(${symbols.length})`
+        } else {
+          // Show checkers below the (n) indicator
+          const checkerIndex = row
+          if (checkerIndex >= 0 && checkerIndex < MAX_VISIBLE_CHECKERS - 1) {
+            const symbol =
+              symbols[checkerIndex] === 'X' || symbols[checkerIndex] === 'O'
+                ? symbols[checkerIndex]
+                : '?'
+            cell = ' ' + symbol + ' '
+          }
+        }
+      } else if (symbols.length > 0) {
+        // For stacks <= MAX_VISIBLE_CHECKERS: checkers settle at bottom edge
+        // Only show checkers in the bottom N rows where N = symbols.length
+        if (row < symbols.length) {
+          const checkerIndex = row
+          const symbol =
+            symbols[checkerIndex] === 'X' || symbols[checkerIndex] === 'O'
+              ? symbols[checkerIndex]
+              : '?'
+          cell = ' ' + symbol + ' '
+        }
+      }
+      cell = cell.padEnd(3).slice(0, 3)
+      boardDisplay += cell
     }
-    boardDisplay += ' | '
-    // Display bar checkers - using counterclockwise bar for bottom half
-    boardDisplay += displayBar(bar.counterclockwise, row)
-    boardDisplay += ' | '
-    // Right side: visual positions 6 down to 1
+    boardDisplay += '|'
+    // Bar column: always spaces in checker rows
+    boardDisplay += '   |'
+    // 6-1 (right half)
     for (let visualPos = 6; visualPos >= 1; visualPos--) {
-      boardDisplay += `${displayPoint(visualPos, row)}`
+      const symbols = getCheckerSymbols(visualPos)
+      let cell = '   '
+      if (symbols.length > MAX_VISIBLE_CHECKERS) {
+        // Stacked: show (n) at the TOP cell for south side (closest to bar)
+        if (row === MAX_VISIBLE_CHECKERS - 1) {
+          cell = `(${symbols.length})`
+        } else {
+          // Show checkers below the (n) indicator
+          const checkerIndex = row
+          if (checkerIndex >= 0 && checkerIndex < MAX_VISIBLE_CHECKERS - 1) {
+            const symbol =
+              symbols[checkerIndex] === 'X' || symbols[checkerIndex] === 'O'
+                ? symbols[checkerIndex]
+                : '?'
+            cell = ' ' + symbol + ' '
+          }
+        }
+      } else if (symbols.length > 0) {
+        // For stacks <= MAX_VISIBLE_CHECKERS: checkers settle at bottom edge
+        // Only show checkers in the bottom N rows where N = symbols.length
+        if (row < symbols.length) {
+          const checkerIndex = row
+          const symbol =
+            symbols[checkerIndex] === 'X' || symbols[checkerIndex] === 'O'
+              ? symbols[checkerIndex]
+              : '?'
+          cell = ' ' + symbol + ' '
+        }
+      }
+      cell = cell.padEnd(3).slice(0, 3)
+      boardDisplay += cell
     }
-    boardDisplay += ' |\n'
+    boardDisplay += '|\n'
   }
 
-  boardDisplay += ' +-12-11-10--9-8--7--------6--5--4--3--2--1--+ \n'
+  // Bottom label (fixed GNU standard)
+  boardDisplay += ' +12-11-10--9--8--7-------6--5--4--3--2--1-+'
 
-  // Count checkers by color instead of direction
-  const blackBarCount =
-    board.bar.clockwise.checkers.filter(
-      (c: BackgammonChecker) => c.color === 'black'
-    ).length +
-    board.bar.counterclockwise.checkers.filter(
-      (c: BackgammonChecker) => c.color === 'black'
-    ).length
-  const whiteBarCount =
-    board.bar.clockwise.checkers.filter(
-      (c: BackgammonChecker) => c.color === 'white'
-    ).length +
-    board.bar.counterclockwise.checkers.filter(
-      (c: BackgammonChecker) => c.color === 'white'
-    ).length
-  const blackOffCount =
-    board.off.clockwise.checkers.filter(
-      (c: BackgammonChecker) => c.color === 'black'
-    ).length +
-    board.off.counterclockwise.checkers.filter(
-      (c: BackgammonChecker) => c.color === 'black'
-    ).length
-  const whiteOffCount =
-    board.off.clockwise.checkers.filter(
-      (c: BackgammonChecker) => c.color === 'white'
-    ).length +
-    board.off.counterclockwise.checkers.filter(
-      (c: BackgammonChecker) => c.color === 'white'
-    ).length
+  // Add player names and on-roll info
+  if (players && players.length >= 2) {
+    const player2 = players[1]
+    const symbol2 = player2.color === 'black' ? 'X' : 'O'
+    const player2Off =
+      board.off.clockwise.checkers.filter((c) => c.color === player2.color)
+        .length +
+      board.off.counterclockwise.checkers.filter(
+        (c) => c.color === player2.color
+      ).length
+    boardDisplay += `     ${symbol2}: ${getPlayerLabel(player2, 'player2')}\n`
+    if (activePlayer && activePlayer.color === player2.color) {
+      boardDisplay += '                              On roll\n'
+    }
+    boardDisplay += `                              ${player2Off} points\n`
+  } else {
+    boardDisplay += '     X: player2\n'
+  }
 
-  boardDisplay += `       BLACK BAR: ${blackBarCount}          WHITE BAR: ${whiteBarCount}\n`
-  boardDisplay += `       BLACK OFF: ${blackOffCount}          WHITE OFF: ${whiteOffCount}\n`
+  // Add move notation if provided
+  if (moveNotation) {
+    boardDisplay += `\nMove: ${moveNotation}\n`
+  }
+
   return boardDisplay
 }

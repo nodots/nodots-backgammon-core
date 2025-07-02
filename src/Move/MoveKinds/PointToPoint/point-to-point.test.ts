@@ -38,18 +38,18 @@ describe('PointToPoint', () => {
       }
 
       // Add a black checker to point 13 (index 12)
-      board.BackgammonPoints[12].checkers = [
+      board.points[12].checkers = [
         {
           id: generateId(),
           color: 'black',
-          checkercontainerId: board.BackgammonPoints[12].id,
+          checkercontainerId: board.points[12].id,
         },
       ]
     })
 
     it('should move a checker from one point to another', () => {
-      const origin = board.BackgammonPoints[12] // Point 13
-      board.BackgammonPoints[11].checkers = [] // Ensure destination is empty
+      const origin = board.points[12] // Point 13
+      board.points[11].checkers = [] // Ensure destination is empty
       const move: BackgammonMoveReady = {
         id: generateId(),
         stateKind: 'ready',
@@ -65,14 +65,14 @@ describe('PointToPoint', () => {
       expect(result.board).toBeDefined()
       expect(completedMove.stateKind).toBe('completed')
       expect(completedMove.isHit).toBe(false)
-      expect(result.board.BackgammonPoints[12].checkers.length).toBe(0) // Origin point should be empty
-      expect(result.board.BackgammonPoints[11].checkers.length).toBe(1) // Destination point should have one checker
-      expect(result.board.BackgammonPoints[11].checkers[0].color).toBe('black')
+      expect(result.board.points[12].checkers.length).toBe(0) // Origin point should be empty
+      expect(result.board.points[11].checkers.length).toBe(1) // Destination point should have one checker
+      expect(result.board.points[11].checkers[0].color).toBe('black')
     })
 
     it('should hit an opponent checker', () => {
-      const origin = board.BackgammonPoints[12] // Point 13
-      const destination = board.BackgammonPoints[11] // Point 12
+      const origin = board.points[12] // Point 13
+      const destination = board.points[11] // Point 12
       // Add a white checker to the destination point
       destination.checkers = [
         {
@@ -97,16 +97,16 @@ describe('PointToPoint', () => {
       expect(result.board).toBeDefined()
       expect(completedMove.stateKind).toBe('completed')
       expect(completedMove.isHit).toBe(true)
-      expect(result.board.BackgammonPoints[12].checkers.length).toBe(0) // Origin point should be empty
-      expect(result.board.BackgammonPoints[11].checkers.length).toBe(1) // Destination point should have one checker
-      expect(result.board.BackgammonPoints[11].checkers[0].color).toBe('black')
+      expect(result.board.points[12].checkers.length).toBe(0) // Origin point should be empty
+      expect(result.board.points[11].checkers.length).toBe(1) // Destination point should have one checker
+      expect(result.board.points[11].checkers[0].color).toBe('black')
       expect(result.board.bar.counterclockwise.checkers.length).toBe(1) // Hit checker should be on the bar
       expect(result.board.bar.counterclockwise.checkers[0].color).toBe('white')
     })
 
     it('should not allow moving to a point with two or more opponent checkers', () => {
-      const origin = board.BackgammonPoints[12] // Point 13
-      const destination = board.BackgammonPoints[11] // Point 12
+      const origin = board.points[12] // Point 13
+      const destination = board.points[11] // Point 12
       // Add two white checkers to the destination point
       destination.checkers = [
         {

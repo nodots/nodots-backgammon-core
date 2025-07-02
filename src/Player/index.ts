@@ -198,13 +198,13 @@ export class Player {
     player: BackgammonPlayer
   ) {
     return player.direction === 'clockwise'
-      ? board.BackgammonPoints.filter(
+      ? board.points.filter(
           (p) =>
             p.kind === 'point' &&
             p.position[player.direction] >= 19 &&
             p.position[player.direction] <= 24
         )
-      : board.BackgammonPoints.filter(
+      : board.points.filter(
           (p) =>
             p.kind === 'point' &&
             p.position[player.direction] >= 1 &&
@@ -218,8 +218,8 @@ export class Player {
   ) {
     const points =
       player.direction === 'clockwise'
-        ? board.BackgammonPoints.slice(0, 6) // Points 1-6 for clockwise player
-        : board.BackgammonPoints.slice(18, 24) // Points 19-24 for counterclockwise player
+        ? board.points.slice(0, 6) // Points 1-6 for clockwise player
+        : board.points.slice(18, 24) // Points 19-24 for counterclockwise player
     return points
   }
 

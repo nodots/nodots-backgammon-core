@@ -77,19 +77,19 @@ describe('Move', () => {
         player,
         stateKind: 'ready',
         moveKind: 'point-to-point',
-        origin: board.BackgammonPoints[0],
+        origin: board.points[0],
         dieValue: 1,
         possibleMoves: [],
       }
 
       const result = Move.initialize({
         move,
-        origin: board.BackgammonPoints[0],
+        origin: board.points[0],
       })
 
       expect(result.id).toBe(moveId)
       expect(result.stateKind).toBe('ready')
-      expect(result.origin).toBe(board.BackgammonPoints[0])
+      expect(result.origin).toBe(board.points[0])
     })
 
     it('should generate id if not provided', () => {
@@ -99,14 +99,14 @@ describe('Move', () => {
         player,
         stateKind: 'ready',
         moveKind: 'point-to-point',
-        origin: board.BackgammonPoints[0],
+        origin: board.points[0],
         dieValue: 1,
         possibleMoves: [],
       }
 
       const result = Move.initialize({
         move,
-        origin: board.BackgammonPoints[0],
+        origin: board.points[0],
       })
 
       expect(result.id).toBeDefined()
@@ -120,14 +120,14 @@ describe('Move', () => {
         player,
         stateKind: 'ready',
         moveKind: 'point-to-point',
-        origin: board.BackgammonPoints[0],
+        origin: board.points[0],
         dieValue: 1,
         possibleMoves: [],
       }
 
       const result = Move.initialize({
         move,
-        origin: board.BackgammonPoints[0],
+        origin: board.points[0],
       })
 
       expect(result.stateKind).toBe('ready')
@@ -222,7 +222,7 @@ describe('Move', () => {
         id: generateId(),
         stateKind: 'ready',
         moveKind: 'point-to-point',
-        origin: board.BackgammonPoints[0],
+        origin: board.points[0],
         dieValue: 1,
         possibleMoves: [],
       }
@@ -244,7 +244,7 @@ describe('Move', () => {
         player: inactivePlayer as unknown as BackgammonPlayerRolled, // Type assertion for test
         stateKind: 'ready',
         moveKind: 'point-to-point',
-        origin: board.BackgammonPoints[0],
+        origin: board.points[0],
         dieValue: 1,
         possibleMoves: [],
       }
@@ -261,7 +261,7 @@ describe('Move', () => {
         player,
         stateKind: 'ready',
         moveKind: 'point-to-point',
-        origin: board.BackgammonPoints[5], // Point 6 (has 5 white checkers)
+        origin: board.points[5], // Point 6 (has 5 white checkers)
         dieValue: 1,
         possibleMoves: [],
       }
@@ -270,8 +270,8 @@ describe('Move', () => {
       expect(result.board).toBeDefined()
       expect(result.move.stateKind).toBe('completed')
       // Verify checker moved from point 6 to point 5
-      expect(result.board.BackgammonPoints[5].checkers.length).toBe(4) // Four checkers left on point 6
-      expect(result.board.BackgammonPoints[4].checkers.length).toBe(1) // One checker moved to point 5 (was empty)
+      expect(result.board.points[5].checkers.length).toBe(4) // Four checkers left on point 6
+      expect(result.board.points[4].checkers.length).toBe(1) // One checker moved to point 5 (was empty)
     })
 
     it('should handle reenter move', () => {
@@ -296,7 +296,7 @@ describe('Move', () => {
       expect(result.move.stateKind).toBe('completed')
       // Verify checker moved from bar to point 24
       expect(result.board.bar[player.direction].checkers.length).toBe(1) // One checker left on bar
-      expect(result.board.BackgammonPoints[23].checkers.length).toBe(1) // One checker moved to point 24
+      expect(result.board.points[23].checkers.length).toBe(1) // One checker moved to point 24
     })
 
     it('should handle bear-off move', () => {
@@ -355,7 +355,7 @@ describe('Move', () => {
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
-        origin: board.BackgammonPoints[23], // Point 24 (has 4 white checkers)
+        origin: board.points[23], // Point 24 (has 4 white checkers)
         dieValue: 1,
         possibleMoves: [],
       }
@@ -364,7 +364,7 @@ describe('Move', () => {
       expect(result.board).toBeDefined()
       expect(result.move.stateKind).toBe('completed')
       // Verify checker moved from point 24 to off
-      expect(result.board.BackgammonPoints[23].checkers.length).toBe(3) // Three checkers left on point 24
+      expect(result.board.points[23].checkers.length).toBe(3) // Three checkers left on point 24
       expect(result.board.off[player.direction].checkers.length).toBe(1) // One checker moved to off
     })
 
@@ -375,7 +375,7 @@ describe('Move', () => {
         player,
         stateKind: 'ready',
         moveKind: 'no-move' as BackgammonMoveKind,
-        origin: board.BackgammonPoints[0],
+        origin: board.points[0],
         dieValue: 1,
         possibleMoves: [],
       }
@@ -392,7 +392,7 @@ describe('Move', () => {
         player,
         stateKind: 'ready',
         moveKind: 'no-move' as BackgammonMoveKind,
-        origin: board.BackgammonPoints[0],
+        origin: board.points[0],
         dieValue: 1,
         possibleMoves: [],
       }
@@ -415,8 +415,8 @@ describe('Move', () => {
         player: movingPlayer,
         stateKind: 'in-progress',
         moveKind: 'point-to-point',
-        origin: board.BackgammonPoints[23], // Point 24
-        destination: board.BackgammonPoints[22], // Point 23
+        origin: board.points[23], // Point 24
+        destination: board.points[22], // Point 23
         dieValue: 1,
         possibleMoves: [],
       }

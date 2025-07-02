@@ -1,9 +1,7 @@
-import { Move } from '.'
 import {
   BackgammonBoard,
   BackgammonCheckerContainer,
   BackgammonDieValue,
-  BackgammonMoveDirection,
   BackgammonOff,
   BackgammonPlayerMoving,
   BackgammonPoint,
@@ -25,7 +23,7 @@ export function getDestination(
       } else {
         if (destinationPosition > 24) return undefined
       }
-      const destination = board.BackgammonPoints.find(
+      const destination = board.points.find(
         (p) =>
           p.position[direction] === destinationPosition && p.checkers.length < 2
       )

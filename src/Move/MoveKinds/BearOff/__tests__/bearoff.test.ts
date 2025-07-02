@@ -92,7 +92,7 @@ describe('BearOff', () => {
       ]
       const { board, player } = setupTestBoard(boardImport)
 
-      const origin = board.BackgammonPoints.find(
+      const origin = board.points.find(
         (p: BackgammonPoint) => p.position[player.direction] === 24
       )!
 
@@ -109,7 +109,7 @@ describe('BearOff', () => {
       const moveResult = BearOff.move(board, move)
       expect(moveResult.move.stateKind).toBe('completed')
       expect(
-        moveResult.board.BackgammonPoints.find(
+        moveResult.board.points.find(
           (p) => p.position[player.direction] === 24
         )?.checkers.length
       ).toBe(0)
@@ -132,7 +132,7 @@ describe('BearOff', () => {
       ]
       const { board, player } = setupTestBoard(boardImport)
 
-      const origin = board.BackgammonPoints.find(
+      const origin = board.points.find(
         (p: BackgammonPoint) => p.position[player.direction] === 22
       )!
 
@@ -149,7 +149,7 @@ describe('BearOff', () => {
       const moveResult = BearOff.move(board, move)
       expect(moveResult.move.stateKind).toBe('completed')
       expect(
-        moveResult.board.BackgammonPoints.find(
+        moveResult.board.points.find(
           (p) => p.position[player.direction] === 22
         )?.checkers.length
       ).toBe(0)
@@ -178,7 +178,7 @@ describe('BearOff', () => {
       ]
       const { board, player } = setupTestBoard(boardImport)
 
-      const origin = board.BackgammonPoints.find(
+      const origin = board.points.find(
         (p: BackgammonPoint) => p.position[player.direction] === 22
       )!
 
@@ -216,7 +216,7 @@ describe('BearOff', () => {
       ]
       const { board, player } = setupTestBoard(boardImport)
 
-      const origin = board.BackgammonPoints.find(
+      const origin = board.points.find(
         (p: BackgammonPoint) => p.position[player.direction] === 22
       )!
 
@@ -245,7 +245,7 @@ describe('BearOff', () => {
       ]
       const { board, player } = setupTestBoard(boardImport)
 
-      const origin = board.BackgammonPoints.find(
+      const origin = board.points.find(
         (p: BackgammonPoint) => p.position[player.direction] === 22
       )!
 
@@ -279,7 +279,7 @@ describe('BearOff', () => {
       ]
       const { board, player } = setupTestBoard(boardImport)
 
-      const origin = board.BackgammonPoints.find(
+      const origin = board.points.find(
         (p: BackgammonPoint) => p.position[player.direction] === 24
       )!
 
@@ -296,7 +296,7 @@ describe('BearOff', () => {
       const moveResult = BearOff.move(board, move)
       expect(moveResult.move.stateKind).toBe('completed')
       expect(
-        moveResult.board.BackgammonPoints.find(
+        moveResult.board.points.find(
           (p) => p.position[player.direction] === 24
         )?.checkers.length
       ).toBe(1) // One checker should remain

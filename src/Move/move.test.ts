@@ -32,13 +32,13 @@ describe('Move', () => {
       }
 
       const board = Board.initialize()
-      const origin = board.BackgammonPoints[0]
+      const origin = board.points[0]
       const move: BackgammonMoveReady = {
         id: generateId(),
         player,
         stateKind: 'ready',
         moveKind: 'point-to-point',
-        origin: board.BackgammonPoints[0],
+        origin: board.points[0],
         dieValue: 1,
         possibleMoves: [],
       }
