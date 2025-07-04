@@ -7,3 +7,9 @@ coverage/
 .idea/
 .vscode/
 *.log
+
+# Ignore compiled TypeScript files in src directory
+src/**/*.js
+src/**/*.d.ts
+src/**/*.js.map
+src/**/*.d.ts.map
