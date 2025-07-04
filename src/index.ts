@@ -39,6 +39,7 @@ export * from './Game'
 export * from './Move'
 export * from './Play'
 export * from './Player'
+export * from './Robot'
 
 // Export logger utilities for consumers to configure
 export {
