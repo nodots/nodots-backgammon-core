@@ -11,13 +11,6 @@ import {
 } from '@nodots-llc/backgammon-types/dist'
 import { Player } from '..'
 import { Board } from '../..'
-// import * as gnubgApi from '@nodots-llc/backgammon-ai'
-// import {
-//   FurthestFromOffMoveAnalyzer,
-//   RandomMoveAnalyzer,
-// } from '@nodots-llc/backgammon-ai'
-
-// jest.mock('nodots-backgammon-ai/dist/nodots-backgammon-ai/src/gnubgApi')
 
 describe('Player', () => {
   let player: BackgammonPlayer
