@@ -652,18 +652,48 @@ export class Move {
     player: BackgammonPlayer,
     board: BackgammonBoard
   ): boolean {
-    // Simplified bear-off check - in reality this would be more complex
-    // checking if all checkers are in home board, etc.
+    // Check if all player's checkers are in home board
     const homeBoard =
       player.direction === 'clockwise'
         ? [0, 1, 2, 3, 4, 5]
         : [18, 19, 20, 21, 22, 23]
+
+    // Check if the current point is in home board
     const pointPosition =
       player.direction === 'clockwise'
         ? point.position.clockwise
         : point.position.counterclockwise
 
-    return homeBoard.includes(pointPosition)
+    if (!homeBoard.includes(pointPosition)) {
+      return false
+    }
+
+    // Check if ALL player's checkers are in home board
+    for (const boardPoint of board.points) {
+      const boardPointPosition =
+        player.direction === 'clockwise'
+          ? boardPoint.position.clockwise
+          : boardPoint.position.counterclockwise
+
+      // If there are player's checkers outside home board, can't bear off
+      if (!homeBoard.includes(boardPointPosition)) {
+        for (const checker of boardPoint.checkers) {
+          if (checker.color === player.color) {
+            return false
+          }
+        }
+      }
+    }
+
+    // Check bar - if player has checkers on bar, can't bear off
+    const barCheckers = board.bar[player.direction].checkers
+    for (const checker of barCheckers) {
+      if (checker.color === player.color) {
+        return false
+      }
+    }
+
+    return true
   }
 
   public static initialize = function initializeMove({

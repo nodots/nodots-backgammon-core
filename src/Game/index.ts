@@ -63,8 +63,8 @@ export class Game {
     player1UserId: string,
     player2UserId: string,
     autoRollForStart: boolean = true,
-    player1IsRobot: boolean = true,
-    player2IsRobot: boolean = true,
+    player1IsRobot: boolean = false,
+    player2IsRobot: boolean = false,
     colorDirectionConfig?: {
       blackDirection: BackgammonMoveDirection
       whiteDirection: BackgammonMoveDirection
