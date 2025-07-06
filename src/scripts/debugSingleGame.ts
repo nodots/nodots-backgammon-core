@@ -332,20 +332,14 @@ export async function runDebugSingleGame() {
         newActiveColor
       )
       // Set correct stateKinds for next turn
-      newActivePlayer = Player.initialize(
-        newActivePlayer.color,
-        newActivePlayer.direction,
-        undefined,
-        newActivePlayer.id,
-        'rolling'
-      ) as any // BackgammonPlayerRolling
-      newInactivePlayer = Player.initialize(
-        newInactivePlayer.color,
-        newInactivePlayer.direction,
-        undefined,
-        newInactivePlayer.id,
-        'inactive'
-      ) as any // BackgammonPlayerInactive
+      newActivePlayer = {
+        ...newActivePlayer,
+        stateKind: 'rolling',
+      } as any // BackgammonPlayerRolling
+      newInactivePlayer = {
+        ...newInactivePlayer,
+        stateKind: 'inactive',
+      } as any // BackgammonPlayerInactive
       gameRolling = Game.initialize(
         [newActivePlayer, newInactivePlayer],
         gameMoved.id,

@@ -41,10 +41,21 @@ describe('Move.moveChecker', () => {
   })
 
   it('should return error when checker not found', async () => {
-    const player1: BackgammonPlayer = Player.initialize('white', 'clockwise')
+    const player1: BackgammonPlayer = Player.initialize(
+      'white',
+      'clockwise',
+      undefined,
+      undefined,
+      undefined,
+      false
+    )
     const player2: BackgammonPlayer = Player.initialize(
       'black',
-      'counterclockwise'
+      'counterclockwise',
+      undefined,
+      undefined,
+      undefined,
+      false
     )
 
     const mockGame: BackgammonGame = {
@@ -69,10 +80,21 @@ describe('Move.moveChecker', () => {
   })
 
   it('should return error when trying to move opponent checker', async () => {
-    const player1: BackgammonPlayer = Player.initialize('white', 'clockwise')
+    const player1: BackgammonPlayer = Player.initialize(
+      'white',
+      'clockwise',
+      undefined,
+      undefined,
+      undefined,
+      false
+    )
     const player2: BackgammonPlayer = Player.initialize(
       'black',
-      'counterclockwise'
+      'counterclockwise',
+      undefined,
+      undefined,
+      undefined,
+      false
     )
 
     const board = Board.initialize()
@@ -113,8 +135,22 @@ describe('Move.moveChecker', () => {
 describe('Minimal black move sequence with debug', () => {
   it('should handle dice [4,2] where first move succeeds but second die has no legal moves', async () => {
     // Setup: standard board, black moves counterclockwise
-    const player1 = Player.initialize('white', 'clockwise')
-    const player2 = Player.initialize('black', 'counterclockwise')
+    const player1 = Player.initialize(
+      'white',
+      'clockwise',
+      undefined,
+      undefined,
+      undefined,
+      false
+    )
+    const player2 = Player.initialize(
+      'black',
+      'counterclockwise',
+      undefined,
+      undefined,
+      undefined,
+      false
+    )
     const board = Board.initialize()
 
     // Create proper player with dice

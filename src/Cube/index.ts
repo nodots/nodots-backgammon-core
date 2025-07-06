@@ -1,4 +1,3 @@
-import { generateId } from '..'
 import {
   BackgammonCube,
   BackgammonCubeDoubled,
@@ -8,14 +7,11 @@ import {
   BackgammonCubeValue,
   BackgammonPlayer,
   BackgammonPlayers,
+  CubeProps,
 } from '@nodots-llc/backgammon-types/dist'
+import { generateId } from '..'
 
-export interface CubeProps {
-  id?: string
-  stateKind?: BackgammonCubeStateKind
-  value?: BackgammonCubeValue
-  owner?: BackgammonPlayer
-}
+// CubeProps is now imported from @nodots-llc/backgammon-types
 
 export class Cube {
   id!: string

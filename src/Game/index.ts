@@ -16,10 +16,12 @@ import {
   BackgammonMoveSkeleton,
   BackgammonPlay,
   BackgammonPlayerActive,
+  BackgammonPlayerDoubled,
   BackgammonPlayerInactive,
   BackgammonPlayerRolledForStart,
   BackgammonPlayerRolling,
   BackgammonPlayers,
+  BackgammonPlayerWinner,
   BackgammonPlayMoving,
   BackgammonPlayRolled,
 } from '@nodots-llc/backgammon-types/dist'
@@ -31,11 +33,7 @@ import { BackgammonMoveDirection, Play } from '../Play'
 import { logger } from '../utils/logger'
 export * from '../index'
 
-export interface GameProps {
-  players: BackgammonPlayers
-  board?: BackgammonBoard
-  cube?: BackgammonCube
-}
+// GameProps is now imported from @nodots-llc/backgammon-types
 
 export class Game {
   id: string = generateId()
@@ -63,8 +61,8 @@ export class Game {
     player1UserId: string,
     player2UserId: string,
     autoRollForStart: boolean = true,
-    player1IsRobot: boolean = false,
-    player2IsRobot: boolean = false,
+    player1IsRobot: boolean = true,
+    player2IsRobot: boolean = true,
     colorDirectionConfig?: {
       blackDirection: BackgammonMoveDirection
       whiteDirection: BackgammonMoveDirection
@@ -308,25 +306,15 @@ export class Game {
       const rollingPlayers = players.map((p) => {
         if (p.color === activeColor) {
           if (p.stateKind === 'rolling') return p
-          return Player.initialize(
-            p.color,
-            p.direction,
-            undefined,
-            p.id,
-            'rolling',
-            true,
-            p.userId
-          )
+          return {
+            ...p,
+            stateKind: 'rolling',
+          } as BackgammonPlayerRolling
         }
-        return Player.initialize(
-          p.color,
-          p.direction,
-          undefined,
-          p.id,
-          'inactive',
-          true,
-          p.userId
-        )
+        return {
+          ...p,
+          stateKind: 'inactive',
+        } as BackgammonPlayerInactive
       }) as BackgammonPlayers
       const newActivePlayer = rollingPlayers.find(
         (p) => p.color === activeColor
@@ -484,15 +472,10 @@ export class Game {
     })
     if (playerCheckersOff === 15 && lastMoveKind === 'bear-off') {
       // Player has borne off all checkers, they win
-      const winner = Player.initialize(
-        movedPlayer.color,
-        movedPlayer.direction,
-        movedPlayer.dice,
-        movedPlayer.id,
-        'winner',
-        true,
-        movedPlayer.userId
-      )
+      const winner = {
+        ...movedPlayer,
+        stateKind: 'winner',
+      } as BackgammonPlayerWinner
       return {
         ...game,
         stateKind: 'completed',
@@ -711,37 +694,22 @@ export class Game {
     ) as typeof game.cube.value
     const offeringPlayer = game.cube.offeredBy!
     // Convert players to correct types
-    const activePlayer = Player.initialize(
-      player.color,
-      player.direction,
-      player.dice,
-      player.id,
-      'doubled',
-      true,
-      player.userId
-    )
-    const inactivePlayer = Player.initialize(
-      offeringPlayer.color,
-      offeringPlayer.direction,
-      offeringPlayer.dice,
-      offeringPlayer.id,
-      'inactive',
-      true,
-      offeringPlayer.userId
-    )
+    const activePlayer = {
+      ...player,
+      stateKind: 'doubled',
+    } as BackgammonPlayerDoubled
+    const inactivePlayer = {
+      ...offeringPlayer,
+      stateKind: 'inactive',
+    } as BackgammonPlayerInactive
     // Create a BackgammonPlayDoubled (for now, reuse activePlay)
     const activePlay = game.activePlay as any // TODO: ensure correct type
     if (nextValue === 64) {
       // If maxxed, game should be completed
-      const winner = Player.initialize(
-        player.color,
-        player.direction,
-        player.dice,
-        player.id,
-        'winner',
-        true,
-        player.userId
-      )
+      const winner = {
+        ...player,
+        stateKind: 'winner',
+      } as BackgammonPlayerWinner
       return {
         ...game,
         stateKind: 'completed',
@@ -789,15 +757,10 @@ export class Game {
     // The refusing player loses at the current cube value
     // The offering player is the winner
     const offeringPlayer = game.cube.offeredBy!
-    const winner = Player.initialize(
-      offeringPlayer.color,
-      offeringPlayer.direction,
-      offeringPlayer.dice,
-      offeringPlayer.id,
-      'winner',
-      true,
-      offeringPlayer.userId
-    )
+    const winner = {
+      ...offeringPlayer,
+      stateKind: 'winner',
+    } as BackgammonPlayerWinner
     return {
       ...game,
       stateKind: 'completed',

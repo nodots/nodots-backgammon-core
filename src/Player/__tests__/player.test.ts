@@ -4,11 +4,10 @@ import {
   BackgammonColor,
   BackgammonDiceRolled,
   BackgammonMoveDirection,
+  BackgammonMoveReady,
   BackgammonPlayer,
   BackgammonPlayerRolling,
   BackgammonPoint,
-  BackgammonPlayers,
-  BackgammonMoveReady,
 } from '@nodots-llc/backgammon-types/dist'
 import { Player } from '..'
 import { Board } from '../..'
@@ -213,7 +212,7 @@ describe('Player', () => {
           moves,
           stateKind: 'moving',
         }
-      const move = await Player.getBestMove(playMoving, 'random')
+      const move = await Player.getBestMove(playMoving)
       expect(move).toBeDefined()
       expect(['move1', 'move2']).toContain(move!.id)
       expect(move!.stateKind).toBe('ready')
