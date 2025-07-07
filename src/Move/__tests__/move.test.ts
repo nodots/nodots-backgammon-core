@@ -424,5 +424,161 @@ describe('Move', () => {
       const result = Move.confirmMove(move)
       expect(result.stateKind).toBe('confirmed')
     })
+
+    it('confirmMove sets isHit for point-to-point with opponent checker', () => {
+      const board = Board.initialize(BOARD_IMPORT_DEFAULT)
+      const player = {
+        id: 'p1',
+        userId: 'u1',
+        color: 'white' as const,
+        direction: 'clockwise' as const,
+        stateKind: 'moving' as const,
+        dice: {
+          id: 'd1',
+          color: 'white' as const,
+          stateKind: 'rolled' as const,
+          currentRoll: [1, 2],
+          total: 3,
+        },
+        pipCount: 167,
+        isRobot: false,
+      }
+      const move = {
+        id: generateId(),
+        player: player,
+        stateKind: 'in-progress' as const,
+        moveKind: 'point-to-point',
+        origin: board.points[0],
+        destination: {
+          ...board.points[1],
+          checkers: [
+            { id: 'opp', color: 'black' as const, checkercontainerId: 'x' },
+          ],
+        },
+        dieValue: 1,
+        possibleMoves: [],
+      } as unknown as BackgammonMoveInProgress
+      const result = Move.confirmMove(move)
+      expect(result.isHit).toBe(true)
+    })
+  })
+
+  describe('Move static helpers', () => {
+    it('findCheckerInBoard finds checker in point, bar, and off', () => {
+      const board = Board.initialize(BOARD_IMPORT_DEFAULT)
+      const checker = board.points[0].checkers[0]
+      const found = (Move as any).findCheckerInBoard(board, checker.id)
+      expect(found).toBeTruthy()
+      expect(found.checker.id).toBe(checker.id)
+      // Add to bar and off
+      const barChecker = { ...checker, id: 'bar1' }
+      board.bar.clockwise.checkers.push(barChecker)
+      const foundBar = (Move as any).findCheckerInBoard(board, 'bar1')
+      expect(foundBar).toBeTruthy()
+      expect(foundBar.container.kind).toBe('bar')
+      const offChecker = { ...checker, id: 'off1' }
+      board.off.clockwise.checkers.push(offChecker)
+      const foundOff = (Move as any).findCheckerInBoard(board, 'off1')
+      expect(foundOff).toBeTruthy()
+      expect(foundOff.container.kind).toBe('off')
+    })
+
+    it('getAvailableDice handles doubles, consumed dice, and no activePlay', () => {
+      const dice = { stateKind: 'rolled', currentRoll: [3, 3] }
+      const all = (Move as any).getAvailableDice(dice)
+      expect(all).toEqual([3, 3, 3, 3])
+      // Simulate consumed dice
+      const activePlay = {
+        moves: new Set([
+          { stateKind: 'completed', dieValue: 3, moveKind: 'point-to-point' },
+        ]),
+      }
+      const left = (Move as any).getAvailableDice(dice, activePlay)
+      expect(left).toEqual([3, 3, 3])
+      // No activePlay
+      expect((Move as any).getAvailableDice({ stateKind: 'inactive' })).toEqual(
+        []
+      )
+    })
+
+    it('determineMoveKind returns all move types', () => {
+      const player = { color: 'white' as const, direction: 'clockwise' }
+      const board = Board.initialize(BOARD_IMPORT_DEFAULT)
+      const bar = board.bar.clockwise
+      const point = board.points[0]
+      expect((Move as any).determineMoveKind(bar, player, board, 1)).toBe(
+        'reenter'
+      )
+      expect((Move as any).determineMoveKind(point, player, board, 1)).toBe(
+        'point-to-point'
+      )
+      // Simulate canBearOff true
+      const originalCanBearOff = (Move as any).canBearOff
+      ;(Move as any).canBearOff = (_point: any, _player: any, _board: any) =>
+        true
+      expect((Move as any).determineMoveKind(point, player, board, 1)).toBe(
+        'bear-off'
+      )
+      ;(Move as any).canBearOff = originalCanBearOff
+      // Unknown
+      expect(
+        (Move as any).determineMoveKind({ kind: 'off' }, player, board, 1)
+      ).toBe('no-move')
+    })
+
+    it('canBearOff returns true only for home board points', () => {
+      const player = { direction: 'clockwise' }
+      const point = { position: { clockwise: 1, counterclockwise: 24 } }
+      // Minimal valid board with points array
+      const minimalBoard = {
+        points: [],
+        bar: {
+          clockwise: { checkers: [] },
+          counterclockwise: { checkers: [] },
+        },
+      }
+      expect((Move as any).canBearOff(point, player, minimalBoard)).toBe(true)
+      const notHome = { position: { clockwise: 10, counterclockwise: 15 } }
+      expect((Move as any).canBearOff(notHome, player, minimalBoard)).toBe(
+        false
+      )
+    })
+
+    it('getPossibleMovesForChecker returns possible moves for available dice', () => {
+      const board = Board.initialize(BOARD_IMPORT_DEFAULT)
+      const player = {
+        id: 'p1',
+        color: 'white',
+        direction: 'clockwise',
+        stateKind: 'rolled',
+        dice: { stateKind: 'rolled', currentRoll: [1, 2] },
+      }
+      const checker = board.points[0].checkers[0]
+      const origin = board.points[0]
+      const game = {
+        activePlayer: player,
+        board,
+        activePlay: undefined,
+        stateKind: 'rolled',
+      }
+      const moves = (Move as any).getPossibleMovesForChecker(
+        game,
+        checker,
+        origin
+      )
+      expect(Array.isArray(moves)).toBe(true)
+    })
+
+    it('moveChecker returns error for invalid gameId', async () => {
+      const result = await (Move as any).moveChecker(
+        'badid',
+        'badchecker',
+        async () => null
+      )
+      expect(result.success).toBe(false)
+      expect(result.error).toMatch(/not found/i)
+    })
+
+    // Skipping executeRobotMove as it requires a full game object and dynamic import
   })
 })

@@ -52,7 +52,8 @@ function createRollingPlayer(board: any, diceRoll: [number, number]) {
     'clockwise',
     inactiveDice,
     undefined,
-    'rolling'
+    'rolling',
+    false
   ) as BackgammonPlayerRolling
   const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
   rolledPlayer.dice.currentRoll = diceRoll as any
@@ -80,7 +81,8 @@ describe('Play', () => {
         'clockwise',
         inactiveDice,
         undefined,
-        'rolling'
+        'rolling',
+        false
       ) as BackgammonPlayerRolling
 
       const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
@@ -106,7 +108,8 @@ describe('Play', () => {
         'clockwise',
         inactiveDice,
         undefined,
-        'rolling'
+        'rolling',
+        false
       ) as BackgammonPlayerRolling
       const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
       const play = Play.initialize(board, rolledPlayer)
@@ -219,7 +222,8 @@ describe('Play', () => {
         'clockwise',
         inactiveDice,
         undefined,
-        'rolling'
+        'rolling',
+        false
       ) as BackgammonPlayerRolling
 
       const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
@@ -289,7 +293,8 @@ describe('Play', () => {
           'clockwise',
           inactiveDice,
           undefined,
-          'rolling'
+          'rolling',
+          false
         ) as BackgammonPlayerRolling
 
         const rolledPlayer = {

@@ -235,13 +235,16 @@ export class Board implements BackgammonBoard {
 
     // Handle regular point-to-point moves
     playerPoints.forEach(function mapPlayerPoints(point) {
-      const destinationPoint =
+      // 🔧 BUG FIX: Use player's own positional perspective for move calculations
+      // Clockwise players move toward higher numbers (1→24), counterclockwise toward lower (24→1)
+      const originPosition = point.position[playerDirection]
+      const destinationPosition =
         playerDirection === 'clockwise'
-          ? point.position.clockwise + dieValue // Clockwise player moves from 1→24, so add
-          : point.position.clockwise - dieValue // Counterclockwise player moves from 24→1, so subtract (using clockwise position)
+          ? originPosition + dieValue // Clockwise: 1→24 (add die value)
+          : originPosition - dieValue // Counterclockwise: 24→1 (subtract die value)
 
       // Skip if destination point is out of bounds
-      if (destinationPoint < 1 || destinationPoint > 24) {
+      if (destinationPosition < 1 || destinationPosition > 24) {
         return
       }
 
@@ -251,8 +254,8 @@ export class Board implements BackgammonBoard {
           (p.checkers.length === 0 ||
             (p.checkers.length === 1 && p.checkers[0].color !== player.color) ||
             (p.checkers.length > 0 && p.checkers[0].color === player.color)) &&
-          // Point must match the destination point using clockwise position for both players
-          p.position.clockwise === destinationPoint
+          // Point must match the destination position using the player's direction
+          p.position[playerDirection] === destinationPosition
       )
 
       if (possibleDestination) {
