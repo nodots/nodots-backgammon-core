@@ -40,6 +40,8 @@ export class PointToPoint {
     const direction = player.direction as BackgammonMoveDirection
     const originPoint = move.origin as BackgammonPoint
     const originPosition = originPoint.position[direction]
+    // BOTH players move from their higher-numbered points to lower-numbered points (24→1)
+    // This is ALWAYS subtract die value regardless of direction
     const destinationPosition = originPosition - dieValue
     const destination = board.points.find(
       (point) => point.position[direction] === destinationPosition
