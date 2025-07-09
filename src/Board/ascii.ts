@@ -18,9 +18,10 @@ export const ascii = (
 
   let boardDisplay = ''
 
-  // GNU-style header
-  boardDisplay += 'Nodots Backgammon Position ID: '
-  boardDisplay += '\n                 Match ID   : cAkAAAAAAAAA\n'
+  // GNU-style header with actual position ID
+  boardDisplay += 'Nodots Backgammon\n'
+  boardDisplay += `GNU Position ID: ${board.gnuPositionId || ''}\n`
+  boardDisplay += '                 Match ID   : cAkAAAAAAAAA\n'
 
   // Helper to get player label with color and symbol
   const getPlayerLabel = (player: any, fallback: string) => {

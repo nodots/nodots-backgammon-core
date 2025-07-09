@@ -1,6 +1,6 @@
 {
   "name": "@nodots-llc/backgammon-core",
-  "version": "3.2.1",
+  "version": "3.3.0",
   "description": "Game logic for backgammon",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -39,7 +39,8 @@
     "publish:npm": "npm publish --access public"
   },
   "dependencies": {
-    "@nodots-llc/backgammon-types": "^3.2.1",
+    "@nodots-llc/backgammon-ai": "^3.2.1",
+    "@nodots-llc/backgammon-types": "^3.3.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

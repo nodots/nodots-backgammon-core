@@ -41,6 +41,13 @@ export * from './Play'
 export * from './Player'
 export * from './Robot'
 
+// Export AI plugin system
+export * from './AI/interfaces/AIPlugin'
+export * from './AI/AIPluginManager'
+export * from './AI/plugins/BasicAIPlugin'
+export * from './AI/utils/PositionAnalyzer'
+export * from './AI/utils/GamePhaseDetector'
+
 // Export logger utilities for consumers to configure
 export {
   debug,

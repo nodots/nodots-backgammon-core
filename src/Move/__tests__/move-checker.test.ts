@@ -133,7 +133,7 @@ describe('Move.moveChecker', () => {
 })
 
 describe('Minimal black move sequence with debug', () => {
-  it('should handle dice [4,2] where first move succeeds but second die has no legal moves', async () => {
+  it('should handle dice [4,2] where both dice have legal moves available', async () => {
     // Setup: standard board, black moves counterclockwise
     const player1 = Player.initialize(
       'white',
@@ -192,24 +192,23 @@ describe('Minimal black move sequence with debug', () => {
     // Game lookup
     const gameLookup: GameLookupFunction = async () => game
 
-    // Test proper move execution and correct handling when no legal moves remain
-    // First move should succeed, second should fail due to no available moves
+    // Test proper move execution - both moves should succeed since both dice have legal moves
+    // This verifies the direction bug fix is working correctly
 
-    // Move from point 8 (will use die 2: point-17 → point-15)
+    // Move from point 8 (counterclockwise black player)
     const result1 = await Move.moveChecker(game.id, checker8.id, gameLookup)
     expect(result1.success).toBe(true)
     if (result1.success && result1.game) {
       Object.assign(game, result1.game) // Update game state
     }
 
-    // Move from point 6 (should fail - no legal moves for die 4 after first move)
+    // Move from point 6 (should succeed - legal moves available for remaining die)
     const result2 = await Move.moveChecker(game.id, checker6.id, gameLookup)
-    expect(result2.success).toBe(false)
-    expect(result2.error).toContain('No legal moves available for this checker')
+    expect(result2.success).toBe(true)
 
-    // The important thing is that the first move succeeded and the second correctly failed
-    // due to no legal moves being available for the remaining die
+    // Both moves should succeed - this verifies the direction fix is working correctly
+    // Previously, counterclockwise players had incorrect move calculation
     expect(result1.success).toBe(true)
-    expect(result2.success).toBe(false)
+    expect(result2.success).toBe(true)
   })
 })

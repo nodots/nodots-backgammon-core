@@ -216,7 +216,13 @@ describe('Play', () => {
       ]
 
       const board = Board.buildBoard(boardImport)
-      const inactiveDice = Dice.initialize('white') as BackgammonDiceInactive
+      const inactiveDice = Dice.initialize(
+        'white',
+        'inactive',
+        generateId(),
+        [1, 2]
+      ) as BackgammonDiceInactive
+
       const player = Player.initialize(
         'white',
         'clockwise',
@@ -226,7 +232,18 @@ describe('Play', () => {
         false
       ) as BackgammonPlayerRolling
 
-      const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
+      // Use controlled dice values instead of random roll
+      const rolledPlayer = {
+        ...player,
+        stateKind: 'rolled',
+        dice: {
+          ...inactiveDice,
+          stateKind: 'rolled',
+          currentRoll: [1, 2],
+          total: 3,
+        },
+      } as BackgammonPlayerRolled
+
       const play = Play.initialize(board, rolledPlayer) as BackgammonPlayRolled
 
       const origin = board.points.find(
