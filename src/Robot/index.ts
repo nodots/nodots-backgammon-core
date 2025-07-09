@@ -1,6 +1,9 @@
 import { BackgammonGame } from '@nodots-llc/backgammon-types'
 import { Game } from '../Game'
 import { Move } from '../Move'
+import { AIPluginManager } from '../AI/AIPluginManager'
+import { BackgammonAIPlugin } from '../AI/interfaces/AIPlugin'
+import { BasicAIPlugin } from '../AI/plugins/BasicAIPlugin'
 
 export interface RobotMoveResult {
   success: boolean
@@ -12,16 +15,26 @@ export interface RobotMoveResult {
 export type RobotSkillLevel = 'beginner' | 'intermediate' | 'advanced'
 
 export class Robot {
+  private static pluginManager = new AIPluginManager();
+  
+  // Auto-register built-in basic AI
+  static {
+    this.pluginManager.registerPlugin(new BasicAIPlugin());
+    this.pluginManager.setDefaultPlugin('basic-ai');
+  }
+  
   /**
    * Execute the next optimal move for a robot player
    * This is the main entry point for robot actions
    * @param game - Current game state
    * @param difficulty - Robot difficulty level (defaults to 'beginner' for backwards compatibility)
+   * @param aiPlugin - Optional AI plugin name to use (defaults to default plugin)
    * @returns Result with updated game state or error
    */
   public static makeOptimalMove = async function makeOptimalMove(
     game: BackgammonGame,
-    difficulty: RobotSkillLevel = 'beginner'
+    difficulty: RobotSkillLevel = 'beginner',
+    aiPlugin?: string
   ): Promise<RobotMoveResult> {
     try {
       // Handle different game states
@@ -60,7 +73,7 @@ export class Robot {
               error: 'Active player is not a robot',
             }
           }
-          return Robot.makeMove(game, difficulty)
+          return Robot.makeAIMove(game, difficulty, aiPlugin)
 
         default:
           return {
@@ -593,5 +606,100 @@ export class Robot {
       move: 'no-move-turn-completed',
       updatedGame: resultGame,
     }
+  }
+  
+  /**
+   * Make AI-powered move using plugin system
+   */
+  private static makeAIMove = async function makeAIMove(
+    game: BackgammonGame,
+    difficulty: RobotSkillLevel,
+    aiPlugin?: string
+  ): Promise<RobotMoveResult> {
+    try {
+      const plugin = Robot.pluginManager.getPlugin(aiPlugin);
+      const selectedMove = await plugin.generateMove(game, difficulty);
+      
+      // Execute the move using existing core logic
+      return Robot.executeMove(game, selectedMove);
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'AI move failed',
+      };
+    }
+  };
+  
+  /**
+   * Execute a move using the existing move execution logic
+   */
+  private static executeMove = async function executeMove(
+    game: BackgammonGame,
+    selectedMove: any
+  ): Promise<RobotMoveResult> {
+    try {
+      // Find a checker at the origin point that can make this move
+      const checkerInfo = Robot.findOptimalChecker(game, selectedMove);
+      if (!checkerInfo) {
+        return {
+          success: false,
+          error: 'No suitable checker found for the selected move',
+        };
+      }
+
+      // Execute the move using the existing move execution logic
+      const gameLookup = async () => game;
+      const moveResult = await Move.moveChecker(
+        game.id,
+        checkerInfo.checkerId,
+        gameLookup
+      );
+
+      if (!moveResult.success) {
+        return {
+          success: false,
+          error: moveResult.error || 'Move execution failed',
+        };
+      }
+
+      return {
+        success: true,
+        game: moveResult.game,
+        message: 'Robot made AI-powered move',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Move execution failed',
+      };
+    }
+  };
+  
+  /**
+   * Register new AI plugin
+   */
+  static registerAIPlugin(plugin: BackgammonAIPlugin): void {
+    this.pluginManager.registerPlugin(plugin);
+  }
+  
+  /**
+   * Set default AI plugin
+   */
+  static setDefaultAI(pluginName: string): void {
+    this.pluginManager.setDefaultPlugin(pluginName);
+  }
+  
+  /**
+   * List available AI plugins
+   */
+  static listAIPlugins(): BackgammonAIPlugin[] {
+    return this.pluginManager.listAvailablePlugins();
+  }
+  
+  /**
+   * Get default AI plugin name
+   */
+  static getDefaultAI(): string | null {
+    return this.pluginManager.getDefaultPlugin();
   }
 }
