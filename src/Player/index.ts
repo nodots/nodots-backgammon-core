@@ -47,7 +47,7 @@ export class Player {
     dice: BackgammonDice = Dice.initialize(color),
     id: string = generateId(),
     stateKind: BackgammonPlayerStateKind = 'inactive',
-    isRobot: boolean = true,
+    isRobot: boolean,
     userId?: string
   ): BackgammonPlayer {
     const playerUserId = userId || generateId()
@@ -226,13 +226,10 @@ export class Player {
   public static toMoving = function toMoving(
     player: BackgammonPlayer
   ): BackgammonPlayerMoving {
-    return Player.initialize(
-      player.color,
-      player.direction,
-      player.dice,
-      player.id,
-      'moving'
-    ) as BackgammonPlayerMoving
+    return {
+      ...player,
+      stateKind: 'moving',
+    } as BackgammonPlayerMoving
   }
 
   /**
@@ -245,9 +242,7 @@ export class Player {
    * @returns A selected BackgammonMoveReady, or undefined if no moves
    */
   public static getBestMove = async function getBestMove(
-    play: BackgammonPlayMoving,
-    strategy: BackgammonMoveStrategy = 'gnubg',
-    players?: import('@nodots-llc/backgammon-types/dist').BackgammonPlayers
+    play: BackgammonPlayMoving
   ): Promise<
     import('@nodots-llc/backgammon-types/dist').BackgammonMoveReady | undefined
   > {
@@ -258,13 +253,5 @@ export class Player {
     if (readyMoves.length === 0) return undefined
 
     return readyMoves[0]
-    // const selected = await chooseMove(play, players)
-
-    // if (strategy === 'human' || strategy === 'random') {
-    //   const selected = await chooseMove(play)
-    //   return selected === null
-    //     ? undefined
-    //     : (selected as import('@nodots-llc/backgammon-types/dist').BackgammonMoveReady)
-    // }
   }
 }

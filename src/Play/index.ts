@@ -26,14 +26,7 @@ function isAllowedMoveKind(kind: any): kind is AllowedMoveKind {
   return allowedMoveKinds.includes(kind)
 }
 
-export interface PlayProps {
-  id?: string
-  cube?: BackgammonCube
-  stateKind?: BackgammonPlayStateKind
-  moves?: BackgammonMoves
-  board: BackgammonBoard
-  player: BackgammonPlayerRolling | BackgammonPlayerMoving
-}
+// PlayProps is now imported from @nodots-llc/backgammon-types
 
 export class Play {
   id?: string = generateId()

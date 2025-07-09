@@ -41,6 +41,13 @@ export * from './Play'
 export * from './Player'
 export * from './Robot'
 
+// Export AI plugin system
+export * from './AI/interfaces/AIPlugin'
+export * from './AI/AIPluginManager'
+export * from './AI/plugins/BasicAIPlugin'
+export * from './AI/utils/PositionAnalyzer'
+export * from './AI/utils/GamePhaseDetector'
+
 // Export logger utilities for consumers to configure
 export {
   debug,
@@ -53,3 +60,6 @@ export {
   warn,
   type LogLevel,
 } from './utils/logger'
+
+// Re-export all types from @nodots-llc/backgammon-types for convenience
+export * from '@nodots-llc/backgammon-types'

@@ -16,10 +16,12 @@ import {
   BackgammonMoveSkeleton,
   BackgammonPlay,
   BackgammonPlayerActive,
+  BackgammonPlayerDoubled,
   BackgammonPlayerInactive,
   BackgammonPlayerRolledForStart,
   BackgammonPlayerRolling,
   BackgammonPlayers,
+  BackgammonPlayerWinner,
   BackgammonPlayMoving,
   BackgammonPlayRolled,
 } from '@nodots-llc/backgammon-types/dist'
@@ -31,11 +33,7 @@ import { BackgammonMoveDirection, Play } from '../Play'
 import { logger } from '../utils/logger'
 export * from '../index'
 
-export interface GameProps {
-  players: BackgammonPlayers
-  board?: BackgammonBoard
-  cube?: BackgammonCube
-}
+// GameProps is now imported from @nodots-llc/backgammon-types
 
 export class Game {
   id: string = generateId()
@@ -271,7 +269,7 @@ export class Game {
             undefined,
             p.id,
             'rolled-for-start',
-            true,
+            p.isRobot,
             p.userId
           )
         : Player.initialize(
@@ -280,7 +278,7 @@ export class Game {
             undefined,
             p.id,
             'inactive',
-            true,
+            p.isRobot,
             p.userId
           )
     ) as BackgammonPlayers
@@ -290,7 +288,8 @@ export class Game {
     const inactivePlayer = rollingPlayers.find(
       (p) => p.color !== activeColor
     ) as BackgammonPlayerInactive
-    return {
+
+    const rolledForStartGame = {
       ...game,
       stateKind: 'rolled-for-start',
       activeColor,
@@ -298,6 +297,68 @@ export class Game {
       activePlayer,
       inactivePlayer,
     } as BackgammonGameRolledForStart
+
+    // Always return rolled-for-start state - let caller handle robot automation
+    return rolledForStartGame
+  }
+
+  /**
+   * Advance robot from 'rolled' to 'moving' state automatically
+   * This should only be called for robot players
+   * @param game - Game in 'rolled' state with robot active player
+   * @returns Game in 'moving' state
+   */
+  public static advanceRobotToMoving = function advanceRobotToMoving(
+    game: BackgammonGameRolled
+  ): BackgammonGameMoving {
+    if (game.stateKind !== 'rolled') {
+      throw new Error('Game must be in rolled state to advance robot to moving')
+    }
+
+    if (!game.activePlayer?.isRobot) {
+      throw new Error('Can only advance robot players to moving state')
+    }
+
+    // For robots, automatically proceed to moving state
+    const preparingGame = Game.prepareMove(game)
+    return Game.toMoving(preparingGame)
+  }
+
+  /**
+   * Process a complete robot turn automatically
+   * This method handles the full robot automation sequence:
+   * rolled -> preparing-move -> moving -> (make moves) -> rolling (next turn)
+   *
+   * @param game - Current game state
+   * @param difficulty - Robot difficulty level
+   * @returns Promise with the result of the robot turn
+   */
+  public static processRobotTurn = async function processRobotTurn(
+    game: BackgammonGame,
+    difficulty: 'beginner' | 'intermediate' | 'advanced' = 'beginner'
+  ): Promise<{
+    success: boolean
+    error?: string
+    game?: BackgammonGame
+    message?: string
+  }> {
+    // Validate that the active player is a robot
+    if (!game.activePlayer?.isRobot) {
+      return {
+        success: false,
+        error: 'Active player is not a robot',
+        game: game,
+      }
+    }
+
+    // Import Robot class dynamically to avoid circular dependency
+    const { Robot } = await import('../Robot')
+
+    // Use Robot.makeOptimalMove to handle the complete robot turn
+    const robotResult = await Robot.makeOptimalMove(game, difficulty)
+
+    // Return the robot result directly - it already has the correct structure
+    return robotResult
   }
 
   public static roll = function roll(
@@ -308,25 +369,15 @@ export class Game {
       const rollingPlayers = players.map((p) => {
         if (p.color === activeColor) {
           if (p.stateKind === 'rolling') return p
-          return Player.initialize(
-            p.color,
-            p.direction,
-            undefined,
-            p.id,
-            'rolling',
-            true,
-            p.userId
-          )
+          return {
+            ...p,
+            stateKind: 'rolling',
+          } as BackgammonPlayerRolling
         }
-        return Player.initialize(
-          p.color,
-          p.direction,
-          undefined,
-          p.id,
-          'inactive',
-          true,
-          p.userId
-        )
+        return {
+          ...p,
+          stateKind: 'inactive',
+        } as BackgammonPlayerInactive
       }) as BackgammonPlayers
       const newActivePlayer = rollingPlayers.find(
         (p) => p.color === activeColor
@@ -484,15 +535,10 @@ export class Game {
     })
     if (playerCheckersOff === 15 && lastMoveKind === 'bear-off') {
       // Player has borne off all checkers, they win
-      const winner = Player.initialize(
-        movedPlayer.color,
-        movedPlayer.direction,
-        movedPlayer.dice,
-        movedPlayer.id,
-        'winner',
-        true,
-        movedPlayer.userId
-      )
+      const winner = {
+        ...movedPlayer,
+        stateKind: 'winner',
+      } as BackgammonPlayerWinner
       return {
         ...game,
         stateKind: 'completed',
@@ -711,37 +757,22 @@ export class Game {
     ) as typeof game.cube.value
     const offeringPlayer = game.cube.offeredBy!
     // Convert players to correct types
-    const activePlayer = Player.initialize(
-      player.color,
-      player.direction,
-      player.dice,
-      player.id,
-      'doubled',
-      true,
-      player.userId
-    )
-    const inactivePlayer = Player.initialize(
-      offeringPlayer.color,
-      offeringPlayer.direction,
-      offeringPlayer.dice,
-      offeringPlayer.id,
-      'inactive',
-      true,
-      offeringPlayer.userId
-    )
+    const activePlayer = {
+      ...player,
+      stateKind: 'doubled',
+    } as BackgammonPlayerDoubled
+    const inactivePlayer = {
+      ...offeringPlayer,
+      stateKind: 'inactive',
+    } as BackgammonPlayerInactive
     // Create a BackgammonPlayDoubled (for now, reuse activePlay)
     const activePlay = game.activePlay as any // TODO: ensure correct type
     if (nextValue === 64) {
       // If maxxed, game should be completed
-      const winner = Player.initialize(
-        player.color,
-        player.direction,
-        player.dice,
-        player.id,
-        'winner',
-        true,
-        player.userId
-      )
+      const winner = {
+        ...player,
+        stateKind: 'winner',
+      } as BackgammonPlayerWinner
       return {
         ...game,
         stateKind: 'completed',
@@ -789,15 +820,10 @@ export class Game {
     // The refusing player loses at the current cube value
     // The offering player is the winner
     const offeringPlayer = game.cube.offeredBy!
-    const winner = Player.initialize(
-      offeringPlayer.color,
-      offeringPlayer.direction,
-      offeringPlayer.dice,
-      offeringPlayer.id,
-      'winner',
-      true,
-      offeringPlayer.userId
-    )
+    const winner = {
+      ...offeringPlayer,
+      stateKind: 'winner',
+    } as BackgammonPlayerWinner
     return {
       ...game,
       stateKind: 'completed',

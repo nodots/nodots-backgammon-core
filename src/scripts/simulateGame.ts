@@ -225,11 +225,7 @@ async function simulateGame(verbose = false): Promise<{
           // Optionally log or use positionId for debugging
           // console.log('Current GNU Position ID:', positionId);
 
-          const selectedMove = await Player.getBestMove(
-            playMoving,
-            'gnubg',
-            gameRolled.players
-          )
+          const selectedMove = await Player.getBestMove(playMoving)
           let origin, destination
           if (selectedMove) {
             origin = selectedMove.origin
@@ -635,14 +631,16 @@ async function simulateGame(verbose = false): Promise<{
       newActivePlayer.direction,
       undefined,
       newActivePlayer.id,
-      'rolling'
+      'rolling',
+      newActivePlayer.isRobot
     ) as any // BackgammonPlayerRolling
     newInactivePlayer = Player.initialize(
       newInactivePlayer.color,
       newInactivePlayer.direction,
       undefined,
       newInactivePlayer.id,
-      'inactive'
+      'inactive',
+      newInactivePlayer.isRobot
     ) as any // BackgammonPlayerInactive
     currentGame = Game.initialize(
       [newActivePlayer, newInactivePlayer],
