@@ -888,13 +888,14 @@ export class Game {
       ? activePlay.moves
       : Array.from(activePlay.moves)
 
-    // 🔧 IMPROVED MOVE CALCULATION: Calculate moves for all available dice values
+    // 🔧 IMPROVED MOVE CALCULATION: Calculate moves for dice values that are still available
     let possibleMoves: BackgammonMoveSkeleton[] = []
     if (movesArr && movesArr.length > 0) {
-      // Get all available dice values from the current roll
-      const availableDice = targetPlayer.dice?.currentRoll || []
-      
-      // Calculate possible moves for each die value
+      // Get dice values from moves that are still in 'ready' state (not yet used)
+      const readyMoves = movesArr.filter((move) => move.stateKind === 'ready')
+      const availableDice = readyMoves.map((move) => move.dieValue)
+
+      // Calculate possible moves for each available die value
       for (const dieValue of availableDice) {
         const movesForDie = Board.getPossibleMoves(
           game.board,

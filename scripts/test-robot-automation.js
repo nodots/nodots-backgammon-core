@@ -9,10 +9,7 @@
  * 3. No excessive "no legal moves" situations
  */
 
-const { Game } = require('../src/Game')
-const { Robot } = require('../src/Robot')
-const { Board } = require('../src/Board')
-const { Player } = require('../src/Player')
+const { Game, Robot, Board, Player } = require('../dist/index.js')
 
 async function testRobotAutomation() {
   console.log('🤖 Testing Robot Automation Fixes...\n')
@@ -39,7 +36,12 @@ async function testRobotAutomation() {
   }
 
   const board = Board.initialize()
-  const game = Game.create(whitePlayer, blackPlayer, board)
+  let game = Game.initialize(
+    [whitePlayer, blackPlayer],
+    'test-game',
+    'rolling-for-start',
+    board
+  )
 
   console.log('✅ Game created successfully')
   console.log(`Game ID: ${game.id}`)
@@ -57,8 +59,8 @@ async function testRobotAutomation() {
     console.log(`Game state: ${game.stateKind}`)
 
     try {
-      // Process the robot turn
-      const result = await Game.processRobotTurn(game, 'beginner')
+      // Use Robot.makeOptimalMove directly for all robot automation
+      const result = await Robot.makeOptimalMove(game, 'beginner')
 
       if (!result.success) {
         console.log(`❌ Robot turn failed: ${result.error}`)
@@ -67,13 +69,19 @@ async function testRobotAutomation() {
 
       if (result.game) {
         game = result.game
-        console.log(`✅ Robot made move: ${result.message}`)
+        console.log(`✅ Robot action: ${result.message}`)
 
         // Check for game completion
         if (game.stateKind === 'completed') {
-          console.log(`\n🎉 Game completed! Winner: ${game.winner}`)
+          console.log(
+            `\n🎉 Game completed! Winner: ${game.winner?.color || 'Unknown'}`
+          )
           console.log(`Total turns: ${turnCount}`)
-          return { success: true, turns: turnCount, winner: game.winner }
+          return {
+            success: true,
+            turns: turnCount,
+            winner: game.winner?.color || 'Unknown',
+          }
         }
       }
     } catch (error) {
