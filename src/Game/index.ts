@@ -269,7 +269,7 @@ export class Game {
             undefined,
             p.id,
             'rolled-for-start',
-            true,
+            p.isRobot,
             p.userId
           )
         : Player.initialize(
@@ -278,7 +278,7 @@ export class Game {
             undefined,
             p.id,
             'inactive',
-            true,
+            p.isRobot,
             p.userId
           )
     ) as BackgammonPlayers
@@ -288,7 +288,8 @@ export class Game {
     const inactivePlayer = rollingPlayers.find(
       (p) => p.color !== activeColor
     ) as BackgammonPlayerInactive
-    return {
+
+    const rolledForStartGame = {
       ...game,
       stateKind: 'rolled-for-start',
       activeColor,
@@ -296,6 +297,68 @@ export class Game {
       activePlayer,
       inactivePlayer,
     } as BackgammonGameRolledForStart
+
+    // Always return rolled-for-start state - let caller handle robot automation
+    return rolledForStartGame
+  }
+
+  /**
+   * Advance robot from 'rolled' to 'moving' state automatically
+   * This should only be called for robot players
+   * @param game - Game in 'rolled' state with robot active player
+   * @returns Game in 'moving' state
+   */
+  public static advanceRobotToMoving = function advanceRobotToMoving(
+    game: BackgammonGameRolled
+  ): BackgammonGameMoving {
+    if (game.stateKind !== 'rolled') {
+      throw new Error('Game must be in rolled state to advance robot to moving')
+    }
+
+    if (!game.activePlayer?.isRobot) {
+      throw new Error('Can only advance robot players to moving state')
+    }
+
+    // For robots, automatically proceed to moving state
+    const preparingGame = Game.prepareMove(game)
+    return Game.toMoving(preparingGame)
+  }
+
+  /**
+   * Process a complete robot turn automatically
+   * This method handles the full robot automation sequence:
+   * rolled -> preparing-move -> moving -> (make moves) -> rolling (next turn)
+   *
+   * @param game - Current game state
+   * @param difficulty - Robot difficulty level
+   * @returns Promise with the result of the robot turn
+   */
+  public static processRobotTurn = async function processRobotTurn(
+    game: BackgammonGame,
+    difficulty: 'beginner' | 'intermediate' | 'advanced' = 'beginner'
+  ): Promise<{
+    success: boolean
+    error?: string
+    game?: BackgammonGame
+    message?: string
+  }> {
+    // Validate that the active player is a robot
+    if (!game.activePlayer?.isRobot) {
+      return {
+        success: false,
+        error: 'Active player is not a robot',
+        game: game,
+      }
+    }
+
+    // Import Robot class dynamically to avoid circular dependency
+    const { Robot } = await import('../Robot')
+
+    // Use Robot.makeOptimalMove to handle the complete robot turn
+    const robotResult = await Robot.makeOptimalMove(game, difficulty)
+
+    // Return the robot result directly - it already has the correct structure
+    return robotResult
   }
 
   public static roll = function roll(

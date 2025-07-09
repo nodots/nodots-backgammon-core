@@ -1,4 +1,4 @@
-const { simulateGame } = require('./dist/scripts/simulateGame')
+const { simulateGame } = require('../dist/scripts/simulateGame')
 
 async function runSingleGame() {
   console.log('Starting single robot-vs-robot game...\n')
