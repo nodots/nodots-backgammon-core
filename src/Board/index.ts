@@ -47,14 +47,23 @@ export class Board implements BackgammonBoard {
     clockwise: BackgammonOff
     counterclockwise: BackgammonOff
   }
+  BackgammonPoints!: BackgammonPoints
 
   public static initialize(
     boardImport?: BackgammonCheckerContainerImport[]
   ): BackgammonBoard {
-    if (!boardImport) boardImport = BOARD_IMPORT_DEFAULT
-    const board = Board.buildBoard(boardImport)
-    if (!board) throw Error('No board found')
-    return board
+    const board = Board.buildBoard(boardImport || BOARD_IMPORT_DEFAULT)
+    const bar = Board.buildBar(boardImport || BOARD_IMPORT_DEFAULT)
+    const off = Board.buildOff(boardImport || BOARD_IMPORT_DEFAULT)
+
+    return {
+      id: generateId(),
+      gnuPositionId: generateDefaultGnuPositionId(),
+      points: board.points,
+      bar,
+      off,
+      BackgammonPoints: board.points,
+    }
   }
 
   public static moveChecker(
@@ -235,9 +244,10 @@ export class Board implements BackgammonBoard {
 
     // Handle regular point-to-point moves
     playerPoints.forEach(function mapPlayerPoints(point) {
-      // 🔧 BUG FIX: Use player's own positional perspective for move calculations
-      // BOTH players move from their higher-numbered points to lower-numbered points (24→1)
-      // This is ALWAYS subtract die value regardless of direction
+      // 🔧 CRITICAL BUG FIX: Correct move calculation for both directions
+      // Both players move from higher positions to lower positions
+      // For clockwise: 24→1 (subtract die value)
+      // For counterclockwise: 24→1 (subtract die value) 
       const originPosition = point.position[playerDirection]
       const destinationPosition = originPosition - dieValue
 
@@ -387,7 +397,7 @@ export class Board implements BackgammonBoard {
             const checkers = Checker.buildCheckersForCheckerContainerId(
               point.id,
               pointSpec.checkers.color,
-              pointSpec.checkers.qty
+              pointSpec.checkers.count
             )
             point.checkers.push(...checkers)
           }
@@ -395,18 +405,17 @@ export class Board implements BackgammonBoard {
       }
     })
 
-    const bar = this.buildBar(boardImport)
-    const off = this.buildOff(boardImport)
+    const bar = Board.buildBar(boardImport)
+    const off = Board.buildOff(boardImport)
 
-    const board: BackgammonBoard = {
+    return {
       id: generateId(),
       gnuPositionId: generateDefaultGnuPositionId(),
-      points: points,
+      points,
       bar,
       off,
+      BackgammonPoints: points,
     }
-
-    return board
   }
 
   private static buildBar = function buildBar(

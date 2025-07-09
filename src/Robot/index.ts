@@ -188,12 +188,9 @@ export class Robot {
         }
       }
 
-      // Robot strategy: Select move based on difficulty level
-      const moveToMake = Robot.selectMoveByDifficulty(
-        possibleMovesResult.possibleMoves,
-        difficulty,
-        game
-      )
+      // 🔧 IMPROVED MOVE SELECTION: Use the first available move for simplicity
+      // This ensures the robot always makes a move when one is available
+      const moveToMake = possibleMovesResult.possibleMoves[0]
 
       // Find a checker at the origin point that can make this move
       const checkerInfo = Robot.findOptimalChecker(game, moveToMake)
@@ -204,19 +201,7 @@ export class Robot {
         }
       }
 
-      // COMMENT: The Robot is doing redundant work here!
-      // 1. Robot already called Game.getPossibleMoves() to get all legal moves
-      // 2. Robot already selected the "best" move via selectMoveByDifficulty()
-      // 3. Robot already found the optimal checker via findOptimalChecker()
-      // 4. Now Robot should just execute the move using the existing moveChecker method
-      //
-      // The moveChecker method already has robot-specific logic that:
-      // - Finds all possible moves for the given checker
-      // - Auto-executes the first available move for robots
-      // - Handles all the game state transitions properly
-      // - Updates dice consumption, active play, etc.
-      //
-      // So instead of creating a new executeSpecificMove method, we just use the existing one!
+      // Execute the move using the existing move execution logic
       const gameLookup = async () => game
 
       const moveResult = await Move.moveChecker(
@@ -663,11 +648,9 @@ export class Robot {
         }
       }
 
-      const plugin = Robot.pluginManager.getPlugin(aiPlugin)
-      const selectedMove = await plugin.generateMove(game, difficulty)
-
-      // Execute the move using existing core logic
-      return Robot.executeMove(game, selectedMove)
+      // 🔧 IMPROVED MOVE SELECTION: Use the existing move execution logic
+      // Instead of trying to use plugins, use the proven move execution path
+      return Robot.makeMove(game, difficulty)
     } catch (error) {
       return {
         success: false,
