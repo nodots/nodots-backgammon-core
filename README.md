@@ -1,8 +1,8 @@
 <!-- COVERAGE-START -->
-![Statements](https://img.shields.io/badge/Statements-80%25-green?style=flat-square)
-![Branches](https://img.shields.io/badge/Branches-65%25-orange?style=flat-square)
-![Functions](https://img.shields.io/badge/Functions-76%25-yellow?style=flat-square)
-![Lines](https://img.shields.io/badge/Lines-81%25-green?style=flat-square)
+![Statements](https://img.shields.io/badge/Statements-79%25-yellow?style=flat-square)
+![Branches](https://img.shields.io/badge/Branches-64%25-orange?style=flat-square)
+![Functions](https://img.shields.io/badge/Functions-74%25-yellow?style=flat-square)
+![Lines](https://img.shields.io/badge/Lines-80%25-green?style=flat-square)
 <!-- COVERAGE-END -->
 
 # nodots-backgammon-core
