@@ -888,22 +888,21 @@ export class Game {
       ? activePlay.moves
       : Array.from(activePlay.moves)
 
-    // Calculate possible moves based on current move states (respects dice consumption)
+    // 🔧 IMPROVED MOVE CALCULATION: Calculate moves for all available dice values
     let possibleMoves: BackgammonMoveSkeleton[] = []
     if (movesArr && movesArr.length > 0) {
-      possibleMoves = movesArr.flatMap((move) => {
-        // Only include moves that are still ready to be made
-        if (move.stateKind === 'ready') {
-          // Recalculate possible moves based on current board state
-          const currentPossibleMoves = Board.getPossibleMoves(
-            game.board,
-            targetPlayer,
-            move.dieValue
-          )
-          return currentPossibleMoves
-        }
-        return []
-      })
+      // Get all available dice values from the current roll
+      const availableDice = targetPlayer.dice?.currentRoll || []
+      
+      // Calculate possible moves for each die value
+      for (const dieValue of availableDice) {
+        const movesForDie = Board.getPossibleMoves(
+          game.board,
+          targetPlayer,
+          dieValue
+        )
+        possibleMoves = possibleMoves.concat(movesForDie)
+      }
 
       // Auto-complete turn when no legal moves remain
       if (

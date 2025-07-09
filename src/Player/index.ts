@@ -22,13 +22,6 @@ import {
 import { Board, Dice, generateId } from '..'
 import { Play } from '../Play'
 export * from '../index'
-// Import AI analyzers and selector
-// import {
-//   selectMoveFromList,
-//   getBestMoveFromGnubg,
-//   RandomMoveAnalyzer,
-//   FurthestFromOffMoveAnalyzer,
-// } from '@nodots-llc/backgammon-ai'
 
 /**
  * Supported move selection strategies.

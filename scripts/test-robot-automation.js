@@ -1,94 +1,113 @@
 #!/usr/bin/env node
 
-const { Game, Player, Robot } = require('../dist/index.js')
+/**
+ * Test Robot Automation Fixes
+ *
+ * This script tests the fixes for robot automation to ensure:
+ * 1. Robots can make moves properly
+ * 2. Games complete without hitting turn limits
+ * 3. No excessive "no legal moves" situations
+ */
+
+const { Game } = require('../src/Game')
+const { Robot } = require('../src/Robot')
+const { Board } = require('../src/Board')
+const { Player } = require('../src/Player')
 
 async function testRobotAutomation() {
-  console.log('🤖 Testing Robot Automation After Rolling Dice...\n')
+  console.log('🤖 Testing Robot Automation Fixes...\n')
 
-  try {
-    // Create a robot vs robot game
-    const robotPlayer1 = Player.initialize(
-      'white',
-      'clockwise',
-      undefined,
-      'robot1',
-      'inactive',
-      true
-    )
-    const robotPlayer2 = Player.initialize(
-      'black',
-      'counterclockwise',
-      undefined,
-      'robot2',
-      'inactive',
-      true
-    )
-
-    console.log('1. Creating game with two robots...')
-    let game = Game.initialize([robotPlayer1, robotPlayer2])
-    console.log(`   Initial state: ${game.stateKind}`)
-
-    console.log('\n2. Rolling for start...')
-    game = Game.rollForStart(game)
-    console.log(`   After roll for start: ${game.stateKind}`)
-    console.log(
-      `   Active player: ${game.activePlayer?.color} (robot: ${game.activePlayer?.isRobot})`
-    )
-
-    if (game.stateKind === 'rolled') {
-      console.log(
-        `   Dice roll: [${
-          game.activePlayer?.dice?.currentRoll?.join(', ') || 'N/A'
-        }]`
-      )
-
-      console.log('\n3. Testing robot automation...')
-
-      // Test the new advanceRobotToMoving method
-      console.log('   Calling Game.advanceRobotToMoving()...')
-      const movingGame = Game.advanceRobotToMoving(game)
-      console.log(`   After auto-advance: ${movingGame.stateKind}`)
-
-      if (movingGame.stateKind === 'moving') {
-        console.log('   ✅ Robot successfully advanced to moving state!')
-
-        console.log('\n4. Testing robot move execution...')
-        const robotResult = await Robot.makeOptimalMove(movingGame, 'beginner')
-
-        if (robotResult.success) {
-          console.log('   ✅ Robot successfully made optimal move!')
-          console.log(`   Final game state: ${robotResult.game?.stateKind}`)
-          console.log(`   Message: ${robotResult.message}`)
-        } else {
-          console.log('   ❌ Robot move failed:', robotResult.error)
-        }
-      } else {
-        console.log('   ❌ Robot did not advance to moving state')
-      }
-    } else if (game.stateKind === 'moving') {
-      console.log('   ✅ Robot automatically advanced to moving state!')
-
-      console.log('\n3. Testing robot move execution...')
-      const robotResult = await Robot.makeOptimalMove(game, 'beginner')
-
-      if (robotResult.success) {
-        console.log('   ✅ Robot successfully made optimal move!')
-        console.log(`   Final game state: ${robotResult.game?.stateKind}`)
-        console.log(`   Message: ${robotResult.message}`)
-      } else {
-        console.log('   ❌ Robot move failed:', robotResult.error)
-      }
-    } else {
-      console.log(
-        `   ⚠️  Unexpected state after roll for start: ${game.stateKind}`
-      )
-    }
-
-    console.log('\n🎉 Robot automation test completed!')
-  } catch (error) {
-    console.error('❌ Test failed:', error.message)
-    console.error('Stack:', error.stack)
+  // Create a simple game with two robot players
+  const whitePlayer = {
+    id: 'white-robot',
+    name: 'White Robot',
+    color: 'white',
+    direction: 'clockwise',
+    isRobot: true,
+    stateKind: 'rolling',
+    dice: { currentRoll: null },
   }
+
+  const blackPlayer = {
+    id: 'black-robot',
+    name: 'Black Robot',
+    color: 'black',
+    direction: 'counterclockwise',
+    isRobot: true,
+    stateKind: 'inactive',
+    dice: { currentRoll: null },
+  }
+
+  const board = Board.initialize()
+  const game = Game.create(whitePlayer, blackPlayer, board)
+
+  console.log('✅ Game created successfully')
+  console.log(`Game ID: ${game.id}`)
+  console.log(`Initial state: ${game.stateKind}`)
+
+  let turnCount = 0
+  const maxTurns = 50 // Reduced from 100 to catch issues faster
+
+  while (turnCount < maxTurns) {
+    turnCount++
+    console.log(`\n🔄 Turn ${turnCount}`)
+    console.log(
+      `Active player: ${game.activeColor} (${game.activePlayer?.name})`
+    )
+    console.log(`Game state: ${game.stateKind}`)
+
+    try {
+      // Process the robot turn
+      const result = await Game.processRobotTurn(game, 'beginner')
+
+      if (!result.success) {
+        console.log(`❌ Robot turn failed: ${result.error}`)
+        break
+      }
+
+      if (result.game) {
+        game = result.game
+        console.log(`✅ Robot made move: ${result.message}`)
+
+        // Check for game completion
+        if (game.stateKind === 'completed') {
+          console.log(`\n🎉 Game completed! Winner: ${game.winner}`)
+          console.log(`Total turns: ${turnCount}`)
+          return { success: true, turns: turnCount, winner: game.winner }
+        }
+      }
+    } catch (error) {
+      console.log(`❌ Error during turn ${turnCount}: ${error.message}`)
+      break
+    }
+  }
+
+  if (turnCount >= maxTurns) {
+    console.log(
+      `\n⚠️ Game hit turn limit (${maxTurns}) - automation may still have issues`
+    )
+    return { success: false, turns: turnCount, error: 'Turn limit reached' }
+  }
+
+  return { success: false, turns: turnCount, error: 'Game failed to complete' }
 }
 
-testRobotAutomation()
+// Run the test
+if (require.main === module) {
+  testRobotAutomation()
+    .then((result) => {
+      console.log('\n📊 Test Results:')
+      console.log(`Success: ${result.success}`)
+      console.log(`Turns: ${result.turns}`)
+      if (result.winner) console.log(`Winner: ${result.winner}`)
+      if (result.error) console.log(`Error: ${result.error}`)
+
+      process.exit(result.success ? 0 : 1)
+    })
+    .catch((error) => {
+      console.error('❌ Test failed:', error)
+      process.exit(1)
+    })
+}
+
+module.exports = { testRobotAutomation }

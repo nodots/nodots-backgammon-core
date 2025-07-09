@@ -135,14 +135,15 @@ export class Robot {
   }
 
   /**
-   * Robot makes a move using optimal strategy
+   * Make AI-powered move using plugin system
    */
-  private static makeMove = async function makeMove(
+  private static makeAIMove = async function makeAIMove(
     game: BackgammonGame,
-    difficulty: RobotSkillLevel
+    difficulty: RobotSkillLevel,
+    aiPlugin?: string
   ): Promise<RobotMoveResult> {
     try {
-      // Get possible moves for the active player
+      // First check if there are any possible moves
       const possibleMovesResult = Game.getPossibleMoves(game)
 
       if (
@@ -188,15 +189,29 @@ export class Robot {
         }
       }
 
-      // Robot strategy: Select move based on difficulty level
-      const moveToMake = Robot.selectMoveByDifficulty(
-        possibleMovesResult.possibleMoves,
-        difficulty,
-        game
-      )
+      const plugin = Robot.pluginManager.getPlugin(aiPlugin)
+      const selectedMove = await plugin.generateMove(game, difficulty)
 
+      // Execute the move using existing core logic
+      return Robot.executeMove(game, selectedMove)
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'AI move failed',
+      }
+    }
+  }
+
+  /**
+   * Execute a move using the existing move execution logic
+   */
+  private static executeMove = async function executeMove(
+    game: BackgammonGame,
+    selectedMove: any
+  ): Promise<RobotMoveResult> {
+    try {
       // Find a checker at the origin point that can make this move
-      const checkerInfo = Robot.findOptimalChecker(game, moveToMake)
+      const checkerInfo = Robot.findOptimalChecker(game, selectedMove)
       if (!checkerInfo) {
         return {
           success: false,
@@ -204,53 +219,60 @@ export class Robot {
         }
       }
 
-      // COMMENT: The Robot is doing redundant work here!
-      // 1. Robot already called Game.getPossibleMoves() to get all legal moves
-      // 2. Robot already selected the "best" move via selectMoveByDifficulty()
-      // 3. Robot already found the optimal checker via findOptimalChecker()
-      // 4. Now Robot should just execute the move using the existing moveChecker method
-      //
-      // The moveChecker method already has robot-specific logic that:
-      // - Finds all possible moves for the given checker
-      // - Auto-executes the first available move for robots
-      // - Handles all the game state transitions properly
-      // - Updates dice consumption, active play, etc.
-      //
-      // So instead of creating a new executeSpecificMove method, we just use the existing one!
+      // Execute the move using the existing move execution logic
       const gameLookup = async () => game
-
       const moveResult = await Move.moveChecker(
         game.id,
         checkerInfo.checkerId,
         gameLookup
       )
 
-      if (moveResult.success && moveResult.game) {
-        const originPos =
-          typeof moveToMake.origin.position === 'object'
-            ? moveToMake.origin.position.clockwise
-            : moveToMake.origin.kind
-        const destPos =
-          typeof moveToMake.destination.position === 'object'
-            ? moveToMake.destination.position.clockwise
-            : moveToMake.destination.kind
-        return {
-          success: true,
-          game: moveResult.game,
-          message: `Robot moved from ${originPos} to ${destPos}`,
-        }
-      } else {
+      if (!moveResult.success) {
         return {
           success: false,
           error: moveResult.error || 'Move execution failed',
         }
       }
+
+      return {
+        success: true,
+        game: moveResult.game,
+        message: 'Robot made AI-powered move',
+      }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to make move',
+        error: error instanceof Error ? error.message : 'Move execution failed',
       }
     }
+  }
+
+  /**
+   * Register new AI plugin
+   */
+  static registerAIPlugin(plugin: BackgammonAIPlugin): void {
+    this.pluginManager.registerPlugin(plugin)
+  }
+
+  /**
+   * Set default AI plugin
+   */
+  static setDefaultAI(pluginName: string): void {
+    this.pluginManager.setDefaultPlugin(pluginName)
+  }
+
+  /**
+   * List available AI plugins
+   */
+  static listAIPlugins(): BackgammonAIPlugin[] {
+    return this.pluginManager.listAvailablePlugins()
+  }
+
+  /**
+   * Get default AI plugin name
+   */
+  static getDefaultAI(): string | null {
+    return this.pluginManager.getDefaultPlugin()
   }
 
   /**
@@ -606,146 +628,5 @@ export class Robot {
       move: 'no-move-turn-completed',
       updatedGame: resultGame,
     }
-  }
-
-  /**
-   * Make AI-powered move using plugin system
-   */
-  private static makeAIMove = async function makeAIMove(
-    game: BackgammonGame,
-    difficulty: RobotSkillLevel,
-    aiPlugin?: string
-  ): Promise<RobotMoveResult> {
-    try {
-      // First check if there are any possible moves
-      const possibleMovesResult = Game.getPossibleMoves(game)
-
-      if (
-        !possibleMovesResult.success ||
-        !possibleMovesResult.possibleMoves ||
-        possibleMovesResult.possibleMoves.length === 0
-      ) {
-        // This is a legitimate "no legal moves" situation - automatically pass the turn
-        console.log(
-          '[DEBUG] Robot has no legal moves - automatically passing turn'
-        )
-
-        // Check if Game.getPossibleMoves already handled turn completion
-        if (possibleMovesResult.updatedGame) {
-          return {
-            success: true,
-            game: possibleMovesResult.updatedGame,
-            message: 'Robot passed turn (no legal moves available)',
-          }
-        }
-
-        // Force turn completion for robots when no legal moves are available
-        // This bypasses the Move class restriction that keeps turns active for error handling
-        if (game.stateKind === 'moving' && game.activePlay) {
-          try {
-            const completedGame = Robot.forceCompleteTurn(game as any)
-            return {
-              success: true,
-              game: completedGame,
-              message: 'Robot passed turn (no legal moves available)',
-            }
-          } catch (completionError) {
-            console.log('[DEBUG] Turn completion failed:', completionError)
-          }
-        }
-
-        // Fallback: Return current game state with a pass message
-        // The simulation should handle this gracefully and continue
-        return {
-          success: true,
-          game: game,
-          message: 'Robot attempted to pass turn (no legal moves available)',
-        }
-      }
-
-      const plugin = Robot.pluginManager.getPlugin(aiPlugin)
-      const selectedMove = await plugin.generateMove(game, difficulty)
-
-      // Execute the move using existing core logic
-      return Robot.executeMove(game, selectedMove)
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'AI move failed',
-      }
-    }
-  }
-
-  /**
-   * Execute a move using the existing move execution logic
-   */
-  private static executeMove = async function executeMove(
-    game: BackgammonGame,
-    selectedMove: any
-  ): Promise<RobotMoveResult> {
-    try {
-      // Find a checker at the origin point that can make this move
-      const checkerInfo = Robot.findOptimalChecker(game, selectedMove)
-      if (!checkerInfo) {
-        return {
-          success: false,
-          error: 'No suitable checker found for the selected move',
-        }
-      }
-
-      // Execute the move using the existing move execution logic
-      const gameLookup = async () => game
-      const moveResult = await Move.moveChecker(
-        game.id,
-        checkerInfo.checkerId,
-        gameLookup
-      )
-
-      if (!moveResult.success) {
-        return {
-          success: false,
-          error: moveResult.error || 'Move execution failed',
-        }
-      }
-
-      return {
-        success: true,
-        game: moveResult.game,
-        message: 'Robot made AI-powered move',
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Move execution failed',
-      }
-    }
-  }
-
-  /**
-   * Register new AI plugin
-   */
-  static registerAIPlugin(plugin: BackgammonAIPlugin): void {
-    this.pluginManager.registerPlugin(plugin)
-  }
-
-  /**
-   * Set default AI plugin
-   */
-  static setDefaultAI(pluginName: string): void {
-    this.pluginManager.setDefaultPlugin(pluginName)
-  }
-
-  /**
-   * List available AI plugins
-   */
-  static listAIPlugins(): BackgammonAIPlugin[] {
-    return this.pluginManager.listAvailablePlugins()
-  }
-
-  /**
-   * Get default AI plugin name
-   */
-  static getDefaultAI(): string | null {
-    return this.pluginManager.getDefaultPlugin()
   }
 }

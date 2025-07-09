@@ -51,10 +51,17 @@ export class Board implements BackgammonBoard {
   public static initialize(
     boardImport?: BackgammonCheckerContainerImport[]
   ): BackgammonBoard {
-    if (!boardImport) boardImport = BOARD_IMPORT_DEFAULT
-    const board = Board.buildBoard(boardImport)
-    if (!board) throw Error('No board found')
-    return board
+    const board = Board.buildBoard(boardImport || BOARD_IMPORT_DEFAULT)
+    const bar = Board.buildBar(boardImport || BOARD_IMPORT_DEFAULT)
+    const off = Board.buildOff(boardImport || BOARD_IMPORT_DEFAULT)
+
+    return {
+      id: generateId(),
+      gnuPositionId: generateDefaultGnuPositionId(),
+      points: board.points,
+      bar,
+      off,
+    }
   }
 
   public static moveChecker(
@@ -235,9 +242,10 @@ export class Board implements BackgammonBoard {
 
     // Handle regular point-to-point moves
     playerPoints.forEach(function mapPlayerPoints(point) {
-      // 🔧 BUG FIX: Use player's own positional perspective for move calculations
-      // BOTH players move from their higher-numbered points to lower-numbered points (24→1)
-      // This is ALWAYS subtract die value regardless of direction
+      // 🔧 CRITICAL BUG FIX: Correct move calculation for both directions
+      // Both players move from higher positions to lower positions
+      // For clockwise: 24→1 (subtract die value)
+      // For counterclockwise: 24→1 (subtract die value)
       const originPosition = point.position[playerDirection]
       const destinationPosition = originPosition - dieValue
 
@@ -291,7 +299,7 @@ export class Board implements BackgammonBoard {
           const distanceToBearOff =
             playerDirection === 'clockwise' ? 25 - position : position
 
-          // Can bear off if die matches the distance
+          // Can bear off if die matches the distance exactly
           if (distanceToBearOff === dieValue) {
             const off = board.off[playerDirection]
             possibleMoves.push({
@@ -301,25 +309,65 @@ export class Board implements BackgammonBoard {
               direction: playerDirection,
             })
           }
-          // Can bear off with a higher die if no checker on higher points
-          // "Higher points" means points closer to the end of the board
-          // For clockwise: higher points are 24, 23, 22, etc. (higher position values)
-          // For counterclockwise: higher points are 6, 5, 4, etc. (higher position values)
+          // Can bear off with a higher die if no checker on the exact bear-off point
+          // and this is the highest occupied bear-off point that's lower than the die value
           if (dieValue > distanceToBearOff) {
-            const higherPoints = homeBoardPoints.filter(
-              (p2) => p2.position[playerDirection] > position
-            )
-            const hasCheckerOnHigher = higherPoints.some((p2) =>
-              p2.checkers.some((c) => c.color === player.color)
-            )
-            if (!hasCheckerOnHigher) {
-              const off = board.off[playerDirection]
-              possibleMoves.push({
-                origin: point,
-                destination: off,
-                dieValue,
-                direction: playerDirection,
-              })
+            // Check if there's a checker on the exact bear-off point corresponding to the die value
+            const exactBearOffPoint = homeBoardPoints.find((p2) => {
+              const p2BearOffPoint =
+                playerDirection === 'clockwise'
+                  ? 25 - p2.position[playerDirection]
+                  : p2.position[playerDirection]
+              return p2BearOffPoint === dieValue
+            })
+            const hasCheckerOnExactBearOffPoint =
+              exactBearOffPoint?.checkers.some((c) => c.color === player.color)
+
+            if (!hasCheckerOnExactBearOffPoint) {
+              // Find the highest occupied bear-off point that's lower than the die value
+              const lowerOccupiedBearOffPoints = homeBoardPoints.filter(
+                (p2) => {
+                  const p2BearOffPoint =
+                    playerDirection === 'clockwise'
+                      ? 25 - p2.position[playerDirection]
+                      : p2.position[playerDirection]
+                  return (
+                    p2BearOffPoint < dieValue &&
+                    p2.checkers.some((c) => c.color === player.color)
+                  )
+                }
+              )
+
+              if (lowerOccupiedBearOffPoints.length > 0) {
+                const highestLowerBearOffPoint =
+                  lowerOccupiedBearOffPoints.reduce((highest, current) => {
+                    const currentBearOffPoint =
+                      playerDirection === 'clockwise'
+                        ? 25 - current.position[playerDirection]
+                        : current.position[playerDirection]
+                    const highestBearOffPoint =
+                      playerDirection === 'clockwise'
+                        ? 25 - highest.position[playerDirection]
+                        : highest.position[playerDirection]
+                    return currentBearOffPoint > highestBearOffPoint
+                      ? current
+                      : highest
+                  })
+
+                // Only allow bear-off if this is the highest occupied bear-off point
+                if (
+                  point.position[playerDirection] ===
+                  highestLowerBearOffPoint.position[playerDirection]
+                ) {
+                  const off = board.off[playerDirection]
+                  possibleMoves.push({
+                    origin: point,
+                    destination: off,
+                    dieValue,
+                    direction: playerDirection,
+                  })
+                }
+              }
             }
           }
         }
@@ -395,18 +443,16 @@ export class Board implements BackgammonBoard {
       }
     })
 
-    const bar = this.buildBar(boardImport)
-    const off = this.buildOff(boardImport)
+    const bar = Board.buildBar(boardImport)
+    const off = Board.buildOff(boardImport)
 
-    const board: BackgammonBoard = {
+    return {
       id: generateId(),
       gnuPositionId: generateDefaultGnuPositionId(),
-      points: points,
+      points,
       bar,
       off,
     }
-
-    return board
   }
 
   private static buildBar = function buildBar(
