@@ -300,12 +300,12 @@ describe('Move', () => {
     })
 
     it('should handle bear-off move', () => {
-      // Create a board with all white checkers in the home board (points 19-24)
+      // Create a board with all white checkers in the home board (points 1-6)
       const boardImport: BackgammonCheckerContainerImport[] = [
         {
           position: {
-            clockwise: 24 as BackgammonPointValue,
-            counterclockwise: 1 as BackgammonPointValue,
+            clockwise: 6 as BackgammonPointValue,
+            counterclockwise: 19 as BackgammonPointValue,
           },
           checkers: {
             qty: 4,
@@ -314,8 +314,8 @@ describe('Move', () => {
         },
         {
           position: {
-            clockwise: 23 as BackgammonPointValue,
-            counterclockwise: 2 as BackgammonPointValue,
+            clockwise: 5 as BackgammonPointValue,
+            counterclockwise: 20 as BackgammonPointValue,
           },
           checkers: {
             qty: 4,
@@ -324,8 +324,8 @@ describe('Move', () => {
         },
         {
           position: {
-            clockwise: 22 as BackgammonPointValue,
-            counterclockwise: 3 as BackgammonPointValue,
+            clockwise: 4 as BackgammonPointValue,
+            counterclockwise: 21 as BackgammonPointValue,
           },
           checkers: {
             qty: 4,
@@ -334,8 +334,8 @@ describe('Move', () => {
         },
         {
           position: {
-            clockwise: 21 as BackgammonPointValue,
-            counterclockwise: 4 as BackgammonPointValue,
+            clockwise: 3 as BackgammonPointValue,
+            counterclockwise: 22 as BackgammonPointValue,
           },
           checkers: {
             qty: 3,
@@ -355,7 +355,7 @@ describe('Move', () => {
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
-        origin: board.points[23], // Point 24 (has 4 white checkers)
+        origin: board.points[5], // Point 6 (has 4 white checkers)
         dieValue: 1,
         possibleMoves: [],
       }
@@ -363,8 +363,8 @@ describe('Move', () => {
       const result = Move.move(board, move)
       expect(result.board).toBeDefined()
       expect(result.move.stateKind).toBe('completed')
-      // Verify checker moved from point 24 to off
-      expect(result.board.points[23].checkers.length).toBe(3) // Three checkers left on point 24
+      // Verify checker moved from point 6 to off
+      expect(result.board.points[5].checkers.length).toBe(3) // Three checkers left on point 6
       expect(result.board.off[player.direction].checkers.length).toBe(1) // One checker moved to off
     })
 

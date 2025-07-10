@@ -42,11 +42,11 @@ export * from './Player'
 export * from './Robot'
 
 // Export AI plugin system
-export * from './AI/interfaces/AIPlugin'
 export * from './AI/AIPluginManager'
+export * from './AI/interfaces/AIPlugin'
 export * from './AI/plugins/BasicAIPlugin'
-export * from './AI/utils/PositionAnalyzer'
 export * from './AI/utils/GamePhaseDetector'
+export * from './AI/utils/PositionAnalyzer'
 
 // Export logger utilities for consumers to configure
 export {
@@ -60,6 +60,14 @@ export {
   warn,
   type LogLevel,
 } from './utils/logger'
+
+// Export serialization utilities for proper Set handling
+export {
+  deserializeGameState,
+  ensureMovesAreArray,
+  ensureMovesAreSet,
+  serializeGameState,
+} from './utils/serialization'
 
 // Re-export all types from @nodots-llc/backgammon-types for convenience
 export * from '@nodots-llc/backgammon-types'

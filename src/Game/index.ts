@@ -3,6 +3,7 @@ import {
   BackgammonChecker,
   BackgammonColor,
   BackgammonCube,
+  BackgammonDieValue,
   BackgammonGame,
   BackgammonGameDoubled,
   BackgammonGameMoving,
@@ -154,7 +155,52 @@ export class Game {
 
     // Auto roll for start if requested
     if (autoRollForStart) {
-      game = Game.rollForStart(game as BackgammonGameRollingForStart)
+      if (colorDirectionConfig) {
+        // When configuration is provided, respect the blackFirst setting
+        const desiredActiveColor = blackFirst ? 'black' : 'white'
+
+        // Manually create rolled-for-start state with the desired active color
+        const rollingPlayers = playersTuple.map((p) =>
+          p.color === desiredActiveColor
+            ? Player.initialize(
+                p.color,
+                p.direction,
+                undefined,
+                p.id,
+                'rolled-for-start',
+                p.isRobot,
+                p.userId
+              )
+            : Player.initialize(
+                p.color,
+                p.direction,
+                undefined,
+                p.id,
+                'inactive',
+                p.isRobot,
+                p.userId
+              )
+        ) as BackgammonPlayers
+
+        const activePlayer = rollingPlayers.find(
+          (p) => p.color === desiredActiveColor
+        ) as BackgammonPlayerRolledForStart
+        const inactivePlayer = rollingPlayers.find(
+          (p) => p.color !== desiredActiveColor
+        ) as BackgammonPlayerInactive
+
+        game = {
+          ...game,
+          stateKind: 'rolled-for-start',
+          activeColor: desiredActiveColor,
+          players: rollingPlayers,
+          activePlayer,
+          inactivePlayer,
+        } as BackgammonGameRolledForStart
+      } else {
+        // No configuration provided, use random selection
+        game = Game.rollForStart(game as BackgammonGameRollingForStart)
+      }
     }
 
     return game
@@ -559,6 +605,109 @@ export class Game {
     } as BackgammonGameMoving
   }
 
+  /**
+   * Execute a single move and recalculate fresh moves (just-in-time approach)
+   * This method prevents stale move references by always calculating moves based on current board state
+   * @param game - Current game state in 'moving' state
+   * @param originId - ID of the origin point/bar to move from
+   * @returns Updated game state with fresh moves calculated
+   */
+  public static executeAndRecalculate = function executeAndRecalculate(
+    game: BackgammonGameMoving,
+    originId: string
+  ): BackgammonGameMoving | BackgammonGame {
+    // First, execute the move using the existing move method
+    const gameAfterMove = Game.move(game, originId)
+
+    // Check if the game ended (win condition)
+    if (gameAfterMove.stateKind === 'completed') {
+      return gameAfterMove
+    }
+
+    // Game continues, ensure we have a moving game
+    const movingGame = gameAfterMove as BackgammonGameMoving
+
+    // Check if turn should be completed
+    const gameAfterTurnCheck = Game.checkAndCompleteTurn(movingGame)
+
+    // If the turn was completed (different active color), return the updated game
+    if (gameAfterTurnCheck.activeColor !== movingGame.activeColor) {
+      return gameAfterTurnCheck
+    }
+
+    // CRITICAL FIX: After executing a move, the activePlay.moves still contains stale references
+    // We need to ensure that when getPossibleMoves() is called next, it uses the updated board state
+    // The key insight is that we don't need to modify the activePlay.moves here -
+    // getPossibleMoves() will handle calculating fresh moves based on the current board state
+
+    // Turn continues, return the game with fresh board state
+    // The next call to getPossibleMoves() will calculate fresh moves based on this updated board
+    return movingGame
+  }
+
+  /**
+   * Check if the current turn is complete and transition to the next player
+   * @param game - Current game state
+   * @returns Updated game state with next player or current game if turn not complete
+   */
+  public static checkAndCompleteTurn = function checkAndCompleteTurn(
+    game: BackgammonGameMoving
+  ): BackgammonGame {
+    // Check if all moves in the current turn are completed
+    const activePlay = game.activePlay
+    if (!activePlay || !activePlay.moves) {
+      return game // No active play, return current game
+    }
+
+    const movesArray = Array.from(activePlay.moves)
+    const allMovesCompleted = movesArray.every(
+      (move) => move.stateKind === 'completed'
+    )
+
+    if (!allMovesCompleted) {
+      return game // Turn not complete, return current game
+    }
+
+    // All moves are completed, transition to next player
+    const nextColor = game.activeColor === 'white' ? 'black' : 'white'
+
+    // Update players: current becomes inactive, next becomes rolling
+    const updatedPlayers = game.players.map((player) => {
+      if (player.color === game.activeColor) {
+        return { ...player, stateKind: 'inactive' as const }
+      } else {
+        return { ...player, stateKind: 'rolling' as const }
+      }
+    }) as BackgammonPlayers
+
+    // Find new active and inactive players
+    const newActivePlayer = updatedPlayers.find(
+      (p) => p.color === nextColor
+    ) as BackgammonPlayerActive
+    const newInactivePlayer = updatedPlayers.find(
+      (p) => p.color === game.activeColor
+    ) as BackgammonPlayerInactive
+
+    // Create completed active play
+    const completedActivePlay = {
+      ...activePlay,
+      stateKind: 'completed' as const,
+    }
+
+    // Return game with next player's turn using Game.initialize for proper typing
+    return Game.initialize(
+      updatedPlayers,
+      game.id,
+      'rolling',
+      game.board,
+      game.cube,
+      undefined, // No active play for next player until they roll
+      nextColor,
+      newActivePlayer,
+      newInactivePlayer
+    )
+  }
+
   public static activePlayer = function activePlayer(
     game: BackgammonGame
   ): BackgammonPlayerActive {
@@ -831,16 +980,20 @@ export class Game {
     } as any // TODO: type as BackgammonGameCompleted
   }
 
+  /**
+   * Get possible moves for the current die value only (just-in-time calculation)
+   * This method calculates moves for only the next available die to prevent stale references
+   * Call this method after each move execution to get fresh moves based on current board state
+   */
   public static getPossibleMoves = function getPossibleMoves(
-    game: BackgammonGame,
-    playerId?: string
+    game: BackgammonGame
   ): {
     success: boolean
     error?: string
     possibleMoves?: BackgammonMoveSkeleton[]
-    playerId?: string
     playerColor?: string
     updatedGame?: BackgammonGame
+    currentDie?: number
   } {
     // Validate game state
     if (
@@ -854,24 +1007,12 @@ export class Game {
       }
     }
 
-    // Get the target player
-    let targetPlayer
-    if (playerId) {
-      targetPlayer = game.players.find((p) => p.id === playerId)
-      if (!targetPlayer) {
-        return {
-          success: false,
-          error: 'Player is not part of this game',
-        }
-      }
-    } else if (game.activeColor) {
-      targetPlayer = game.players.find((p) => p.color === game.activeColor)
-    }
-
+    // Use the active player from the game object
+    const targetPlayer = game.players.find((p) => p.color === game.activeColor)
     if (!targetPlayer) {
       return {
         success: false,
-        error: 'Unable to determine target player',
+        error: 'Unable to determine active player',
       }
     }
 
@@ -888,21 +1029,41 @@ export class Game {
       ? activePlay.moves
       : Array.from(activePlay.moves)
 
-    // 🔧 IMPROVED MOVE CALCULATION: Calculate moves for dice values that are still available
+    // CRITICAL FIX: Completely ignore stale activePlay.moves and calculate fresh moves
+    // based on current board state and available dice values
     let possibleMoves: BackgammonMoveSkeleton[] = []
+    let currentDie: number | undefined
+
     if (movesArr && movesArr.length > 0) {
       // Get dice values from moves that are still in 'ready' state (not yet used)
       const readyMoves = movesArr.filter((move) => move.stateKind === 'ready')
       const availableDice = readyMoves.map((move) => move.dieValue)
 
-      // Calculate possible moves for each available die value
-      for (const dieValue of availableDice) {
-        const movesForDie = Board.getPossibleMoves(
+      // CRITICAL FIX: Only calculate moves for the FIRST available die to prevent stale references
+      // This ensures moves are always fresh based on current board state
+      // Robot will be called again after each move with updated board state
+      currentDie = availableDice[0]
+
+      if (currentDie) {
+        // CRITICAL FIX: Always calculate completely fresh moves based on current board state
+        // Ignore all cached moves - they may reference checkers that have been moved
+        console.log(
+          '[DEBUG] Game.getPossibleMoves calculating fresh moves for die',
+          currentDie
+        )
+
+        possibleMoves = Board.getPossibleMoves(
           game.board,
           targetPlayer,
-          dieValue
+          currentDie as BackgammonDieValue
         )
-        possibleMoves = possibleMoves.concat(movesForDie)
+
+        console.log(
+          '[DEBUG] Game.getPossibleMoves calculated',
+          possibleMoves.length,
+          'fresh moves for die',
+          currentDie
+        )
       }
 
       // Auto-complete turn when no legal moves remain
@@ -931,11 +1092,12 @@ export class Game {
         }
 
         // Transition game to next player's turn
+        const nextColor = game.activeColor === 'white' ? 'black' : 'white'
         const updatedGame = {
           ...game,
           activePlay: completedActivePlay,
-          stateKind: 'rolling',
-          activeColor: game.activeColor === 'white' ? 'black' : 'white',
+          stateKind: 'rolling' as const,
+          activeColor: nextColor,
         }
 
         // Update players: current becomes inactive, other becomes rolling
@@ -946,14 +1108,18 @@ export class Game {
             return { ...player, stateKind: 'rolling' as const }
           }
         })
-        updatedGame.players = updatedPlayers as any
+
+        const finalUpdatedGame = {
+          ...updatedGame,
+          players: updatedPlayers,
+        } as BackgammonGame
 
         return {
           success: true,
           possibleMoves: [],
-          playerId: targetPlayer.id,
           playerColor: targetPlayer.color,
-          updatedGame: updatedGame as BackgammonGame,
+          updatedGame: finalUpdatedGame,
+          currentDie: currentDie,
         }
       }
     }
@@ -961,8 +1127,8 @@ export class Game {
     return {
       success: true,
       possibleMoves,
-      playerId: targetPlayer.id,
       playerColor: targetPlayer.color,
+      currentDie: currentDie,
     }
   }
 }

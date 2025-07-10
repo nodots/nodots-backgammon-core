@@ -28,10 +28,17 @@ function displayBoard(
   turnNumber: number,
   moveNumber: number,
   roll: number[],
-  activeColor: string
+  activeColor: string,
+  playerModels: { [playerId: string]: string }
 ) {
   console.log(`\n=== Turn ${turnNumber}, Move ${moveNumber} ===`)
-  console.log(`Active Player: ${activeColor.toUpperCase()}`)
+
+  // Use standardized player identification format
+  const symbol = activeColor === 'black' ? 'X' : 'O'
+  const model = activeColor === 'white' ? 'White Player' : 'Black Player'
+  const direction = activeColor === 'white' ? 'clockwise' : 'counterclockwise'
+
+  console.log(`Active: ${symbol} | ${model} | ${direction} >`)
   console.log(`Roll: [${roll.join(', ')}]`)
   console.log(`Game State: ${game.stateKind}`)
 
@@ -39,7 +46,9 @@ function displayBoard(
     game.board,
     game.players,
     game.activeColor,
-    game.stateKind
+    game.stateKind,
+    undefined,
+    playerModels
   )
   console.log(asciiBoard)
   console.log('='.repeat(80))
@@ -70,6 +79,12 @@ export async function runDebugSingleGame() {
     typeof blackPlayer
   ]
 
+  // Create player models mapping for standardized display
+  const playerModels = {
+    [whitePlayer.id]: 'White Player (Clockwise)',
+    [blackPlayer.id]: 'Black Player (Counterclockwise)',
+  }
+
   // Initialize game
   let game = Game.initialize(players) as BackgammonGameRollingForStart
   let turnCount = 0
@@ -85,7 +100,9 @@ export async function runDebugSingleGame() {
     gameRolling.board,
     gameRolling.players,
     gameRolling.activeColor,
-    gameRolling.stateKind
+    gameRolling.stateKind,
+    undefined,
+    playerModels
   )
   console.log(initialAsciiBoard)
   console.log('='.repeat(80))
@@ -123,7 +140,8 @@ export async function runDebugSingleGame() {
         turnCount,
         moveCount,
         roll,
-        gameRolled.activeColor
+        gameRolled.activeColor,
+        playerModels
       )
     }
 
@@ -216,7 +234,8 @@ export async function runDebugSingleGame() {
               turnCount,
               moveCount,
               roll,
-              gameRolled.activeColor
+              gameRolled.activeColor,
+              playerModels
             )
           }
         } catch (error) {
@@ -368,7 +387,14 @@ export async function runDebugSingleGame() {
         `\n⚠️  Game stuck! Player ${gameMoved.activeColor} has dice left but no valid moves.`
       )
       console.log(`Current board state:`)
-      displayBoard(gameMoved, turnCount, moveCount, roll, gameMoved.activeColor)
+      displayBoard(
+        gameMoved,
+        turnCount,
+        moveCount,
+        roll,
+        gameMoved.activeColor,
+        playerModels
+      )
       return { winner: null, turns: turnCount, moves: totalMoves, stuck: true }
     }
   }

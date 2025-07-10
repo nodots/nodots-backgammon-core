@@ -9,13 +9,13 @@ const AI_CONFIGS = {
     difficulty: 'advanced' as const,
     aiPlugin: 'basic-ai', // Could be extended to 'gnu-ai' when available
     name: 'GNU Bot',
-    description: 'GNU Backgammon-style AI (Advanced difficulty)',
+    description: 'GNU AI',
   },
   NODOTS: {
     difficulty: 'intermediate' as const,
     aiPlugin: 'basic-ai',
     name: 'Nodots Bot',
-    description: 'Nodots-style AI (Intermediate difficulty)',
+    description: 'Nodots Heuristic AI',
   },
 }
 
@@ -26,19 +26,58 @@ interface GnuVsNodotsResult {
   gnuMoves: number
   nodotsMoves: number
   stuck?: boolean
+  infiniteLoop?: boolean
+  repeatedGnuPositionId?: string
 }
 
 function checkWinCondition(board: any): 'GNU' | 'NODOTS' | null {
-  const whiteCheckersOff =
-    board.off.clockwise.checkers.filter((c: any) => c.color === 'white')
-      .length +
-    board.off.counterclockwise.checkers.filter((c: any) => c.color === 'white')
-      .length
-  const blackCheckersOff =
-    board.off.clockwise.checkers.filter((c: any) => c.color === 'black')
-      .length +
-    board.off.counterclockwise.checkers.filter((c: any) => c.color === 'black')
-      .length
+  // Defensive checks for board and board.off
+  if (!board) {
+    console.warn('checkWinCondition: board is undefined')
+    return null
+  }
+
+  if (!board.off) {
+    console.warn('checkWinCondition: board.off is undefined')
+    return null
+  }
+
+  if (!board.off.clockwise || !board.off.counterclockwise) {
+    console.warn(
+      'checkWinCondition: board.off.clockwise or board.off.counterclockwise is undefined'
+    )
+    return null
+  }
+
+  let whiteCheckersOff = 0
+  let blackCheckersOff = 0
+
+  try {
+    // CRITICAL FIX: Each player only uses their own direction's off area
+    // White (GNU) plays clockwise -> only check board.off.clockwise
+    if (board.off.clockwise?.checkers) {
+      whiteCheckersOff = board.off.clockwise.checkers.filter(
+        (c: any) => c.color === 'white'
+      ).length
+    }
+
+    // Black (NODOTS) plays counterclockwise -> only check board.off.counterclockwise
+    if (board.off.counterclockwise?.checkers) {
+      blackCheckersOff = board.off.counterclockwise.checkers.filter(
+        (c: any) => c.color === 'black'
+      ).length
+    }
+
+    console.log('[DEBUG] Win condition check:', {
+      whiteCheckersOff,
+      blackCheckersOff,
+      whiteWins: whiteCheckersOff === 15,
+      blackWins: blackCheckersOff === 15,
+    })
+  } catch (error) {
+    console.error('checkWinCondition: Error counting checkers off:', error)
+    return null
+  }
 
   if (whiteCheckersOff === 15) return 'GNU' // White = GNU Bot
   if (blackCheckersOff === 15) return 'NODOTS' // Black = Nodots Bot
@@ -53,22 +92,47 @@ function getGnuBoardDisplay(
   game: any,
   turnNumber: number,
   activeBot: 'GNU' | 'NODOTS',
-  roll: number[]
+  roll: number[],
+  playerModels: { [playerId: string]: string }
 ): string {
   let output = `\n=== Turn ${turnNumber} ===\n`
-  output += `Active Bot: ${activeBot} (${AI_CONFIGS[activeBot].description})\n`
+
+  // Use standardized player identification format
+  const activePlayer = game.activePlayer
+  const symbol = activePlayer?.color === 'black' ? 'X' : 'O'
+  const model =
+    playerModels[activePlayer?.id] || AI_CONFIGS[activeBot].description
+  const direction = activePlayer?.direction || 'unknown'
+
+  output += `Active: ${symbol} | ${model} | ${direction} >\n`
   output += `Roll: [${roll.join(', ')}]\n`
   output += `Game State: ${game.stateKind}\n\n`
 
   const asciiBoard = Board.getAsciiBoard(
     game.board,
     game.players,
-    game.activePlayer
+    game.activePlayer,
+    undefined,
+    playerModels
   )
   output += asciiBoard
   output += '\n' + '='.repeat(80) + '\n'
 
   return output
+}
+
+function dumpGameState(game: any, turnNumber: number, reason: string): string {
+  let dump = `\n${'='.repeat(100)}\n`
+  dump += `SIMULATION STOPPED - ${reason}\n`
+  dump += `Turn: ${turnNumber}\n`
+  dump += `Timestamp: ${new Date().toISOString()}\n`
+  dump += `Game ID: ${game.id}\n`
+  dump += `Game State: ${game.stateKind}\n`
+  dump += `Active Player: ${game.activePlayer?.id} (${game.activePlayer?.color})\n`
+  dump += `GNU Position ID: ${game.board?.gnuPositionId}\n`
+  dump += `${'='.repeat(100)}\n`
+
+  return dump
 }
 
 export async function simulateGnuVsNodots(
@@ -118,6 +182,12 @@ export async function simulateGnuVsNodots(
     typeof nodotsPlayer
   ]
 
+  // Create player models mapping for standardized display
+  const playerModels = {
+    [gnuPlayer.id]: AI_CONFIGS.GNU.description,
+    [nodotsPlayer.id]: AI_CONFIGS.NODOTS.description,
+  }
+
   // Initialize game
   let game = Game.initialize(players) as BackgammonGameRollingForStart
   let turnCount = 0
@@ -125,87 +195,235 @@ export async function simulateGnuVsNodots(
   let nodotsMoves = 0
   const gameId = game.id
 
+  // GNU Position ID tracking for infinite loop detection
+  let gnuPositionIdHistory: string[] = []
+  let infiniteLoopDetected = false
+
   console.log(`Game ID: ${gameId}`)
-  console.log(`GNU Bot (White): ${AI_CONFIGS.GNU.description}`)
-  console.log(`Nodots Bot (Black): ${AI_CONFIGS.NODOTS.description}`)
+  console.log(`O | ${AI_CONFIGS.GNU.description} | clockwise >`)
+  console.log(`X | ${AI_CONFIGS.NODOTS.description} | counterclockwise >`)
 
   // Log initial board
   logContent += '=== GAME START ===\n'
-  const initialAsciiBoard = Board.getAsciiBoard(game.board, players)
+  const initialAsciiBoard = Board.getAsciiBoard(
+    game.board,
+    players,
+    undefined,
+    undefined,
+    playerModels
+  )
   logContent += initialAsciiBoard + '\n'
   logContent += '='.repeat(80) + '\n\n'
 
-  const maxTurns = 200 // Prevent infinite loops
+  const maxTurns = 100 // Prevent infinite loops
   let winner: 'GNU' | 'NODOTS' | null = null
 
   // Roll for start to determine first player
   let currentGame = Game.rollForStart(game) as any
 
-  while (!winner && turnCount < maxTurns) {
+  while (!winner && turnCount < maxTurns && !infiniteLoopDetected) {
     turnCount++
     const activeBot = getBotTypeFromColor(currentGame.activeColor)
     const botConfig = AI_CONFIGS[activeBot]
 
+    // CRITICAL: Check for infinite loop by comparing GNU Position IDs
+    const currentGnuPositionId = currentGame.board?.gnuPositionId
+    if (currentGnuPositionId) {
+      gnuPositionIdHistory.push(currentGnuPositionId)
+
+      // Check if we have 3 consecutive identical position IDs
+      if (gnuPositionIdHistory.length >= 3) {
+        const lastThree = gnuPositionIdHistory.slice(-3)
+        if (lastThree[0] === lastThree[1] && lastThree[1] === lastThree[2]) {
+          infiniteLoopDetected = true
+          const reason = `Infinite loop detected - Same GNU Position ID in three consecutive turns: ${currentGnuPositionId}`
+
+          console.log(`\n🚨 ${reason}`)
+          console.log(`🚨 Stopping simulation at turn ${turnCount}`)
+
+          // Dump current game state
+          const stateDump = dumpGameState(currentGame, turnCount, reason)
+          console.log(stateDump)
+          logContent += stateDump
+
+          // Log final board state
+          logContent += '\n=== FINAL BOARD STATE (INFINITE LOOP) ===\n'
+          const finalAsciiBoard = Board.getAsciiBoard(
+            currentGame.board,
+            currentGame.players,
+            currentGame.activePlayer,
+            undefined,
+            playerModels
+          )
+          logContent += finalAsciiBoard + '\n'
+          logContent += '='.repeat(80) + '\n\n'
+
+          break
+        }
+      }
+    }
+
     if (verbose) {
       console.log(`\n=== Turn ${turnCount} ===`)
       console.log(`Active: ${activeBot} Bot (${botConfig.description})`)
+      console.log(`GNU Position ID: ${currentGnuPositionId}`)
     }
 
     try {
-      // Use Robot.makeOptimalMove with appropriate AI configuration
-      const robotResult = await Robot.makeOptimalMove(
+      // CRITICAL FIX: Handle the robot's turn by calling makeOptimalMove repeatedly until turn is complete
+      let turnCompleted = false
+      let moveCount = 0
+      const maxMovesPerTurn = 10 // Safety limit to prevent infinite loops
+
+      while (!turnCompleted && moveCount < maxMovesPerTurn) {
+        const robotResult = await Robot.makeOptimalMove(
+          currentGame,
+          botConfig.difficulty,
+          botConfig.aiPlugin
+        )
+
+        if (!robotResult.success) {
+          // Check if this is a legitimate turn completion (no legal moves)
+          if (
+            robotResult.error?.includes('no legal moves') ||
+            robotResult.error?.includes('passed turn')
+          ) {
+            console.log(
+              `✅ ${activeBot} Bot completed turn (no moves available)`
+            )
+            turnCompleted = true
+          } else if (robotResult.error?.includes('stale move reference')) {
+            // Handle stale move reference error by forcing turn completion
+            console.log(
+              `⚠️ ${activeBot} Bot encountered stale move reference, forcing turn completion`
+            )
+            if (currentGame.stateKind === 'moving') {
+              currentGame = Game.checkAndCompleteTurn(currentGame as any)
+            }
+            turnCompleted = true
+          } else {
+            console.log(`❌ ${activeBot} Bot failed: ${robotResult.error}`)
+            break
+          }
+        } else {
+          // Move executed successfully
+          currentGame = robotResult.game
+          moveCount++
+
+          // Update move counts
+          if (activeBot === 'GNU') {
+            gnuMoves++
+          } else {
+            nodotsMoves++
+          }
+
+          if (verbose) {
+            console.log(`✅ ${activeBot} Bot: ${robotResult.message}`)
+          }
+
+          // CRITICAL FIX: Check if the active player has changed (turn transition)
+          const newActiveBot = getBotTypeFromColor(currentGame.activeColor)
+          if (newActiveBot !== activeBot) {
+            // Turn has been completed and passed to the next player
+            console.log(
+              `✅ ${activeBot} Bot completed turn, ${newActiveBot} Bot is now active`
+            )
+            turnCompleted = true
+          }
+
+          // CRITICAL FIX: Check if all dice are used up (no ready moves remaining)
+          if (currentGame.activePlay && currentGame.activePlay.moves) {
+            const movesArray = Array.from(currentGame.activePlay.moves)
+            const readyMoves = movesArray.filter(
+              (m: any) => m.stateKind === 'ready'
+            )
+
+            if (readyMoves.length === 0) {
+              console.log(`✅ ${activeBot} Bot completed turn (all dice used)`)
+              // Force turn transition by calling Game.checkAndCompleteTurn
+              if (currentGame.stateKind === 'moving') {
+                currentGame = Game.checkAndCompleteTurn(currentGame as any)
+              }
+              turnCompleted = true
+            }
+          }
+
+          // CRITICAL FIX: Check for win condition after each move
+          const currentWinner = checkWinCondition(currentGame.board)
+          if (currentWinner) {
+            winner = currentWinner
+            turnCompleted = true
+            break
+          }
+        }
+      }
+
+      // Safety check: If we hit the move limit, force turn completion
+      if (!turnCompleted && moveCount >= maxMovesPerTurn) {
+        console.log(
+          `⚠️ ${activeBot} Bot reached move limit (${maxMovesPerTurn}), forcing turn completion`
+        )
+        // Force turn transition
+        if (currentGame.stateKind === 'moving') {
+          currentGame = Game.checkAndCompleteTurn(currentGame as any)
+        }
+        turnCompleted = true
+      }
+
+      // CRITICAL FIX: Get dice roll safely for logging
+      let roll = [0, 0] // Default fallback
+      if (currentGame.activePlayer?.dice?.currentRoll) {
+        roll = currentGame.activePlayer.dice.currentRoll
+      } else if (currentGame.inactivePlayer?.dice?.currentRoll) {
+        // Use previous player's roll for logging if current player doesn't have dice
+        roll = currentGame.inactivePlayer.dice.currentRoll
+      }
+
+      // Log board state
+      logContent += getGnuBoardDisplay(
         currentGame,
-        botConfig.difficulty,
-        botConfig.aiPlugin
+        turnCount,
+        activeBot,
+        roll,
+        playerModels
       )
 
-      if (!robotResult.success) {
-        console.log(`❌ ${activeBot} Bot failed: ${robotResult.error}`)
+      // GNU Position ID tracking is now handled at the beginning of each turn
+
+      // CRITICAL FIX: Check for win condition after turn completion
+      winner = checkWinCondition(currentGame.board)
+      if (winner) {
+        const winnerConfig =
+          winner === 'GNU' ? AI_CONFIGS.GNU : AI_CONFIGS.NODOTS
+        const winnerSymbol = winner === 'GNU' ? 'O' : 'X'
+        const winnerDirection =
+          winner === 'GNU' ? 'clockwise' : 'counterclockwise'
+
+        console.log(
+          `\n🎉 ${winnerSymbol} | ${winnerConfig.description} | ${winnerDirection} > wins after ${turnCount} turns!`
+        )
+        logContent += `\n🎉 GAME OVER: ${winnerSymbol} | ${winnerConfig.description} | ${winnerDirection} > wins!\n`
+        logContent += `Total turns: ${turnCount}\n`
+        logContent += `GNU moves: ${gnuMoves}\n`
+        logContent += `Nodots moves: ${nodotsMoves}\n`
         break
       }
 
-      if (robotResult.game) {
-        currentGame = robotResult.game
+      // Check for game completion state
+      if ('winner' in currentGame && currentGame.winner) {
+        winner = currentGame.winner.color === 'white' ? 'GNU' : 'NODOTS'
+        break
+      }
 
-        // Track moves per bot
-        if (activeBot === 'GNU') {
-          gnuMoves++
-        } else {
-          nodotsMoves++
-        }
-
-        if (verbose) {
-          console.log(`✅ ${activeBot} Bot: ${robotResult.message}`)
-        }
-
-        // Get dice roll for logging
-        const roll = currentGame.activePlayer?.dice?.currentRoll || [0, 0]
-
-        // Log board state
-        logContent += getGnuBoardDisplay(
-          currentGame,
-          turnCount,
-          activeBot,
-          roll
+      // CRITICAL FIX: Enhanced deadlock detection
+      if (turnCount > 150) {
+        console.log(
+          `⚠️ Game may be stuck after ${turnCount} turns - checking for deadlock`
         )
 
-        // Check for winner
-        winner = checkWinCondition(currentGame.board)
-        if (winner) {
-          const winnerBot = winner === 'GNU' ? 'GNU Bot' : 'Nodots Bot'
-          console.log(`\n🎉 ${winnerBot} wins after ${turnCount} turns!`)
-          logContent += `\n🎉 GAME OVER: ${winnerBot} wins!\n`
-          logContent += `Total turns: ${turnCount}\n`
-          logContent += `GNU moves: ${gnuMoves}\n`
-          logContent += `Nodots moves: ${nodotsMoves}\n`
-          break
-        }
-
-        // Check for game completion state
-        if ('winner' in currentGame && currentGame.winner) {
-          winner = currentGame.winner.color === 'white' ? 'GNU' : 'NODOTS'
-          break
-        }
+        // Force end the game to prevent infinite timeout
+        console.log(`⚠️ Forcing game end due to excessive turns`)
+        break
       }
     } catch (error) {
       console.log(`❌ Error on turn ${turnCount}: ${error}`)
@@ -225,16 +443,40 @@ export async function simulateGnuVsNodots(
     gnuMoves,
     nodotsMoves,
     stuck: turnCount >= maxTurns && !winner,
+    infiniteLoop: infiniteLoopDetected,
+    repeatedGnuPositionId: infiniteLoopDetected
+      ? gnuPositionIdHistory[gnuPositionIdHistory.length - 1] || undefined
+      : undefined,
   }
 
-  // Print results
+  // Print results using standardized format
   console.log('\n📊 Simulation Results:')
-  console.log(`Winner: ${result.winner || 'None (stuck/timeout)'}`)
+  if (result.winner) {
+    const winnerConfig =
+      result.winner === 'GNU' ? AI_CONFIGS.GNU : AI_CONFIGS.NODOTS
+    const winnerSymbol = result.winner === 'GNU' ? 'O' : 'X'
+    const winnerDirection =
+      result.winner === 'GNU' ? 'clockwise' : 'counterclockwise'
+    console.log(
+      `Winner: ${winnerSymbol} | ${winnerConfig.description} | ${winnerDirection} >`
+    )
+  } else {
+    console.log(`Winner: None (stuck/timeout)`)
+  }
   console.log(`Total turns: ${result.turnCount}`)
-  console.log(`GNU Bot moves: ${result.gnuMoves}`)
-  console.log(`Nodots Bot moves: ${result.nodotsMoves}`)
+  console.log(
+    `O | ${AI_CONFIGS.GNU.description} | clockwise > moves: ${result.gnuMoves}`
+  )
+  console.log(
+    `X | ${AI_CONFIGS.NODOTS.description} | counterclockwise > moves: ${result.nodotsMoves}`
+  )
   if (result.stuck) {
     console.log('⚠️  Game reached turn limit (possible stuck state)')
+  }
+  if (result.infiniteLoop) {
+    console.log(
+      `🚨 Infinite loop detected with GNU Position ID: ${result.repeatedGnuPositionId}`
+    )
   }
 
   return result
@@ -248,10 +490,19 @@ if (require.main === module) {
   simulateGnuVsNodots(verbose)
     .then((result) => {
       console.log('\n🎯 Final Result:')
-      console.log(`Winner: ${result.winner || 'Draw/Timeout'}`)
-      console.log(
-        `GNU vs Nodots: ${result.gnuMoves} vs ${result.nodotsMoves} moves`
-      )
+      if (result.winner) {
+        const winnerConfig =
+          result.winner === 'GNU' ? AI_CONFIGS.GNU : AI_CONFIGS.NODOTS
+        const winnerSymbol = result.winner === 'GNU' ? 'O' : 'X'
+        const winnerDirection =
+          result.winner === 'GNU' ? 'clockwise' : 'counterclockwise'
+        console.log(
+          `Winner: ${winnerSymbol} | ${winnerConfig.description} | ${winnerDirection} >`
+        )
+      } else {
+        console.log(`Winner: Draw/Timeout`)
+      }
+      console.log(`O vs X: ${result.gnuMoves} vs ${result.nodotsMoves} moves`)
 
       process.exit(result.winner ? 0 : 1)
     })

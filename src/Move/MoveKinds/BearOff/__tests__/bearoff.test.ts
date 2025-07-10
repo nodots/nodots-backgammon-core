@@ -78,22 +78,22 @@ describe('BearOff', () => {
 
   describe('Valid Bear Off Scenarios', () => {
     it('should successfully bear off a checker with exact dice value', () => {
-      // Setup board with all checkers in home board (points 19-24 for clockwise)
+      // Setup board with all checkers in home board (points 1-6 for clockwise)
       const boardImport: BackgammonCheckerContainerImport[] = [
         {
-          position: { clockwise: 24, counterclockwise: 1 },
+          position: { clockwise: 6, counterclockwise: 19 },
           checkers: { qty: 1, color: 'white' },
         },
-        // Rest of checkers on point 19 (lowest point in home board)
+        // Rest of checkers on point 1 (lowest point in home board)
         {
-          position: { clockwise: 19, counterclockwise: 6 },
+          position: { clockwise: 1, counterclockwise: 24 },
           checkers: { qty: 14, color: 'white' },
         },
       ]
       const { board, player } = setupTestBoard(boardImport)
 
       const origin = board.points.find(
-        (p: BackgammonPoint) => p.position[player.direction] === 24
+        (p: BackgammonPoint) => p.position[player.direction] === 6
       )!
 
       const move: BackgammonMoveReady = {
@@ -109,31 +109,30 @@ describe('BearOff', () => {
       const moveResult = BearOff.move(board, move)
       expect(moveResult.move.stateKind).toBe('completed')
       expect(
-        moveResult.board.points.find(
-          (p) => p.position[player.direction] === 24
-        )?.checkers.length
+        moveResult.board.points.find((p) => p.position[player.direction] === 6)
+          ?.checkers.length
       ).toBe(0)
       // Check that checker was moved to the off position
       expect(moveResult.board.off[player.direction].checkers.length).toBe(1)
     })
 
     it('should successfully bear off a checker with higher dice value when no checkers on higher points', () => {
-      // Setup board with all checkers in home board, one on point 22, rest on point 19
+      // Setup board with all checkers in home board, one on point 3, rest on point 1
       const boardImport: BackgammonCheckerContainerImport[] = [
         {
-          position: { clockwise: 22, counterclockwise: 3 },
+          position: { clockwise: 3, counterclockwise: 22 },
           checkers: { qty: 1, color: 'white' },
         },
-        // Rest of checkers on point 19 (no checkers on higher points)
+        // Rest of checkers on point 1 (no checkers on higher points)
         {
-          position: { clockwise: 19, counterclockwise: 6 },
+          position: { clockwise: 1, counterclockwise: 24 },
           checkers: { qty: 14, color: 'white' },
         },
       ]
       const { board, player } = setupTestBoard(boardImport)
 
       const origin = board.points.find(
-        (p: BackgammonPoint) => p.position[player.direction] === 22
+        (p: BackgammonPoint) => p.position[player.direction] === 3
       )!
 
       const move: BackgammonMoveReady = {
@@ -149,9 +148,8 @@ describe('BearOff', () => {
       const moveResult = BearOff.move(board, move)
       expect(moveResult.move.stateKind).toBe('completed')
       expect(
-        moveResult.board.points.find(
-          (p) => p.position[player.direction] === 22
-        )?.checkers.length
+        moveResult.board.points.find((p) => p.position[player.direction] === 3)
+          ?.checkers.length
       ).toBe(0)
       // Check that checker was moved to the off position
       expect(moveResult.board.off[player.direction].checkers.length).toBe(1)
@@ -160,26 +158,26 @@ describe('BearOff', () => {
 
   describe('Invalid Bear Off Scenarios', () => {
     it('should not allow bearing off when checkers exist outside home board', () => {
-      // Setup board with a checker outside home board (point 18)
+      // Setup board with a checker outside home board (point 7)
       const boardImport: BackgammonCheckerContainerImport[] = [
         {
-          position: { clockwise: 22, counterclockwise: 3 },
+          position: { clockwise: 3, counterclockwise: 22 },
           checkers: { qty: 1, color: 'white' },
         },
         {
-          position: { clockwise: 18, counterclockwise: 7 }, // Outside home board
+          position: { clockwise: 7, counterclockwise: 18 }, // Outside home board
           checkers: { qty: 1, color: 'white' },
         },
-        // Rest of checkers on point 19
+        // Rest of checkers on point 1
         {
-          position: { clockwise: 19, counterclockwise: 6 },
+          position: { clockwise: 1, counterclockwise: 24 },
           checkers: { qty: 13, color: 'white' },
         },
       ]
       const { board, player } = setupTestBoard(boardImport)
 
       const origin = board.points.find(
-        (p: BackgammonPoint) => p.position[player.direction] === 22
+        (p: BackgammonPoint) => p.position[player.direction] === 3
       )!
 
       const move: BackgammonMoveReady = {
@@ -198,26 +196,26 @@ describe('BearOff', () => {
     })
 
     it('should not allow bearing off with higher dice when checkers exist on higher points', () => {
-      // Setup board with checkers on points 22 and 24
+      // Setup board with checkers on points 3 and 6
       const boardImport: BackgammonCheckerContainerImport[] = [
         {
-          position: { clockwise: 22, counterclockwise: 3 },
+          position: { clockwise: 3, counterclockwise: 22 },
           checkers: { qty: 1, color: 'white' },
         },
         {
-          position: { clockwise: 24, counterclockwise: 1 }, // Higher point
+          position: { clockwise: 6, counterclockwise: 19 }, // Higher point
           checkers: { qty: 1, color: 'white' },
         },
-        // Rest of checkers on point 19
+        // Rest of checkers on point 1
         {
-          position: { clockwise: 19, counterclockwise: 6 },
+          position: { clockwise: 1, counterclockwise: 24 },
           checkers: { qty: 13, color: 'white' },
         },
       ]
       const { board, player } = setupTestBoard(boardImport)
 
       const origin = board.points.find(
-        (p: BackgammonPoint) => p.position[player.direction] === 22
+        (p: BackgammonPoint) => p.position[player.direction] === 3
       )!
 
       const move: BackgammonMoveReady = {
@@ -236,17 +234,17 @@ describe('BearOff', () => {
     })
 
     it('should not allow bearing off from empty point', () => {
-      // Setup board with all checkers on point 19
+      // Setup board with all checkers on point 1
       const boardImport: BackgammonCheckerContainerImport[] = [
         {
-          position: { clockwise: 19, counterclockwise: 6 },
+          position: { clockwise: 1, counterclockwise: 24 },
           checkers: { qty: 15, color: 'white' },
         },
       ]
       const { board, player } = setupTestBoard(boardImport)
 
       const origin = board.points.find(
-        (p: BackgammonPoint) => p.position[player.direction] === 22
+        (p: BackgammonPoint) => p.position[player.direction] === 3
       )!
 
       const move: BackgammonMoveReady = {
@@ -265,22 +263,22 @@ describe('BearOff', () => {
 
   describe('Multiple Checkers Scenarios', () => {
     it('should bear off one checker at a time from a point with multiple checkers', () => {
-      // Setup board with multiple checkers on point 24
+      // Setup board with multiple checkers on point 6
       const boardImport: BackgammonCheckerContainerImport[] = [
         {
-          position: { clockwise: 24, counterclockwise: 1 },
+          position: { clockwise: 6, counterclockwise: 19 },
           checkers: { qty: 2, color: 'white' },
         },
-        // Rest of checkers on point 19
+        // Rest of checkers on point 1
         {
-          position: { clockwise: 19, counterclockwise: 6 },
+          position: { clockwise: 1, counterclockwise: 24 },
           checkers: { qty: 13, color: 'white' },
         },
       ]
       const { board, player } = setupTestBoard(boardImport)
 
       const origin = board.points.find(
-        (p: BackgammonPoint) => p.position[player.direction] === 24
+        (p: BackgammonPoint) => p.position[player.direction] === 6
       )!
 
       const move: BackgammonMoveReady = {
@@ -296,9 +294,8 @@ describe('BearOff', () => {
       const moveResult = BearOff.move(board, move)
       expect(moveResult.move.stateKind).toBe('completed')
       expect(
-        moveResult.board.points.find(
-          (p) => p.position[player.direction] === 24
-        )?.checkers.length
+        moveResult.board.points.find((p) => p.position[player.direction] === 6)
+          ?.checkers.length
       ).toBe(1) // One checker should remain
       // Check that one checker was moved to the off position
       expect(moveResult.board.off[player.direction].checkers.length).toBe(1)

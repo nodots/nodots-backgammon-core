@@ -11,26 +11,55 @@ export const ascii = (
   board: BackgammonBoard,
   players?: BackgammonPlayers,
   activePlayer?: BackgammonPlayer,
-  moveNotation?: string
+  moveNotation?: string,
+  playerModels?: { [playerId: string]: string }
 ): string => {
+  // Validate board exists and has required properties
+  if (!board) {
+    return 'ERROR: Board is undefined'
+  }
+
+  if (!board.points) {
+    return 'ERROR: Board points are undefined'
+  }
+
+  if (!board.bar) {
+    return 'ERROR: Board bar is undefined'
+  }
+
+  if (!board.off) {
+    return 'ERROR: Board off is undefined'
+  }
+
+  if (!board.off.clockwise) {
+    return 'ERROR: Board off.clockwise is undefined'
+  }
+
+  if (!board.off.counterclockwise) {
+    return 'ERROR: Board off.counterclockwise is undefined'
+  }
+
   const points = board.points
   const bar = board.bar
 
   let boardDisplay = ''
 
   // GNU-style header with actual position ID
-  boardDisplay += 'Nodots Backgammon\n'
-  boardDisplay += `GNU Position ID: ${board.gnuPositionId || ''}\n`
-  boardDisplay += '                 Match ID   : cAkAAAAAAAAA\n'
+  // If gnuPositionId is not set or empty, show a placeholder
+  const displayGnuPositionId = board.gnuPositionId || '[position-id-not-set]'
+  boardDisplay += `Nodots Backgammon GPID: ${displayGnuPositionId}\n`
 
-  // Helper to get player label with color and symbol
+  // Helper to get player label with new standardized format: 'symbol | model | direction >'
   const getPlayerLabel = (player: any, fallback: string) => {
-    const baseLabel = player?.email || player?.userId || fallback
-    const colorName = player?.color ? player.color.toUpperCase() : 'UNKNOWN'
     const symbol = player?.color === 'black' ? 'X' : 'O'
+    const model = playerModels?.[player?.id] || fallback
+    const direction = player?.direction || 'unknown'
     const activeIndicator =
       activePlayer && activePlayer.id === player?.id ? ' *ACTIVE*' : ''
-    return `${colorName} (${symbol})${activeIndicator} - ${baseLabel}`
+
+    return `${symbol} | ${model} | ${direction} >${activeIndicator} - ${
+      player?.id || 'unknown'
+    }`
   }
 
   // Top label (fixed GNU standard)
@@ -110,12 +139,25 @@ export const ascii = (
   boardDisplay += 'v|                  |BAR|                  |'
   if (players && players.length >= 2) {
     const player1 = players[0]
-    const player1Off =
-      board.off.clockwise.checkers.filter((c) => c.color === player1.color)
-        .length +
-      board.off.counterclockwise.checkers.filter(
-        (c) => c.color === player1.color
-      ).length
+    let player1Off = 0
+
+    // Safely calculate player1Off with defensive checks
+    try {
+      if (board.off?.clockwise?.checkers) {
+        player1Off += board.off.clockwise.checkers.filter(
+          (c) => c.color === player1.color
+        ).length
+      }
+      if (board.off?.counterclockwise?.checkers) {
+        player1Off += board.off.counterclockwise.checkers.filter(
+          (c) => c.color === player1.color
+        ).length
+      }
+    } catch (error) {
+      console.error('Error calculating player1Off:', error)
+      player1Off = 0
+    }
+
     boardDisplay += `     ${player1Off} points\n`
   } else {
     boardDisplay += '     0 points\n'
@@ -205,12 +247,25 @@ export const ascii = (
   if (players && players.length >= 2) {
     const player2 = players[1]
     const symbol2 = player2.color === 'black' ? 'X' : 'O'
-    const player2Off =
-      board.off.clockwise.checkers.filter((c) => c.color === player2.color)
-        .length +
-      board.off.counterclockwise.checkers.filter(
-        (c) => c.color === player2.color
-      ).length
+    let player2Off = 0
+
+    // Safely calculate player2Off with defensive checks
+    try {
+      if (board.off?.clockwise?.checkers) {
+        player2Off += board.off.clockwise.checkers.filter(
+          (c) => c.color === player2.color
+        ).length
+      }
+      if (board.off?.counterclockwise?.checkers) {
+        player2Off += board.off.counterclockwise.checkers.filter(
+          (c) => c.color === player2.color
+        ).length
+      }
+    } catch (error) {
+      console.error('Error calculating player2Off:', error)
+      player2Off = 0
+    }
+
     boardDisplay += `     ${symbol2}: ${getPlayerLabel(player2, 'player2')}\n`
     if (activePlayer && activePlayer.color === player2.color) {
       boardDisplay += '                              On roll\n'

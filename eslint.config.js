@@ -1,6 +1,6 @@
 import eslint from '@eslint/js'
-import tseslint from 'typescript-eslint'
 import globals from 'globals'
+import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   {
@@ -19,6 +19,18 @@ export default tseslint.config(
         ...globals.jest,
         ...globals.node,
       },
+    },
+    plugins: {
+      golden: {
+        rules: {
+          'no-direction-distance': (
+            await import('./eslint-rules/no-direction-distance.js')
+          ).default,
+        },
+      },
+    },
+    rules: {
+      'golden/no-direction-distance': 'error',
     },
   }
 )

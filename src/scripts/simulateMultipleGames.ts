@@ -47,13 +47,26 @@ function logGameMove(
   // Create GNU-style move notation (e.g., "24/18 13/11")
   const moveNotation = `${originStr}/${destStr}`
 
+  // Create player models for standardized display
+  const playerModels: { [playerId: string]: string } = {}
+  if (game.players) {
+    game.players.forEach((player: any) => {
+      if (player.color === 'white') {
+        playerModels[player.id] = 'White Player (Clockwise)'
+      } else {
+        playerModels[player.id] = 'Black Player (Counterclockwise)'
+      }
+    })
+  }
+
   // Get enhanced ASCII board with roll information and move notation
   const asciiBoard = Board.getAsciiGameBoard(
     game.board,
     game.players,
     game.activeColor,
     game.stateKind,
-    moveNotation
+    moveNotation,
+    playerModels
   )
 
   const gameLog: GameLog = {
@@ -75,9 +88,15 @@ function logGameMove(
 
   // Write to game-specific log file
   const logFilePath = path.join(logDir, `${gameId}.log`)
+
+  // Use standardized player identification format
+  const symbol = activeColor === 'black' ? 'X' : 'O'
+  const model = activeColor === 'white' ? 'White Player' : 'Black Player'
+  const direction = activeColor === 'white' ? 'clockwise' : 'counterclockwise'
+
   const logEntry = `=== Turn ${turnNumber}, Move ${moveNumber} ===
 Game ID: ${gameId}
-Active Player: ${activeColor.toUpperCase()}
+Active: ${symbol} | ${model} | ${direction} >
 Roll: [${roll.join(', ')}]
 Move: from ${originStr} to ${destStr}
 Timestamp: ${gameLog.timestamp}
@@ -92,7 +111,7 @@ ${'='.repeat(80)}
 
   // Also log to console for progress tracking
   console.log(
-    `Game ${gameId}: Turn ${turnNumber}, Move ${moveNumber} - ${activeColor} moves from ${originStr} to ${destStr}`
+    `Game ${gameId}: Turn ${turnNumber}, Move ${moveNumber} - ${symbol} | ${model} | ${direction} > moves from ${originStr} to ${destStr}`
   )
 }
 

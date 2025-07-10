@@ -31,11 +31,8 @@ export class BearOff {
         point.checkers.forEach((checker) => {
           if (checker.color === player.color) {
             const pos = point.position[player.direction]
-            // Home board is positions 19-24 for clockwise, 1-6 for counterclockwise
-            const inHomeBoard =
-              player.direction === 'clockwise'
-                ? pos >= 19 && pos <= 24
-                : pos >= 1 && pos <= 6
+            // GOLDEN RULE: Home board is positions 1-6 relative to the player's direction
+            const inHomeBoard = pos >= 1 && pos <= 6
             if (!inHomeBoard) {
               outsideHomeBoard = true
             }
@@ -121,11 +118,8 @@ export class BearOff {
     let distanceToBearOff: number
     if (origin.kind === 'point') {
       const originPoint = origin as BackgammonPoint
-      if (direction === 'clockwise') {
-        distanceToBearOff = 25 - originPoint.position.clockwise
-      } else {
-        distanceToBearOff = originPoint.position.counterclockwise
-      }
+      // GOLDEN RULE: Bear-off distance is ALWAYS originPoint.position[direction]
+      distanceToBearOff = originPoint.position[direction]
 
       // If using a higher die than needed, only allow if no checkers on higher points
       if (dieValue > distanceToBearOff) {

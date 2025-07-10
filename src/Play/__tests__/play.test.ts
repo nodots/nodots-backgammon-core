@@ -12,31 +12,31 @@ import {
 import { Play } from '..'
 import { Board, Dice, generateId, Player } from '../..'
 
-// Helper to create a board with all 15 white checkers in the home board (points 19-24 for clockwise)
+// Helper to create a board with all 15 white checkers in the home board (points 1-6 for clockwise)
 function createTestBoard() {
   const boardImport: BackgammonCheckerContainerImport[] = [
     {
-      position: { clockwise: 19, counterclockwise: 6 },
+      position: { clockwise: 1, counterclockwise: 24 },
       checkers: { qty: 2, color: 'white' },
     },
     {
-      position: { clockwise: 20, counterclockwise: 5 },
+      position: { clockwise: 2, counterclockwise: 23 },
       checkers: { qty: 3, color: 'white' },
     },
     {
-      position: { clockwise: 21, counterclockwise: 4 },
+      position: { clockwise: 3, counterclockwise: 22 },
       checkers: { qty: 3, color: 'white' },
     },
     {
-      position: { clockwise: 22, counterclockwise: 3 },
+      position: { clockwise: 4, counterclockwise: 21 },
       checkers: { qty: 3, color: 'white' },
     },
     {
-      position: { clockwise: 23, counterclockwise: 2 },
+      position: { clockwise: 5, counterclockwise: 20 },
       checkers: { qty: 2, color: 'white' },
     },
     {
-      position: { clockwise: 24, counterclockwise: 1 },
+      position: { clockwise: 6, counterclockwise: 19 },
       checkers: { qty: 2, color: 'white' },
     },
   ]
@@ -447,4 +447,52 @@ describe('Play', () => {
   //     )
   //   })
   // })
+})
+
+describe('Play.initialize edge cases', () => {
+  it('should initialize doubles moves with proper origin in bear-off position', () => {
+    // Set up a board with white checkers in bear-off position
+    // For clockwise white player, home board is positions 1-6
+    const bearOffBoardImport: BackgammonCheckerContainerImport[] = [
+      {
+        position: { clockwise: 1, counterclockwise: 24 },
+        checkers: { qty: 12, color: 'white' },
+      },
+      {
+        position: { clockwise: 2, counterclockwise: 23 },
+        checkers: { qty: 3, color: 'white' },
+      },
+      {
+        position: { clockwise: 3, counterclockwise: 22 },
+        checkers: { qty: 2, color: 'white' },
+      },
+    ]
+
+    const board = Board.initialize(bearOffBoardImport)
+
+    // Create a player with [3,3] roll
+    const player = createRollingPlayer(board, [3, 3])
+
+    // Initialize the play
+    const play = Play.initialize(board, player)
+
+    // Should have 4 moves for doubles
+    expect(play.moves.size).toBe(4)
+
+    // All moves should have proper origins (not null)
+    const movesArray = Array.from(play.moves)
+    movesArray.forEach((move) => {
+      expect(move.origin).toBeDefined()
+      expect(move.origin).not.toBeNull()
+      expect(move.dieValue).toBe(3)
+      expect(move.stateKind).toBe('ready')
+
+      // Should have bear-off move kind since all checkers are in home board
+      expect(move.moveKind).toBe('bear-off')
+
+      // Should have possible moves
+      expect(move.possibleMoves).toBeDefined()
+      expect(move.possibleMoves.length).toBeGreaterThan(0)
+    })
+  })
 })

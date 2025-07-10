@@ -190,30 +190,27 @@ export class Player {
     board: BackgammonBoard,
     player: BackgammonPlayer
   ) {
-    return player.direction === 'clockwise'
-      ? board.points.filter(
-          (p) =>
-            p.kind === 'point' &&
-            p.position[player.direction] >= 19 &&
-            p.position[player.direction] <= 24
-        )
-      : board.points.filter(
-          (p) =>
-            p.kind === 'point' &&
-            p.position[player.direction] >= 1 &&
-            p.position[player.direction] <= 6
-        )
+    // GOLDEN RULE: Home board is always the six points whose position for the
+    // active player's direction is 1-6.
+    return board.points.filter(
+      (p) =>
+        p.kind === 'point' &&
+        p.position[player.direction] >= 1 &&
+        p.position[player.direction] <= 6
+    )
   }
 
   public static getOpponentBoard = function getOpponentBoard(
     board: BackgammonBoard,
     player: BackgammonPlayer
   ) {
-    const points =
-      player.direction === 'clockwise'
-        ? board.points.slice(0, 6) // Points 1-6 for clockwise player
-        : board.points.slice(18, 24) // Points 19-24 for counterclockwise player
-    return points
+    // Opponent home board is the six points whose position for the player's direction is 19-24
+    return board.points.filter(
+      (p) =>
+        p.kind === 'point' &&
+        p.position[player.direction] >= 19 &&
+        p.position[player.direction] <= 24
+    )
   }
 
   public static toMoving = function toMoving(

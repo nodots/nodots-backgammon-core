@@ -45,12 +45,13 @@ export class Play {
     origin: BackgammonMoveOrigin
   ): BackgammonPlayResult {
     const movesArray = Array.from(play.moves)
-    let move = movesArray.find(
-      (m) => m.stateKind === 'ready'
-    ) as BackgammonMoveReady
 
-    if (!move) {
-      // Return a no-move completed move
+    // CRITICAL FIX: Don't rely on cached moves from activePlay.moves - they are stale
+    // Instead, calculate a fresh move for the given origin and die value
+    // First, find any ready move to get the die value
+    const anyReadyMove = movesArray.find((m) => m.stateKind === 'ready')
+    if (!anyReadyMove) {
+      console.log('[DEBUG] Play.move: No ready moves found in activePlay.moves')
       const noMove: BackgammonMoveCompletedNoMove = {
         id: generateId(),
         player: play.player,
@@ -69,34 +70,33 @@ export class Play {
       } as BackgammonPlayResult
     }
 
-    // --- PATCH: Handle bear-off moves using BearOff.move ---
-    if (move.moveKind === 'bear-off') {
-      // Delegate to BearOff.move for correct moveKind and stateKind
-      const bearOffResult = BearOff.move(board, move)
-      return {
-        play: {
-          ...play,
-          moves: new Set([bearOffResult.move]),
-          board: bearOffResult.board,
-        },
-        board: bearOffResult.board,
-        move: bearOffResult.move,
-      } as BackgammonPlayResult
-    }
-    // --- END PATCH ---
+    // Get the die value from any ready move
+    const dieValue = anyReadyMove.dieValue
 
-    const possibleMoves = Board.getPossibleMoves(
+    // Calculate fresh possible moves for this die value
+    const freshPossibleMoves = Board.getPossibleMoves(
       board,
-      move.player,
-      move.dieValue
+      play.player,
+      dieValue
     )
-    const destinationMove = possibleMoves.find((m) => m.origin.id === origin.id)
 
-    if (!destinationMove) {
+    // Find the specific move for the exact origin ID provided
+    const matchingMove = freshPossibleMoves.find(
+      (pm) => pm.origin.id === origin.id
+    )
+
+    if (!matchingMove) {
+      console.log('[DEBUG] Play.move: No fresh move found for origin:', {
+        originId: origin.id,
+        originKind: origin.kind,
+        dieValue: dieValue,
+        freshMovesCount: freshPossibleMoves.length,
+        freshMoveOriginIds: freshPossibleMoves.map((pm) => pm.origin.id),
+      })
       const noMove: BackgammonMoveCompletedNoMove = {
         id: generateId(),
         player: play.player,
-        dieValue: move.dieValue,
+        dieValue: dieValue,
         stateKind: 'completed',
         moveKind: 'no-move',
         possibleMoves: [],
@@ -111,10 +111,51 @@ export class Play {
       } as BackgammonPlayResult
     }
 
+    // Create a synthetic move object with the exact origin and destination
+    const move: BackgammonMoveReady = {
+      id: anyReadyMove.id, // Use the ID from the original ready move
+      player: play.player,
+      dieValue: dieValue,
+      stateKind: 'ready',
+      moveKind: anyReadyMove.moveKind,
+      possibleMoves: [matchingMove], // Use the fresh move
+      origin: matchingMove.origin, // Use the exact origin from fresh calculation
+    }
+
+    // --- PATCH: Handle bear-off moves using BearOff.move ---
+    if (move.moveKind === 'bear-off') {
+      // Delegate to BearOff.move for correct moveKind and stateKind
+      const bearOffResult = BearOff.move(board, move)
+
+      // 🔧 FIX: Preserve all other moves, just replace the executed one
+      const allMoves = Array.from(play.moves)
+      const otherMoves = allMoves.filter((m) => m.id !== move.id)
+      const finalMoves = new Set([...otherMoves, bearOffResult.move])
+
+      return {
+        play: {
+          ...play,
+          moves: finalMoves, // 🔧 FIX: Keep all moves, not just the completed one
+          board: bearOffResult.board,
+        },
+        board: bearOffResult.board,
+        move: bearOffResult.move,
+      } as BackgammonPlayResult
+    }
+    // --- END PATCH ---
+
+    // CRITICAL FIX: Use the exact destination from the fresh move calculation
+    // Don't recalculate possible moves - we already have the correct destination
+    console.log('[DEBUG] Play.move: Executing move with fresh destination:', {
+      originId: matchingMove.origin.id,
+      destinationId: matchingMove.destination.id,
+      dieValue: dieValue,
+    })
+
     board = Board.moveChecker(
       board,
-      origin,
-      destinationMove.destination,
+      matchingMove.origin,
+      matchingMove.destination,
       move.player.direction
     )
 
@@ -127,8 +168,8 @@ export class Play {
         ? move.moveKind
         : 'point-to-point',
       possibleMoves: [],
-      origin,
-      destination: destinationMove.destination,
+      origin: matchingMove.origin,
+      destination: matchingMove.destination,
       isHit: false,
     }
 
@@ -137,28 +178,14 @@ export class Play {
     const allMoves = Array.from(play.moves)
     const otherMoves = allMoves.filter((m) => m.id !== move.id) // Remove the executed move by ID
 
-    // 🔧 CORE LOGIC BUG FIX: Recalculate possibleMoves for remaining ready moves
-    // After a move executes, board state changes, so we must recalculate possible moves
-    // for remaining dice to reflect the new positions
+    // 🔧 CORE LOGIC BUG FIX: Do NOT recalculate possibleMoves for remaining ready moves
+    // The original possibleMoves are still valid for the remaining moves
+    // Only the executed move should be marked as completed
     const updatedOtherMoves = otherMoves.map((remainingMove) => {
       if (remainingMove.stateKind === 'ready') {
-        // Recalculate possible moves based on updated board state
-        const freshPossibleMoves = Board.getPossibleMoves(
-          board, // Use the updated board state
-          remainingMove.player,
-          remainingMove.dieValue
-        )
-
-        // Update the move with fresh possible moves
-        return {
-          ...remainingMove,
-          possibleMoves: freshPossibleMoves,
-          // Update origin if needed - use first possible move's origin or keep existing
-          origin:
-            freshPossibleMoves.length > 0
-              ? freshPossibleMoves[0].origin
-              : remainingMove.origin,
-        }
+        // CRITICAL FIX: Do not recalculate moves - this was causing the infinite loop
+        // The remaining moves should stay as they are until they're executed
+        return remainingMove
       }
       return remainingMove // Keep completed moves unchanged
     })
@@ -191,6 +218,9 @@ export class Play {
     const isDoubles = roll[0] === roll[1]
     const moveCount = isDoubles ? 4 : 2
     let barCheckersLeft = playerCheckersOnBar.length
+
+    // For doubles, we need to track which origins we've used to distribute moves properly
+    const usedOrigins = new Map<string, number>() // originId -> count
 
     for (let i = 0; i < moveCount; i++) {
       const dieValue = roll[i % 2]
@@ -240,8 +270,45 @@ export class Play {
             moveKind = 'bear-off'
           }
 
-          // Use the first possible move's origin as the move's origin
-          const firstMove = possibleMoves[0]
+          // 🔧 CRITICAL FIX: For doubles, distribute moves across available origins
+          // instead of always using the first possible move's origin
+          let selectedMove = possibleMoves[0] // Default to first move
+
+          if (isDoubles && possibleMoves.length > 1) {
+            // For doubles, try to find an origin that hasn't been used too much
+            // This ensures moves are distributed across available positions
+            const availableMoves = possibleMoves.filter((move) => {
+              const originId = move.origin.id
+              const currentCount = usedOrigins.get(originId) || 0
+
+              // For doubles, we want to distribute moves, but still allow multiple moves
+              // from the same origin if there are enough checkers there
+              if (move.origin.kind === 'point') {
+                const origin = move.origin as any
+                const checkersAtOrigin = origin.checkers.filter(
+                  (c: any) => c.color === player.color
+                ).length
+
+                // Allow up to the number of checkers available at this origin
+                return currentCount < checkersAtOrigin
+              }
+
+              // For bar moves, allow multiple moves from bar
+              return currentCount < 4 // Max 4 for doubles
+            })
+
+            if (availableMoves.length > 0) {
+              // Use the first available move that hasn't been overused
+              selectedMove = availableMoves[0]
+            } else {
+              // Fallback to first move if all origins are saturated
+              selectedMove = possibleMoves[0]
+            }
+          }
+
+          // Track usage of this origin
+          const originId = selectedMove.origin.id
+          usedOrigins.set(originId, (usedOrigins.get(originId) || 0) + 1)
 
           movesArr.push({
             id: generateId(),
@@ -250,7 +317,7 @@ export class Play {
             stateKind: 'ready',
             moveKind,
             possibleMoves: possibleMoves, // Store all possible moves
-            origin: firstMove.origin, // Use first move's origin as the move's origin
+            origin: selectedMove.origin, // Use the selected move's origin
           })
         } else {
           // No possible moves for this die

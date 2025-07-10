@@ -820,7 +820,7 @@ describe('Game', () => {
 
   describe('Win Condition', () => {
     it('should end the game and set the winner when a player bears off all 15 checkers', () => {
-      // Setup a board where white has 14 checkers already borne off and 1 on point 1
+      // Setup a board where white has 14 checkers already borne off and 1 on point 1 (home board for clockwise)
       const { Board } = require('../../Board')
       const { Player } = require('../../Player')
       const board = Board.initialize()
@@ -840,15 +840,13 @@ describe('Game', () => {
           checkercontainerId: board.off.clockwise.id,
         })
       }
-      // Place 1 white checker on point 24 (the bear-off point for clockwise)
-      const point24 = board.points.find(
-        (p: any) => p.position.clockwise === 24
-      )
-      point24.checkers = [
+      // Place 1 white checker on point 1 (the home board point for clockwise)
+      const point1 = board.points.find((p: any) => p.position.clockwise === 1)
+      point1.checkers = [
         {
           id: 'w15',
           color: 'white',
-          checkercontainerId: point24.id,
+          checkercontainerId: point1.id,
         },
       ]
       // Setup players
@@ -885,7 +883,7 @@ describe('Game', () => {
             player: whitePlayer,
             stateKind: 'ready',
             moveKind: 'bear-off',
-            origin: point24,
+            origin: point1,
             dieValue: 1,
           },
         ]),
@@ -903,7 +901,7 @@ describe('Game', () => {
       }
       // Perform the move
       const Game = require('..').Game
-      const firstResult = Game.move(game, point24.id) // processes the bear-off move
+      const firstResult = Game.move(game, point1.id) // processes the bear-off move
       // According to backgammon rules, the game ends immediately when the last checker is borne off.
       // No further moves are possible or needed after that point, so we do not call Game.move again.
       // const result = Game.move(firstResult, point1.id) // <-- Not needed, would be invalid per rules
@@ -917,6 +915,411 @@ describe('Game', () => {
           (c: any) => c.color === 'white'
         ).length
       ).toBe(15)
+    })
+  })
+
+  describe('Game Creation', () => {
+    it('should create a new game with default settings', () => {
+      const game = Game.createNewGame('user1', 'user2')
+      expect(game).toBeDefined()
+      expect(game.stateKind).toBe('rolled-for-start')
+      expect(game.players).toHaveLength(2)
+      expect(game.activeColor).toBeDefined()
+      expect(game.activePlayer).toBeDefined()
+      expect(game.inactivePlayer).toBeDefined()
+      expect(game.board).toBeDefined()
+      expect(game.cube).toBeDefined()
+    })
+
+    it('should create a new game with custom color direction configuration', () => {
+      const config = {
+        blackDirection: 'counterclockwise' as const,
+        whiteDirection: 'clockwise' as const,
+        blackFirst: true,
+      }
+      const game = Game.createNewGame(
+        'user1',
+        'user2',
+        true,
+        true,
+        true,
+        config
+      )
+      expect(game).toBeDefined()
+      expect(game.stateKind).toBe('rolled-for-start')
+      expect(game.players).toHaveLength(2)
+      expect(game.activeColor).toBe('black')
+      expect(game.activePlayer?.color).toBe('black')
+      expect(game.inactivePlayer?.color).toBe('white')
+    })
+
+    it('should create a new game without auto-rolling for start', () => {
+      const game = Game.createNewGame('user1', 'user2', false)
+      expect(game).toBeDefined()
+      expect(game.stateKind).toBe('rolling-for-start')
+      expect(game.players).toHaveLength(2)
+      expect(game.activeColor).toBeUndefined()
+      expect(game.activePlayer).toBeUndefined()
+      expect(game.inactivePlayer).toBeUndefined()
+    })
+
+    it('should create a game with human players', () => {
+      const game = Game.createNewGame('user1', 'user2', true, false, false)
+      expect(game).toBeDefined()
+      expect(game.players.every((p) => !p.isRobot)).toBe(true)
+    })
+  })
+
+  describe('Robot Methods', () => {
+    it('should advance robot from rolled to moving state', () => {
+      const rolledForStartGame = Game.createNewGame(
+        'user1',
+        'user2',
+        true,
+        true,
+        true
+      )
+      const rolledGame = Game.roll(rolledForStartGame as any)
+      const movingGame = Game.advanceRobotToMoving(rolledGame as any)
+      expect(movingGame.stateKind).toBe('moving')
+      expect(movingGame.activePlay.stateKind).toBe('moving')
+    })
+
+    it('should throw error when trying to advance non-robot to moving', () => {
+      const humanGameStart = Game.createNewGame(
+        'user1',
+        'user2',
+        true,
+        false,
+        false
+      )
+      const humanGame = Game.roll(humanGameStart as any)
+      expect(() => Game.advanceRobotToMoving(humanGame as any)).toThrow(
+        'Can only advance robot players to moving state'
+      )
+    })
+
+    it('should throw error when trying to advance non-rolled game', () => {
+      const rollingGame = Game.createNewGame(
+        'user1',
+        'user2',
+        false,
+        true,
+        true
+      )
+      expect(() => Game.advanceRobotToMoving(rollingGame as any)).toThrow(
+        'Game must be in rolled state to advance robot to moving'
+      )
+    })
+
+    it('should process robot turn successfully', async () => {
+      const rolledGame = Game.createNewGame('user1', 'user2', true, true, true)
+      const result = await Game.processRobotTurn(rolledGame as any, 'beginner')
+      expect(result).toBeDefined()
+      expect(result.success).toBeDefined()
+    })
+
+    it('should fail to process robot turn for non-robot player', async () => {
+      const humanGame = Game.createNewGame('user1', 'user2', true, false, false)
+      const result = await Game.processRobotTurn(humanGame as any, 'beginner')
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Active player is not a robot')
+    })
+  })
+
+  describe('State Transitions', () => {
+    it('should transition from preparing-move to moving', () => {
+      const rolledForStartGame = Game.createNewGame(
+        'user1',
+        'user2',
+        true,
+        true,
+        true
+      )
+      const rolledGame = Game.roll(rolledForStartGame as any)
+      const preparingGame = Game.prepareMove(rolledGame as any)
+      const movingGame = Game.toMoving(preparingGame)
+      expect(movingGame.stateKind).toBe('moving')
+      expect(movingGame.activePlay.stateKind).toBe('moving')
+    })
+
+    it('should transition from preparing-move to doubling', () => {
+      const rolledForStartGame = Game.createNewGame(
+        'user1',
+        'user2',
+        true,
+        true,
+        true
+      )
+      const rolledGame = Game.roll(rolledForStartGame as any)
+      const preparingGame = Game.prepareMove(rolledGame as any)
+      const doublingGame = Game.toDoubling(preparingGame)
+      expect(doublingGame.stateKind).toBe('doubling')
+      expect(doublingGame.cube.stateKind).toBe('offered')
+    })
+
+    it('should throw error when transitioning to moving from invalid state', () => {
+      const rollingGame = Game.createNewGame(
+        'user1',
+        'user2',
+        false,
+        true,
+        true
+      )
+      expect(() => Game.toMoving(rollingGame as any)).toThrow(
+        'Cannot start moving from rolling-for-start state'
+      )
+    })
+
+    it('should throw error when transitioning to doubling from invalid state', () => {
+      const rollingGame = Game.createNewGame(
+        'user1',
+        'user2',
+        false,
+        true,
+        true
+      )
+      expect(() => Game.toDoubling(rollingGame as any)).toThrow(
+        'Cannot start doubling from rolling-for-start state'
+      )
+    })
+  })
+
+  describe('Move Execution', () => {
+    it('should execute move and recalculate correctly', () => {
+      const rolledForStartGame = Game.createNewGame(
+        'user1',
+        'user2',
+        true,
+        true,
+        true
+      )
+      const rolledGame = Game.roll(rolledForStartGame as any)
+      const preparingGame = Game.prepareMove(rolledGame as any)
+      const movingGame = Game.toMoving(preparingGame)
+
+      // Get first available move
+      const moves = Array.from(movingGame.activePlay.moves)
+      if (moves.length > 0 && moves[0].origin) {
+        const result = Game.executeAndRecalculate(
+          movingGame,
+          moves[0].origin.id
+        )
+        expect(result).toBeDefined()
+        expect(result.stateKind).toBe('moving')
+      }
+    })
+
+    it('should complete turn when all moves are finished', () => {
+      const rolledForStartGame = Game.createNewGame(
+        'user1',
+        'user2',
+        true,
+        true,
+        true
+      )
+      const rolledGame = Game.roll(rolledForStartGame as any)
+      const preparingGame = Game.prepareMove(rolledGame as any)
+      const movingGame = Game.toMoving(preparingGame)
+
+      // Create game with completed moves
+      const completedMoves = new Set(
+        Array.from(movingGame.activePlay.moves).map((move) => ({
+          ...move,
+          stateKind: 'completed' as const,
+        }))
+      )
+      const gameWithCompletedMoves = {
+        ...movingGame,
+        activePlay: {
+          ...movingGame.activePlay,
+          moves: completedMoves as any,
+        },
+      } as any
+
+      const result = Game.checkAndCompleteTurn(gameWithCompletedMoves)
+      expect(result.activeColor).not.toBe(movingGame.activeColor)
+      expect(result.stateKind).toBe('rolling')
+    })
+  })
+
+  describe('Permission Checks', () => {
+    it('should check if game can roll', () => {
+      const rollingGame = Game.createNewGame(
+        'user1',
+        'user2',
+        false,
+        true,
+        true
+      )
+      expect(Game.canRoll(rollingGame)).toBe(false)
+
+      const rolledForStartGame = Game.rollForStart(rollingGame as any)
+      expect(Game.canRoll(rolledForStartGame)).toBe(true)
+    })
+
+    it('should check if game can roll for start', () => {
+      const rollingGame = Game.createNewGame(
+        'user1',
+        'user2',
+        false,
+        true,
+        true
+      )
+      expect(Game.canRollForStart(rollingGame)).toBe(true)
+
+      const rolledForStartGame = Game.rollForStart(rollingGame as any)
+      expect(Game.canRollForStart(rolledForStartGame)).toBe(false)
+    })
+
+    it('should check if specific player can roll', () => {
+      const rolledForStartGame = Game.createNewGame(
+        'user1',
+        'user2',
+        true,
+        true,
+        true
+      )
+      expect(
+        Game.canPlayerRoll(
+          rolledForStartGame,
+          rolledForStartGame.activePlayer?.id || ''
+        )
+      ).toBe(true)
+
+      const rolledGame = Game.roll(rolledForStartGame as any)
+      const preparingGame = Game.prepareMove(rolledGame as any)
+      expect(
+        Game.canPlayerRoll(preparingGame, preparingGame.activePlayer?.id || '')
+      ).toBe(false)
+    })
+
+    it('should check if game can get possible moves', () => {
+      const rolledForStartGame = Game.createNewGame(
+        'user1',
+        'user2',
+        true,
+        true,
+        true
+      )
+      const rolledGame = Game.roll(rolledForStartGame as any)
+      const preparingGame = Game.prepareMove(rolledGame as any)
+      const movingGame = Game.toMoving(preparingGame)
+
+      expect(Game.canGetPossibleMoves(movingGame)).toBe(false)
+      expect(Game.canGetPossibleMoves(rolledForStartGame)).toBe(false)
+    })
+  })
+
+  describe('Utility Methods', () => {
+    it('should find checker by id', () => {
+      const rolledGame = Game.createNewGame('user1', 'user2', true, true, true)
+      const checker = rolledGame.board.points[0].checkers[0]
+      if (checker) {
+        const foundChecker = Game.findChecker(rolledGame, checker.id)
+        expect(foundChecker).toEqual(checker)
+      }
+    })
+
+    it('should return null for non-existent checker', () => {
+      const rolledGame = Game.createNewGame('user1', 'user2', true, true, true)
+      const foundChecker = Game.findChecker(rolledGame, 'non-existent-id')
+      expect(foundChecker).toBeNull()
+    })
+
+    it('should get possible moves successfully', () => {
+      const rolledForStartGame = Game.createNewGame(
+        'user1',
+        'user2',
+        true,
+        true,
+        true
+      )
+      const rolledGame = Game.roll(rolledForStartGame as any)
+      const preparingGame = Game.prepareMove(rolledGame as any)
+      const movingGame = Game.toMoving(preparingGame)
+
+      const result = Game.getPossibleMoves(movingGame)
+      expect(result.success).toBe(true)
+      expect(result.possibleMoves).toBeDefined()
+      expect(Array.isArray(result.possibleMoves)).toBe(true)
+    })
+
+    it('should fail to get possible moves for invalid state', () => {
+      const rollingGame = Game.createNewGame(
+        'user1',
+        'user2',
+        false,
+        true,
+        true
+      )
+      const result = Game.getPossibleMoves(rollingGame)
+      expect(result.success).toBe(false)
+      expect(result.error).toBeDefined()
+    })
+  })
+
+  describe('Edge Cases', () => {
+    it('should handle move with no origin gracefully', () => {
+      const rolledForStartGame = Game.createNewGame(
+        'user1',
+        'user2',
+        true,
+        true,
+        true
+      )
+      const rolledGame = Game.roll(rolledForStartGame as any)
+      const preparingGame = Game.prepareMove(rolledGame as any)
+      const movingGame = Game.toMoving(preparingGame)
+
+      expect(() => Game.move(movingGame, 'invalid-origin-id')).toThrow(
+        'No checkercontainer found for invalid-origin-id'
+      )
+    })
+
+    it('should handle empty moves set in turn completion', () => {
+      const rolledForStartGame = Game.createNewGame(
+        'user1',
+        'user2',
+        true,
+        true,
+        true
+      )
+      const rolledGame = Game.roll(rolledForStartGame as any)
+      const preparingGame = Game.prepareMove(rolledGame as any)
+      const movingGame = Game.toMoving(preparingGame)
+
+      const gameWithEmptyMoves = {
+        ...movingGame,
+        activePlay: {
+          ...movingGame.activePlay,
+          moves: new Set() as any,
+        },
+      } as any
+
+      const result = Game.checkAndCompleteTurn(gameWithEmptyMoves)
+      expect(result).toBeDefined()
+    })
+
+    it('should handle missing active play in turn completion', () => {
+      const rolledForStartGame = Game.createNewGame(
+        'user1',
+        'user2',
+        true,
+        true,
+        true
+      )
+      const rolledGame = Game.roll(rolledForStartGame as any)
+      const preparingGame = Game.prepareMove(rolledGame as any)
+      const movingGame = Game.toMoving(preparingGame)
+
+      const gameWithoutActivePlay = {
+        ...movingGame,
+        activePlay: undefined,
+      } as any
+
+      const result = Game.checkAndCompleteTurn(gameWithoutActivePlay)
+      expect(result).toBe(gameWithoutActivePlay)
     })
   })
 })
