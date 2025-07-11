@@ -40,8 +40,8 @@
     "publish:npm": "npm publish --access public"
   },
   "dependencies": {
-    "@nodots-llc/backgammon-ai": "^3.2.1",
-    "@nodots-llc/backgammon-types": "^3.3.0",
+    "@nodots-llc/backgammon-ai": "^3.5.0",
+    "@nodots-llc/backgammon-types": "^3.5.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
