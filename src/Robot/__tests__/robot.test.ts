@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from '@jest/globals'
+import { beforeEach, describe, expect, it, jest } from '@jest/globals'
 import {
   BackgammonGame,
   BackgammonGameRolledForStart,
@@ -523,10 +523,28 @@ describe('Robot', () => {
 
   describe('edge cases and error handling', () => {
     it('should handle games with no active player', async () => {
+      const robotPlayer = Player.initialize(
+        'white',
+        'clockwise',
+        undefined,
+        'robot1',
+        'rolling',
+        true
+      )
+      const humanPlayer = Player.initialize(
+        'black',
+        'counterclockwise',
+        undefined,
+        'human1',
+        'inactive',
+        false
+      )
+
       const game = {
         stateKind: 'rolling',
-        activePlayer: null,
-        players: [],
+        activePlayer: null, // This is what we're testing
+        players: [robotPlayer, humanPlayer], // Valid players array
+        board: Board.initialize(), // Valid board
       } as unknown as BackgammonGame
 
       const result = await Robot.makeOptimalMove(game)
@@ -574,11 +592,467 @@ describe('Robot', () => {
       // Robot should successfully pass the turn when no moves are available
       expect(result.success).toBe(true)
       expect(result.message).toContain(
-        'Robot attempted to pass turn (no legal moves available)'
+        'Robot completed turn (no legal moves available)'
       )
 
       // Restore original method
       ;(Game as any).getPossibleMoves = originalGetPossibleMoves
+    })
+
+    it('should handle games with null or undefined board', async () => {
+      const robotPlayer = Player.initialize(
+        'white',
+        'clockwise',
+        undefined,
+        'robot1',
+        'rolling',
+        true
+      )
+      const humanPlayer = Player.initialize(
+        'black',
+        'counterclockwise',
+        undefined,
+        'human1',
+        'inactive',
+        false
+      )
+
+      const game = {
+        stateKind: 'rolling',
+        activePlayer: robotPlayer,
+        players: [robotPlayer, humanPlayer],
+        board: null, // This is what we're testing
+      } as unknown as BackgammonGame
+
+      const result = await Robot.makeOptimalMove(game)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Game board is undefined')
+    })
+
+    it('should handle games with invalid players array', async () => {
+      const robotPlayer = Player.initialize(
+        'white',
+        'clockwise',
+        undefined,
+        'robot1',
+        'rolling',
+        true
+      )
+
+      const game = {
+        stateKind: 'rolling',
+        activePlayer: robotPlayer,
+        players: [robotPlayer], // Only 1 player, should be 2
+        board: Board.initialize(),
+      } as unknown as BackgammonGame
+
+      const result = await Robot.makeOptimalMove(game)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Game players are invalid')
+    })
+
+    it('should handle games with no players at all', async () => {
+      const robotPlayer = Player.initialize(
+        'white',
+        'clockwise',
+        undefined,
+        'robot1',
+        'rolling',
+        true
+      )
+
+      const game = {
+        stateKind: 'rolling',
+        activePlayer: robotPlayer,
+        players: [], // Empty players array
+        board: Board.initialize(),
+      } as unknown as BackgammonGame
+
+      const result = await Robot.makeOptimalMove(game)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Game players are invalid')
+    })
+
+    it('should handle rolling-for-start with no robot players', async () => {
+      const humanPlayer1 = Player.initialize(
+        'white',
+        'clockwise',
+        undefined,
+        'human1',
+        'inactive',
+        false
+      )
+      const humanPlayer2 = Player.initialize(
+        'black',
+        'counterclockwise',
+        undefined,
+        'human2',
+        'inactive',
+        false
+      )
+
+      const game = Game.initialize([
+        humanPlayer1,
+        humanPlayer2,
+      ]) as BackgammonGameRollingForStart
+
+      const result = await Robot.makeOptimalMove(game)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('No robot players in game')
+    })
+
+    it('should handle error in rollForStart', async () => {
+      const robotPlayer1 = Player.initialize(
+        'white',
+        'clockwise',
+        undefined,
+        'robot1',
+        'inactive',
+        true
+      )
+      const robotPlayer2 = Player.initialize(
+        'black',
+        'counterclockwise',
+        undefined,
+        'robot2',
+        'inactive',
+        true
+      )
+
+      // Mock Game.rollForStart to throw an error
+      const originalRollForStart = (Game as any).rollForStart
+      ;(Game as any).rollForStart = jest.fn().mockImplementation(() => {
+        throw new Error('Test error in rollForStart')
+      })
+
+      const game = Game.initialize([
+        robotPlayer1,
+        robotPlayer2,
+      ]) as BackgammonGameRollingForStart
+
+      const result = await Robot.makeOptimalMove(game)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Test error in rollForStart')
+
+      // Restore original method
+      ;(Game as any).rollForStart = originalRollForStart
+    })
+
+    it('should handle error in roll', async () => {
+      const robotPlayer1 = Player.initialize(
+        'white',
+        'clockwise',
+        undefined,
+        'robot1',
+        'rolling',
+        true
+      )
+      const robotPlayer2 = Player.initialize(
+        'black',
+        'counterclockwise',
+        undefined,
+        'robot2',
+        'inactive',
+        true
+      )
+
+      // Mock Game.roll to throw an error
+      const originalRoll = (Game as any).roll
+      ;(Game as any).roll = jest.fn().mockImplementation(() => {
+        throw new Error('Test error in roll')
+      })
+
+      const game = Game.initialize(
+        [robotPlayer1, robotPlayer2],
+        'game1',
+        'rolling',
+        undefined,
+        undefined,
+        undefined,
+        'white',
+        robotPlayer1 as any,
+        robotPlayer2 as any
+      ) as BackgammonGameRolling
+
+      const result = await Robot.makeOptimalMove(game)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Test error in roll')
+
+      // Restore original method
+      ;(Game as any).roll = originalRoll
+    })
+
+    it('should handle moving state without active player', async () => {
+      const robotPlayer = Player.initialize(
+        'white',
+        'clockwise',
+        undefined,
+        'robot1',
+        'moving',
+        true
+      )
+      const humanPlayer = Player.initialize(
+        'black',
+        'counterclockwise',
+        undefined,
+        'human1',
+        'inactive',
+        false
+      )
+
+      const game = {
+        stateKind: 'moving',
+        activePlayer: null, // No active player
+        players: [robotPlayer, humanPlayer],
+        board: Board.initialize(),
+      } as unknown as BackgammonGame
+
+      const result = await Robot.makeOptimalMove(game)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Active player is not a robot')
+    })
+
+    it('should handle moving state with no dice roll', async () => {
+      const robotPlayer = Player.initialize(
+        'white',
+        'clockwise',
+        undefined,
+        'robot1',
+        'moving',
+        true
+      )
+      const humanPlayer = Player.initialize(
+        'black',
+        'counterclockwise',
+        undefined,
+        'human1',
+        'inactive',
+        false
+      )
+
+      // Robot player without dice roll
+      const robotPlayerWithoutDice = {
+        ...robotPlayer,
+        dice: null,
+      }
+
+      const game = {
+        stateKind: 'moving',
+        activePlayer: robotPlayerWithoutDice,
+        players: [robotPlayerWithoutDice, humanPlayer],
+        board: Board.initialize(),
+      } as unknown as BackgammonGame
+
+      const result = await Robot.makeOptimalMove(game)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('No dice roll available for AI move')
+    })
+
+    it('should handle moving state with dice but no current roll', async () => {
+      const robotPlayer = Player.initialize(
+        'white',
+        'clockwise',
+        undefined,
+        'robot1',
+        'moving',
+        true
+      )
+      const humanPlayer = Player.initialize(
+        'black',
+        'counterclockwise',
+        undefined,
+        'human1',
+        'inactive',
+        false
+      )
+
+      // Robot player with dice but no current roll
+      const robotPlayerWithEmptyDice = {
+        ...robotPlayer,
+        dice: { currentRoll: null },
+      }
+
+      const game = {
+        stateKind: 'moving',
+        activePlayer: robotPlayerWithEmptyDice,
+        players: [robotPlayerWithEmptyDice, humanPlayer],
+        board: Board.initialize(),
+      } as unknown as BackgammonGame
+
+      const result = await Robot.makeOptimalMove(game)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('No dice roll available for AI move')
+    })
+  })
+
+  describe('AI plugin management', () => {
+    it('should register AI plugins', () => {
+      const mockPlugin = {
+        name: 'test-plugin',
+        version: '1.0.0',
+        description: 'Test plugin',
+        generateMove: jest.fn() as any,
+        shouldOfferDouble: jest.fn() as any,
+        shouldAcceptDouble: jest.fn() as any,
+        getSupportedDifficulties: jest.fn() as any,
+        getCapabilities: jest.fn() as any,
+      }
+
+      expect(() => Robot.registerAIPlugin(mockPlugin as any)).not.toThrow()
+    })
+
+    it('should set default AI plugin', () => {
+      expect(() => Robot.setDefaultAI('basic-ai')).not.toThrow()
+    })
+
+    it('should list AI plugins', () => {
+      const plugins = Robot.listAIPlugins()
+      expect(Array.isArray(plugins)).toBe(true)
+      expect(plugins.length).toBeGreaterThan(0)
+    })
+
+    it('should get default AI plugin', () => {
+      const defaultAI = Robot.getDefaultAI()
+      expect(typeof defaultAI).toBe('string')
+      expect(defaultAI).toBe('basic-ai')
+    })
+  })
+
+  describe('private method coverage', () => {
+    it('should test selectMoveByDifficulty with unknown difficulty', () => {
+      const mockGame = {
+        activePlayer: { color: 'white', direction: 'clockwise' },
+      } as BackgammonGame
+
+      const possibleMoves = [
+        {
+          origin: { position: { clockwise: 24 } },
+          destination: { kind: 'point' },
+        },
+        {
+          origin: { position: { clockwise: 13 } },
+          destination: { kind: 'point' },
+        },
+      ]
+
+      const selectedMove = (Robot as any).selectMoveByDifficulty(
+        possibleMoves,
+        'unknown' as any,
+        mockGame
+      )
+
+      expect(selectedMove).toBe(possibleMoves[0])
+    })
+
+    it('should test findCheckerForMove with bar origin', () => {
+      const robotPlayer = Player.initialize(
+        'white',
+        'clockwise',
+        undefined,
+        'robot1',
+        'moving',
+        true
+      )
+      const board = Board.initialize()
+
+      // Add a white checker to the bar
+      const whiteChecker = {
+        id: 'bar-checker',
+        color: 'white' as const,
+        checkercontainerId: 'bar-clockwise',
+      }
+      board.bar.clockwise.checkers.push(whiteChecker as any)
+
+      const mockGame = {
+        activePlayer: robotPlayer,
+        board,
+      } as unknown as BackgammonGame
+
+      const selectedMove = {
+        origin: { kind: 'bar', id: 'bar-clockwise' },
+        destination: { kind: 'point' },
+      }
+
+      const result = (Robot as any).findCheckerForMove(mockGame, selectedMove)
+
+      expect(result).toBeDefined()
+      expect(result.checkerId).toBe('bar-checker')
+    })
+
+    it('should test findCheckerForMove with invalid origin', () => {
+      const robotPlayer = Player.initialize(
+        'white',
+        'clockwise',
+        undefined,
+        'robot1',
+        'moving',
+        true
+      )
+      const board = Board.initialize()
+
+      const mockGame = {
+        activePlayer: robotPlayer,
+        board,
+      } as unknown as BackgammonGame
+
+      const selectedMove = {
+        origin: { id: 'invalid-id' },
+        destination: { kind: 'point' },
+      }
+
+      const result = (Robot as any).findCheckerForMove(mockGame, selectedMove)
+
+      expect(result).toBeNull()
+    })
+
+    it('should test advanced move selection with complex scoring', () => {
+      const mockGame = {
+        activePlayer: { color: 'white', direction: 'clockwise' },
+      } as BackgammonGame
+
+      const complexMoves = [
+        {
+          origin: {
+            position: { clockwise: 24 },
+            checkers: [{ color: 'white' }],
+          },
+          destination: {
+            position: { clockwise: 20 },
+            checkers: [{ color: 'black' }],
+          },
+        },
+        {
+          origin: {
+            position: { clockwise: 13 },
+            checkers: [{ color: 'white' }],
+          },
+          destination: { position: { clockwise: 10 }, checkers: [] },
+        },
+        {
+          origin: {
+            position: { clockwise: 6 },
+            checkers: [{ color: 'white' }],
+          },
+          destination: { kind: 'bear-off' },
+        },
+      ]
+
+      const selectedMove = (Robot as any).selectAdvancedMove(
+        complexMoves,
+        mockGame
+      )
+
+      expect(selectedMove).toBeDefined()
+      expect(selectedMove.destination.kind).toBe('bear-off')
     })
   })
 })

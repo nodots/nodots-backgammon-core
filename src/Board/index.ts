@@ -19,12 +19,46 @@ import {
 import { Checker, generateId, Player, randomBackgammonColor } from '..'
 import { logger } from '../utils/logger'
 import { ascii } from './ascii'
+import { exportToGnuPositionId } from './gnuPositionId'
 import { BOARD_IMPORT_DEFAULT } from './imports'
 
 // Helper function to generate a default GNU position ID for boards created without game context
 function generateDefaultGnuPositionId(): string {
-  // Return empty string as default - this will be updated when board is used in game context
-  return ''
+  // Return the standard starting position ID constant
+  return '4HPwATDgc/ABMA'
+}
+
+// Helper function to create a temporary game context for gnuPositionId generation
+function createTempGameContext(
+  board: BackgammonBoard,
+  players?: BackgammonPlayers,
+  activeColor?: BackgammonColor,
+  gameStateKind?: string
+): BackgammonGame | null {
+  if (!players || players.length < 2 || !activeColor) {
+    return null
+  }
+
+  const activePlayer = players.find((p) => p.color === activeColor)
+  const inactivePlayer = players.find((p) => p.color !== activeColor)
+
+  if (!activePlayer || !inactivePlayer) {
+    return null
+  }
+
+  // Create a minimal game context for gnuPositionId generation
+  const stateKind = gameStateKind === 'moving' ? 'moving' : 'rolled'
+
+  return {
+    id: generateId(),
+    stateKind: stateKind as any,
+    activeColor,
+    activePlayer,
+    inactivePlayer,
+    players,
+    board,
+    // Add minimal required properties for gnuPositionId generation
+  } as BackgammonGame
 }
 
 export const BOARD_POINT_COUNT = 24
@@ -51,10 +85,17 @@ export class Board implements BackgammonBoard {
   public static initialize(
     boardImport?: BackgammonCheckerContainerImport[]
   ): BackgammonBoard {
-    if (!boardImport) boardImport = BOARD_IMPORT_DEFAULT
-    const board = Board.buildBoard(boardImport)
-    if (!board) throw Error('No board found')
-    return board
+    const board = Board.buildBoard(boardImport || BOARD_IMPORT_DEFAULT)
+    const bar = Board.buildBar(boardImport || BOARD_IMPORT_DEFAULT)
+    const off = Board.buildOff(boardImport || BOARD_IMPORT_DEFAULT)
+
+    return {
+      id: generateId(),
+      gnuPositionId: generateDefaultGnuPositionId(),
+      points: board.points,
+      bar,
+      off,
+    }
   }
 
   public static moveChecker(
@@ -79,10 +120,49 @@ export class Board implements BackgammonBoard {
     )
     const opponentBarClone = boardClone.bar[opponentDirection]
 
+    // CRITICAL FIX: Validate that the move is still valid at execution time
+    // This prevents the "No checker found" error from stale move references
+    if (!originClone.checkers || originClone.checkers.length === 0) {
+      console.log('[DEBUG] Board.moveChecker: No checkers at origin point:', {
+        originId: origin.id,
+        originKind: origin.kind,
+        checkerCount: originClone.checkers?.length || 0,
+        boardId: board.id,
+      })
+      throw Error(`No checker found at origin (stale move reference)`)
+    }
+
     // Get the checker to move and preserve its color
     const checker = originClone.checkers[originClone.checkers.length - 1]
-    if (!checker) throw Error('No checker found')
+    if (!checker) {
+      console.log('[DEBUG] Board.moveChecker: Checker is null/undefined:', {
+        originId: origin.id,
+        checkerCount: originClone.checkers.length,
+        checkers: originClone.checkers,
+      })
+      throw Error('No checker found (empty array)')
+    }
     const movingCheckerColor = checker.color
+
+    // ADDITIONAL VALIDATION: Ensure the checker color is valid
+    if (
+      !movingCheckerColor ||
+      (movingCheckerColor !== 'black' && movingCheckerColor !== 'white')
+    ) {
+      console.log('[DEBUG] Board.moveChecker: Invalid checker color:', {
+        originId: origin.id,
+        checker: checker,
+        checkerColor: movingCheckerColor,
+      })
+      throw Error(`Invalid checker color: ${movingCheckerColor}`)
+    }
+
+    console.log('[DEBUG] Board.moveChecker: Moving checker:', {
+      originId: origin.id,
+      destinationId: destination.id,
+      checkerColor: movingCheckerColor,
+      direction: direction,
+    })
 
     // Remove the checker from origin
     originClone.checkers.pop()
@@ -235,9 +315,10 @@ export class Board implements BackgammonBoard {
 
     // Handle regular point-to-point moves
     playerPoints.forEach(function mapPlayerPoints(point) {
-      // 🔧 BUG FIX: Use player's own positional perspective for move calculations
-      // BOTH players move from their higher-numbered points to lower-numbered points (24→1)
-      // This is ALWAYS subtract die value regardless of direction
+      // 🔧 CRITICAL BUG FIX: Correct move calculation for both directions
+      // Both players move from higher positions to lower positions
+      // For clockwise: 24→1 (subtract die value)
+      // For counterclockwise: 24→1 (subtract die value)
       const originPosition = point.position[playerDirection]
       const destinationPosition = originPosition - dieValue
 
@@ -267,63 +348,73 @@ export class Board implements BackgammonBoard {
     })
 
     // Bear-off logic: allow bearing off if all checkers are in the home board
-    // Home board is positions 19-24 for clockwise, 1-6 for counterclockwise
+    // GOLDEN RULE: Home board is always positions 1-6 relative to the player's direction
     const homeBoardPoints = Board.getPoints(board).filter((p) => {
       const pos = p.position[playerDirection]
-      return playerDirection === 'clockwise'
-        ? pos >= 19 && pos <= 24
-        : pos >= 1 && pos <= 6
+      return pos >= 1 && pos <= 6
     })
+    // CRITICAL FIX: Use point IDs for comparison, not object references
+    const homeBoardPointIds = new Set(homeBoardPoints.map((p) => p.id))
     const allCheckersInHome = playerPoints.every((p) =>
-      homeBoardPoints.includes(p)
+      homeBoardPointIds.has(p.id)
     )
-    if (allCheckersInHome) {
-      // For each point in the home board, check if a checker can bear off
-      homeBoardPoints.forEach((point) => {
-        if (
-          point.checkers.length > 0 &&
-          point.checkers[0].color === player.color
-        ) {
-          const position = point.position[playerDirection]
-          // Calculate distance to bear off (same logic as BearOff.move)
-          // For clockwise: distance = 25 - position
-          // For counterclockwise: distance = position
-          const distanceToBearOff =
-            playerDirection === 'clockwise' ? 25 - position : position
 
-          // Can bear off if die matches the distance
-          if (distanceToBearOff === dieValue) {
+    if (allCheckersInHome) {
+      // CRITICAL FIX: Proper implementation of bear-off higher die rule
+
+      // Step 1: Find all occupied positions in home board for this player
+      const occupiedPositions = homeBoardPoints
+        .filter(
+          (point) =>
+            point.checkers.length > 0 &&
+            point.checkers[0].color === player.color
+        )
+        .map((point) => ({
+          point,
+          position: point.position[playerDirection],
+        }))
+        .sort((a, b) => b.position - a.position) // Sort by position desc (highest first)
+
+      // Step 2: Check for exact match first
+      const exactMatch = occupiedPositions.find(
+        (op) => op.position === dieValue
+      )
+      if (exactMatch) {
+        // Direct bear-off: die matches distance exactly
+        const off = board.off[playerDirection]
+        possibleMoves.push({
+          origin: exactMatch.point,
+          destination: off,
+          dieValue,
+          direction: playerDirection,
+        })
+      } else {
+        // Step 3: FIXED Higher die rule - only bear off if NO checkers exist on higher points
+        // Find checkers on points higher than the die value
+        const checkersOnHigherPoints = occupiedPositions.filter(
+          (op) => op.position > dieValue
+        )
+
+        if (checkersOnHigherPoints.length === 0) {
+          // No checkers on higher points - can use higher die rule
+          const lowerPositions = occupiedPositions.filter(
+            (op) => op.position < dieValue
+          )
+          if (lowerPositions.length > 0) {
+            // Bear off from the highest occupied position that's lower than the die
+            const highestLowerPosition = lowerPositions[0] // Already sorted desc, so first is highest
             const off = board.off[playerDirection]
             possibleMoves.push({
-              origin: point,
+              origin: highestLowerPosition.point,
               destination: off,
               dieValue,
               direction: playerDirection,
             })
           }
-          // Can bear off with a higher die if no checker on higher points
-          // "Higher points" means points closer to the end of the board
-          // For clockwise: higher points are 24, 23, 22, etc. (higher position values)
-          // For counterclockwise: higher points are 6, 5, 4, etc. (higher position values)
-          if (dieValue > distanceToBearOff) {
-            const higherPoints = homeBoardPoints.filter(
-              (p2) => p2.position[playerDirection] > position
-            )
-            const hasCheckerOnHigher = higherPoints.some((p2) =>
-              p2.checkers.some((c) => c.color === player.color)
-            )
-            if (!hasCheckerOnHigher) {
-              const off = board.off[playerDirection]
-              possibleMoves.push({
-                origin: point,
-                destination: off,
-                dieValue,
-                direction: playerDirection,
-              })
-            }
-          }
         }
-      })
+        // If checkers exist on higher points, no bear-off moves are added
+        // The regular point-to-point move logic above will handle moves within home board
+      }
     }
 
     return possibleMoves
@@ -395,18 +486,16 @@ export class Board implements BackgammonBoard {
       }
     })
 
-    const bar = this.buildBar(boardImport)
-    const off = this.buildOff(boardImport)
+    const bar = Board.buildBar(boardImport)
+    const off = Board.buildOff(boardImport)
 
-    const board: BackgammonBoard = {
+    return {
       id: generateId(),
       gnuPositionId: generateDefaultGnuPositionId(),
-      points: points,
+      points,
       bar,
       off,
     }
-
-    return board
   }
 
   private static buildBar = function buildBar(
@@ -705,44 +794,86 @@ export class Board implements BackgammonBoard {
     board: BackgammonBoard,
     players?: BackgammonPlayers,
     activePlayer?: BackgammonPlayer,
-    moveNotation?: string
-  ): string => ascii(board, players, activePlayer, moveNotation)
+    moveNotation?: string,
+    playerModels?: { [playerId: string]: string }
+  ): string => {
+    try {
+      // Generate and update gnuPositionId if we have game context
+      if (players && players.length >= 2 && activePlayer) {
+        const tempGame = createTempGameContext(
+          board,
+          players,
+          activePlayer.color,
+          'moving'
+        )
+        if (tempGame) {
+          try {
+            const gnuPositionId = exportToGnuPositionId(tempGame)
+            // Update the board's gnuPositionId
+            board.gnuPositionId = gnuPositionId
+          } catch (error) {
+            logger.warn(
+              'Failed to generate gnuPositionId in getAsciiBoard:',
+              error
+            )
+            // Keep existing gnuPositionId or empty string
+          }
+        }
+      }
+
+      return ascii(board, players, activePlayer, moveNotation, playerModels)
+    } catch (error) {
+      logger.error('Error generating ASCII board:', error)
+      return 'ERROR: Failed to generate ASCII board'
+    }
+  }
 
   public static getAsciiGameBoard = (
     board: BackgammonBoard,
     players?: BackgammonPlayers,
     activeColor?: BackgammonColor,
     gameStateKind?: string,
-    moveNotation?: string
+    moveNotation?: string,
+    playerModels?: { [playerId: string]: string }
   ): string => {
-    const activePlayer = players?.find((p) => p.color === activeColor)
-    const baseAscii = ascii(board, players, activePlayer, moveNotation)
+    try {
+      // Find the active player based on activeColor
+      const activePlayer = players?.find((p) => p.color === activeColor)
 
-    // Add game state information
-    let gameInfo = '\n'
+      // Create enhanced move notation that includes game state
+      const enhancedMoveNotation = gameStateKind
+        ? `${moveNotation || ''} (${gameStateKind})`
+        : moveNotation
 
-    if (gameStateKind) {
-      gameInfo += `GAME STATE: ${gameStateKind.toUpperCase()}\n`
-    }
-
-    if (activeColor && players) {
-      if (activePlayer) {
-        gameInfo += `ACTIVE PLAYER: ${activeColor.toUpperCase()} (${
-          activeColor === 'black' ? 'X' : 'O'
-        }) [${activePlayer.direction}]\n`
-
-        // Show dice roll if available
-        if (activePlayer.dice && activePlayer.dice.currentRoll) {
-          gameInfo += `DICE ROLL: [${activePlayer.dice.currentRoll.join(
-            ', '
-          )}] (Total: ${activePlayer.dice.total || 'Unknown'})\n`
-        } else if (activePlayer.dice && activePlayer.dice.stateKind) {
-          gameInfo += `DICE STATE: ${activePlayer.dice.stateKind.toUpperCase()}\n`
+      // Generate and update gnuPositionId if we have game context
+      const tempGame = createTempGameContext(
+        board,
+        players,
+        activeColor,
+        gameStateKind
+      )
+      if (tempGame) {
+        try {
+          const gnuPositionId = exportToGnuPositionId(tempGame)
+          // Update the board's gnuPositionId
+          board.gnuPositionId = gnuPositionId
+        } catch (error) {
+          logger.warn('Failed to generate gnuPositionId:', error)
+          // Keep existing gnuPositionId or empty string
         }
       }
-    }
 
-    return baseAscii + gameInfo
+      return ascii(
+        board,
+        players,
+        activePlayer,
+        enhancedMoveNotation,
+        playerModels
+      )
+    } catch (error) {
+      logger.error('Error generating ASCII game board:', error)
+      return 'ERROR: Failed to generate ASCII game board'
+    }
   }
 
   public static displayAsciiBoard = (

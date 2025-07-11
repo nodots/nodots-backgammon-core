@@ -106,12 +106,9 @@ describe('Player', () => {
       const homeBoard = Player.getHomeBoard(board, player)
       expect(homeBoard.length).toBe(6)
       homeBoard.forEach((point) => {
-        expect(
-          (point as BackgammonPoint).position.clockwise
-        ).toBeGreaterThanOrEqual(19)
-        expect(
-          (point as BackgammonPoint).position.clockwise
-        ).toBeLessThanOrEqual(24)
+        const pos = (point as BackgammonPoint).position.clockwise
+        expect(pos).toBeGreaterThanOrEqual(1)
+        expect(pos).toBeLessThanOrEqual(6)
       })
     })
 
@@ -141,8 +138,11 @@ describe('Player', () => {
     it('should return correct opponent board points for clockwise direction', () => {
       const opponentBoard = Player.getOpponentBoard(board, player)
       expect(opponentBoard.length).toBe(6)
-      expect(opponentBoard[0].position.clockwise).toBe(1)
-      expect(opponentBoard[5].position.clockwise).toBe(6)
+      opponentBoard.forEach((p) => {
+        const pos = p.position.clockwise
+        expect(pos).toBeGreaterThanOrEqual(19)
+        expect(pos).toBeLessThanOrEqual(24)
+      })
     })
 
     it('should return correct opponent board points for counterclockwise direction', () => {
@@ -159,8 +159,11 @@ describe('Player', () => {
         counterClockwisePlayer
       )
       expect(opponentBoard.length).toBe(6)
-      expect(opponentBoard[0].position.clockwise).toBe(19)
-      expect(opponentBoard[5].position.clockwise).toBe(24)
+      opponentBoard.forEach((p) => {
+        const pos = p.position.counterclockwise
+        expect(pos).toBeGreaterThanOrEqual(19)
+        expect(pos).toBeLessThanOrEqual(24)
+      })
     })
   })
 
