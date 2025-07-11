@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { execSync } = require('child_process')
+const { exec } = require('child_process')
 const fs = require('fs')
 const path = require('path')
 
@@ -14,62 +14,70 @@ function getColorForCoverage(percentage) {
 }
 
 function runCoverageAndParseOutput() {
-  try {
+  return new Promise((resolve, reject) => {
     // Run the coverage command and capture output
-    const output = execSync('npm run test:coverage', {
+    exec('npm run test:coverage', {
       encoding: 'utf8',
       cwd: path.resolve(__dirname, '..'),
-      stdio: ['pipe', 'pipe', 'pipe'],
-    })
-
-    // Extract just the "All files" summary line
-    const lines = output.split('\n')
-    let summaryLine = null
-
-    // Find the "All files" summary line
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes('All files') && lines[i].includes('|')) {
-        summaryLine = lines[i]
-        break
+      maxBuffer: 1024 * 1024 * 20, // 20MB buffer to prevent ENOBUFS errors
+    }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Error running coverage:', error)
+        resolve(null)
+        return
       }
-    }
 
-    if (!summaryLine) {
-      throw new Error('Could not find coverage summary line in output')
-    }
+      try {
+        // Extract just the "All files" summary line
+        const lines = stdout.split('\n')
+        let summaryLine = null
 
-    // Parse the summary line to extract percentages
-    const parts = summaryLine.split('|').map((part) => part.trim())
-    if (parts.length >= 5) {
-      const statements = Math.round(parseFloat(parts[1]))
-      const branches = Math.round(parseFloat(parts[2]))
-      const functions = Math.round(parseFloat(parts[3]))
-      const lines = Math.round(parseFloat(parts[4]))
+        // Find the "All files" summary line
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes('All files') && lines[i].includes('|')) {
+            summaryLine = lines[i]
+            break
+          }
+        }
 
-      // Create coverage badges
-      const badges = [
-        `![Statements](https://img.shields.io/badge/Statements-${statements}%25-${getColorForCoverage(
-          statements
-        )}?style=flat-square)`,
-        `![Branches](https://img.shields.io/badge/Branches-${branches}%25-${getColorForCoverage(
-          branches
-        )}?style=flat-square)`,
-        `![Functions](https://img.shields.io/badge/Functions-${functions}%25-${getColorForCoverage(
-          functions
-        )}?style=flat-square)`,
-        `![Lines](https://img.shields.io/badge/Lines-${lines}%25-${getColorForCoverage(
-          lines
-        )}?style=flat-square)`,
-      ]
+        if (!summaryLine) {
+          throw new Error('Could not find coverage summary line in output')
+        }
 
-      return badges.join('\n')
-    } else {
-      throw new Error('Could not parse coverage summary line')
-    }
-  } catch (error) {
-    console.error('Error running coverage:', error.message)
-    return null
-  }
+        // Parse the summary line to extract percentages
+        const parts = summaryLine.split('|').map((part) => part.trim())
+        if (parts.length >= 5) {
+          const statements = Math.round(parseFloat(parts[1]))
+          const branches = Math.round(parseFloat(parts[2]))
+          const functions = Math.round(parseFloat(parts[3]))
+          const lines = Math.round(parseFloat(parts[4]))
+
+          // Create coverage badges
+          const badges = [
+            `![Statements](https://img.shields.io/badge/Statements-${statements}%25-${getColorForCoverage(
+              statements
+            )}?style=flat-square)`,
+            `![Branches](https://img.shields.io/badge/Branches-${branches}%25-${getColorForCoverage(
+              branches
+            )}?style=flat-square)`,
+            `![Functions](https://img.shields.io/badge/Functions-${functions}%25-${getColorForCoverage(
+              functions
+            )}?style=flat-square)`,
+            `![Lines](https://img.shields.io/badge/Lines-${lines}%25-${getColorForCoverage(
+              lines
+            )}?style=flat-square)`,
+          ]
+
+          resolve(badges.join('\n'))
+        } else {
+          throw new Error('Could not parse coverage summary line')
+        }
+      } catch (parseError) {
+        console.error('Error parsing coverage output:', parseError.message)
+        resolve(null)
+      }
+    })
+  })
 }
 
 function updateReadme(coverageTable) {
@@ -132,10 +140,17 @@ function updateReadme(coverageTable) {
 }
 
 // Main execution
-const coverageTable = runCoverageAndParseOutput()
-if (coverageTable) {
-  updateReadme(coverageTable)
-} else {
-  console.error('Failed to generate coverage table')
-  process.exit(1)
+async function main() {
+  const coverageTable = await runCoverageAndParseOutput()
+  if (coverageTable) {
+    updateReadme(coverageTable)
+  } else {
+    console.error('Failed to generate coverage table')
+    process.exit(1)
+  }
 }
+
+main().catch((error) => {
+  console.error('Unexpected error:', error)
+  process.exit(1)
+})
