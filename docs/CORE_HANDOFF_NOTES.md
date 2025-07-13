@@ -14,7 +14,7 @@ Remove redundant `playerId` parameter from move methods since `game.activePlayer
 
 ### **Changes Made**
 
-#### **1. Core Library (`nodots-backgammon-core`)**
+#### **1. Core Library (`core`)**
 
 - **File**: `src/Game/index.ts`
 - **Method**: `Game.getPossibleMoves()`
@@ -29,7 +29,7 @@ Game.getPossibleMoves(game: BackgammonGame, playerId?: string)
 Game.getPossibleMoves(game: BackgammonGame)
 ```
 
-#### **2. API Layer (`nodots-backgammon-api`)**
+#### **2. API Layer (`api`)**
 
 - **File**: `src/routes/games.ts`
 - **Change**: Simplified API call from `Game.getPossibleMoves(game, undefined)` to `Game.getPossibleMoves(game)`

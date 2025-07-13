@@ -31,19 +31,19 @@ Move.moveChecker(gameId: string, checkerId: string, gameLookup: GameLookupFuncti
 
 ## Implementation Changes
 
-### Core (`nodots-backgammon-core`)
+### Core (`core`)
 
 - **New method**: `Move.moveChecker()` with dependency injection for game lookup
 - **New types**: `SimpleMoveResult`, `GameLookupFunction`
 - **Helper methods**: `findCheckerInBoard()`, `getPossibleMovesForChecker()`, etc.
 
-### API (`nodots-backgammon-api`)
+### API (`api`)
 
 - **Updated endpoint**: `/games/:id/move` now expects `{ checkerId: string }`
 - **Simplified logic**: No more complex move string parsing
 - **Better responses**: Returns either executed move or possible moves
 
-### Client (`nodots-backgammon-client`)
+### Client (`client`)
 
 - **Simplified event handler**: Just sends checker ID
 - **Updated API client**: New parameter structure

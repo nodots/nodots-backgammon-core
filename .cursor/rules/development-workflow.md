@@ -51,7 +51,7 @@ Never use ambiguous language that could confuse discovery with resolution.
 
 ALWAYS kill existing API server processes before starting the server. Multiple running instances cause port conflicts and unpredictable behavior. Before starting the API server:
 
-1. Navigate to `nodots-backgammon-api` directory
+1. Navigate to `api` directory
 2. Run `npm run kill-port` to kill processes on port 3000 (uses the package.json script)
 3. Check for any remaining ts-node/nodemon processes with `ps aux | grep -E "(ts-node|nodemon)" | grep -v grep`
 4. Kill any remaining processes if found
@@ -61,7 +61,7 @@ This prevents port conflicts, ensures clean server state, and avoids multiple co
 
 ### Directory Verification
 
-ALWAYS verify the current directory before running terminal commands. Use `pwd` or check the last terminal cwd to ensure you're in the correct directory (e.g., nodots-backgammon-api for API commands, nodots-backgammon-core for core commands). If in the wrong directory, navigate to the correct one before executing commands. This prevents file not found errors and ensures commands run in the intended context.
+ALWAYS verify the current directory before running terminal commands. Use `pwd` or check the last terminal cwd to ensure you're in the correct directory (e.g., api for API commands, core for core commands). If in the wrong directory, navigate to the correct one before executing commands. This prevents file not found errors and ensures commands run in the intended context.
 
 ## API Server Information
 

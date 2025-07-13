@@ -1,4 +1,4 @@
-# 🤖 Core AI Agent Notes - nodots-backgammon-core
+# 🤖 Core AI Agent Notes - core
 
 ## 📋 Mission Critical Overview
 

@@ -5,7 +5,7 @@
 ![Lines](https://img.shields.io/badge/Lines-81%25-green?style=flat-square)
 <!-- COVERAGE-END -->
 
-# nodots-backgammon-core
+# core
 
 Core game logic implementation for the nodots-backgammon project. This library handles all the game mechanics, move validation, and state management for a backgammon game.
 
@@ -31,8 +31,8 @@ npm i @nodots-llc/backgammon-core
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/nodots/nodots-backgammon-core.git
-cd nodots-backgammon-core
+git clone https://github.com/nodots/core.git
+cd core
 ```
 
 2. Install dependencies:

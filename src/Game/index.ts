@@ -627,12 +627,15 @@ export class Game {
     // Game continues, ensure we have a moving game
     const movingGame = gameAfterMove as BackgammonGameMoving
 
-    // Check if turn should be completed
-    const gameAfterTurnCheck = Game.checkAndCompleteTurn(movingGame)
+    // Only auto-complete turn for robot players, human players must confirm manually
+    if (movingGame.activePlayer.isRobot) {
+      // Check if turn should be completed for robot
+      const gameAfterTurnCheck = Game.checkAndCompleteTurn(movingGame)
 
-    // If the turn was completed (different active color), return the updated game
-    if (gameAfterTurnCheck.activeColor !== movingGame.activeColor) {
-      return gameAfterTurnCheck
+      // If the turn was completed (different active color), return the updated game
+      if (gameAfterTurnCheck.activeColor !== movingGame.activeColor) {
+        return gameAfterTurnCheck
+      }
     }
 
     // CRITICAL FIX: After executing a move, the activePlay.moves still contains stale references
@@ -647,6 +650,7 @@ export class Game {
 
   /**
    * Check if the current turn is complete and transition to the next player
+   * This method is primarily for robot players - human players should use confirmTurn instead
    * @param game - Current game state
    * @returns Updated game state with next player or current game if turn not complete
    */
@@ -693,6 +697,138 @@ export class Game {
       ...activePlay,
       stateKind: 'completed' as const,
     }
+
+    // Return game with next player's turn using Game.initialize for proper typing
+    return Game.initialize(
+      updatedPlayers,
+      game.id,
+      'rolling',
+      game.board,
+      game.cube,
+      undefined, // No active play for next player until they roll
+      nextColor,
+      newActivePlayer,
+      newInactivePlayer
+    )
+  }
+
+  /**
+   * Check if the current turn can be confirmed (ready to pass control to next player)
+   * A turn can be confirmed when:
+   * 1. Game is in 'moving' state
+   * 2. Player has used all available dice OR chooses to end turn early
+   * 3. No more legal moves are available for remaining dice
+   * @param game - Current game state
+   * @returns true if turn can be confirmed, false otherwise
+   */
+  public static canConfirmTurn = function canConfirmTurn(
+    game: BackgammonGame
+  ): boolean {
+    if (game.stateKind !== 'moving') {
+      return false
+    }
+
+    const activePlay = game.activePlay
+    if (!activePlay || !activePlay.moves) {
+      return false
+    }
+
+    const movesArr = Array.from(activePlay.moves)
+
+    // Check if any moves are completed (at least one move was made)
+    const hasCompletedMoves = movesArr.some(
+      (move) => move.stateKind === 'completed'
+    )
+
+    // Check if all moves are completed
+    const allMovesCompleted = movesArr.every(
+      (move) => move.stateKind === 'completed'
+    )
+
+    // Check if remaining ready moves have no legal moves available
+    const readyMoves = movesArr.filter((move) => move.stateKind === 'ready')
+    const hasLegalMovesRemaining = readyMoves.some((move) => {
+      const possibleMoves = Board.getPossibleMoves(
+        game.board,
+        game.activePlayer,
+        move.dieValue as BackgammonDieValue
+      )
+      return possibleMoves.length > 0
+    })
+
+    // Turn can be confirmed if:
+    // 1. All moves are completed, OR
+    // 2. At least one move was made AND no legal moves remain for ready dice
+    return allMovesCompleted || (hasCompletedMoves && !hasLegalMovesRemaining)
+  }
+
+  /**
+   * Manually confirm the current turn and pass control to the next player
+   * This is triggered by dice click after the player has finished their moves
+   * @param game - Current game state in 'moving' state
+   * @returns Updated game state with next player's turn
+   */
+  public static confirmTurn = function confirmTurn(
+    game: BackgammonGameMoving
+  ): BackgammonGame {
+    if (game.stateKind !== 'moving') {
+      throw new Error('Cannot confirm turn from non-moving state')
+    }
+
+    if (!Game.canConfirmTurn(game)) {
+      throw new Error(
+        'Turn cannot be confirmed - either no moves made or legal moves still available'
+      )
+    }
+
+    const activePlay = game.activePlay
+    if (!activePlay || !activePlay.moves) {
+      throw new Error('No active play found')
+    }
+
+    // Mark any remaining ready moves as 'no-move' since player is confirming turn
+    const movesArr = Array.from(activePlay.moves)
+    const confirmedMoves = movesArr.map((move) => {
+      if (move.stateKind === 'ready') {
+        return {
+          ...move,
+          stateKind: 'completed' as const,
+          moveKind: 'no-move' as const,
+          possibleMoves: [],
+          isHit: false,
+          origin: undefined,
+          destination: undefined,
+        }
+      }
+      return move
+    })
+
+    // Update activePlay with confirmed moves
+    const confirmedActivePlay = {
+      ...activePlay,
+      moves: new Set(confirmedMoves),
+      stateKind: 'completed' as const,
+    }
+
+    // Manually transition to next player since turn is confirmed
+    const nextColor = game.activeColor === 'white' ? 'black' : 'white'
+
+    // Update players: current becomes inactive, next becomes rolling
+    const updatedPlayers = game.players.map((player) => {
+      if (player.color === game.activeColor) {
+        return { ...player, stateKind: 'inactive' as const }
+      } else {
+        return { ...player, stateKind: 'rolling' as const }
+      }
+    }) as BackgammonPlayers
+
+    // Find new active and inactive players
+    const newActivePlayer = updatedPlayers.find(
+      (p) => p.color === nextColor
+    ) as BackgammonPlayerActive
+    const newInactivePlayer = updatedPlayers.find(
+      (p) => p.color === game.activeColor
+    ) as BackgammonPlayerInactive
 
     // Return game with next player's turn using Game.initialize for proper typing
     return Game.initialize(
@@ -1066,12 +1202,13 @@ export class Game {
         )
       }
 
-      // Auto-complete turn when no legal moves remain
+      // Auto-complete turn when no legal moves remain (only for robot players)
       if (
         possibleMoves.length === 0 &&
-        movesArr.every((m) => m.stateKind === 'ready')
+        movesArr.every((m) => m.stateKind === 'ready') &&
+        targetPlayer.isRobot
       ) {
-        logger.debug('[Game] Auto-completing turn: no legal moves remain')
+        logger.debug('[Game] Auto-completing robot turn: no legal moves remain')
 
         // Mark all remaining moves as completed with no-move
         const completedMoves = movesArr.map((move) => ({
