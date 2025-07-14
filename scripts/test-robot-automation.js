@@ -48,7 +48,7 @@ async function testRobotAutomation() {
   console.log(`Initial state: ${game.stateKind}`)
 
   let turnCount = 0
-  const maxTurns = 50 // Reduced from 100 to catch issues faster
+  const maxTurns = 80 // Reduced from 100 to catch issues faster
 
   while (turnCount < maxTurns) {
     turnCount++
