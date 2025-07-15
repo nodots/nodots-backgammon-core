@@ -2,7 +2,7 @@
 
 ## 📋 **Overview**
 
-The Robot AI Automation system provides intelligent, automated gameplay for robot players in nodots-backgammon-core. This system enables robots to make moves automatically, handle doubling cube decisions, and play at different difficulty levels without human intervention.
+The Robot AI Automation system provides intelligent, automated gameplay for robot players in core. This system enables robots to make moves automatically, handle doubling cube decisions, and play at different difficulty levels without human intervention.
 
 ---
 

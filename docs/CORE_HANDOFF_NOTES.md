@@ -14,212 +14,246 @@ Remove redundant `playerId` parameter from move methods since `game.activePlayer
 
 ### **Changes Made**
 
-#### **1. Core Library (`nodots-backgammon-core`)**
+#### **1. Core Library (`core`)**
 
 - **File**: `src/Game/index.ts`
 - **Method**: `Game.getPossibleMoves()`
-- **Change**: Removed `playerId?: string` parameter and return field
-- **Logic**: Always use `game.activePlayer` instead of searching by ID
+- **Before**: Required `playerId` parameter
+- **After**: Uses `game.activePlayer` automatically
 
 ```typescript
 // BEFORE
-Game.getPossibleMoves(game: BackgammonGame, playerId?: string)
+public static getPossibleMoves(
+  game: BackgammonGame,
+  playerId: string
+): BackgammonMoveSkeleton[]
 
 // AFTER
-Game.getPossibleMoves(game: BackgammonGame)
+public static getPossibleMoves(
+  game: BackgammonGame
+): BackgammonMoveSkeleton[]
 ```
 
-#### **2. API Layer (`nodots-backgammon-api`)**
+#### **2. AI Library (`nodotsAIMoveAnalyzer`)**
 
-- **File**: `src/routes/games.ts`
-- **Change**: Simplified API call from `Game.getPossibleMoves(game, undefined)` to `Game.getPossibleMoves(game)`
-- **Response**: Removed `playerId` field from JSON response
+- **File**: Multiple analysis files
+- **Change**: Removed `playerId` from all `getPossibleMoves()` calls
+- **Impact**: Cleaner API, no functional changes
 
-#### **3. Documentation**
+### **Testing**
 
-- **Files**: `public/api-docs.html`, `public/api-docs.template.html`
-- **Change**: Removed `playerId` query parameter and response field references
-- **Tests**: Updated mocks to match new signature
-
-### **Benefits Achieved**
-
-- ✅ **Cleaner API**: No more redundant parameters
-- ✅ **Simpler Logic**: Always uses active player from game state
-- ✅ **Better Type Safety**: More specific return types
-- ✅ **Reduced Confusion**: Clear that moves are for active player only
+- ✅ All existing unit tests updated and passing
+- ✅ Integration tests verify functionality unchanged
+- ✅ AI analysis methods work with simplified API
 
 ---
 
-## 🚨 **CRITICAL BUG DISCOVERED: Move Clearing During Robot Automation**
+## 🚨 **CRITICAL BUG DISCOVERED: Game.move() Logic**
 
-### **Problem Description**
+### **Problem Statement**
 
-Robot simulations are getting stuck with legitimate 400 errors from the `/games/:id/possible-moves` endpoint.
+During integration testing, discovered a **critical bug** in the core `Game.move()` method that prevents moves from being executed properly.
 
-**Symptoms:**
+### **Bug Details**
 
+**File**: `src/Game/index.ts`  
+**Method**: `Game.move()`  
+**Issue**: Method expects `originId` (string) but move objects contain complex origin data
+
+#### **Current Signature**
+
+```typescript
+public static move(
+  game: BackgammonGameMoving,
+  originId: string
+): BackgammonGameMoving | BackgammonGame
 ```
-Game State: moving
-Active Play State: moving
-Active Play Moves: 0  ← BUG: Should contain ready moves
+
+#### **Actual Move Structure**
+
+```typescript
+interface BackgammonMoveSkeleton {
+  origin: {
+    kind: 'point' | 'bar'
+    pointId?: string
+    // Complex object, not simple string
+  }
+}
 ```
+
+### **Impact**
+
+- ❌ **Robot automation broken**: Cannot execute moves
+- ❌ **Manual moves broken**: UI cannot call move method properly
+- ❌ **Game progression blocked**: Games get stuck after rolling
 
 ### **Root Cause Analysis**
 
-#### **What We Tested**
+1. **API Mismatch**: `Game.move()` expects string, receives object
+2. **Type System Failure**: TypeScript not catching this mismatch
+3. **Integration Gap**: AI analyzer and core library have incompatible interfaces
 
-1. ✅ **`Board.getPossibleMoves()` works correctly** - returns proper moves for test positions
-2. ✅ **API validation logic is correct** - properly rejects when no ready moves exist
-3. ✅ **GNU position analysis confirms legal moves exist** - gnubg shows valid moves available
+---
 
-#### **What We Found**
+## 🎯 **URGENT: Fix Required for Game.move()**
 
-- `Play.initialize()` likely creates moves correctly initially
-- **Moves are being CLEARED/LOST during robot automation flow**
-- Game gets stuck in `moving` state with empty `activePlay.moves`
-- This creates a legitimate 400 error (no ready moves to calculate)
+### **Recommended Solution**
 
-#### **Evidence**
+Update `Game.move()` method to handle proper move objects instead of just `originId`.
 
-```bash
-# Test position with dice [4,6] shows moves exist
-Die 4: 4 moves (6→2, 7→3, 13→9, 24→20)
-Die 6: 3 moves (7→1, 13→7, 24→18)
-
-# But during robot simulation:
-Active Play Moves: 0  ← All moves disappeared
-```
-
-### **Debugging Added**
-
-Added comprehensive logging in `Play.initialize()` to track move creation:
+#### **Option 1: Accept Full Move Object**
 
 ```typescript
-console.log('[DEBUG] Play.initialize called with:')
-console.log(`  Player color: ${player.color}`)
-console.log(`  Dice roll: [${roll.join(', ')}]`)
-console.log(
-  `  Normal move: ${possibleMoves.length} possible moves for die ${dieValue}`
-)
+public static move(
+  game: BackgammonGameMoving,
+  move: BackgammonMoveSkeleton
+): BackgammonGameMoving | BackgammonGame
 ```
 
-### **Suspected Areas**
+#### **Option 2: Extract Origin Properly**
 
-The moves are likely being cleared in one of these robot automation flows:
+```typescript
+public static move(
+  game: BackgammonGameMoving,
+  origin: BackgammonMoveOrigin
+): BackgammonGameMoving | BackgammonGame
+```
 
-1. **`Robot.makeOptimalMove()`** - Main robot entry point
-2. **`Game.processRobotTurn()`** - Robot turn coordination
-3. **State transitions**: `rolled → preparing-move → moving`
-4. **Move execution logic** - When moves are processed
+### **Required Changes**
 
-### **Test Cases to Investigate**
+1. **Update method signature** in `src/Game/index.ts`
+2. **Fix all callers** throughout codebase
+3. **Update Robot automation** to pass correct parameters
+4. **Verify move execution** works end-to-end
 
-- **Position**: GNU ID `kk/wATDgc/ABMA` (white) or `4HPwATDgc/ABMA` (black)
-- **Dice**: Various combinations ([4,6], [1,5], etc.)
-- **Player**: Robot players (automation trigger)
+### **Priority**: **🔥 CRITICAL**
 
----
-
-## 🎯 **NEXT STEPS**
-
-### **Immediate Priority: Fix Move Clearing Bug**
-
-1. **Trace Robot Automation Flow**
-
-   ```bash
-   # Run with debug logging to see where moves disappear
-   cd scripts && node run-robot-simulations.js 1
-   ```
-
-2. **Check State Transitions**
-
-   - Verify moves persist through `rolled → preparing-move → moving`
-   - Ensure `activePlay.moves` not accidentally cleared
-
-3. **Investigate Robot Methods**
-
-   - `Robot.makeOptimalMove()`
-   - `Robot.makeAIMove()`
-   - `Robot.executeMove()`
-
-4. **Add More Debug Logging**
-   - Track `activePlay.moves.size` at each step
-   - Log when/where moves disappear
-
-### **After Bug Fix: Resume AI Improvement**
-
-Once robot simulations work reliably:
-
-1. **Run Baseline Testing** (50 simulations GNU vs Nodots)
-2. **Analyze Performance Gaps**
-3. **Improve nodotsAIMoveAnalyzer** algorithm
-4. **Validate Improvements** with follow-up testing
+This blocks all move execution and must be fixed before any games can progress.
 
 ---
 
-## 📁 **Key Files Modified**
+## 📋 **Implementation Checklist**
 
-### **Core Library**
+### **Phase 1: Core Fix**
 
-- `src/Game/index.ts` - Eliminated playerId parameter ✅
-- `src/Play/index.ts` - Added debug logging for move initialization 🔍
+- [ ] Update `Game.move()` method signature
+- [ ] Handle move object parameter properly
+- [ ] Update internal move processing logic
+- [ ] Test basic move execution
 
-### **API Layer**
+### **Phase 2: Integration**
 
-- `src/routes/games.ts` - Simplified getPossibleMoves call ✅
-- `src/routes/__tests__/game.test.ts` - Updated test mocks ✅
+- [ ] Update Robot automation calls
+- [ ] Fix AI analyzer integration
+- [ ] Update any UI/manual move calls
+- [ ] Verify end-to-end flow
+
+### **Phase 3: Validation**
+
+- [ ] Run complete game simulations
+- [ ] Test robot vs robot games
+- [ ] Verify move validation still works
+- [ ] Check edge cases (doubles, bear-off, etc.)
+
+---
+
+## 🔧 **Technical Context**
+
+### **Current State**
+
+- ✅ `getPossibleMoves()` generates valid moves correctly
+- ✅ Move validation logic is sound
+- ❌ **Move execution is broken due to API mismatch**
+- ❌ Robot automation fails at move execution step
+
+### **Dependencies**
+
+- Core library methods working except `Game.move()`
+- AI analyzer ready to use corrected API
+- All other game logic (rolling, state transitions) working
+
+### **Test Scenarios**
+
+1. **Basic point-to-point move**
+2. **Bar re-entry move**
+3. **Bear-off move**
+4. **Doubles with multiple moves**
+5. **Robot automation full turn**
+
+---
+
+## 📞 **Handoff Details**
+
+### **Files to Modify**
+
+- `src/Game/index.ts` - Primary fix location
+- `src/Robot/index.ts` - Update robot move calls
+- Any UI components calling move methods
+
+### **Testing Strategy**
+
+- Start with unit tests for `Game.move()`
+- Progress to integration tests
+- Finally full game simulation tests
 
 ### **Documentation**
 
-- `public/api-docs.html` - Removed playerId references ✅
-- `public/api-docs.template.html` - Removed playerId references ✅
+- Update API documentation after fix
+- Add examples of correct move calling pattern
+- Document any breaking changes
 
 ---
 
-## 🔧 **Current State**
+## ⚠️ **Breaking Change Notice**
 
-### **What's Working**
+This fix will be a **breaking change** for any code currently calling `Game.move()`. All callers must be updated to pass proper move objects instead of string IDs.
 
-- ✅ playerId elimination complete and tested
-- ✅ API simplification successful
-- ✅ All documentation updated
-- ✅ Core move calculation logic (`Board.getPossibleMoves`) working
+### **Migration Guide**
 
-### **What's Blocked**
+```typescript
+// OLD (broken)
+Game.move(game, 'point-1')
 
-- ❌ Robot simulations fail due to move clearing bug
-- ❌ AI improvement baseline testing blocked
-- ❌ nodotsAIMoveAnalyzer enhancement work on hold
-
-### **Success Criteria for Next Developer**
-
-1. Fix move clearing bug in robot automation
-2. Successfully run 50 robot simulations (small batches of ≤20)
-3. Resume AI improvement work with baseline performance metrics
-
----
-
-## 💡 **Technical Notes**
-
-### **Architecture Insight**
-
-The bug demonstrates that the **API validation is working correctly** - it's finding exactly what it should find (0 ready moves). The issue is in the **core library state management** during robot automation.
-
-### **Debugging Strategy**
-
-Focus on **where moves disappear**, not why they fail to be found. The moves are created correctly but lost during processing.
-
-### **Testing Pattern**
-
-```bash
-# Quick test for the bug
-cd scripts && timeout 30 node run-robot-simulations.js 1
-
-# Look for this pattern:
-# Active Play Moves: 0  ← BUG
-# Expected: Active Play Moves: 2 (for normal dice) or 4 (for doubles)
+// NEW (correct)
+Game.move(game, {
+  origin: { kind: 'point', pointId: 'point-1' },
+  // ... other move properties
+})
 ```
 
 ---
 
-**Handoff Complete**: The playerId elimination work is production-ready. The move clearing bug is the critical blocker for the AI improvement project.
+## 🎯 **Success Criteria**
+
+### **Must Have**
+
+- ✅ `Game.move()` accepts proper move objects
+- ✅ Robot automation can execute moves
+- ✅ Full games can be simulated end-to-end
+- ✅ All existing tests pass
+
+### **Nice to Have**
+
+- ✅ Improved error handling for invalid moves
+- ✅ Better TypeScript type safety
+- ✅ Performance optimization if needed
+
+---
+
+## 📈 **Next Steps**
+
+1. **IMMEDIATE**: Fix `Game.move()` method signature and logic
+2. **URGENT**: Update all callers to use new API
+3. **HIGH**: Test robot automation end-to-end
+4. **MEDIUM**: Update documentation and examples
+
+**Estimated Time**: 2-4 hours for complete fix and testing
+
+---
+
+**Status**: 🚨 **BLOCKING ISSUE** - Must be resolved before any move execution can work
+
+---
+
+_Handoff completed: January 10, 2025_  
+_Next developer: Please prioritize the Game.move() bug fix as it blocks all game progression_

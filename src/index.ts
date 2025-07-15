@@ -71,3 +71,4 @@ export {
 
 // Re-export all types from @nodots-llc/backgammon-types for convenience
 export * from '@nodots-llc/backgammon-types'
+export { GameEventEmitter } from './events/GameEventEmitter'

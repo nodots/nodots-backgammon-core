@@ -4,7 +4,7 @@
 
 ### Game Logic Separation
 
-ALL game logic must reside in nodots-backgammon-core. The API layer should ONLY:
+ALL game logic must reside in core. The API layer should ONLY:
 
 1. Accept information about current state and proposed state changes
 2. Pass these to core for validation and execution

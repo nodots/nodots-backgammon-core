@@ -2,7 +2,7 @@
 
 ## 📋 **Executive Summary**
 
-✅ **MISSION ACCOMPLISHED**: Robot AI automation has been successfully implemented and is ready for integration with nodots-backgammon-core.
+✅ **MISSION ACCOMPLISHED**: Robot AI automation has been successfully implemented and is ready for integration with core.
 
 ### 🎯 **Problem Solved**
 
