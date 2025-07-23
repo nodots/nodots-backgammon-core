@@ -1,10 +1,8 @@
 <!-- COVERAGE-START -->
-
-![Statements](https://img.shields.io/badge/Statements-82%25-green?style=flat-square)
-![Branches](https://img.shields.io/badge/Branches-69%25-orange?style=flat-square)
-![Functions](https://img.shields.io/badge/Functions-84%25-green?style=flat-square)
-![Lines](https://img.shields.io/badge/Lines-82%25-green?style=flat-square)
-
+![Statements](https://img.shields.io/badge/Statements-80%25-green?style=flat-square)
+![Branches](https://img.shields.io/badge/Branches-67%25-orange?style=flat-square)
+![Functions](https://img.shields.io/badge/Functions-78%25-yellow?style=flat-square)
+![Lines](https://img.shields.io/badge/Lines-80%25-green?style=flat-square)
 <!-- COVERAGE-END -->
 
 # core
