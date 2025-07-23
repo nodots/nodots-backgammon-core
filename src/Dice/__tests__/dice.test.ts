@@ -59,7 +59,7 @@ describe('Dice', () => {
     })
 
     test('should have approximately uniform distribution for individual dice', () => {
-      const rolls = []
+      const rolls: BackgammonRoll[] = []
       for (let i = 0; i < monteCarloRuns; i++) {
         const inactiveDice = Dice.initialize(
           randomColor,
@@ -92,7 +92,7 @@ describe('Dice', () => {
     })
 
     test('should have correct probability distribution for totals', () => {
-      const rolls = []
+      const rolls: BackgammonRoll[] = []
       for (let i = 0; i < monteCarloRuns; i++) {
         const inactiveDice = Dice.initialize(
           randomColor,
@@ -140,7 +140,7 @@ describe('Dice', () => {
         randomColor,
         'inactive'
       ) as BackgammonDiceInactive
-      const rolls = []
+      const rolls: BackgammonDiceRolled[] = []
       for (let i = 0; i < monteCarloRuns; i++) {
         const inactiveDice = Dice.initialize(
           randomColor,
@@ -176,7 +176,10 @@ describe('Dice', () => {
 
   describe('Switching Dice', () => {
     it('should switch dice correctly', () => {
-      const dice = Dice.initialize(randomColor)
+      const dice = Dice.initialize(
+        randomColor,
+        'inactive'
+      ) as BackgammonDiceInactive
       const rolledDice = Dice.roll(dice)
       const originalRoll = [...rolledDice.currentRoll!]
       const switchedDice = Dice.switchDice(rolledDice)
@@ -187,7 +190,10 @@ describe('Dice', () => {
     })
 
     it('should maintain dice properties after switching', () => {
-      const dice = Dice.initialize(randomColor)
+      const dice = Dice.initialize(
+        randomColor,
+        'inactive'
+      ) as BackgammonDiceInactive
       const rolledDice = Dice.roll(dice)
       const switchedDice = Dice.switchDice(rolledDice)
 
@@ -199,7 +205,10 @@ describe('Dice', () => {
 
   describe('Double Detection', () => {
     it('should correctly identify doubles', () => {
-      const dice = Dice.initialize(randomColor)
+      const dice = Dice.initialize(
+        randomColor,
+        'inactive'
+      ) as BackgammonDiceInactive
       const mockRoll: BackgammonRoll = [4, 4]
       const rolledDice: BackgammonDiceRolled = {
         ...dice,
@@ -211,7 +220,10 @@ describe('Dice', () => {
     })
 
     it('should correctly identify non-doubles', () => {
-      const dice = Dice.initialize(randomColor)
+      const dice = Dice.initialize(
+        randomColor,
+        'inactive'
+      ) as BackgammonDiceInactive
       const mockRoll: BackgammonRoll = [3, 4]
       const rolledDice: BackgammonDiceRolled = {
         ...dice,
