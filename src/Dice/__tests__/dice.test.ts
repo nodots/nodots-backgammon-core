@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals'
 import {
+  BackgammonDiceInactive,
   BackgammonDiceRolled,
   BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
@@ -35,7 +36,10 @@ describe('Dice', () => {
   })
 
   describe('Rolling', () => {
-    const dice = Dice.initialize(randomColor)
+    const dice = Dice.initialize(
+      randomColor,
+      'inactive'
+    ) as BackgammonDiceInactive
 
     it('should roll the dice correctly', () => {
       const rolledDice = Dice.roll(dice)
@@ -57,7 +61,11 @@ describe('Dice', () => {
     test('should have approximately uniform distribution for individual dice', () => {
       const rolls = []
       for (let i = 0; i < monteCarloRuns; i++) {
-        const roll = Dice.roll(dice)
+        const inactiveDice = Dice.initialize(
+          randomColor,
+          'inactive'
+        ) as BackgammonDiceInactive
+        const roll = Dice.roll(inactiveDice)
         rolls.push(roll.currentRoll)
       }
       const counts = new Array(6).fill(0)
@@ -86,7 +94,11 @@ describe('Dice', () => {
     test('should have correct probability distribution for totals', () => {
       const rolls = []
       for (let i = 0; i < monteCarloRuns; i++) {
-        const roll = Dice.roll(dice)
+        const inactiveDice = Dice.initialize(
+          randomColor,
+          'inactive'
+        ) as BackgammonDiceInactive
+        const roll = Dice.roll(inactiveDice)
         rolls.push(roll.currentRoll)
       }
 
@@ -124,10 +136,17 @@ describe('Dice', () => {
     })
 
     test('should have correct probability of doubles', () => {
-      const dice = Dice.initialize(randomColor)
+      const dice = Dice.initialize(
+        randomColor,
+        'inactive'
+      ) as BackgammonDiceInactive
       const rolls = []
       for (let i = 0; i < monteCarloRuns; i++) {
-        const roll = Dice.roll(dice)
+        const inactiveDice = Dice.initialize(
+          randomColor,
+          'inactive'
+        ) as BackgammonDiceInactive
+        const roll = Dice.roll(inactiveDice)
         rolls.push(roll)
       }
 

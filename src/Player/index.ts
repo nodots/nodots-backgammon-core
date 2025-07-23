@@ -3,6 +3,7 @@ import {
   BackgammonBoard,
   BackgammonColor,
   BackgammonDice,
+  BackgammonDiceInactive,
   BackgammonDiceRolled,
   BackgammonMoveDirection,
   BackgammonMoveResult,
@@ -69,13 +70,16 @@ export class Player {
           isRobot,
         } as BackgammonPlayerRollingForStart
       case 'rolled-for-start': {
+        // For rolled-for-start players, their dice should be 'rolling' (ready to roll)
+        // since they won the roll-for-start and can now roll for their first turn
+        const rollingDice = dice || Dice.initialize(color, 'rolling')
         return {
           id,
           userId: playerUserId,
           color,
           direction,
           stateKind,
-          dice: Dice.initialize(color),
+          dice: rollingDice,
           pipCount: 167,
           isRobot,
         } as BackgammonPlayerRolledForStart
@@ -154,7 +158,10 @@ export class Player {
   public static roll = function roll(
     player: BackgammonPlayerRolling
   ): BackgammonPlayerRolled {
-    const inactiveDice = Dice.initialize(player.color)
+    const inactiveDice = Dice.initialize(
+      player.color,
+      'inactive'
+    ) as BackgammonDiceInactive
     const rolledDice = Dice.roll(inactiveDice)
     return {
       ...player,

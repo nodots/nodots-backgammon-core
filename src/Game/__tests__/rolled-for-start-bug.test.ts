@@ -6,7 +6,7 @@ import {
 import { Player } from '../../Player'
 import { Game } from '../index'
 
-describe('ROLLED-FOR-START Dice State Bug', () => {
+describe('ROLLED-FOR-START Dice State', () => {
   let players: BackgammonPlayers
 
   beforeEach(() => {
@@ -31,7 +31,7 @@ describe('ROLLED-FOR-START Dice State Bug', () => {
     players = [player1, player2] as BackgammonPlayers
   })
 
-  it('should reproduce the dice state bug in rolled-for-start state', () => {
+  it('should have dice in rolling state for active player in rolled-for-start state', () => {
     // 1. Create game in rolling-for-start state
     const game = Game.initialize(players) as BackgammonGameRollingForStart
     expect(game.stateKind).toBe('rolling-for-start')
@@ -43,16 +43,16 @@ describe('ROLLED-FOR-START Dice State Bug', () => {
     expect(gameAfterRollForStart.stateKind).toBe('rolled-for-start')
     expect(gameAfterRollForStart.activeColor).toBeDefined()
 
-    // 3. Check the active player's dice state - THIS IS THE BUG
+    // 3. Check the active player's dice state - should be 'rolling' (ready to roll)
     const activePlayer = gameAfterRollForStart.activePlayer
     console.log('Active player dice state:', activePlayer.dice.stateKind)
     console.log('Active player state:', activePlayer.stateKind)
 
-    // BUG: The active player has inactive dice but should be able to roll
-    expect(activePlayer.dice.stateKind).toBe('inactive') // This is the bug!
+    // CORRECT: The active player has rolling dice and is ready to roll
+    expect(activePlayer.dice.stateKind).toBe('rolling') // This is correct!
     expect(activePlayer.stateKind).toBe('rolled-for-start')
 
-    // 4. Try to roll dice - this should work but might fail due to inactive dice
+    // 4. Try to roll dice - this should work
     try {
       const gameAfterRoll = Game.roll(gameAfterRollForStart)
       expect(gameAfterRoll.stateKind).toBe('rolled')
@@ -64,7 +64,6 @@ describe('ROLLED-FOR-START Dice State Bug', () => {
       expect(rolledActivePlayer.dice.currentRoll).toHaveLength(2)
     } catch (error) {
       console.error('Roll failed:', error)
-      // This catch block will capture the bug if it exists
       fail(`Rolling dice failed from rolled-for-start state: ${error}`)
     }
   })

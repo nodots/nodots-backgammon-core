@@ -30,6 +30,7 @@ import { generateId, Player, randomBackgammonColor } from '..'
 import { Board } from '../Board'
 import { Checker } from '../Checker'
 import { Cube } from '../Cube'
+import { Dice } from '../Dice'
 import { BackgammonMoveDirection, Play } from '../Play'
 import { logger } from '../utils/logger'
 export * from '../index'
@@ -155,7 +156,54 @@ export class Game {
 
     // Auto roll for start if requested
     if (autoRollForStart) {
-      if (colorDirectionConfig) {
+      // --- FORCE ROBOT TO WIN ROLL FOR START IF PLAYING AGAINST HUMAN ---
+      const robotPlayer = playersTuple.find((p) => p.isRobot)
+      const humanPlayer = playersTuple.find((p) => !p.isRobot)
+      if (
+        robotPlayer &&
+        humanPlayer &&
+        playersTuple.filter((p) => p.isRobot).length === 1
+      ) {
+        // Force the robot to win the roll for start
+        const desiredActiveColor = robotPlayer.color
+        const rollingPlayers = playersTuple.map((p) =>
+          p.color === desiredActiveColor
+            ? Player.initialize(
+                p.color,
+                p.direction,
+                Dice.initialize(p.color, 'rolling'), // Active player gets rolling dice
+                p.id,
+                'rolled-for-start',
+                p.isRobot,
+                p.userId
+              )
+            : Player.initialize(
+                p.color,
+                p.direction,
+                undefined,
+                p.id,
+                'inactive',
+                p.isRobot,
+                p.userId
+              )
+        ) as BackgammonPlayers
+
+        const activePlayer = rollingPlayers.find(
+          (p) => p.color === desiredActiveColor
+        ) as BackgammonPlayerRolledForStart
+        const inactivePlayer = rollingPlayers.find(
+          (p) => p.color !== desiredActiveColor
+        ) as BackgammonPlayerInactive
+
+        game = {
+          ...game,
+          stateKind: 'rolled-for-start',
+          activeColor: desiredActiveColor,
+          players: rollingPlayers,
+          activePlayer,
+          inactivePlayer,
+        } as BackgammonGameRolledForStart
+      } else if (colorDirectionConfig) {
         // When configuration is provided, respect the blackFirst setting
         const desiredActiveColor = blackFirst ? 'black' : 'white'
 
@@ -165,7 +213,7 @@ export class Game {
             ? Player.initialize(
                 p.color,
                 p.direction,
-                undefined,
+                Dice.initialize(p.color, 'rolling'), // Active player gets rolling dice
                 p.id,
                 'rolled-for-start',
                 p.isRobot,
@@ -312,7 +360,7 @@ export class Game {
         ? Player.initialize(
             p.color,
             p.direction,
-            undefined,
+            Dice.initialize(p.color, 'rolling'), // Active player gets rolling dice
             p.id,
             'rolled-for-start',
             p.isRobot,
@@ -328,6 +376,7 @@ export class Game {
             p.userId
           )
     ) as BackgammonPlayers
+
     const activePlayer = rollingPlayers.find(
       (p) => p.color === activeColor
     ) as BackgammonPlayerRolledForStart
@@ -335,7 +384,8 @@ export class Game {
       (p) => p.color !== activeColor
     ) as BackgammonPlayerInactive
 
-    const rolledForStartGame = {
+    // Always return rolled-for-start state - let caller handle robot automation
+    return {
       ...game,
       stateKind: 'rolled-for-start',
       activeColor,
@@ -343,9 +393,6 @@ export class Game {
       activePlayer,
       inactivePlayer,
     } as BackgammonGameRolledForStart
-
-    // Always return rolled-for-start state - let caller handle robot automation
-    return rolledForStartGame
   }
 
   /**
