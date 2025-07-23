@@ -461,10 +461,15 @@ export class Game {
       const { players, activeColor } = game
       const rollingPlayers = players.map((p) => {
         if (p.color === activeColor) {
-          if (p.stateKind === 'rolling') return p
+          // Ensure dice is in 'rolling' state
+          const dice =
+            p.dice.stateKind === 'rolling'
+              ? p.dice
+              : Dice.initialize(p.color, 'rolling')
           return {
             ...p,
             stateKind: 'rolling',
+            dice,
           } as BackgammonPlayerRolling
         }
         return {

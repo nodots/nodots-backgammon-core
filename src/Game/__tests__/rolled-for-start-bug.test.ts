@@ -1,8 +1,11 @@
 import {
   BackgammonGameRolledForStart,
   BackgammonGameRollingForStart,
+  BackgammonPlayerInactive,
+  BackgammonPlayerRolledForStart,
   BackgammonPlayers,
 } from '@nodots-llc/backgammon-types'
+import { Dice } from '../../Dice'
 import { Player } from '../../Player'
 import { Game } from '../index'
 
@@ -81,5 +84,50 @@ describe('ROLLED-FOR-START Dice State', () => {
       expect(gameRolled.stateKind).toBe('rolled')
       expect(gameRolled.activePlayer.dice.stateKind).toBe('rolled')
     }).not.toThrow()
+  })
+
+  it('should set dice to rolling if it was inactive before rolling from rolled-for-start', () => {
+    // Create a game in rolled-for-start state with active player dice as 'inactive'
+    const player1 = Player.initialize(
+      'white',
+      'clockwise',
+      undefined,
+      'player1',
+      'inactive',
+      true,
+      'user1'
+    )
+    const player2 = Player.initialize(
+      'black',
+      'counterclockwise',
+      Dice.initialize('black', 'inactive'), // Force inactive dice
+      'player2',
+      'rolled-for-start',
+      false,
+      'user2'
+    )
+    const players = [player1, player2] as BackgammonPlayers
+    const game = Game.initialize(
+      players,
+      'test-game',
+      'rolled-for-start',
+      undefined,
+      undefined,
+      undefined,
+      'black',
+      player2 as BackgammonPlayerRolledForStart,
+      player1 as BackgammonPlayerInactive
+    ) as BackgammonGameRolledForStart
+
+    // Sanity check: dice is inactive before roll
+    expect(game.activePlayer.dice.stateKind).toBe('inactive')
+
+    // Call Game.roll, which should set dice to 'rolling' before rolling
+    const gameAfterRoll = Game.roll(game)
+    // After rolling, dice should be 'rolled'
+    expect(gameAfterRoll.stateKind).toBe('rolled')
+    expect(gameAfterRoll.activePlayer.dice.stateKind).toBe('rolled')
+    expect(gameAfterRoll.activePlayer.dice.currentRoll).toBeDefined()
+    expect(gameAfterRoll.activePlayer.dice.currentRoll).toHaveLength(2)
   })
 })

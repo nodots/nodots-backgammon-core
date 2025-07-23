@@ -54,7 +54,7 @@ export class Player {
           color,
           direction,
           stateKind,
-          dice: Dice.initialize(color),
+          dice: dice || Dice.initialize(color),
           pipCount: 167,
           isRobot,
         } as BackgammonPlayer
@@ -65,7 +65,7 @@ export class Player {
           color,
           direction,
           stateKind,
-          dice: Dice.initialize(color),
+          dice: dice || Dice.initialize(color),
           pipCount: 167,
           isRobot,
         } as BackgammonPlayerRollingForStart
