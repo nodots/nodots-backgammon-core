@@ -30,6 +30,11 @@
     "node_modules",
     "dist",
     "**/*.test.ts",
-    "**/__tests__/**"
+    "**/__tests__/**",
+    "src/scripts/debugSingleGame.ts",
+    "src/scripts/logSingleGame.ts", 
+    "src/scripts/simulate.ts",
+    "src/scripts/simulateGame.ts",
+    "src/scripts/simulateMultipleGames.ts"
   ]
 }

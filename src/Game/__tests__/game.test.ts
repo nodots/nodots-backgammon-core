@@ -922,7 +922,8 @@ describe('Game', () => {
     it('should create a new game with default settings', () => {
       const game = Game.createNewGame('user1', 'user2')
       expect(game).toBeDefined()
-      expect(game.stateKind).toBe('rolled-for-start')
+      // Robot games automatically advance to 'moving' state
+      expect(game.stateKind).toBe('moving')
       expect(game.players).toHaveLength(2)
       expect(game.activeColor).toBeDefined()
       expect(game.activePlayer).toBeDefined()
@@ -946,7 +947,8 @@ describe('Game', () => {
         config
       )
       expect(game).toBeDefined()
-      expect(game.stateKind).toBe('rolled-for-start')
+      // Robot games automatically advance to 'moving' state
+      expect(game.stateKind).toBe('moving')
       expect(game.players).toHaveLength(2)
       expect(game.activeColor).toBe('black')
       expect(game.activePlayer?.color).toBe('black')
@@ -972,14 +974,17 @@ describe('Game', () => {
 
   describe('Robot Methods', () => {
     it('should advance robot from rolled to moving state', () => {
+      // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
         'user1',
         'user2',
-        true,
+        false, // Don't auto-advance
         true,
         true
       )
-      const rolledGame = Game.roll(rolledForStartGame as any)
+      // Manually roll for start and then roll to get to rolled state
+      const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
+      const rolledGame = Game.roll(gameAfterRollForStart as any)
       const movingGame = Game.advanceRobotToMoving(rolledGame as any)
       expect(movingGame.stateKind).toBe('moving')
       expect(movingGame.activePlay.stateKind).toBe('moving')
@@ -1029,14 +1034,16 @@ describe('Game', () => {
 
   describe('State Transitions', () => {
     it('should transition from preparing-move to moving', () => {
+      // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
         'user1',
         'user2',
-        true,
+        false, // Don't auto-advance
         true,
         true
       )
-      const rolledGame = Game.roll(rolledForStartGame as any)
+      const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
+      const rolledGame = Game.roll(gameAfterRollForStart as any)
       const preparingGame = Game.prepareMove(rolledGame as any)
       const movingGame = Game.toMoving(preparingGame)
       expect(movingGame.stateKind).toBe('moving')
@@ -1044,14 +1051,16 @@ describe('Game', () => {
     })
 
     it('should transition from preparing-move to doubling', () => {
+      // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
         'user1',
         'user2',
-        true,
+        false, // Don't auto-advance
         true,
         true
       )
-      const rolledGame = Game.roll(rolledForStartGame as any)
+      const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
+      const rolledGame = Game.roll(gameAfterRollForStart as any)
       const preparingGame = Game.prepareMove(rolledGame as any)
       const doublingGame = Game.toDoubling(preparingGame)
       expect(doublingGame.stateKind).toBe('doubling')
@@ -1087,14 +1096,16 @@ describe('Game', () => {
 
   describe('Move Execution', () => {
     it('should execute move and recalculate correctly', () => {
+      // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
         'user1',
         'user2',
-        true,
+        false, // Don't auto-advance
         true,
         true
       )
-      const rolledGame = Game.roll(rolledForStartGame as any)
+      const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
+      const rolledGame = Game.roll(gameAfterRollForStart as any)
       const preparingGame = Game.prepareMove(rolledGame as any)
       const movingGame = Game.toMoving(preparingGame)
 
@@ -1111,14 +1122,16 @@ describe('Game', () => {
     })
 
     it('should complete turn when all moves are finished', () => {
+      // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
         'user1',
         'user2',
-        true,
+        false, // Don't auto-advance
         true,
         true
       )
-      const rolledGame = Game.roll(rolledForStartGame as any)
+      const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
+      const rolledGame = Game.roll(gameAfterRollForStart as any)
       const preparingGame = Game.prepareMove(rolledGame as any)
       const movingGame = Game.toMoving(preparingGame)
 
@@ -1173,21 +1186,23 @@ describe('Game', () => {
     })
 
     it('should check if specific player can roll', () => {
+      // Create game without auto-advancement to test rolling permissions
       const rolledForStartGame = Game.createNewGame(
         'user1',
         'user2',
-        true,
+        false, // Don't auto-advance
         true,
         true
       )
+      const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
       expect(
         Game.canPlayerRoll(
-          rolledForStartGame,
-          rolledForStartGame.activePlayer?.id || ''
+          gameAfterRollForStart,
+          gameAfterRollForStart.activePlayer?.id || ''
         )
       ).toBe(true)
 
-      const rolledGame = Game.roll(rolledForStartGame as any)
+      const rolledGame = Game.roll(gameAfterRollForStart as any)
       const preparingGame = Game.prepareMove(rolledGame as any)
       expect(
         Game.canPlayerRoll(preparingGame, preparingGame.activePlayer?.id || '')
@@ -1195,14 +1210,16 @@ describe('Game', () => {
     })
 
     it('should check if game can get possible moves', () => {
+      // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
         'user1',
         'user2',
-        true,
+        false, // Don't auto-advance
         true,
         true
       )
-      const rolledGame = Game.roll(rolledForStartGame as any)
+      const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
+      const rolledGame = Game.roll(gameAfterRollForStart as any)
       const preparingGame = Game.prepareMove(rolledGame as any)
       const movingGame = Game.toMoving(preparingGame)
 
@@ -1228,14 +1245,16 @@ describe('Game', () => {
     })
 
     it('should get possible moves successfully', () => {
+      // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
         'user1',
         'user2',
-        true,
+        false, // Don't auto-advance
         true,
         true
       )
-      const rolledGame = Game.roll(rolledForStartGame as any)
+      const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
+      const rolledGame = Game.roll(gameAfterRollForStart as any)
       const preparingGame = Game.prepareMove(rolledGame as any)
       const movingGame = Game.toMoving(preparingGame)
 
@@ -1261,14 +1280,16 @@ describe('Game', () => {
 
   describe('Edge Cases', () => {
     it('should handle move with no origin gracefully', () => {
+      // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
         'user1',
         'user2',
-        true,
+        false, // Don't auto-advance
         true,
         true
       )
-      const rolledGame = Game.roll(rolledForStartGame as any)
+      const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
+      const rolledGame = Game.roll(gameAfterRollForStart as any)
       const preparingGame = Game.prepareMove(rolledGame as any)
       const movingGame = Game.toMoving(preparingGame)
 
@@ -1278,14 +1299,16 @@ describe('Game', () => {
     })
 
     it('should handle empty moves set in turn completion', () => {
+      // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
         'user1',
         'user2',
-        true,
+        false, // Don't auto-advance
         true,
         true
       )
-      const rolledGame = Game.roll(rolledForStartGame as any)
+      const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
+      const rolledGame = Game.roll(gameAfterRollForStart as any)
       const preparingGame = Game.prepareMove(rolledGame as any)
       const movingGame = Game.toMoving(preparingGame)
 
@@ -1302,14 +1325,16 @@ describe('Game', () => {
     })
 
     it('should handle missing active play in turn completion', () => {
+      // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
         'user1',
         'user2',
-        true,
+        false, // Don't auto-advance
         true,
         true
       )
-      const rolledGame = Game.roll(rolledForStartGame as any)
+      const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
+      const rolledGame = Game.roll(gameAfterRollForStart as any)
       const preparingGame = Game.prepareMove(rolledGame as any)
       const movingGame = Game.toMoving(preparingGame)
 
