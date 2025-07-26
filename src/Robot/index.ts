@@ -5,7 +5,7 @@ import { BasicAIPlugin } from '../AI/plugins/BasicAIPlugin'
 import { Board } from '../Board'
 import { Game } from '../Game'
 import { Move } from '../Move'
-import { Play } from '../Play'
+import { logger } from '../utils/logger'
 
 export interface RobotMoveResult {
   success: boolean
@@ -106,8 +106,8 @@ export class Robot {
           }
       }
     } catch (error) {
-      console.error('Error in Robot.makeOptimalMove:', error)
-      console.error('Game state:', JSON.stringify(game, null, 2))
+      logger.error('Error in Robot.makeOptimalMove:', error)
+      logger.error('Game state:', JSON.stringify(game, null, 2))
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -116,17 +116,60 @@ export class Robot {
   }
 
   /**
-   * Robot rolls for start
+   * Robot rolls for start and automatically continues if robot wins
    */
   private static rollForStart = async function rollForStart(
     game: BackgammonGame
   ): Promise<RobotMoveResult> {
     try {
-      const updatedGame = Game.rollForStart(game as any)
-      return {
-        success: true,
-        game: updatedGame,
-        message: 'Robot rolled for start',
+      // Step 1: Roll for start to determine winner
+      const rolledForStartGame = Game.rollForStart(game as any)
+
+      // Step 2: Check if the winner is a robot
+      if (
+        rolledForStartGame.activePlayer?.isRobot &&
+        rolledForStartGame.stateKind === 'rolled-for-start'
+      ) {
+        // Step 3: Automatically roll dice for the robot
+        const rolledGame = Game.roll(rolledForStartGame)
+
+        // Step 4: If in rolled state, process robot moves automatically
+        if (rolledGame.stateKind === 'rolled') {
+          const robotResult = await Game.processRobotTurn(
+            rolledGame,
+            'beginner'
+          )
+          if (robotResult.success && robotResult.game) {
+            return {
+              success: true,
+              game: robotResult.game,
+              message:
+                'Robot rolled for start, rolled dice, and completed turn automatically',
+            }
+          } else {
+            // Fall back to just the rolled state if robot turn processing fails
+            return {
+              success: true,
+              game: rolledGame,
+              message:
+                'Robot rolled for start and dice, but turn processing failed',
+            }
+          }
+        } else {
+          // Return the rolled state if not in expected state
+          return {
+            success: true,
+            game: rolledGame,
+            message: 'Robot rolled for start and dice',
+          }
+        }
+      } else {
+        // Human won rollForStart, just return the rolled-for-start state
+        return {
+          success: true,
+          game: rolledForStartGame,
+          message: 'Human won roll for start',
+        }
       }
     } catch (error) {
       return {
@@ -203,24 +246,8 @@ export class Robot {
         // Direct transition: preparing-move -> moving
         workingGame = Game.toMoving(game as any)
       } else if (game.stateKind === 'moving') {
-        // CRITICAL BUG FIX: Even if game state is 'moving', activePlay might still be in 'rolled' state
-        // Check if activePlay needs to be transitioned to 'moving' state
-        if (game.activePlay && game.activePlay.stateKind !== 'moving') {
-          console.log(
-            '[DEBUG] Robot: ActivePlay state needs transition:',
-            game.activePlay.stateKind,
-            '-> moving'
-          )
-          // Directly transition the activePlay using Play.startMove()
-          const movingPlay = Play.startMove(game.activePlay as any)
-          workingGame = {
-            ...game,
-            activePlay: movingPlay,
-          }
-        } else {
-          // Already in moving state with activePlay also in moving state
-          workingGame = game
-        }
+        // Already in moving state, use the game as-is
+        workingGame = game
       } else {
         return {
           success: false,
@@ -229,7 +256,7 @@ export class Robot {
       }
 
       // CRITICAL FIX: Check if there are any possible moves AFTER state transition
-      console.log('[DEBUG] Robot requesting possible moves for game state:', {
+      logger.debug('[DEBUG] Robot requesting possible moves for game state:', {
         gameState: workingGame.stateKind,
         activePlayerColor: workingGame.activePlayer?.color,
         activePlayerDirection: workingGame.activePlayer?.direction,
@@ -242,7 +269,7 @@ export class Robot {
 
       const possibleMovesResult = Game.getPossibleMoves(workingGame)
 
-      console.log('[DEBUG] Robot received possible moves result:', {
+      logger.debug('[DEBUG] Robot received possible moves result:', {
         success: possibleMovesResult.success,
         error: possibleMovesResult.error,
         movesCount: possibleMovesResult.possibleMoves?.length || 0,
@@ -260,7 +287,7 @@ export class Robot {
         possibleMovesResult.possibleMoves.length === 0
       ) {
         // No legal moves available
-        console.log('[DEBUG] Robot has no legal moves available')
+        logger.debug('[DEBUG] Robot has no legal moves available')
 
         // Check if Game.getPossibleMoves already handled turn completion
         if (possibleMovesResult.updatedGame) {
@@ -274,7 +301,7 @@ export class Robot {
         // CRITICAL FIX: Always force turn completion when no moves available
         // The previous logic was too restrictive and missed cases where activePlay might be missing
         try {
-          console.log('[DEBUG] Forcing turn completion due to no legal moves')
+          logger.debug('[DEBUG] Forcing turn completion due to no legal moves')
           const completedGame = Robot.forceCompleteTurn(workingGame as any)
           return {
             success: true,
@@ -282,10 +309,10 @@ export class Robot {
             message: 'Robot completed turn (no legal moves available)',
           }
         } catch (completionError) {
-          console.log('[DEBUG] Turn completion failed:', completionError)
+          logger.debug('[DEBUG] Turn completion failed:', completionError)
 
           // EMERGENCY FALLBACK: Create a minimal turn completion manually
-          console.log('[DEBUG] Attempting emergency turn completion')
+          logger.debug('[DEBUG] Attempting emergency turn completion')
           try {
             const nextColor = (
               workingGame.activeColor === 'white' ? 'black' : 'white'
@@ -329,7 +356,7 @@ export class Robot {
               players: updatedPlayers,
             } as any // Cast to any to bypass strict typing for emergency fallback
 
-            console.log('[DEBUG] Emergency turn completion successful')
+            logger.debug('[DEBUG] Emergency turn completion successful')
             return {
               success: true,
               game: emergencyGame,
@@ -337,7 +364,7 @@ export class Robot {
                 'Robot completed turn using emergency fallback (no legal moves available)',
             }
           } catch (emergencyError) {
-            console.error(
+            logger.error(
               '[DEBUG] Emergency turn completion also failed:',
               emergencyError
             )
@@ -367,7 +394,7 @@ export class Robot {
           )
 
           if (!hasValidChecker) {
-            console.log('[DEBUG] Robot filtered out invalid move:', {
+            logger.debug('[DEBUG] Robot filtered out invalid move:', {
               originId: move.origin.id,
               originKind: move.origin.kind,
               checkerCount: originContainer.checkers.length,
@@ -378,7 +405,7 @@ export class Robot {
 
           return hasValidChecker
         } catch (error) {
-          console.log('[DEBUG] Robot filtered out move due to error:', {
+          logger.debug('[DEBUG] Robot filtered out move due to error:', {
             originId: move.origin.id,
             error: error instanceof Error ? error.message : 'Unknown error',
           })
@@ -386,7 +413,7 @@ export class Robot {
         }
       })
 
-      console.log('[DEBUG] Robot move filtering results:', {
+      logger.debug('[DEBUG] Robot move filtering results:', {
         rawMovesCount: rawPossibleMoves.length,
         validMovesCount: actualPossibleMoves.length,
         filteredOutCount: rawPossibleMoves.length - actualPossibleMoves.length,
@@ -394,7 +421,7 @@ export class Robot {
 
       // Check if we filtered out all moves (no valid moves remain)
       if (actualPossibleMoves.length === 0) {
-        console.log(
+        logger.debug(
           '[DEBUG] Robot: All moves were filtered out - no valid checkers at origin points'
         )
 
@@ -408,7 +435,7 @@ export class Robot {
       }
 
       // Let the Robot select from the REAL possible moves using existing difficulty logic
-      console.log('[DEBUG] Robot selecting move from possible moves:', {
+      logger.debug('[DEBUG] Robot selecting move from possible moves:', {
         totalMoves: actualPossibleMoves.length,
         difficulty: difficulty,
         possibleMoveOriginIds: actualPossibleMoves.map((m) => m.origin?.id),
@@ -420,7 +447,7 @@ export class Robot {
         workingGame
       )
 
-      console.log('[DEBUG] Robot selected move:', {
+      logger.debug('[DEBUG] Robot selected move:', {
         selectedMoveOriginId: selectedMove?.origin?.id,
         selectedMoveOriginKind: selectedMove?.origin?.kind,
         selectedMoveDestinationId: selectedMove?.destination?.id,
@@ -450,7 +477,7 @@ export class Robot {
       )
 
       if (!hasValidChecker) {
-        console.log(
+        logger.debug(
           '[DEBUG] Robot move validation failed: No valid checker at origin point',
           {
             originId: selectedMove.origin.id,
@@ -470,7 +497,7 @@ export class Robot {
       // STALE MOVE REFERENCE FIX: Use Game.executeAndRecalculate for just-in-time approach
       // This prevents stale move references by always calculating moves based on current board state
       try {
-        console.log(
+        logger.debug(
           '[DEBUG] Robot executing move with Game.executeAndRecalculate:',
           {
             gameState: workingGame.stateKind,
@@ -479,7 +506,7 @@ export class Robot {
           }
         )
 
-        // Use the new executeAndRecalculate method that handles stale move references
+        // Use the existing executeAndRecalculate method that handles stale move references
         const gameAfterMove = Game.executeAndRecalculate(
           workingGame as any,
           selectedMove.origin.id
@@ -500,7 +527,7 @@ export class Robot {
           (moveError.message.includes('No checker found') ||
             moveError.message.includes('stale move reference'))
         ) {
-          console.log(
+          logger.debug(
             '[DEBUG] Robot caught stale move reference error - this indicates the move is no longer valid'
           )
           // Return failure to let simulation handle this properly
@@ -521,8 +548,8 @@ export class Robot {
         }
       }
     } catch (error) {
-      console.error('Error in Robot.makeAIMove:', error)
-      console.error('Game state:', JSON.stringify(game, null, 2))
+      logger.error('Error in Robot.makeAIMove:', error)
+      logger.error('Game state:', JSON.stringify(game, null, 2))
       return {
         success: false,
         error: error instanceof Error ? error.message : 'AI move failed',
@@ -821,20 +848,20 @@ export class Robot {
     try {
       const activePlayer = game.activePlayer
       if (!activePlayer) {
-        console.error('Error finding checker for move: no active player')
+        logger.error('Error finding checker for move: no active player')
         return null
       }
 
       // Validate game board exists
       if (!game.board) {
-        console.error('Error finding checker for move: game board is undefined')
+        logger.error('Error finding checker for move: game board is undefined')
         return null
       }
 
       // The selectedMove is from Game.getPossibleMoves, so it has origin and destination properties
       const originContainer = selectedMove.origin
       if (!originContainer) {
-        console.error(
+        logger.error(
           'Error finding checker for move: no origin in selected move'
         )
         return null
@@ -851,7 +878,7 @@ export class Robot {
             (checker) => checker.color === activePlayer.color
           )
           if (checkerToMove) {
-            console.log(
+            logger.debug(
               `[DEBUG] Found checker for move: ${checkerToMove.id} from point ${originPoint.id}`
             )
             return { checkerId: checkerToMove.id }
@@ -865,7 +892,7 @@ export class Robot {
             (checker) => checker.color === activePlayer.color
           )
           if (checkerToMove) {
-            console.log(
+            logger.debug(
               `[DEBUG] Found checker for move: ${checkerToMove.id} from bar`
             )
             return { checkerId: checkerToMove.id }
@@ -873,12 +900,12 @@ export class Robot {
         }
       }
 
-      console.log(
+      logger.debug(
         `[DEBUG] No suitable checker found for move from ${originContainer.kind}`
       )
       return null
     } catch (error) {
-      console.error('Error finding checker for move:', error)
+      logger.error('Error finding checker for move:', error)
       return null
     }
   }
@@ -896,19 +923,19 @@ export class Robot {
     try {
       const activePlayer = game.activePlayer
       if (!activePlayer) {
-        console.error('Error finding optimal checker: no active player')
+        logger.error('Error finding optimal checker: no active player')
         return null
       }
 
       // Validate game board exists
       if (!game.board) {
-        console.error('Error finding optimal checker: game board is undefined')
+        logger.error('Error finding optimal checker: game board is undefined')
         return null
       }
 
       // Validate board has points
       if (!game.board.points) {
-        console.error(
+        logger.error(
           'Error finding optimal checker: board points are undefined'
         )
         return null
@@ -916,14 +943,14 @@ export class Robot {
 
       // Validate moveToMake exists
       if (!moveToMake || !moveToMake.origin) {
-        console.error(
+        logger.error(
           'Error finding optimal checker: moveToMake or origin is undefined'
         )
         return null
       }
 
       // ENHANCED DEBUG: Log the exact search being performed
-      console.log('[DEBUG] findOptimalChecker called with:', {
+      logger.debug('[DEBUG] findOptimalChecker called with:', {
         activePlayerColor: activePlayer.color,
         activePlayerDirection: activePlayer.direction,
         moveOriginId: moveToMake.origin?.id,
@@ -949,7 +976,7 @@ export class Robot {
       }
 
       // ENHANCED DEBUG: Log the origin point search results
-      console.log('[DEBUG] Origin point search results:', {
+      logger.debug('[DEBUG] Origin point search results:', {
         originPointFound: !!originPoint,
         originPointId: originPoint?.id,
         originPointPosition: originPoint?.position,
@@ -966,31 +993,31 @@ export class Robot {
         )
 
         if (checkerToMove) {
-          console.log(
+          logger.debug(
             `[DEBUG] Found optimal checker: ${checkerToMove.id} from point ${originPoint.id}`
           )
           return { checkerId: checkerToMove.id }
         } else {
-          console.log(
+          logger.debug(
             `[DEBUG] No checker of color ${activePlayer.color} found at point ${originPoint.id}`
           )
-          console.log(
+          logger.debug(
             '[DEBUG] Available checkers at point:',
             originPoint.checkers.map((c) => ({ id: c.id, color: c.color }))
           )
         }
       } else {
-        console.log(
+        logger.debug(
           `[DEBUG] No origin point found for move origin:`,
           moveToMake.origin
         )
 
         // ENHANCED DEBUG: Show all board points for comparison
-        console.log(
+        logger.debug(
           '[DEBUG] All board point IDs:',
           game.board.points.map((p) => p.id)
         )
-        console.log(
+        logger.debug(
           '[DEBUG] Points with checkers:',
           game.board.points
             .filter((p) => p.checkers.length > 0)
@@ -1009,7 +1036,7 @@ export class Robot {
       ) {
         // Validate bar exists
         if (!game.board.bar) {
-          console.error('Error finding optimal checker: board bar is undefined')
+          logger.error('Error finding optimal checker: board bar is undefined')
           return null
         }
 
@@ -1026,9 +1053,9 @@ export class Robot {
 
       return null
     } catch (error) {
-      console.error('Error finding optimal checker:', error)
-      console.error('Game state:', JSON.stringify(game, null, 2))
-      console.error('Move to make:', JSON.stringify(moveToMake, null, 2))
+      logger.error('Error finding optimal checker:', error)
+      logger.error('Game state:', JSON.stringify(game, null, 2))
+      logger.error('Move to make:', JSON.stringify(moveToMake, null, 2))
       return null
     }
   }
@@ -1040,14 +1067,14 @@ export class Robot {
   private static forceCompleteTurn = function forceCompleteTurn(
     game: any // BackgammonGameMoving but using any for easier access
   ): any {
-    console.log(
+    logger.debug(
       '[DEBUG] forceCompleteTurn: Starting with game.board:',
       !!game.board
     )
 
     const activePlay = game.activePlay
     if (!activePlay || !activePlay.moves) {
-      console.log(
+      logger.debug(
         '[DEBUG] forceCompleteTurn: No activePlay or moves, cannot force completion'
       )
       throw new Error(
@@ -1055,7 +1082,7 @@ export class Robot {
       )
     }
 
-    console.log(
+    logger.debug(
       '[DEBUG] Robot forcing turn completion - marking remaining moves as no-move'
     )
 
@@ -1099,10 +1126,10 @@ export class Robot {
       (p: any) => p.color === game.activeColor
     )
 
-    console.log(
+    logger.debug(
       '[DEBUG] Robot forcing turn completion - marking remaining moves as no-move WITHOUT changing board'
     )
-    console.log(
+    logger.debug(
       '[DEBUG] Robot turn completed - switching from',
       game.activeColor,
       'to',
@@ -1116,7 +1143,7 @@ export class Robot {
       stateKind: 'completed' as const,
     }
 
-    console.log(
+    logger.debug(
       '[DEBUG] forceCompleteTurn: game.board before validation:',
       !!game.board
     )
@@ -1126,17 +1153,15 @@ export class Robot {
     try {
       // Validate board exists and has required properties
       if (!game.board) {
-        console.error(
-          '[DEBUG] Robot forceCompleteTurn: game.board is undefined'
-        )
+        logger.error('[DEBUG] Robot forceCompleteTurn: game.board is undefined')
         asciiBoard = 'ERROR: Board is undefined'
       } else if (!game.board.points) {
-        console.error(
+        logger.error(
           '[DEBUG] Robot forceCompleteTurn: game.board.points is undefined'
         )
         asciiBoard = 'ERROR: Board points are undefined'
       } else if (!game.board.gnuPositionId) {
-        console.warn(
+        logger.warn(
           '[DEBUG] Robot forceCompleteTurn: game.board.gnuPositionId is missing'
         )
         // Set a default gnuPositionId if missing
@@ -1154,14 +1179,14 @@ export class Robot {
         )
       }
     } catch (error) {
-      console.error(
+      logger.error(
         '[DEBUG] Robot forceCompleteTurn: Error generating ASCII board:',
         error
       )
       asciiBoard = 'ERROR: Failed to generate board display'
     }
 
-    console.log(
+    logger.debug(
       '[DEBUG] forceCompleteTurn: Creating result game with board:',
       !!game.board
     )
@@ -1180,11 +1205,11 @@ export class Robot {
       board: game.board,
     }
 
-    console.log(
+    logger.debug(
       '[DEBUG] forceCompleteTurn: Result game board:',
       !!resultGame.board
     )
-    console.log(
+    logger.debug(
       '[DEBUG] forceCompleteTurn: Result game board === original board:',
       resultGame.board === game.board
     )

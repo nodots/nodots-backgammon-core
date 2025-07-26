@@ -30,6 +30,7 @@ import { generateId, Player, randomBackgammonColor } from '..'
 import { Board } from '../Board'
 import { Checker } from '../Checker'
 import { Cube } from '../Cube'
+import { Dice } from '../Dice'
 import { BackgammonMoveDirection, Play } from '../Play'
 import { logger } from '../utils/logger'
 export * from '../index'
@@ -155,7 +156,54 @@ export class Game {
 
     // Auto roll for start if requested
     if (autoRollForStart) {
-      if (colorDirectionConfig) {
+      // --- FORCE ROBOT TO WIN ROLL FOR START IF PLAYING AGAINST HUMAN ---
+      const robotPlayer = playersTuple.find((p) => p.isRobot)
+      const humanPlayer = playersTuple.find((p) => !p.isRobot)
+      if (
+        robotPlayer &&
+        humanPlayer &&
+        playersTuple.filter((p) => p.isRobot).length === 1
+      ) {
+        // Force the robot to win the roll for start
+        const desiredActiveColor = robotPlayer.color
+        const rollingPlayers = playersTuple.map((p) =>
+          p.color === desiredActiveColor
+            ? Player.initialize(
+                p.color,
+                p.direction,
+                Dice.initialize(p.color, 'rolling'), // Active player gets rolling dice
+                p.id,
+                'rolled-for-start',
+                p.isRobot,
+                p.userId
+              )
+            : Player.initialize(
+                p.color,
+                p.direction,
+                undefined,
+                p.id,
+                'inactive',
+                p.isRobot,
+                p.userId
+              )
+        ) as BackgammonPlayers
+
+        const activePlayer = rollingPlayers.find(
+          (p) => p.color === desiredActiveColor
+        ) as BackgammonPlayerRolledForStart
+        const inactivePlayer = rollingPlayers.find(
+          (p) => p.color !== desiredActiveColor
+        ) as BackgammonPlayerInactive
+
+        game = {
+          ...game,
+          stateKind: 'rolled-for-start',
+          activeColor: desiredActiveColor,
+          players: rollingPlayers,
+          activePlayer,
+          inactivePlayer,
+        } as BackgammonGameRolledForStart
+      } else if (colorDirectionConfig) {
         // When configuration is provided, respect the blackFirst setting
         const desiredActiveColor = blackFirst ? 'black' : 'white'
 
@@ -165,7 +213,7 @@ export class Game {
             ? Player.initialize(
                 p.color,
                 p.direction,
-                undefined,
+                Dice.initialize(p.color, 'rolling'), // Active player gets rolling dice
                 p.id,
                 'rolled-for-start',
                 p.isRobot,
@@ -200,6 +248,18 @@ export class Game {
       } else {
         // No configuration provided, use random selection
         game = Game.rollForStart(game as BackgammonGameRollingForStart)
+      }
+
+      // --- AUTO-ADVANCE ROBOT AFTER WINNING ROLL FOR START ---
+      // If the active player (who won the roll for start) is a robot, automatically advance through their turn
+      if (game.stateKind === 'rolled-for-start' && game.activePlayer?.isRobot) {
+        // Roll for the robot to get to 'rolled' or 'rolling' state
+        const gameAfterRoll = Game.roll(game as BackgammonGameRolledForStart)
+
+        // Game.roll() now always returns 'rolled' state
+        // Robot didn't complete turn automatically, advance to moving state
+        const preparingGame = Game.prepareMove(gameAfterRoll)
+        game = Game.toMoving(preparingGame)
       }
     }
 
@@ -306,13 +366,40 @@ export class Game {
   public static rollForStart = function rollForStart(
     game: BackgammonGameRollingForStart
   ): BackgammonGameRolledForStart {
-    const activeColor = randomBackgammonColor()
+    // ============================================================================
+    // 🚨 TEMPORARY TESTING OVERRIDE - REMOVE THIS BEFORE PRODUCTION! 🚨
+    // ============================================================================
+    // This code forces robots to win rollForStart for e2e testing purposes.
+    // It bypasses the normal random selection to make tests deterministic.
+    //
+    // TODO: REMOVE THIS ENTIRE BLOCK BEFORE PRODUCTION DEPLOYMENT!
+    //
+    // Normal behavior should use: const activeColor = randomBackgammonColor()
+    // ============================================================================
+
+    let activeColor: BackgammonColor
+
+    // Check if any player is a robot and force them to win
+    const robotPlayer = game.players.find((p) => p.isRobot)
+    if (robotPlayer) {
+      // Force robot to win rollForStart
+      activeColor = robotPlayer.color
+      logger.warn('🤖 TESTING OVERRIDE: Forcing robot to win rollForStart!')
+    } else {
+      // No robots, use normal random selection
+      activeColor = randomBackgammonColor()
+    }
+
+    // ============================================================================
+    // END OF TEMPORARY TESTING OVERRIDE - REMOVE ABOVE BLOCK!
+    // ============================================================================
+
     const rollingPlayers = game.players.map((p) =>
       p.color === activeColor
         ? Player.initialize(
             p.color,
             p.direction,
-            undefined,
+            Dice.initialize(p.color, 'rolling'), // Active player gets rolling dice
             p.id,
             'rolled-for-start',
             p.isRobot,
@@ -328,6 +415,7 @@ export class Game {
             p.userId
           )
     ) as BackgammonPlayers
+
     const activePlayer = rollingPlayers.find(
       (p) => p.color === activeColor
     ) as BackgammonPlayerRolledForStart
@@ -335,7 +423,9 @@ export class Game {
       (p) => p.color !== activeColor
     ) as BackgammonPlayerInactive
 
-    const rolledForStartGame = {
+    // Always return rolled-for-start state
+    // Robot automation will be handled in the roll() method
+    return {
       ...game,
       stateKind: 'rolled-for-start',
       activeColor,
@@ -343,10 +433,72 @@ export class Game {
       activePlayer,
       inactivePlayer,
     } as BackgammonGameRolledForStart
-
-    // Always return rolled-for-start state - let caller handle robot automation
-    return rolledForStartGame
   }
+
+  /**
+   * Automatically continue robot turn from rolled-for-start state
+   * This handles the complete robot automation sequence until it's the opponent's turn
+   * @param game - Game in 'rolled-for-start' state with robot active player
+   * @returns Game state after robot completes its turn
+   */
+  public static automateContinueRobotTurn =
+    async function automateContinueRobotTurn(
+      game: BackgammonGameRolledForStart
+    ): Promise<BackgammonGame> {
+      if (game.stateKind !== 'rolled-for-start') {
+        throw new Error('Game must be in rolled-for-start state')
+      }
+
+      if (!game.activePlayer?.isRobot) {
+        throw new Error('Active player must be a robot')
+      }
+
+      // Step 1: Roll dice to get to 'rolled' or 'rolling' state
+      const gameAfterRoll = Game.roll(game)
+
+      switch (gameAfterRoll.stateKind) {
+        case 'rolled':
+          // Robot got 'rolled' state, continue with robot automation
+          let currentGame: BackgammonGame = gameAfterRoll
+
+          // Step 2: Continue processing robot moves until turn is complete
+          let maxIterations = 10 // Safety limit to prevent infinite loops
+          let iterations = 0
+
+          while (
+            currentGame.activePlayer?.isRobot &&
+            (currentGame.stateKind === 'rolled' ||
+              currentGame.stateKind === 'preparing-move' ||
+              currentGame.stateKind === 'moving') &&
+            iterations < maxIterations
+          ) {
+            // Use Robot.makeOptimalMove to process the robot's turn
+            const { Robot } = await import('../Robot')
+            const robotResult = await Robot.makeOptimalMove(
+              currentGame,
+              'beginner'
+            )
+
+            if (robotResult.success && robotResult.game) {
+              currentGame = robotResult.game
+              iterations++
+            } else {
+              // If robot turn fails, break out of loop and return current state
+              logger.warn(
+                'Robot turn failed during automation:',
+                robotResult.error
+              )
+              break
+            }
+          }
+
+          return currentGame
+
+        default:
+          // Unexpected state, return as-is
+          return gameAfterRoll as BackgammonGame
+      }
+    }
 
   /**
    * Advance robot from 'rolled' to 'moving' state automatically
@@ -371,13 +523,103 @@ export class Game {
   }
 
   /**
+   * Roll for start with automatic robot automation
+   * Async version that handles robot automation internally
+   * @param game - Game in 'rolling-for-start' state
+   * @returns Promise with game state after rollForStart and any robot automation
+   */
+  public static rollForStartWithAutomation =
+    async function rollForStartWithAutomation(
+      game: BackgammonGameRollingForStart
+    ): Promise<BackgammonGame> {
+      // Step 1: Execute rollForStart normally
+      const rolledForStartGame = Game.rollForStart(game)
+
+      // Step 2: If active player is a robot, automatically continue their turn
+      if (rolledForStartGame.activePlayer?.isRobot) {
+        return Game.rollWithAutomation(rolledForStartGame)
+      }
+
+      // Return rolled-for-start state for human players
+      return rolledForStartGame
+    }
+
+  /**
+   * Roll with automatic robot automation
+   * Async version that handles robot automation internally
+   * @param game - Game in 'rolled-for-start' or 'rolling' state
+   * @returns Promise with game state after roll and any robot automation
+   */
+  public static rollWithAutomation = async function rollWithAutomation(
+    game: BackgammonGameRolledForStart | BackgammonGameRolling
+  ): Promise<BackgammonGame> {
+    // Step 1: Execute roll normally
+    const gameAfterRoll = Game.roll(game)
+
+    switch (gameAfterRoll.stateKind) {
+      case 'rolled':
+        // Human player or robot that didn't complete turn automatically
+        if (gameAfterRoll.activePlayer?.isRobot) {
+          // Robot player, process their moves
+          return Game.processCompleteRobotTurn(gameAfterRoll)
+        }
+        // Human player, return rolled state
+        return gameAfterRoll
+
+      default:
+        // Unexpected state, return as-is
+        return gameAfterRoll as BackgammonGame
+    }
+  }
+
+  /**
    * Process a complete robot turn automatically
-   * This method handles the full robot automation sequence:
-   * rolled -> preparing-move -> moving -> (make moves) -> rolling (next turn)
-   *
-   * @param game - Current game state
-   * @param difficulty - Robot difficulty level
-   * @returns Promise with the result of the robot turn
+   * This method handles the full robot automation sequence until the robot's turn is complete
+   * @param game - Current game state with robot active player
+   * @returns Promise with game state after robot completes their turn
+   */
+  public static processCompleteRobotTurn =
+    async function processCompleteRobotTurn(
+      game: BackgammonGame
+    ): Promise<BackgammonGame> {
+      // Validate that the active player is a robot
+      if (!game.activePlayer?.isRobot) {
+        throw new Error('Active player is not a robot')
+      }
+
+      // Import Robot class dynamically to avoid circular dependency
+      const { Robot } = await import('../Robot')
+
+      let currentGame = game
+      let maxIterations = 10 // Safety limit to prevent infinite loops
+      let iterations = 0
+
+      // Continue processing robot moves until turn is complete or it's the opponent's turn
+      while (
+        currentGame.activePlayer?.isRobot &&
+        (currentGame.stateKind === 'rolled' ||
+          currentGame.stateKind === 'preparing-move' ||
+          currentGame.stateKind === 'moving') &&
+        iterations < maxIterations
+      ) {
+        const robotResult = await Robot.makeOptimalMove(currentGame, 'beginner')
+
+        if (robotResult.success && robotResult.game) {
+          currentGame = robotResult.game
+          iterations++
+        } else {
+          // If robot turn fails, break out of loop and return current state
+          logger.warn('Robot turn failed during automation:', robotResult.error)
+          break
+        }
+      }
+
+      return currentGame
+    }
+
+  /**
+   * Process a complete robot turn automatically (legacy method)
+   * @deprecated Use processCompleteRobotTurn instead
    */
   public static processRobotTurn = async function processRobotTurn(
     game: BackgammonGame,
@@ -388,23 +630,20 @@ export class Game {
     game?: BackgammonGame
     message?: string
   }> {
-    // Validate that the active player is a robot
-    if (!game.activePlayer?.isRobot) {
+    try {
+      const resultGame = await Game.processCompleteRobotTurn(game)
+      return {
+        success: true,
+        game: resultGame,
+        message: 'Robot turn completed',
+      }
+    } catch (error) {
       return {
         success: false,
-        error: 'Active player is not a robot',
+        error: error instanceof Error ? error.message : 'Unknown error',
         game: game,
       }
     }
-
-    // Import Robot class dynamically to avoid circular dependency
-    const { Robot } = await import('../Robot')
-
-    // Use Robot.makeOptimalMove to handle the complete robot turn
-    const robotResult = await Robot.makeOptimalMove(game, difficulty)
-
-    // Return the robot result directly - it already has the correct structure
-    return robotResult
   }
 
   public static roll = function roll(
@@ -414,10 +653,15 @@ export class Game {
       const { players, activeColor } = game
       const rollingPlayers = players.map((p) => {
         if (p.color === activeColor) {
-          if (p.stateKind === 'rolling') return p
+          // Ensure dice is in 'rolling' state
+          const dice =
+            p.dice.stateKind === 'rolling'
+              ? p.dice
+              : Dice.initialize(p.color, 'rolling')
           return {
             ...p,
             stateKind: 'rolling',
+            dice,
           } as BackgammonPlayerRolling
         }
         return {
@@ -466,7 +710,7 @@ export class Game {
       p.id === playerRolled.id ? playerRolled : p
     ) as BackgammonPlayers
 
-    return {
+    const rolledGame = {
       ...game,
       stateKind: 'rolled',
       players: updatedPlayers,
@@ -474,6 +718,9 @@ export class Game {
       activePlay: rolledPlay,
       board,
     } as BackgammonGameRolled
+
+    // Always return 'rolled' state - robot automation is handled by rollWithAutomation()
+    return rolledGame
   }
 
   /**

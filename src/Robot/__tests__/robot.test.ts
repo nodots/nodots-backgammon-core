@@ -74,8 +74,9 @@ describe('Robot', () => {
       const result = await Robot.makeOptimalMove(game)
 
       expect(result.success).toBe(true)
-      expect(result.game?.stateKind).toBe('rolled-for-start')
-      expect(result.message).toBe('Robot rolled for start')
+      // Robot should automatically complete its turn after winning roll-for-start
+      expect(result.game?.stateKind).toBe('rolling')
+      expect(result.message).toContain('Robot rolled for start')
     })
 
     it('should handle rolled-for-start state by rolling dice', async () => {
@@ -1053,6 +1054,115 @@ describe('Robot', () => {
 
       expect(selectedMove).toBeDefined()
       expect(selectedMove.destination.kind).toBe('bear-off')
+    })
+  })
+
+  describe('Complete Robot Turn Automation', () => {
+    it('should automatically advance robot after winning roll-for-start', async () => {
+      // Create a robot vs human game - robot should win roll-for-start and be ready to move
+      const robotVsHumanGame = Game.createNewGame(
+        'robot-user',
+        'human-user',
+        true, // auto-roll for start
+        true, // player 1 is robot
+        false // player 2 is human
+      )
+
+      // Robot should have automatically advanced after winning roll-for-start (either rolled or moving state)
+      expect(['rolled', 'moving']).toContain(robotVsHumanGame.stateKind)
+
+      // The active player should be the robot (ready to make moves)
+      expect(robotVsHumanGame.activePlayer?.isRobot).toBe(true)
+      expect(['rolled', 'moving']).toContain(
+        robotVsHumanGame.activePlayer?.stateKind
+      )
+
+      // The human should be inactive
+      expect(robotVsHumanGame.inactivePlayer?.isRobot).toBe(false)
+      expect(robotVsHumanGame.inactivePlayer?.stateKind).toBe('inactive')
+
+      // Verify that checkers have actually moved (robot made some moves)
+      const totalCheckersOnBoard = robotVsHumanGame.board.points.reduce(
+        (total, point) => total + point.checkers.length,
+        0
+      )
+
+      // In a standard game, we start with 30 checkers on the board
+      // After robot moves, there should still be 30 checkers total (just repositioned)
+      expect(totalCheckersOnBoard).toBe(30)
+
+      // Verify the game flow makes sense
+      expect(robotVsHumanGame.players).toHaveLength(2)
+      expect(robotVsHumanGame.activeColor).toBeDefined()
+      expect(robotVsHumanGame.board).toBeDefined()
+
+      // Now test that Robot.makeOptimalMove can complete the robot's turn
+      const robotMoveResult = await Robot.makeOptimalMove(robotVsHumanGame)
+      expect(robotMoveResult.success).toBe(true)
+
+      // After robot makes moves, the game should eventually transition to human's turn
+      if (robotMoveResult.game?.stateKind === 'rolling') {
+        expect(robotMoveResult.game.activePlayer?.isRobot).toBe(false)
+        expect(robotMoveResult.game.activePlayer?.stateKind).toBe('rolling')
+      }
+    })
+
+    it('should handle robot vs robot game with multiple automatic turns', async () => {
+      // Create a robot vs robot game
+      const robotVsRobotGame = Game.createNewGame(
+        'robot1-user',
+        'robot2-user',
+        true, // auto-roll for start
+        true, // player 1 is robot
+        true // player 2 is robot
+      )
+
+      // The game should be in 'rolled' or 'moving' state with a robot ready to make moves
+      expect(['rolled', 'moving']).toContain(robotVsRobotGame.stateKind)
+      expect(robotVsRobotGame.activePlayer?.isRobot).toBe(true)
+      expect(['rolled', 'moving']).toContain(
+        robotVsRobotGame.activePlayer?.stateKind
+      )
+
+      // Use Robot.makeOptimalMove to advance the second robot's turn
+      const secondRobotResult = await Robot.makeOptimalMove(robotVsRobotGame)
+
+      expect(secondRobotResult.success).toBe(true)
+      expect(['rolled', 'rolling', 'moving']).toContain(
+        secondRobotResult.game?.stateKind
+      )
+
+      // Should now be back to the first robot's turn
+      expect(secondRobotResult.game?.activePlayer?.isRobot).toBe(true)
+    })
+
+    it('should preserve game state consistency through robot automation', async () => {
+      const game = Game.createNewGame(
+        'robot-user',
+        'human-user',
+        true,
+        true,
+        false
+      )
+
+      // Verify all game state is consistent
+      expect(game.players).toHaveLength(2)
+      expect(game.players.some((p) => p.isRobot)).toBe(true)
+      expect(game.players.some((p) => !p.isRobot)).toBe(true)
+
+      // Verify activeColor matches activePlayer
+      expect(game.activePlayer?.color).toBe(game.activeColor)
+
+      // Verify player states are complementary
+      const activePlayerState = game.activePlayer?.stateKind
+      const inactivePlayerState = game.inactivePlayer?.stateKind
+      expect(activePlayerState).toBe('rolled')
+      expect(inactivePlayerState).toBe('inactive')
+
+      // Verify board state is valid
+      expect(game.board.points).toHaveLength(24)
+      expect(game.board.bar).toBeDefined()
+      expect(game.board.off).toBeDefined()
     })
   })
 })

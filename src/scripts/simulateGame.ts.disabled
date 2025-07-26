@@ -88,7 +88,7 @@ async function simulateGame(verbose = false): Promise<{
     // Detect repeated board states (include active player and dice in key)
     const asciiBoard = Board.getAsciiBoard((currentGame as any).board, players)
     const activeColor: string = (currentGame as any).activeColor
-    const diceKey = lastRoll ? lastRoll.join(',') : 'N/A'
+    const diceKey: string = lastRoll ? lastRoll.join(',') : 'N/A'
     const repetitionKey = `${asciiBoard}\nActive: ${activeColor}\nDice: ${diceKey}`
     boardHistory[repetitionKey] = (boardHistory[repetitionKey] || 0) + 1
 
@@ -97,23 +97,37 @@ async function simulateGame(verbose = false): Promise<{
       logger.info('[SimulateGame] Turn started:', { turnCount, gameId })
     }
 
-    // Roll dice and advance state
-    let gameRolled: BackgammonGameRolled
+    // Roll dice and advance state with full robot automation
+    let gameRolled: BackgammonGame
     if (currentGame.stateKind === 'rolling-for-start') {
       const rolledForStart = Game.rollForStart(currentGame)
-      gameRolled = Game.roll(rolledForStart)
+      if (rolledForStart && rolledForStart.stateKind === 'rolled-for-start') {
+        gameRolled = await Game.rollWithAutomation(rolledForStart)
+      } else {
+        throw new Error('Failed to roll for start')
+      }
     } else if (currentGame.stateKind === 'rolled-for-start') {
-      gameRolled = Game.roll(currentGame)
+      gameRolled = await Game.rollWithAutomation(currentGame as any)
     } else if (currentGame.stateKind === 'rolling') {
-      gameRolled = Game.roll(currentGame)
+      gameRolled = await Game.rollWithAutomation(currentGame)
     } else {
       throw new Error('currentGame is not in a rollable state')
     }
-    const roll = (gameRolled.activePlayer as any).dice.currentRoll
+
+    // After robot automation, check if the turn is complete or needs continuation
+    if (!gameRolled.activePlayer) {
+      // Turn might be complete, continue to next iteration
+      currentGame = gameRolled
+      continue
+    }
+
+    // Type guard to ensure activePlayer is not undefined for the rest of the function
+    const activePlayer = gameRolled.activePlayer
+    const roll = activePlayer.dice?.currentRoll
     if (roll) {
       lastRoll = roll
     }
-    if (verbose) {
+    if (verbose && roll) {
       console.log(`\n${gameRolled.activeColor}'s roll: ${roll.join(', ')}`)
       logger.info('[SimulateGame] Dice rolled:', {
         gameId,
@@ -121,6 +135,12 @@ async function simulateGame(verbose = false): Promise<{
         activeColor: gameRolled.activeColor,
         roll,
       })
+    }
+
+    // Skip if no roll available
+    if (!roll) {
+      currentGame = gameRolled as BackgammonGame
+      continue
     }
 
     // Refactored move loop: use as many dice as possible, mark unused as 'no-move', then end turn
@@ -133,15 +153,15 @@ async function simulateGame(verbose = false): Promise<{
       let moveMade = false
       if (verbose) {
         // Print bar state before moves
-        const bar = gameRolled.board.bar[gameRolled.activePlayer.direction]
+        const bar = gameRolled.board.bar[activePlayer.direction]
         const barCheckers = bar.checkers.map((c: any) => c.color).join(', ')
         console.log(
-          `\nBar (${gameRolled.activePlayer.direction}) before moves: [${barCheckers}] (count: ${bar.checkers.length})`
+          `\nBar (${activePlayer.direction}) before moves: [${barCheckers}] (count: ${bar.checkers.length})`
         )
         logger.info('[SimulateGame] Bar state before moves:', {
           gameId,
           turnCount,
-          direction: gameRolled.activePlayer.direction,
+          direction: activePlayer.direction,
           barCheckers: bar.checkers.map((c: any) => c.color),
           barCount: bar.checkers.length,
         })
@@ -151,7 +171,7 @@ async function simulateGame(verbose = false): Promise<{
         const die = dice[i]
         const possibleMoves = Board.getPossibleMoves(
           gameRolled.board,
-          gameRolled.activePlayer,
+          activePlayer,
           die as any
         )
         if (verbose) {
