@@ -4,7 +4,6 @@ import { BackgammonAIPlugin } from '../AI/interfaces/AIPlugin'
 import { BasicAIPlugin } from '../AI/plugins/BasicAIPlugin'
 import { Board } from '../Board'
 import { Game } from '../Game'
-import { Move } from '../Move'
 import { logger } from '../utils/logger'
 
 export interface RobotMoveResult {
@@ -26,12 +25,12 @@ export class Robot {
   }
 
   /**
-   * Execute the next optimal move for a robot player
-   * This is the main entry point for robot actions
+   * Execute complete turn automation for a robot player
+   * This is the main entry point for robot actions and handles full turns
    * @param game - Current game state
    * @param difficulty - Robot difficulty level (defaults to 'beginner' for backwards compatibility)
    * @param aiPlugin - Optional AI plugin name to use (defaults to default plugin)
-   * @returns Result with updated game state or error
+   * @returns Result with updated game state after complete robot turn or error
    */
   public static makeOptimalMove = async function makeOptimalMove(
     game: BackgammonGame,
@@ -61,43 +60,21 @@ export class Robot {
         }
       }
 
-      // Handle different game states
+      // Handle different game states with complete turn automation
       switch (game.stateKind) {
         case 'rolling-for-start':
-          // For rolling-for-start, check if any player is a robot (activePlayer doesn't exist yet)
-          const hasRobotPlayer = game.players.some((player) => player.isRobot)
-          if (!hasRobotPlayer) {
-            return {
-              success: false,
-              error: 'No robot players in game',
-            }
-          }
-          return Robot.rollForStart(game)
+          return Robot.handleRollForStart(game, difficulty)
 
         case 'rolled-for-start':
+          return Robot.handleRolledForStart(game, difficulty)
+
         case 'rolling':
-          // For these states, validate that the active player is a robot
-          const activePlayer = game.activePlayer
-          if (!activePlayer?.isRobot) {
-            return {
-              success: false,
-              error: 'Active player is not a robot',
-            }
-          }
-          return Robot.rollDice(game)
+          return Robot.handleRolling(game, difficulty)
 
         case 'rolled':
         case 'preparing-move':
         case 'moving':
-          // For move states, validate that the active player is a robot
-          const activePlayerForMove = game.activePlayer
-          if (!activePlayerForMove?.isRobot) {
-            return {
-              success: false,
-              error: 'Active player is not a robot',
-            }
-          }
-          return Robot.makeAIMove(game, difficulty, aiPlugin)
+          return Robot.handleCompleteMovingTurn(game, difficulty, aiPlugin)
 
         default:
           return {
@@ -116,60 +93,266 @@ export class Robot {
   }
 
   /**
-   * Robot rolls for start and automatically continues if robot wins
+   * Handle rolling-for-start state with a single action
    */
-  private static rollForStart = async function rollForStart(
-    game: BackgammonGame
-  ): Promise<RobotMoveResult> {
-    try {
-      // Step 1: Roll for start to determine winner
-      const rolledForStartGame = Game.rollForStart(game as any)
-
-      // Step 2: Check if the winner is a robot
-      if (
-        rolledForStartGame.activePlayer?.isRobot &&
-        rolledForStartGame.stateKind === 'rolled-for-start'
-      ) {
-        // Step 3: Automatically roll dice for the robot
-        const rolledGame = Game.roll(rolledForStartGame)
-
-        // Step 4: If in rolled state, process robot moves automatically
-        if (rolledGame.stateKind === 'rolled') {
-          const robotResult = await Game.processRobotTurn(
-            rolledGame,
-            'beginner'
-          )
-          if (robotResult.success && robotResult.game) {
-            return {
-              success: true,
-              game: robotResult.game,
-              message:
-                'Robot rolled for start, rolled dice, and completed turn automatically',
-            }
-          } else {
-            // Fall back to just the rolled state if robot turn processing fails
-            return {
-              success: true,
-              game: rolledGame,
-              message:
-                'Robot rolled for start and dice, but turn processing failed',
-            }
-          }
-        } else {
-          // Return the rolled state if not in expected state
+  private static handleSingleRollForStart =
+    async function handleSingleRollForStart(
+      game: BackgammonGame
+    ): Promise<RobotMoveResult> {
+      try {
+        const hasRobotPlayer = game.players.some((player) => player.isRobot)
+        if (!hasRobotPlayer) {
           return {
-            success: true,
-            game: rolledGame,
-            message: 'Robot rolled for start and dice',
+            success: false,
+            error: 'No robot players in game',
           }
         }
-      } else {
-        // Human won rollForStart, just return the rolled-for-start state
+        const rolledForStartGame = Game.rollForStart(game as any)
         return {
           success: true,
           game: rolledForStartGame,
-          message: 'Human won roll for start',
+          message: 'Robot rolled for start',
         }
+      } catch (error) {
+        return {
+          success: false,
+          error:
+            error instanceof Error ? error.message : 'Failed to roll for start',
+        }
+      }
+    }
+
+  /**
+   * Handle rolled-for-start state with complete turn automation
+   * After rolling, continue with complete turn execution for robots
+   */
+  private static handleSingleRolledForStart =
+    async function handleSingleRolledForStart(
+      game: BackgammonGame
+    ): Promise<RobotMoveResult> {
+      try {
+        if (!game.activePlayer?.isRobot) {
+          return {
+            success: false,
+            error: 'Active player is not a robot',
+          }
+        }
+
+        // Roll dice first
+        const rolledGame = Game.roll(game as any)
+
+        logger.info(
+          `Robot rolled dice after winning roll-for-start: ${rolledGame.activePlayer.dice.currentRoll}`
+        )
+
+        // Now complete the full turn (moving and passing to next player)
+        return Robot.handleCompleteMovingTurn(rolledGame, 'beginner')
+      } catch (error) {
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Failed to handle rolled-for-start',
+        }
+      }
+    }
+
+  /**
+   * Handle rolling state with a single action
+   */
+  private static handleSingleRolling = async function handleSingleRolling(
+    game: BackgammonGame
+  ): Promise<RobotMoveResult> {
+    try {
+      if (!game.activePlayer?.isRobot) {
+        return {
+          success: false,
+          error: 'Active player is not a robot',
+        }
+      }
+      const rolledGame = Game.roll(game as any)
+      return {
+        success: true,
+        game: rolledGame,
+        message: `Robot rolled: ${rolledGame.activePlay?.dice.currentRoll}`,
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'Failed to handle rolling',
+      }
+    }
+  }
+
+  /**
+   * Handle a single moving turn action without loops
+   */
+  private static handleSingleMovingTurn = async function handleSingleMovingTurn(
+    game: BackgammonGame,
+    difficulty: RobotSkillLevel,
+    aiPlugin?: string
+  ): Promise<RobotMoveResult> {
+    try {
+      if (!game.activePlayer?.isRobot) {
+        return {
+          success: false,
+          error: 'Active player is not a robot',
+        }
+      }
+
+      let currentGame = game
+
+      if (
+        currentGame.stateKind === 'rolled' ||
+        currentGame.stateKind === 'preparing-move'
+      ) {
+        const preparingGame =
+          currentGame.stateKind === 'rolled'
+            ? Game.prepareMove(currentGame as any)
+            : currentGame
+        currentGame = Game.toMoving(preparingGame as any)
+      }
+
+      const possibleMovesResult = Game.getPossibleMoves(currentGame)
+
+      if (!possibleMovesResult.success) {
+        return {
+          success: false,
+          error: possibleMovesResult.error || 'Failed to get possible moves',
+        }
+      }
+
+      if (possibleMovesResult.updatedGame) {
+        return {
+          success: true,
+          game: possibleMovesResult.updatedGame,
+          message: 'Robot turn auto-completed.',
+        }
+      }
+
+      if (
+        !possibleMovesResult.possibleMoves ||
+        possibleMovesResult.possibleMoves.length === 0
+      ) {
+        if (Game.canConfirmTurn(currentGame)) {
+          const nextTurnGame = Game.confirmTurn(currentGame as any)
+          return {
+            success: true,
+            game: nextTurnGame,
+            message: 'Robot completed turn (no legal moves available)',
+          }
+        }
+        try {
+          const completedGame = Robot.forceCompleteTurn(currentGame as any)
+          return {
+            success: true,
+            game: completedGame,
+            message: 'Robot forcefully completed turn (no legal moves)',
+          }
+        } catch (error) {
+          return {
+            success: false,
+            error: 'Failed to complete turn with no moves available',
+          }
+        }
+      }
+
+      // Continue making moves until all game.activePlay.moves are completed
+      let gameAfterMoves = currentGame
+      let moveCount = 0
+      const maxMoves = 4 // Safety limit (doubles = 4 moves max)
+
+      while (!Game.canConfirmTurn(gameAfterMoves) && moveCount < maxMoves) {
+        const currentPossibleMoves = Game.getPossibleMoves(gameAfterMoves)
+
+        if (
+          !currentPossibleMoves.success ||
+          !currentPossibleMoves.possibleMoves ||
+          currentPossibleMoves.possibleMoves.length === 0
+        ) {
+          break // No more legal moves available
+        }
+
+        const moveResult = await Robot.executeSingleMove(
+          gameAfterMoves,
+          currentPossibleMoves.possibleMoves,
+          difficulty,
+          aiPlugin
+        )
+
+        if (!moveResult.success) {
+          break // Move failed, stop trying
+        }
+
+        gameAfterMoves = moveResult.game! as any
+        moveCount++
+
+        logger.info(
+          `Robot completed move ${moveCount}, canConfirmTurn: ${Game.canConfirmTurn(
+            gameAfterMoves
+          )}`
+        )
+      }
+
+      // Confirm turn if all moves completed
+      if (Game.canConfirmTurn(gameAfterMoves)) {
+        gameAfterMoves = Game.confirmTurn(gameAfterMoves as any) as any
+        return {
+          success: true,
+          game: gameAfterMoves,
+          message: `Robot completed ${moveCount} moves and confirmed turn.`,
+        }
+      }
+
+      return {
+        success: true,
+        game: gameAfterMoves,
+        message: `Robot executed ${moveCount} moves (incomplete turn).`,
+      }
+    } catch (error) {
+      logger.error('Error in Robot.handleSingleMovingTurn:', error)
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to complete robot turn',
+      }
+    }
+  }
+
+  /**
+   * Handle rolling-for-start state with complete automation
+   */
+  private static handleRollForStart = async function handleRollForStart(
+    game: BackgammonGame,
+    difficulty: RobotSkillLevel
+  ): Promise<RobotMoveResult> {
+    try {
+      // Check if any player is a robot
+      const hasRobotPlayer = game.players.some((player) => player.isRobot)
+      if (!hasRobotPlayer) {
+        return {
+          success: false,
+          error: 'No robot players in game',
+        }
+      }
+
+      // Execute roll for start
+      const rolledForStartGame = Game.rollForStart(game as any)
+
+      // If a robot won, continue with their complete turn
+      if (rolledForStartGame.activePlayer?.isRobot) {
+        return Robot.handleRolledForStart(rolledForStartGame, difficulty)
+      }
+
+      // Human won, return rolled-for-start state
+      return {
+        success: true,
+        game: rolledForStartGame,
+        message: 'Human won roll for start',
       }
     } catch (error) {
       return {
@@ -181,421 +364,341 @@ export class Robot {
   }
 
   /**
-   * Robot rolls dice
+   * Handle rolled-for-start state with complete automation
    */
-  private static rollDice = async function rollDice(
-    game: BackgammonGame
+  private static handleRolledForStart = async function handleRolledForStart(
+    game: BackgammonGame,
+    difficulty: RobotSkillLevel
   ): Promise<RobotMoveResult> {
     try {
-      const updatedGame = Game.roll(game as any)
-      return {
-        success: true,
-        game: updatedGame,
-        message: `Robot rolled: ${
-          updatedGame.activePlayer?.dice?.currentRoll?.join(', ') || 'dice'
-        }`,
+      // Validate that the active player is a robot
+      if (!game.activePlayer?.isRobot) {
+        return {
+          success: false,
+          error: 'Active player is not a robot',
+        }
       }
+
+      // Roll dice for the robot
+      const rolledGame = Game.roll(game as any)
+
+      // Process the complete turn after rolling
+      return Robot.handleCompleteMovingTurn(rolledGame, difficulty)
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to roll dice',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to handle rolled-for-start',
       }
     }
   }
 
   /**
+   * Handle rolling state with complete automation
+   */
+  private static handleRolling = async function handleRolling(
+    game: BackgammonGame,
+    difficulty: RobotSkillLevel
+  ): Promise<RobotMoveResult> {
+    try {
+      // Validate that the active player is a robot
+      if (!game.activePlayer?.isRobot) {
+        return {
+          success: false,
+          error: 'Active player is not a robot',
+        }
+      }
+
+      // Roll dice for the robot
+      const rolledGame = Game.roll(game as any)
+
+      // Process the complete turn after rolling
+      return Robot.handleCompleteMovingTurn(rolledGame, difficulty)
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'Failed to handle rolling',
+      }
+    }
+  }
+
+  /**
+   * Handle complete moving turn with automatic doubles and turn completion
+   */
+  private static handleCompleteMovingTurn =
+    async function handleCompleteMovingTurn(
+      game: BackgammonGame,
+      difficulty: RobotSkillLevel,
+      aiPlugin?: string
+    ): Promise<RobotMoveResult> {
+      try {
+        // Validate that the active player is a robot
+        if (!game.activePlayer?.isRobot) {
+          return {
+            success: false,
+            error: 'Active player is not a robot',
+          }
+        }
+
+        let currentGame = game
+        let iterationCount = 0
+        const maxIterations = 20 // Safety limit to prevent infinite loops
+
+        // Continue processing until the robot's complete turn is finished
+        while (
+          currentGame.activePlayer?.isRobot &&
+          (currentGame.stateKind === 'rolled' ||
+            currentGame.stateKind === 'preparing-move' ||
+            currentGame.stateKind === 'moving') &&
+          iterationCount < maxIterations
+        ) {
+          iterationCount++
+
+          // Transition to moving state if needed
+          if (currentGame.stateKind === 'rolled') {
+            const preparingGame = Game.prepareMove(currentGame as any)
+            currentGame = Game.toMoving(preparingGame)
+          } else if (currentGame.stateKind === 'preparing-move') {
+            currentGame = Game.toMoving(currentGame as any)
+          }
+
+          // Get possible moves for current state
+          const possibleMovesResult = Game.getPossibleMoves(currentGame)
+
+          if (!possibleMovesResult.success) {
+            return {
+              success: false,
+              error:
+                possibleMovesResult.error || 'Failed to get possible moves',
+            }
+          }
+
+          // Check if updated game was returned (turn auto-completed)
+          if (possibleMovesResult.updatedGame) {
+            currentGame = possibleMovesResult.updatedGame
+            continue
+          }
+
+          // Check if no moves available
+          if (
+            !possibleMovesResult.possibleMoves ||
+            possibleMovesResult.possibleMoves.length === 0
+          ) {
+            // Complete the turn - no more moves available
+            if (Game.canConfirmTurn(currentGame)) {
+              currentGame = Game.confirmTurn(currentGame as any)
+              break
+            } else {
+              // Force turn completion if needed
+              try {
+                currentGame = Robot.forceCompleteTurn(currentGame as any)
+                break
+              } catch (error) {
+                return {
+                  success: false,
+                  error: 'Failed to complete turn with no moves available',
+                }
+              }
+            }
+          }
+
+          // Execute one move
+          const moveResult = await Robot.executeSingleMove(
+            currentGame,
+            possibleMovesResult.possibleMoves,
+            difficulty,
+            aiPlugin
+          )
+
+          if (!moveResult.success) {
+            // If single move fails, try to complete the turn
+            if (Game.canConfirmTurn(currentGame)) {
+              currentGame = Game.confirmTurn(currentGame as any)
+              break
+            }
+            return moveResult
+          }
+
+          currentGame = moveResult.game!
+
+          // Check for win condition
+          if (currentGame.stateKind === 'completed') {
+            return {
+              success: true,
+              game: currentGame,
+              message: 'Robot won the game!',
+            }
+          }
+
+          // Check if turn is naturally complete (all moves used)
+          if (Game.canConfirmTurn(currentGame)) {
+            currentGame = Game.confirmTurn(currentGame as any)
+            break
+          }
+
+          // Note: In standard backgammon, doubles give 4 moves but do NOT trigger additional rolls
+          // The turn ends normally after using all available moves
+        }
+
+        // Ensure turn is completed and passed to next player
+        if (
+          currentGame.activePlayer?.isRobot &&
+          (currentGame.stateKind === 'moving' ||
+            currentGame.stateKind === 'preparing-move')
+        ) {
+          if (Game.canConfirmTurn(currentGame)) {
+            currentGame = Game.confirmTurn(currentGame as any)
+          } else {
+            currentGame = Robot.forceCompleteTurn(currentGame as any)
+          }
+        }
+
+        return {
+          success: true,
+          game: currentGame,
+          message: 'Robot completed full turn successfully',
+        }
+      } catch (error) {
+        logger.error('Error in Robot.handleCompleteMovingTurn:', error)
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Failed to complete robot turn',
+        }
+      }
+    }
+
+  /**
+   * Execute a single move from available options
+   */
+  private static executeSingleMove = async function executeSingleMove(
+    game: BackgammonGame,
+    possibleMoves: any[],
+    difficulty: RobotSkillLevel,
+    aiPlugin?: string
+  ): Promise<RobotMoveResult> {
+    try {
+      if (!game.activePlayer?.dice) {
+        return { success: false, error: 'No dice roll available for AI move' }
+      }
+      // Filter out invalid moves
+      const validMoves = possibleMoves.filter((move) => {
+        try {
+          const originContainer = Board.getCheckerContainer(
+            game.board,
+            move.origin.id
+          )
+          return originContainer.checkers.some(
+            (checker: any) => checker.color === game.activePlayer?.color
+          )
+        } catch {
+          return false
+        }
+      })
+
+      if (validMoves.length === 0) {
+        return {
+          success: false,
+          error: 'No valid moves available',
+        }
+      }
+
+      // Select move based on difficulty
+      const selectedMove = Robot.selectMoveByDifficulty(
+        validMoves,
+        difficulty,
+        game
+      )
+
+      if (!selectedMove) {
+        return {
+          success: false,
+          error: 'Failed to select a move',
+        }
+      }
+
+      // Execute the move
+      const gameAfterMove = Game.executeAndRecalculate(
+        game as any,
+        selectedMove.origin.id
+      )
+
+      return {
+        success: true,
+        game: gameAfterMove,
+        message: 'Robot executed move successfully',
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'Failed to execute move',
+      }
+    }
+  }
+
+  // Note: shouldRollAgainForDoubles method removed - this is not standard backgammon
+  // In standard backgammon, doubles give 4 moves but turn ends normally afterward
+
+  // =============================================================================
+  // LEGACY COMPATIBILITY METHODS
+  // =============================================================================
+
+  /**
+   * Robot rolls for start and automatically continues if robot wins
+   * @deprecated Use Robot.makeOptimalMove() instead for complete automation
+   */
+  private static rollForStart = async function rollForStart(
+    game: BackgammonGame
+  ): Promise<RobotMoveResult> {
+    return Robot.handleRollForStart(game, 'beginner')
+  }
+
+  /**
+   * Robot rolls dice
+   * @deprecated Use Robot.makeOptimalMove() instead for complete automation
+   */
+  private static rollDice = async function rollDice(
+    game: BackgammonGame
+  ): Promise<RobotMoveResult> {
+    return Robot.handleRolling(game, 'beginner')
+  }
+
+  /**
    * Make AI-powered move using plugin system
+   * @deprecated Use Robot.makeOptimalMove() instead for complete automation
    */
   private static makeAIMove = async function makeAIMove(
     game: BackgammonGame,
     difficulty: RobotSkillLevel,
     aiPlugin?: string
   ): Promise<RobotMoveResult> {
-    try {
-      // CRITICAL FIX: Validate game state for AI moves
-      if (!game.board) {
-        return {
-          success: false,
-          error: 'Game board is undefined for AI move',
-        }
-      }
-
-      if (!game.activePlayer) {
-        return {
-          success: false,
-          error: 'No active player for AI move',
-        }
-      }
-
-      // CRITICAL FIX: Validate dice state before proceeding
-      if (!game.activePlayer.dice || !game.activePlayer.dice.currentRoll) {
-        return {
-          success: false,
-          error: 'No dice roll available for AI move',
-        }
-      }
-
-      // CRITICAL FIX: Handle state transition properly - only transition once per call
-      let workingGame = game
-      if (game.stateKind === 'rolled') {
-        // First transition: rolled -> preparing-move
-        const preparingGame = Game.prepareMove(game as any)
-        // Second transition: preparing-move -> moving
-        workingGame = Game.toMoving(preparingGame)
-      } else if (game.stateKind === 'preparing-move') {
-        // Direct transition: preparing-move -> moving
-        workingGame = Game.toMoving(game as any)
-      } else if (game.stateKind === 'moving') {
-        // Already in moving state, use the game as-is
-        workingGame = game
-      } else {
-        return {
-          success: false,
-          error: `Invalid game state for AI move: ${game.stateKind}`,
-        }
-      }
-
-      // CRITICAL FIX: Check if there are any possible moves AFTER state transition
-      logger.debug('[DEBUG] Robot requesting possible moves for game state:', {
-        gameState: workingGame.stateKind,
-        activePlayerColor: workingGame.activePlayer?.color,
-        activePlayerDirection: workingGame.activePlayer?.direction,
-        activePlayState: workingGame.activePlay?.stateKind,
-        hasActivePlay: !!workingGame.activePlay,
-        hasMoves: workingGame.activePlay?.moves
-          ? workingGame.activePlay.moves.size
-          : 0,
-      })
-
-      const possibleMovesResult = Game.getPossibleMoves(workingGame)
-
-      logger.debug('[DEBUG] Robot received possible moves result:', {
-        success: possibleMovesResult.success,
-        error: possibleMovesResult.error,
-        movesCount: possibleMovesResult.possibleMoves?.length || 0,
-        firstMoveOriginId: possibleMovesResult.possibleMoves?.[0]?.origin?.id,
-        firstMoveOriginKind:
-          possibleMovesResult.possibleMoves?.[0]?.origin?.kind,
-        allMoveOriginIds: possibleMovesResult.possibleMoves?.map(
-          (m) => m.origin?.id
-        ),
-      })
-
-      if (
-        !possibleMovesResult.success ||
-        !possibleMovesResult.possibleMoves ||
-        possibleMovesResult.possibleMoves.length === 0
-      ) {
-        // No legal moves available
-        logger.debug('[DEBUG] Robot has no legal moves available')
-
-        // Check if Game.getPossibleMoves already handled turn completion
-        if (possibleMovesResult.updatedGame) {
-          return {
-            success: true,
-            game: possibleMovesResult.updatedGame,
-            message: 'Robot completed turn (no legal moves available)',
-          }
-        }
-
-        // CRITICAL FIX: Always force turn completion when no moves available
-        // The previous logic was too restrictive and missed cases where activePlay might be missing
-        try {
-          logger.debug('[DEBUG] Forcing turn completion due to no legal moves')
-          const completedGame = Robot.forceCompleteTurn(workingGame as any)
-          return {
-            success: true,
-            game: completedGame,
-            message: 'Robot completed turn (no legal moves available)',
-          }
-        } catch (completionError) {
-          logger.debug('[DEBUG] Turn completion failed:', completionError)
-
-          // EMERGENCY FALLBACK: Create a minimal turn completion manually
-          logger.debug('[DEBUG] Attempting emergency turn completion')
-          try {
-            const nextColor = (
-              workingGame.activeColor === 'white' ? 'black' : 'white'
-            ) as 'white' | 'black'
-            const nextPlayer = workingGame.players.find(
-              (p) => p.color === nextColor
-            )
-            const currentPlayer = workingGame.players.find(
-              (p) => p.color === workingGame.activeColor
-            )
-
-            if (
-              !nextPlayer ||
-              !currentPlayer ||
-              workingGame.players.length !== 2
-            ) {
-              throw new Error('Could not find both players for turn switch')
-            }
-
-            const updatedNextPlayer = {
-              ...nextPlayer,
-              stateKind: 'rolling' as const,
-            }
-            const updatedCurrentPlayer = {
-              ...currentPlayer,
-              stateKind: 'inactive' as const,
-            }
-
-            // Create properly typed players array
-            const updatedPlayers = workingGame.players.map((p) =>
-              p.color === nextColor ? updatedNextPlayer : updatedCurrentPlayer
-            )
-
-            const emergencyGame = {
-              ...workingGame,
-              stateKind: 'rolling' as const,
-              activeColor: nextColor,
-              activePlayer: updatedNextPlayer,
-              inactivePlayer: updatedCurrentPlayer,
-              activePlay: null, // Clear active play
-              players: updatedPlayers,
-            } as any // Cast to any to bypass strict typing for emergency fallback
-
-            logger.debug('[DEBUG] Emergency turn completion successful')
-            return {
-              success: true,
-              game: emergencyGame,
-              message:
-                'Robot completed turn using emergency fallback (no legal moves available)',
-            }
-          } catch (emergencyError) {
-            logger.error(
-              '[DEBUG] Emergency turn completion also failed:',
-              emergencyError
-            )
-            return {
-              success: false,
-              error:
-                'Failed to complete turn with no legal moves - all fallbacks failed',
-            }
-          }
-        }
-      }
-
-      // CRITICAL FIX: Use actual possible moves and execute directly with Game.move
-      // This eliminates all the complexity of finding checkers and using Move.moveChecker
-      const rawPossibleMoves = possibleMovesResult.possibleMoves
-
-      // CRITICAL FIX: Filter out invalid moves where the origin point doesn't actually have checkers
-      // This prevents the "No checker found" infinite loop by validating moves against actual board state
-      const actualPossibleMoves = rawPossibleMoves.filter((move: any) => {
-        try {
-          const originContainer = Board.getCheckerContainer(
-            workingGame.board,
-            move.origin.id
-          )
-          const hasValidChecker = originContainer.checkers.some(
-            (checker: any) => checker.color === workingGame.activePlayer.color
-          )
-
-          if (!hasValidChecker) {
-            logger.debug('[DEBUG] Robot filtered out invalid move:', {
-              originId: move.origin.id,
-              originKind: move.origin.kind,
-              checkerCount: originContainer.checkers.length,
-              checkerColors: originContainer.checkers.map((c: any) => c.color),
-              activePlayerColor: workingGame.activePlayer.color,
-            })
-          }
-
-          return hasValidChecker
-        } catch (error) {
-          logger.debug('[DEBUG] Robot filtered out move due to error:', {
-            originId: move.origin.id,
-            error: error instanceof Error ? error.message : 'Unknown error',
-          })
-          return false
-        }
-      })
-
-      logger.debug('[DEBUG] Robot move filtering results:', {
-        rawMovesCount: rawPossibleMoves.length,
-        validMovesCount: actualPossibleMoves.length,
-        filteredOutCount: rawPossibleMoves.length - actualPossibleMoves.length,
-      })
-
-      // Check if we filtered out all moves (no valid moves remain)
-      if (actualPossibleMoves.length === 0) {
-        logger.debug(
-          '[DEBUG] Robot: All moves were filtered out - no valid checkers at origin points'
-        )
-
-        // Return the current game state - let simulation script handle turn completion
-        return {
-          success: true,
-          game: workingGame,
-          message:
-            'Robot has no valid moves available - turn should be completed by simulation',
-        }
-      }
-
-      // Let the Robot select from the REAL possible moves using existing difficulty logic
-      logger.debug('[DEBUG] Robot selecting move from possible moves:', {
-        totalMoves: actualPossibleMoves.length,
-        difficulty: difficulty,
-        possibleMoveOriginIds: actualPossibleMoves.map((m) => m.origin?.id),
-      })
-
-      const selectedMove = Robot.selectMoveByDifficulty(
-        actualPossibleMoves,
-        difficulty,
-        workingGame
-      )
-
-      logger.debug('[DEBUG] Robot selected move:', {
-        selectedMoveOriginId: selectedMove?.origin?.id,
-        selectedMoveOriginKind: selectedMove?.origin?.kind,
-        selectedMoveDestinationId: selectedMove?.destination?.id,
-        selectedMoveDestinationKind: selectedMove?.destination?.kind,
-        dieValue: selectedMove?.dieValue,
-      })
-
-      // Validate the selected move
-      if (!selectedMove) {
-        return {
-          success: false,
-          error: 'Failed to select a move from available options',
-        }
-      }
-
-      // CRITICAL FIX: Validate that the origin point actually has checkers before attempting move
-      // This prevents the "No checker found" infinite loop bug
-      const originContainer = Board.getCheckerContainer(
-        workingGame.board,
-        selectedMove.origin.id
-      )
-      const activePlayer = workingGame.activePlayer
-
-      // Check if the origin point has any checkers for the active player
-      const hasValidChecker = originContainer.checkers.some(
-        (checker: any) => checker.color === activePlayer.color
-      )
-
-      if (!hasValidChecker) {
-        logger.debug(
-          '[DEBUG] Robot move validation failed: No valid checker at origin point',
-          {
-            originId: selectedMove.origin.id,
-            originKind: selectedMove.origin.kind,
-            checkerCount: originContainer.checkers.length,
-            checkerColors: originContainer.checkers.map((c: any) => c.color),
-            activePlayerColor: activePlayer.color,
-          }
-        )
-
-        return {
-          success: false,
-          error: 'No valid checker found at origin point - possible stale move',
-        }
-      }
-
-      // STALE MOVE REFERENCE FIX: Use Game.executeAndRecalculate for just-in-time approach
-      // This prevents stale move references by always calculating moves based on current board state
-      try {
-        logger.debug(
-          '[DEBUG] Robot executing move with Game.executeAndRecalculate:',
-          {
-            gameState: workingGame.stateKind,
-            originId: selectedMove.origin.id,
-            originKind: selectedMove.origin.kind,
-          }
-        )
-
-        // Use the existing executeAndRecalculate method that handles stale move references
-        const gameAfterMove = Game.executeAndRecalculate(
-          workingGame as any,
-          selectedMove.origin.id
-        )
-
-        // The Robot should only execute ONE move per call and return the updated game
-        // The simulation script will call the Robot again if more moves are needed
-        return {
-          success: true,
-          game: gameAfterMove,
-          message:
-            'Robot executed one move successfully (just-in-time approach)',
-        }
-      } catch (moveError) {
-        // Handle "No checker found" and "stale move reference" errors properly
-        if (
-          moveError instanceof Error &&
-          (moveError.message.includes('No checker found') ||
-            moveError.message.includes('stale move reference'))
-        ) {
-          logger.debug(
-            '[DEBUG] Robot caught stale move reference error - this indicates the move is no longer valid'
-          )
-          // Return failure to let simulation handle this properly
-          return {
-            success: false,
-            error:
-              'Move failed: No checker found at origin point (stale move reference)',
-            game: workingGame,
-          }
-        }
-
-        return {
-          success: false,
-          error:
-            moveError instanceof Error
-              ? moveError.message
-              : 'Move execution failed',
-        }
-      }
-    } catch (error) {
-      logger.error('Error in Robot.makeAIMove:', error)
-      logger.error('Game state:', JSON.stringify(game, null, 2))
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'AI move failed',
-      }
-    }
+    return Robot.handleCompleteMovingTurn(game, difficulty, aiPlugin)
   }
 
   /**
    * Execute a move using the existing move execution logic
+   * @deprecated Use Robot.executeSingleMove() instead
    */
   private static executeMove = async function executeMove(
     game: BackgammonGame,
     selectedMove: any
   ): Promise<RobotMoveResult> {
     try {
-      // Find a checker at the origin point that can make this move
-      const checkerInfo = Robot.findOptimalChecker(game, selectedMove)
-      if (!checkerInfo) {
-        return {
-          success: false,
-          error: 'No suitable checker found for the selected move',
-        }
-      }
-
-      // CRITICAL FIX: Use the game parameter (which is workingGame from caller) for move execution
-      const gameLookup = async () => game
-      const moveResult = await Move.moveChecker(
-        game.id,
-        checkerInfo.checkerId,
-        gameLookup
+      const gameAfterMove = Game.executeAndRecalculate(
+        game as any,
+        selectedMove.origin.id
       )
-
-      if (!moveResult.success) {
-        return {
-          success: false,
-          error: moveResult.error || 'Move execution failed',
-        }
-      }
-
-      // Return the game after the move - let simulation handle turn completion
-      const gameAfterMove = moveResult.game
 
       return {
         success: true,
         game: gameAfterMove,
-        message: 'Robot made AI-powered move',
+        message: 'Robot executed move successfully',
       }
     } catch (error) {
       return {

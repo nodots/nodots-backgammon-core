@@ -291,9 +291,9 @@ export class Board implements BackgammonBoard {
     if (bar.checkers.length > 0) {
       let reentryPoint: number
       if (playerDirection === 'clockwise') {
-        reentryPoint = dieValue
+        reentryPoint = 25 - dieValue  // Fixed: clockwise players re-enter from opponent's home board (points 19-24)
       } else {
-        reentryPoint = 25 - dieValue
+        reentryPoint = dieValue       // counterclockwise players re-enter from opponent's home board (points 1-6)
       }
       const possibleDestination = Board.getPoints(board).find(
         (p: BackgammonPoint) =>

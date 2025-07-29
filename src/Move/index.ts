@@ -119,151 +119,139 @@ export class Move {
         }
       }
 
-      // 5. Get the active play and find moves that this checker can participate in
-      if (!game.activePlay || !game.activePlay.moves) {
+      // 5. Get active play and filter possible moves by the checker's container
+      const activePlay = game.activePlay
+      if (!activePlay) {
         return {
           success: false,
-          error: 'No active play found',
+          error: 'No active play found - player needs to roll dice first',
         }
       }
 
       console.log('[DEBUG] Active play found:', {
-        playId: game.activePlay.id,
-        movesCount: game.activePlay.moves.size,
+        activePlayId: activePlay.id,
+        movesCount: activePlay.moves?.size || 0,
       })
 
-      const availableMoves: BackgammonMoveReady[] = []
-      const movesArray = Array.from(game.activePlay.moves.values())
-
-      console.log('[DEBUG] Checking moves:', {
-        totalMoves: movesArray.length,
-        moves: movesArray.map((m) => ({
-          id: m.id,
-          dieValue: m.dieValue,
-          stateKind: m.stateKind,
-          moveKind: m.moveKind,
-          possibleMovesCount: m.possibleMoves ? m.possibleMoves.length : 0,
-        })),
-      })
-
-      // Find moves where this checker can be used
-      for (const move of movesArray) {
-        if (move.stateKind === 'ready' && move.possibleMoves) {
-          console.log('[DEBUG] Checking move for die value:', {
-            dieValue: move.dieValue,
-            possibleMovesCount: move.possibleMoves.length,
-            possibleMoves: move.possibleMoves.map((pm) => ({
-              origin:
-                pm.origin.kind === 'point'
-                  ? `point-${pm.origin.position.clockwise}`
-                  : pm.origin.kind,
-              destination:
-                pm.destination.kind === 'point'
-                  ? `point-${pm.destination.position.clockwise}`
-                  : pm.destination.kind,
-            })),
-          })
-
-          // Check if this checker can be used in any of the possible moves for this die value
-          const matchingPossibleMoves = move.possibleMoves.filter(
-            (possibleMove) => {
-              // Compare by ID instead of object reference
-              const matches = possibleMove.origin.id === container.id
-              console.log('[DEBUG] Comparing origins:', {
-                possibleMoveOriginId: possibleMove.origin.id,
-                possibleMoveOrigin:
-                  possibleMove.origin.kind === 'point'
-                    ? `point-${possibleMove.origin.position.clockwise}`
-                    : possibleMove.origin.kind,
-                checkerContainerId: container.id,
-                checkerContainer:
-                  container.kind === 'point'
-                    ? `point-${(container as any).position.clockwise}`
-                    : container.kind,
-                matches,
-              })
-              return matches
-            }
-          )
-
-          console.log('[DEBUG] Matching possible moves:', {
-            dieValue: move.dieValue,
-            matchingCount: matchingPossibleMoves.length,
-          })
-
-          if (matchingPossibleMoves.length > 0) {
-            availableMoves.push({
-              ...move,
-              possibleMoves: matchingPossibleMoves, // Only include the moves relevant to this checker
-            })
+      // Get the current move (first ready move) from the sequence
+      const movesArray = Array.from(activePlay.moves?.values() || [])
+      const currentMove = movesArray.find(move => move.stateKind === 'ready')
+      
+      if (!currentMove) {
+        // PROPER STATE ASSESSMENT: Check activePlay.moves state machine
+        const readyMoves = movesArray.filter(move => move.stateKind === 'ready')
+        const completedMoves = movesArray.filter(move => 
+          move.stateKind === 'completed' || move.stateKind === 'confirmed'
+        )
+        const inProgressMoves = movesArray.filter(move => move.stateKind === 'in-progress')
+        
+        console.log('[DEBUG] ActivePlay.moves state assessment:', {
+          totalMoves: movesArray.length,
+          readyMoves: readyMoves.length,
+          completedMoves: completedMoves.length,
+          inProgressMoves: inProgressMoves.length,
+          moveStates: movesArray.map(m => ({ id: m.id, state: m.stateKind, dieValue: m.dieValue }))
+        })
+        
+        // If all moves are completed/confirmed, turn should be completed
+        if (completedMoves.length === movesArray.length && movesArray.length > 0) {
+          return {
+            success: false,
+            error: 'All moves in activePlay are completed - turn should be completed',
           }
         }
-      }
-
-      console.log('[DEBUG] Available moves for checker:', {
-        checkerId,
-        availableMovesCount: availableMoves.length,
-      })
-
-      if (availableMoves.length === 0) {
+        
+        // If there are in-progress moves, this might be a race condition
+        if (inProgressMoves.length > 0) {
+          return {
+            success: false,
+            error: 'Move already in progress - wait for completion',
+          }
+        }
+        
+        // If no ready moves but not all completed, something is wrong with state
         return {
           success: false,
-          error:
-            'No legal moves available for this checker with the current dice',
+          error: `ActivePlay state inconsistency: ${readyMoves.length} ready, ${completedMoves.length} completed of ${movesArray.length} total moves`,
+        }
+      }
+      
+      if (!currentMove.possibleMoves) {
+        return {
+          success: false,
+          error: 'No possible moves for current move',
         }
       }
 
-      // 6. If only one move possible, execute it using proper game state management
-      if (availableMoves.length === 1) {
-        const moveToExecute = availableMoves[0]
-        const specificMove = moveToExecute.possibleMoves[0] // Use the first (and only) possible move
-
-        console.log(
-          `[DEBUG] Single move available: die ${
-            moveToExecute.dieValue
-          }, origin ${
-            specificMove.origin.kind === 'point'
-              ? 'point-' + specificMove.origin.position.clockwise
-              : specificMove.origin.kind
-          }`
-        )
-
-        return Move.executeRobotMove(game, specificMove.origin.id)
-      }
-
-      // 7. If multiple moves possible, check if robot or human player
-      // Find the active player to check if it's a robot
-      const activePlayer = game.players.find(
-        (p) => p.color === game.activeColor
+      // Check if there are any possible moves from the checker's container
+      const checkerContainer = checkerInfo.container
+      const movesFromThisContainer = currentMove.possibleMoves.filter(
+        (pm) => pm.origin.id === checkerContainer.id
       )
 
-      if (activePlayer?.isRobot) {
-        // Robot player: auto-execute the first available move
-        const moveToExecute = availableMoves[0]
-        const specificMove = moveToExecute.possibleMoves[0]
+      console.log('[DEBUG] Moves from this container:', {
+        checkerId,
+        containerID: checkerContainer.id,
+        containerKind: checkerContainer.kind,
+        currentMoveDieValue: currentMove.dieValue,
+        currentMovePossibleMoves: currentMove.possibleMoves?.length || 0,
+        movesFromThisContainer: movesFromThisContainer.length,
+      })
 
+      if (movesFromThisContainer.length === 0) {
+        return {
+          success: false,
+          error: 'No legal moves available from this position',
+        }
+      }
+
+      // CRITICAL FIX: Execute any valid move from this container, regardless of specific checker
+      // Multiple checkers from the same point can make the same move
+      const moveToExecute = movesFromThisContainer[0]
+        
         console.log(
-          `[DEBUG] Robot auto-selecting move: die ${
+          `[DEBUG] Executing move: die ${
             moveToExecute.dieValue
           }, origin ${
-            specificMove.origin.kind === 'point'
-              ? 'point-' + specificMove.origin.position.clockwise
-              : specificMove.origin.kind
+            moveToExecute.origin.kind === 'point'
+              ? 'point-' + moveToExecute.origin.position.clockwise
+              : moveToExecute.origin.kind
+          }, destination ${
+            moveToExecute.destination.kind === 'point'
+              ? 'point-' + moveToExecute.destination.position.clockwise
+              : moveToExecute.destination.kind
           }`
         )
 
-        // For robots, execute the move directly using the existing game flow
-        // This should properly update dice, active play, and all game state
-        return Move.executeRobotMove(game, specificMove.origin.id)
-      } else {
-        // Human player: return multiple options for user to choose
-        return {
-          success: true,
-          possibleMoves: availableMoves,
-          game: game,
-          error: 'Multiple moves possible. Please specify which move to make.',
+        // Execute human move directly using Game.move
+        try {
+          const { Game } = await import('..')
+          
+          // Ensure game is in correct state for moving
+          let workingGame = game
+          
+          if (workingGame.stateKind === 'rolled') {
+            workingGame = Game.prepareMove(workingGame as any)
+            workingGame = Game.toMoving(workingGame)
+          } else if (workingGame.stateKind === 'preparing-move') {
+            workingGame = Game.toMoving(workingGame as any)
+          }
+          
+          // Execute the move using executeAndRecalculate to handle automatic state transitions
+          const finalGame = Game.executeAndRecalculate(workingGame as any, moveToExecute.origin.id)
+          
+          console.log('[DEBUG] Human move completed successfully')
+          return {
+            success: true,
+            game: finalGame as any,
+          }
+        } catch (moveError: unknown) {
+          console.log('[DEBUG] Human move failed:', moveError instanceof Error ? moveError.message : 'Unknown error')
+          return {
+            success: false,
+            error: `Move execution failed: ${moveError instanceof Error ? moveError.message : 'Unknown error'}`,
+          }
         }
-      }
     } catch (error) {
       return {
         success: false,
