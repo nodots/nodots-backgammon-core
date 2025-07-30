@@ -28,15 +28,22 @@ import {
   BackgammonPlayRolled,
 } from '@nodots-llc/backgammon-types/dist'
 import { generateId, Player, randomBackgammonColor } from '..'
-
-// Hardcoded constant to avoid import issues during build
-const MAX_PIP_COUNT = 167
 import { Board } from '../Board'
 import { Checker } from '../Checker'
 import { Cube } from '../Cube'
 import { Dice } from '../Dice'
 import { BackgammonMoveDirection, Play } from '../Play'
 import { logger } from '../utils/logger'
+
+// Hardcoded constant to avoid import issues during build
+const MAX_PIP_COUNT = 167
+
+// ⚠️  CRITICAL TECH DEBT: DICE DATA DUPLICATION ⚠️
+// This module contains duplicate storage of dice roll values:
+// - player.dice.currentRoll (UI display purposes)
+// - game.activePlay.moves[n].dieValue (move execution logic)
+// This creates maintenance overhead and potential data inconsistencies.
+// See preservation logic in confirmTurn() and confirmTurnFromMoved() for examples.
 export * from '../index'
 
 // GameProps is now imported from @nodots-llc/backgammon-types
@@ -741,7 +748,10 @@ export class Game {
 
     const { activePlayer, activePlay } = game
 
-    if (!activePlayer?.dice?.currentRoll || activePlayer.dice.currentRoll.length !== 2) {
+    if (
+      !activePlayer?.dice?.currentRoll ||
+      activePlayer.dice.currentRoll.length !== 2
+    ) {
       throw new Error('Active player does not have valid dice to switch')
     }
 
@@ -753,21 +763,25 @@ export class Game {
     }
 
     // Update the activePlay to reflect the new dice order
-    const updatedActivePlay = activePlay ? {
-      ...activePlay,
-      moves: activePlay.moves ? (() => {
-        const movesArray = Array.from(activePlay.moves)
-        if (movesArray.length >= 2) {
-          // Swap the first two moves to match the new dice order
-          const swappedMoves = [...movesArray]
-          const temp = swappedMoves[0]
-          swappedMoves[0] = swappedMoves[1]
-          swappedMoves[1] = temp
-          return new Set(swappedMoves)
+    const updatedActivePlay = activePlay
+      ? {
+          ...activePlay,
+          moves: activePlay.moves
+            ? (() => {
+                const movesArray = Array.from(activePlay.moves)
+                if (movesArray.length >= 2) {
+                  // Swap the first two moves to match the new dice order
+                  const swappedMoves = [...movesArray]
+                  const temp = swappedMoves[0]
+                  swappedMoves[0] = swappedMoves[1]
+                  swappedMoves[1] = temp
+                  return new Set(swappedMoves)
+                }
+                return activePlay.moves
+              })()
+            : activePlay.moves,
         }
-        return activePlay.moves
-      })() : activePlay.moves
-    } : activePlay
+      : activePlay
 
     // Update the players array
     const updatedPlayers = game.players.map((p) =>
@@ -869,7 +883,9 @@ export class Game {
     )
 
     if (!allMovesCompleted) {
-      throw new Error('Cannot transition to moved state - not all moves are completed')
+      throw new Error(
+        'Cannot transition to moved state - not all moves are completed'
+      )
     }
 
     // Create moved state - human player's turn is complete, waiting for dice click confirmation
@@ -944,7 +960,9 @@ export class Game {
     const updatedPlayers = Player.recalculatePipCounts({
       ...game,
       board,
-      players: game.players.map(p => p.id === movedPlayer.id ? movedPlayer : p) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayers
+      players: game.players.map((p) =>
+        p.id === movedPlayer.id ? movedPlayer : p
+      ) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayers,
     })
 
     return {
@@ -952,7 +970,7 @@ export class Game {
       stateKind: 'moving',
       board,
       players: updatedPlayers,
-      activePlayer: updatedPlayers.find(p => p.id === movedPlayer.id) as any,
+      activePlayer: updatedPlayers.find((p) => p.id === movedPlayer.id) as any,
       activePlay: updatedActivePlay,
     } as BackgammonGameMoving
   }
@@ -969,14 +987,22 @@ export class Game {
     originId: string
   ): BackgammonGameMoving | BackgammonGame {
     // First, execute the move using the existing move method
-    console.log('[DEBUG] Game.executeAndRecalculate: About to execute move from origin:', originId)
+    console.log(
+      '[DEBUG] Game.executeAndRecalculate: About to execute move from origin:',
+      originId
+    )
     const gameAfterMove = Game.move(game, originId)
-    
-    console.log('[DEBUG] Game.executeAndRecalculate: Move executed, game state:', {
-      stateKind: gameAfterMove.stateKind,
-      hasActivePlay: !!(gameAfterMove as any).activePlay,
-      activePlayMoves: (gameAfterMove as any).activePlay?.moves ? Array.from((gameAfterMove as any).activePlay.moves).length : 0
-    })
+
+    console.log(
+      '[DEBUG] Game.executeAndRecalculate: Move executed, game state:',
+      {
+        stateKind: gameAfterMove.stateKind,
+        hasActivePlay: !!(gameAfterMove as any).activePlay,
+        activePlayMoves: (gameAfterMove as any).activePlay?.moves
+          ? Array.from((gameAfterMove as any).activePlay.moves).length
+          : 0,
+      }
+    )
 
     // Check if the game ended (win condition)
     if (gameAfterMove.stateKind === 'completed') {
@@ -1004,20 +1030,33 @@ export class Game {
           (move) => move.stateKind === 'completed'
         )
 
-        console.log('[DEBUG] Game.executeAndRecalculate: Checking move completion:', {
-          totalMoves: movesArray.length,
-          completedMoves: movesArray.filter(m => m.stateKind === 'completed').length,
-          allMovesCompleted,
-          moveStates: movesArray.map(m => ({ id: m.id, state: m.stateKind, dieValue: m.dieValue })),
-          activePlayerIsRobot: movingGame.activePlayer?.isRobot
-        })
+        console.log(
+          '[DEBUG] Game.executeAndRecalculate: Checking move completion:',
+          {
+            totalMoves: movesArray.length,
+            completedMoves: movesArray.filter(
+              (m) => m.stateKind === 'completed'
+            ).length,
+            allMovesCompleted,
+            moveStates: movesArray.map((m) => ({
+              id: m.id,
+              state: m.stateKind,
+              dieValue: m.dieValue,
+            })),
+            activePlayerIsRobot: movingGame.activePlayer?.isRobot,
+          }
+        )
 
         if (allMovesCompleted) {
-          console.log('[DEBUG] 🎯 All moves completed! Transitioning to moved state')
+          console.log(
+            '[DEBUG] 🎯 All moves completed! Transitioning to moved state'
+          )
           // All moves completed for human player, transition to 'moved' state
           return Game.toMoved(movingGame)
         } else {
-          console.log('[DEBUG] ⏳ Not all moves completed yet, staying in moving state')
+          console.log(
+            '[DEBUG] ⏳ Not all moves completed yet, staying in moving state'
+          )
         }
       }
     }
@@ -1025,9 +1064,11 @@ export class Game {
     // CRITICAL FIX: After executing a move, the activePlay.moves now contains fresh possibleMoves
     // for all remaining ready moves thanks to the fix in Play.move()
     // The movingGame already has the updated board state and refreshed activePlay
-    
-    console.log('[DEBUG] Game.executeAndRecalculate: Move executed successfully, returning updated game with fresh activePlay')
-    
+
+    console.log(
+      '[DEBUG] Game.executeAndRecalculate: Move executed successfully, returning updated game with fresh activePlay'
+    )
+
     // Turn continues, return the game with fresh board state and updated activePlay
     return movingGame
   }
@@ -1091,10 +1132,12 @@ export class Game {
     }
 
     // Recalculate pip counts before transitioning to next player
-    console.log('🧮 Game turn completion: Recalculating pip counts before transitioning to next player')
+    console.log(
+      '🧮 Game turn completion: Recalculating pip counts before transitioning to next player'
+    )
     const playersWithUpdatedPips = Player.recalculatePipCounts({
       ...game,
-      players: updatedPlayers
+      players: updatedPlayers,
     })
 
     const newActivePlayerWithPips = playersWithUpdatedPips.find(
@@ -1222,10 +1265,28 @@ export class Game {
     // Update players: current becomes inactive, next becomes rolling
     const updatedPlayers = game.players.map((player) => {
       if (player.color === game.activeColor) {
+        // CRITICAL FIX: Preserve robot dice currentRoll values when transitioning to inactive
+        // This ensures robot dice continue to display what they rolled
+        //
+        // ⚠️  TECH DEBT WARNING: currentRoll DATA DUPLICATION ISSUE ⚠️
+        // The dice roll values are stored in TWO places in the model:
+        // 1. player.dice.currentRoll - Raw rolled values [x, y]
+        // 2. game.activePlay.moves[n].dieValue - Individual die values used for moves
+        // This duplication creates maintenance overhead and potential inconsistency.
+        // Future refactoring should consolidate this to a single source of truth.
+        //
+        const preservedDice =
+          player.isRobot && player.dice?.currentRoll
+            ? {
+                ...player.dice,
+                stateKind: 'inactive' as const,
+              }
+            : Dice.initialize(player.color, 'inactive')
+
         return {
           ...player,
           stateKind: 'inactive' as const,
-          dice: Dice.initialize(player.color, 'inactive'),
+          dice: preservedDice,
         }
       } else {
         return {
@@ -1245,10 +1306,12 @@ export class Game {
     ) as BackgammonPlayerInactive
 
     // Recalculate pip counts before transitioning to next player
-    console.log('🧮 Game turn completion: Recalculating pip counts before transitioning to next player')
+    console.log(
+      '🧮 Game turn completion: Recalculating pip counts before transitioning to next player'
+    )
     const playersWithUpdatedPips = Player.recalculatePipCounts({
       ...game,
-      players: updatedPlayers
+      players: updatedPlayers,
     })
 
     const newActivePlayerWithPips = playersWithUpdatedPips.find(
@@ -1274,7 +1337,7 @@ export class Game {
 
   /**
    * Confirm turn from 'moved' state - overload for when player clicks dice after all moves completed
-   * @param game - Game in 'moved' state 
+   * @param game - Game in 'moved' state
    * @returns Game transitioned to next player in 'rolling' state
    */
   public static confirmTurnFromMoved = function confirmTurnFromMoved(
@@ -1309,10 +1372,28 @@ export class Game {
     // Update players: current becomes inactive, next becomes rolling
     const updatedPlayers = game.players.map((player) => {
       if (player.color === game.activeColor) {
+        // CRITICAL FIX: Preserve robot dice currentRoll values when transitioning to inactive
+        // This ensures robot dice continue to display what they rolled
+        //
+        // ⚠️  TECH DEBT WARNING: currentRoll DATA DUPLICATION ISSUE ⚠️
+        // The dice roll values are stored in TWO places in the model:
+        // 1. player.dice.currentRoll - Raw rolled values [x, y]
+        // 2. game.activePlay.moves[n].dieValue - Individual die values used for moves
+        // This duplication creates maintenance overhead and potential inconsistency.
+        // Future refactoring should consolidate this to a single source of truth.
+        //
+        const preservedDice =
+          player.isRobot && player.dice?.currentRoll
+            ? {
+                ...player.dice,
+                stateKind: 'inactive' as const,
+              }
+            : Dice.initialize(player.color, 'inactive')
+
         return {
           ...player,
           stateKind: 'inactive' as const,
-          dice: Dice.initialize(player.color, 'inactive'),
+          dice: preservedDice,
         }
       } else {
         return {
@@ -1332,10 +1413,12 @@ export class Game {
     ) as BackgammonPlayerInactive
 
     // Recalculate pip counts before transitioning to next player
-    console.log('🧮 Game turn completion: Recalculating pip counts before transitioning to next player')
+    console.log(
+      '🧮 Game turn completion: Recalculating pip counts before transitioning to next player'
+    )
     const playersWithUpdatedPips = Player.recalculatePipCounts({
       ...game,
-      players: updatedPlayers
+      players: updatedPlayers,
     })
 
     const newActivePlayerWithPips = playersWithUpdatedPips.find(
