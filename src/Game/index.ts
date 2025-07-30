@@ -28,6 +28,9 @@ import {
   BackgammonPlayRolled,
 } from '@nodots-llc/backgammon-types/dist'
 import { generateId, Player, randomBackgammonColor } from '..'
+
+// Hardcoded constant to avoid import issues during build
+const MAX_PIP_COUNT = 167
 import { Board } from '../Board'
 import { Checker } from '../Checker'
 import { Cube } from '../Cube'
@@ -133,7 +136,8 @@ export class Game {
         generateId(),
         'inactive',
         cfg.isRobot,
-        cfg.userId
+        cfg.userId,
+        MAX_PIP_COUNT
       )
     )
 
@@ -176,7 +180,8 @@ export class Game {
                 p.id,
                 'rolled-for-start',
                 p.isRobot,
-                p.userId
+                p.userId,
+                p.pipCount
               )
             : Player.initialize(
                 p.color,
@@ -185,7 +190,8 @@ export class Game {
                 p.id,
                 'inactive',
                 p.isRobot,
-                p.userId
+                p.userId,
+                p.pipCount
               )
         ) as BackgammonPlayers
 
@@ -218,7 +224,8 @@ export class Game {
                 p.id,
                 'rolled-for-start',
                 p.isRobot,
-                p.userId
+                p.userId,
+                p.pipCount
               )
             : Player.initialize(
                 p.color,
@@ -227,7 +234,8 @@ export class Game {
                 p.id,
                 'inactive',
                 p.isRobot,
-                p.userId
+                p.userId,
+                p.pipCount
               )
         ) as BackgammonPlayers
 
@@ -398,7 +406,8 @@ export class Game {
             p.id,
             'rolled-for-start',
             p.isRobot,
-            p.userId
+            p.userId,
+            p.pipCount
           )
         : Player.initialize(
             p.color,
@@ -407,7 +416,8 @@ export class Game {
             p.id,
             'inactive',
             p.isRobot,
-            p.userId
+            p.userId,
+            p.pipCount
           )
     ) as BackgammonPlayers
 
@@ -719,6 +729,60 @@ export class Game {
   }
 
   /**
+   * Switch the order of dice for the active player
+   * Only allowed in 'rolled' state
+   */
+  public static switchDice = function switchDice(
+    game: BackgammonGameRolled
+  ): BackgammonGameRolled {
+    if (game.stateKind !== 'rolled') {
+      throw new Error(`Cannot switch dice from ${game.stateKind} state`)
+    }
+
+    const { activePlayer, activePlay } = game
+
+    if (!activePlayer?.dice?.currentRoll || activePlayer.dice.currentRoll.length !== 2) {
+      throw new Error('Active player does not have valid dice to switch')
+    }
+
+    // Switch the dice using the Dice class
+    const switchedDice = Dice.switchDice(activePlayer.dice)
+    const updatedActivePlayer = {
+      ...activePlayer,
+      dice: switchedDice,
+    }
+
+    // Update the activePlay to reflect the new dice order
+    const updatedActivePlay = activePlay ? {
+      ...activePlay,
+      moves: activePlay.moves ? (() => {
+        const movesArray = Array.from(activePlay.moves)
+        if (movesArray.length >= 2) {
+          // Swap the first two moves to match the new dice order
+          const swappedMoves = [...movesArray]
+          const temp = swappedMoves[0]
+          swappedMoves[0] = swappedMoves[1]
+          swappedMoves[1] = temp
+          return new Set(swappedMoves)
+        }
+        return activePlay.moves
+      })() : activePlay.moves
+    } : activePlay
+
+    // Update the players array
+    const updatedPlayers = game.players.map((p) =>
+      p.id === activePlayer.id ? updatedActivePlayer : p
+    ) as BackgammonPlayers
+
+    return {
+      ...game,
+      players: updatedPlayers,
+      activePlayer: updatedActivePlayer,
+      activePlay: updatedActivePlay,
+    } as BackgammonGameRolled
+  }
+
+  /**
    * Transition from 'rolled' to 'preparing-move' state
    * This represents the player about to make a decision (move or double)
    */
@@ -875,11 +939,20 @@ export class Game {
     }
     // --- END WIN CONDITION CHECK ---
 
+    // Recalculate pip counts after the move
+    console.log('🧮 Game.move: Recalculating pip counts after move')
+    const updatedPlayers = Player.recalculatePipCounts({
+      ...game,
+      board,
+      players: game.players.map(p => p.id === movedPlayer.id ? movedPlayer : p) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayers
+    })
+
     return {
       ...game,
       stateKind: 'moving',
       board,
-      activePlayer: movedPlayer,
+      players: updatedPlayers,
+      activePlayer: updatedPlayers.find(p => p.id === movedPlayer.id) as any,
       activePlay: updatedActivePlay,
     } as BackgammonGameMoving
   }
@@ -1017,17 +1090,31 @@ export class Game {
       stateKind: 'completed' as const,
     }
 
+    // Recalculate pip counts before transitioning to next player
+    console.log('🧮 Game turn completion: Recalculating pip counts before transitioning to next player')
+    const playersWithUpdatedPips = Player.recalculatePipCounts({
+      ...game,
+      players: updatedPlayers
+    })
+
+    const newActivePlayerWithPips = playersWithUpdatedPips.find(
+      (p) => p.color === nextColor
+    ) as BackgammonPlayerActive
+    const newInactivePlayerWithPips = playersWithUpdatedPips.find(
+      (p) => p.color === game.activeColor
+    ) as BackgammonPlayerInactive
+
     // Return game with next player's turn using Game.initialize for proper typing
     return Game.initialize(
-      updatedPlayers,
+      playersWithUpdatedPips,
       game.id,
       'rolling',
       game.board,
       game.cube,
       undefined, // No active play for next player until they roll
       nextColor,
-      newActivePlayer,
-      newInactivePlayer
+      newActivePlayerWithPips,
+      newInactivePlayerWithPips
     )
   }
 
@@ -1157,17 +1244,31 @@ export class Game {
       (p) => p.color === game.activeColor
     ) as BackgammonPlayerInactive
 
+    // Recalculate pip counts before transitioning to next player
+    console.log('🧮 Game turn completion: Recalculating pip counts before transitioning to next player')
+    const playersWithUpdatedPips = Player.recalculatePipCounts({
+      ...game,
+      players: updatedPlayers
+    })
+
+    const newActivePlayerWithPips = playersWithUpdatedPips.find(
+      (p) => p.color === nextColor
+    ) as BackgammonPlayerActive
+    const newInactivePlayerWithPips = playersWithUpdatedPips.find(
+      (p) => p.color === game.activeColor
+    ) as BackgammonPlayerInactive
+
     // Return game with next player's turn using Game.initialize for proper typing
     return Game.initialize(
-      updatedPlayers,
+      playersWithUpdatedPips,
       game.id,
       'rolling',
       game.board,
       game.cube,
       undefined, // No active play for next player until they roll
       nextColor,
-      newActivePlayer,
-      newInactivePlayer
+      newActivePlayerWithPips,
+      newInactivePlayerWithPips
     )
   }
 
@@ -1230,17 +1331,31 @@ export class Game {
       (p) => p.color === game.activeColor
     ) as BackgammonPlayerInactive
 
+    // Recalculate pip counts before transitioning to next player
+    console.log('🧮 Game turn completion: Recalculating pip counts before transitioning to next player')
+    const playersWithUpdatedPips = Player.recalculatePipCounts({
+      ...game,
+      players: updatedPlayers
+    })
+
+    const newActivePlayerWithPips = playersWithUpdatedPips.find(
+      (p) => p.color === nextColor
+    ) as BackgammonPlayerActive
+    const newInactivePlayerWithPips = playersWithUpdatedPips.find(
+      (p) => p.color === game.activeColor
+    ) as BackgammonPlayerInactive
+
     // Return game with next player's turn - transition to 'rolling' state
     return Game.initialize(
-      updatedPlayers,
+      playersWithUpdatedPips,
       game.id,
       'rolling',
       game.board,
       game.cube,
       undefined, // No active play for next player until they roll
       nextColor,
-      newActivePlayer,
-      newInactivePlayer
+      newActivePlayerWithPips,
+      newInactivePlayerWithPips
     ) as BackgammonGameRolling
   }
 
@@ -1393,7 +1508,8 @@ export class Game {
       player.id,
       'doubled',
       true,
-      player.userId
+      player.userId,
+      player.pipCount
     )
     const inactivePlayer = opponent as BackgammonPlayerInactive
     // Create a BackgammonPlayDoubled (for now, reuse activePlay)
