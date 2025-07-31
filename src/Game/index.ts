@@ -1805,13 +1805,12 @@ export class Game {
         )
       }
 
-      // Auto-complete turn when no legal moves remain (only for robot players)
+      // Auto-complete turn when no legal moves remain
       if (
         possibleMoves.length === 0 &&
-        movesArr.every((m) => m.stateKind === 'ready') &&
-        targetPlayer.isRobot
+        movesArr.every((m) => m.stateKind === 'ready')
       ) {
-        logger.debug('[Game] Auto-completing robot turn: no legal moves remain')
+        logger.debug(`[Game] Auto-completing ${targetPlayer.isRobot ? 'robot' : 'human'} turn: no legal moves remain`)
 
         // Mark all remaining moves as completed with no-move
         const completedMoves = movesArr.map((move) => ({
