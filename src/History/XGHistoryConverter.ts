@@ -19,7 +19,7 @@ import {
   XGMoveRecord,
 } from '@nodots-llc/backgammon-types/dist'
 import { XGConverter, XGParser, XGSerializer } from '../XG'
-import { GameHistoryServiceFP, HistoryState } from './GameHistoryServiceFP'
+import { GameHistoryService, HistoryState } from './GameHistoryService'
 
 // Pure data structures for XG conversion
 export interface XGConversionState {
@@ -51,7 +51,7 @@ export const exportGameHistoryToXG = async (
     const { gameId, options } = params
 
     // Get the complete game history using functional service
-    const gameHistoryOption = GameHistoryServiceFP.getGameHistory(
+    const gameHistoryOption = GameHistoryService.getGameHistory(
       state.historyState,
       gameId
     )
@@ -155,7 +155,7 @@ export const importXGToGameHistory = async (
     for (const gameHistoryData of successes) {
       // Record each action using the functional service
       for (const action of gameHistoryData.actions) {
-        const recordResult = await GameHistoryServiceFP.recordAction(
+        const recordResult = await GameHistoryService.recordAction(
           newHistoryState,
           {
             gameId: action.gameId,
@@ -206,10 +206,7 @@ export const exportMultipleGamesToXG = async (
     const gameHistories = gameIds
       .map((gameId) => ({
         gameId,
-        history: GameHistoryServiceFP.getGameHistory(
-          state.historyState,
-          gameId
-        ),
+        history: GameHistoryService.getGameHistory(state.historyState, gameId),
       }))
       .filter(({ history }) => history !== null) // Keep only found histories
       .map(({ gameId, history }) => ({
@@ -757,7 +754,7 @@ const createMoveAction = (
 }
 
 // Export the functional service module
-export const XGHistoryConverterFP = {
+export const XGHistoryConverter = {
   exportGameHistoryToXG,
   importXGToGameHistory,
   exportMultipleGamesToXG,

@@ -19,8 +19,8 @@ import {
   success,
 } from '@nodots-llc/backgammon-types/dist'
 import { generateId } from '../'
-import { ReconstructionServiceFP } from './ReconstructionServiceFP'
-import { SnapshotServiceFP } from './SnapshotServiceFP'
+import { ReconstructionService } from './ReconstructionService'
+import { SnapshotService } from './SnapshotService'
 
 // Pure data structures for history state
 export interface HistoryState {
@@ -263,7 +263,7 @@ export const recordAction = async (
     const gameActions = state.actions.get(params.gameId) || []
 
     // Create snapshots
-    const beforeSnapshotResult = SnapshotServiceFP.createSnapshot(
+    const beforeSnapshotResult = SnapshotService.createSnapshot(
       params.gameStateBefore
     )
     if (isFailure(beforeSnapshotResult)) {
@@ -272,7 +272,7 @@ export const recordAction = async (
       )
     }
 
-    const afterSnapshotResult = SnapshotServiceFP.createSnapshot(
+    const afterSnapshotResult = SnapshotService.createSnapshot(
       params.gameStateAfter
     )
     if (isFailure(afterSnapshotResult)) {
@@ -418,7 +418,7 @@ export const reconstructGameState = async (
   if (gameActions.length === 0) {
     return Promise.resolve(failure(`No history found for game ${gameId}`))
   } else {
-    return ReconstructionServiceFP.reconstructAtSequence(gameActions, options)
+    return ReconstructionService.reconstructAtSequence(gameActions, options)
   }
 }
 
@@ -435,7 +435,7 @@ export const clearGameHistory = (
 export const clearAllHistory = (): HistoryState => createInitialHistoryState()
 
 // Export the functional service module
-export const GameHistoryServiceFP = {
+export const GameHistoryService = {
   createInitialState: createInitialHistoryState,
   recordAction,
   getGameHistory,

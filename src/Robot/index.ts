@@ -1263,16 +1263,8 @@ export class Robot {
           '[DEBUG] Robot forceCompleteTurn: game.board.points is undefined'
         )
         asciiBoard = 'ERROR: Board points are undefined'
-      } else if (!game.board.gnuPositionId) {
-        logger.warn(
-          '[DEBUG] Robot forceCompleteTurn: game.board.gnuPositionId is missing'
-        )
-        // Set a default gnuPositionId if missing
-        game.board.gnuPositionId = 'cAkAAAAAAAAA'
-      }
-
-      // Only generate ASCII if board is valid
-      if (game.board && game.board.points) {
+      } else {
+        // Only generate ASCII if board is valid
         const { Board } = require('../Board')
         asciiBoard = Board.getAsciiGameBoard(
           game.board, // CRITICAL: Use the SAME board, no modifications

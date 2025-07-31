@@ -549,7 +549,7 @@ const compareDiceStates = (
 }
 
 // Export the functional service module
-export const SnapshotServiceFP = {
+export const SnapshotService = {
   createSnapshot,
   validateSnapshot,
   calculateSnapshotSize,

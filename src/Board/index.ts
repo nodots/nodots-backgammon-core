@@ -17,16 +17,13 @@ import {
   BackgammonPointValue,
 } from '@nodots-llc/backgammon-types/dist'
 import { Checker, generateId, Player, randomBackgammonColor } from '..'
+import { PositionAnalyzer } from '../AI/utils/PositionAnalyzer'
 import { logger } from '../utils/logger'
 import { ascii } from './ascii'
-import { exportToGnuPositionId } from './gnuPositionId'
 import { BOARD_IMPORT_DEFAULT } from './imports'
 
-// Helper function to generate a default GNU position ID for boards created without game context
-function generateDefaultGnuPositionId(): string {
-  // Return the standard starting position ID constant
-  return '4HPwATDgc/ABMA'
-}
+// Note: Default GNU Position ID is now handled by the constant GNU_STARTING_POSITION_ID
+// Individual boards no longer hardcode this value
 
 // Helper function to create a temporary game context for gnuPositionId generation
 function createTempGameContext(
@@ -71,7 +68,6 @@ export interface RandomGameSetup {
 
 export class Board implements BackgammonBoard {
   id!: string
-  gnuPositionId!: string
   points!: BackgammonPoints
   bar!: {
     clockwise: BackgammonBar
@@ -91,7 +87,6 @@ export class Board implements BackgammonBoard {
 
     return {
       id: generateId(),
-      gnuPositionId: generateDefaultGnuPositionId(),
       points: board.points,
       bar,
       off,
@@ -291,9 +286,9 @@ export class Board implements BackgammonBoard {
     if (bar.checkers.length > 0) {
       let reentryPoint: number
       if (playerDirection === 'clockwise') {
-        reentryPoint = 25 - dieValue  // Fixed: clockwise players re-enter from opponent's home board (points 19-24)
+        reentryPoint = 25 - dieValue // Fixed: clockwise players re-enter from opponent's home board (points 19-24)
       } else {
-        reentryPoint = dieValue       // counterclockwise players re-enter from opponent's home board (points 1-6)
+        reentryPoint = dieValue // counterclockwise players re-enter from opponent's home board (points 1-6)
       }
       const possibleDestination = Board.getPoints(board).find(
         (p: BackgammonPoint) =>
@@ -427,6 +422,12 @@ export class Board implements BackgammonBoard {
       white: 167,
     }
 
+    // Calculate actual pip counts for each player
+    players.forEach((player) => {
+      const pipCount = PositionAnalyzer.calculatePipCount(game, player)
+      pipCounts[player.color] = pipCount
+    })
+
     return pipCounts
   }
 
@@ -491,7 +492,6 @@ export class Board implements BackgammonBoard {
 
     return {
       id: generateId(),
-      gnuPositionId: generateDefaultGnuPositionId(),
       points,
       bar,
       off,
@@ -509,11 +509,11 @@ export class Board implements BackgammonBoard {
     const barImport = boardImport.filter(function filterBarImport(cc) {
       return cc.position === 'bar'
     })
-    const clockwiseBarImport = barImport.find(function findClockwiseBarImport(
-      b
-    ) {
-      return b.direction === 'clockwise'
-    })
+    const clockwiseBarImport = barImport.find(
+      function findClockwiseBarImport(b) {
+        return b.direction === 'clockwise'
+      }
+    )
 
     let clockwiseCheckerCount = 0
     const clockwiseCheckers = []
@@ -580,11 +580,11 @@ export class Board implements BackgammonBoard {
     const offImport = boardImport.filter(function filterOffImport(cc) {
       return cc.position === 'off'
     })
-    const clockwiseOffImport = offImport.find(function findClockwiseOffImport(
-      b
-    ) {
-      return b.direction === 'clockwise'
-    })
+    const clockwiseOffImport = offImport.find(
+      function findClockwiseOffImport(b) {
+        return b.direction === 'clockwise'
+      }
+    )
     const counterclockwiseOffImport = offImport.find(
       function findCounterclockwiseOffImport(b) {
         return b.direction === 'counterclockwise'
@@ -798,29 +798,6 @@ export class Board implements BackgammonBoard {
     playerModels?: { [playerId: string]: string }
   ): string => {
     try {
-      // Generate and update gnuPositionId if we have game context
-      if (players && players.length >= 2 && activePlayer) {
-        const tempGame = createTempGameContext(
-          board,
-          players,
-          activePlayer.color,
-          'moving'
-        )
-        if (tempGame) {
-          try {
-            const gnuPositionId = exportToGnuPositionId(tempGame)
-            // Update the board's gnuPositionId
-            board.gnuPositionId = gnuPositionId
-          } catch (error) {
-            logger.warn(
-              'Failed to generate gnuPositionId in getAsciiBoard:',
-              error
-            )
-            // Keep existing gnuPositionId or empty string
-          }
-        }
-      }
-
       return ascii(board, players, activePlayer, moveNotation, playerModels)
     } catch (error) {
       logger.error('Error generating ASCII board:', error)
@@ -844,24 +821,6 @@ export class Board implements BackgammonBoard {
       const enhancedMoveNotation = gameStateKind
         ? `${moveNotation || ''} (${gameStateKind})`
         : moveNotation
-
-      // Generate and update gnuPositionId if we have game context
-      const tempGame = createTempGameContext(
-        board,
-        players,
-        activeColor,
-        gameStateKind
-      )
-      if (tempGame) {
-        try {
-          const gnuPositionId = exportToGnuPositionId(tempGame)
-          // Update the board's gnuPositionId
-          board.gnuPositionId = gnuPositionId
-        } catch (error) {
-          logger.warn('Failed to generate gnuPositionId:', error)
-          // Keep existing gnuPositionId or empty string
-        }
-      }
 
       return ascii(
         board,

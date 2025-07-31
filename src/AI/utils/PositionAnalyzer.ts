@@ -19,6 +19,12 @@ export class PositionAnalyzer {
     let pipCount = 0;
     const direction = player.direction; // NOT player.color!
     
+    // Defensive check for missing direction (test environments)
+    if (!direction) {
+      console.warn(`Player ${player.color} missing direction property, returning MAX_PIP_COUNT`);
+      return 167; // MAX_PIP_COUNT
+    }
+    
     // Count checkers on points
     const points = Board.getPoints(gameState.board);
     points.forEach(point => {

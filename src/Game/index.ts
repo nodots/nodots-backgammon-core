@@ -373,6 +373,10 @@ export class Game {
     throw new Error(`Unhandled stateKind: ${stateKind}`)
   }
 
+  // ============================================================================
+  // GAME STATE TRANSITION METHODS
+  // ============================================================================
+
   public static rollForStart = function rollForStart(
     game: BackgammonGameRollingForStart
   ): BackgammonGameRolledForStart {
@@ -1865,6 +1869,30 @@ export class Game {
       possibleMoves,
       playerColor: targetPlayer.color,
       currentDie: currentDie,
+    }
+  }
+
+  /**
+   * Updates the gnuPositionId for the given game
+   * @param game - The game to update
+   * @returns The game with updated gnuPositionId
+   */
+  public static updateGnuPositionId = function updateGnuPositionId(
+    game: BackgammonGame
+  ): BackgammonGame {
+    try {
+      // Use dynamic import to avoid circular dependency
+      const { exportToGnuPositionId } = require('../Board/gnuPositionId')
+      const gnuPositionId = exportToGnuPositionId(game)
+      logger.info(`Successfully calculated GNU Position ID: ${gnuPositionId} for game state: ${game.stateKind}`)
+      return {
+        ...game,
+        gnuPositionId,
+      }
+    } catch (error) {
+      logger.error(`Failed to update gnuPositionId for game ${game.id} in state ${game.stateKind}:`, error)
+      // Don't swallow the error - let it bubble up so we can see what's failing
+      throw error
     }
   }
 }

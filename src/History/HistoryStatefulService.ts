@@ -12,11 +12,11 @@ import {
   success,
 } from '@nodots-llc/backgammon-types/dist'
 import {
-  GameHistoryServiceFP,
+  GameHistoryService,
   HistoryState,
   RecordActionParams,
-} from './GameHistoryServiceFP'
-import { AnalysisState, MoveAnalyzerFP } from './MoveAnalyzerFP'
+} from './GameHistoryService'
+import { AnalysisState, MoveAnalyzer } from './MoveAnalyzer'
 
 /**
  * HistoryStatefulService - Manages state for functional history services
@@ -32,7 +32,7 @@ export class HistoryStatefulService {
   private historyState: HistoryState
 
   constructor() {
-    this.historyState = GameHistoryServiceFP.createInitialState()
+    this.historyState = GameHistoryService.createInitialState()
   }
 
   /**
@@ -57,7 +57,7 @@ export class HistoryStatefulService {
       metadata,
     }
 
-    const result = await GameHistoryServiceFP.recordAction(
+    const result = await GameHistoryService.recordAction(
       this.historyState,
       params
     )
@@ -76,7 +76,7 @@ export class HistoryStatefulService {
    * Get game history (pure read operation)
    */
   async getGameHistory(gameId: string): Promise<Result<GameHistory, string>> {
-    const historyOption = GameHistoryServiceFP.getGameHistory(
+    const historyOption = GameHistoryService.getGameHistory(
       this.historyState,
       gameId
     )
@@ -93,7 +93,7 @@ export class HistoryStatefulService {
    * Query history with filters (pure read operation)
    */
   async queryHistory(query: HistoryQuery): Promise<Result<any, string>> {
-    return GameHistoryServiceFP.queryHistory(this.historyState, query)
+    return GameHistoryService.queryHistory(this.historyState, query)
   }
 
   /**
@@ -103,7 +103,7 @@ export class HistoryStatefulService {
     gameId: string,
     options: ReconstructionOptions
   ): Promise<Result<any, string>> {
-    return GameHistoryServiceFP.reconstructGameState(
+    return GameHistoryService.reconstructGameState(
       this.historyState,
       gameId,
       options
@@ -122,7 +122,7 @@ export class HistoryStatefulService {
       historyState: this.historyState,
     }
 
-    return MoveAnalyzerFP.analyzePlayerMistakes(
+    return MoveAnalyzer.analyzePlayerMistakes(
       analysisState,
       userId,
       gameIds,
@@ -138,7 +138,7 @@ export class HistoryStatefulService {
       historyState: this.historyState,
     }
 
-    return MoveAnalyzerFP.analyzeGame(analysisState, gameId)
+    return MoveAnalyzer.analyzeGame(analysisState, gameId)
   }
 
   /**
@@ -153,12 +153,7 @@ export class HistoryStatefulService {
       historyState: this.historyState,
     }
 
-    return MoveAnalyzerFP.comparePlayers(
-      analysisState,
-      userId1,
-      userId2,
-      gameIds
-    )
+    return MoveAnalyzer.comparePlayers(analysisState, userId1, userId2, gameIds)
   }
 
   /**
@@ -166,7 +161,7 @@ export class HistoryStatefulService {
    */
   async clearGameHistory(gameId: string): Promise<Result<void, string>> {
     try {
-      this.historyState = GameHistoryServiceFP.clearGameHistory(
+      this.historyState = GameHistoryService.clearGameHistory(
         this.historyState,
         gameId
       )
@@ -181,7 +176,7 @@ export class HistoryStatefulService {
    */
   async clearAllHistory(): Promise<Result<void, string>> {
     try {
-      this.historyState = GameHistoryServiceFP.clearAllHistory()
+      this.historyState = GameHistoryService.clearAllHistory()
       return success(undefined)
     } catch (error) {
       return failure(error instanceof Error ? error.message : 'Unknown error')

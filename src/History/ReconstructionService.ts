@@ -7,7 +7,7 @@ import {
   Result,
   success,
 } from '@nodots-llc/backgammon-types/dist'
-import { SnapshotServiceFP } from './SnapshotServiceFP'
+import { SnapshotService } from './SnapshotService'
 
 // Pure function to reconstruct game state at a specific sequence number
 export const reconstructAtSequence = async (
@@ -242,7 +242,7 @@ const validateSnapshotIntegrity = (
   const errors: string[] = []
 
   // Use the SnapshotService to validate basic structure
-  const basicValidation = SnapshotServiceFP.validateSnapshot(snapshot)
+  const basicValidation = SnapshotService.validateSnapshot(snapshot)
   if (!basicValidation.success) {
     errors.push('Snapshot failed basic validation')
   }
@@ -343,7 +343,7 @@ const countCheckersInSnapshot = (
 }
 
 // Export the functional service module
-export const ReconstructionServiceFP = {
+export const ReconstructionService = {
   reconstructAtSequence,
   reconstructFullSequence,
   findOptimalReconstructionPath,

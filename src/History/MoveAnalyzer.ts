@@ -12,7 +12,7 @@ import {
   Result,
   success,
 } from '@nodots-llc/backgammon-types/dist'
-import { GameHistoryServiceFP, HistoryState } from './GameHistoryServiceFP'
+import { GameHistoryService, HistoryState } from './GameHistoryService'
 
 // Pure data structures for analysis
 export interface AnalysisState {
@@ -91,7 +91,7 @@ export const analyzeGame = async (
   >
 > => {
   try {
-    const gameHistoryOption = GameHistoryServiceFP.getGameHistory(
+    const gameHistoryOption = GameHistoryService.getGameHistory(
       state.historyState,
       gameId
     )
@@ -209,7 +209,7 @@ const getPlayerActions = async (
     toDate: dateRange?.to,
   }
 
-  const result = GameHistoryServiceFP.queryHistory(historyState, query)
+  const result = GameHistoryService.queryHistory(historyState, query)
 
   // Use traditional conditional instead of match
   if (!result.success) {
@@ -671,7 +671,7 @@ const calculateHeadToHeadRecord = (
 })
 
 // Export the functional service module
-export const MoveAnalyzerFP = {
+export const MoveAnalyzer = {
   analyzePlayerMistakes,
   analyzeGame,
   comparePlayers,
