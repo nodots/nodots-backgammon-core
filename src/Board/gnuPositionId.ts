@@ -18,19 +18,59 @@ function getPlayerAndOpponent(game: BackgammonGame): {
 } {
   let playerOnRoll: BackgammonPlayer | undefined
 
-  if (game.stateKind === 'rolled' || game.stateKind === 'moving') {
-    playerOnRoll = (game as BackgammonGameRolled | BackgammonGameMoving)
-      .activePlayer
-  } else if (game.stateKind === 'rolled-for-start') {
-    // In rolled-for-start, activePlayer indicates who won the roll and will be the first player on roll.
-    // This state is just before the first actual turn where checkers move.
-    // GNU Pos ID usually represents a position where someone is about to move checkers.
-    // Depending on strict interpretation, one might disallow this state or use this activePlayer.
-    playerOnRoll = (game as any).activePlayer // Assuming activePlayer here means the one to start.
-  } else {
-    throw new Error(
-      `Game state '${game.stateKind}' is not suitable for exporting Position ID or activePlayer is not defined.`
-    )
+  // EXHAUSTIVE switch on BackgammonGameStateKind for player determination
+  switch (game.stateKind) {
+    case 'rolled':
+    case 'moving':
+      playerOnRoll = (game as BackgammonGameRolled | BackgammonGameMoving)
+        .activePlayer
+      break
+
+    case 'rolled-for-start':
+      // In rolled-for-start, activePlayer indicates who won the roll and will be the first player on roll.
+      // This state is just before the first actual turn where checkers move.
+      // GNU Pos ID usually represents a position where someone is about to move checkers.
+      // Depending on strict interpretation, one might disallow this state or use this activePlayer.
+      playerOnRoll = (game as any).activePlayer // Assuming activePlayer here means the one to start.
+      break
+
+    case 'rolling-for-start':
+      // In rolling-for-start, no active player is determined yet, but we can still calculate GNU Position ID
+      // For starting position, conventionally use white as player on roll (standard GNU convention)
+      playerOnRoll = game.players.find((p) => p.color === 'white') || game.players[0]
+      logger.info(`Using ${playerOnRoll?.color} as player on roll for rolling-for-start state`)
+      break
+
+    case 'rolling':
+      // Player is about to roll dice - use the active player
+      playerOnRoll = game.activePlayer
+      break
+
+    case 'preparing-move':
+      // Player is preparing to make moves - use the active player
+      playerOnRoll = game.activePlayer
+      break
+
+    case 'doubled':
+      // Double offered - use the active player (the one who offered the double)
+      playerOnRoll = game.activePlayer
+      break
+
+    case 'moved':
+      // Player has completed moves but not confirmed turn - use the active player
+      playerOnRoll = game.activePlayer
+      break
+
+    case 'completed':
+      // Game is completed - use the last active player (from winner's perspective)
+      // If we have a winner, use them; otherwise just use the first player
+      if ((game as any).winner) {
+        playerOnRoll = game.players.find((p) => p.id === (game as any).winner.id)
+      }
+      if (!playerOnRoll) {
+        playerOnRoll = game.players[0]
+      }
+      break
   }
 
   if (!playerOnRoll) {
