@@ -38,7 +38,7 @@ export * from './Checker'
 export * from './Cube'
 export * from './Dice'
 export * from './Game'
-export * from './History'
+// export * from './History' // Temporarily disabled for Issue #7 - comprehensive history system
 export * from './Move'
 export * from './Play'
 export * from './Player'
@@ -75,4 +75,4 @@ export {
 // Re-export all types from @nodots-llc/backgammon-types for convenience
 export * from '@nodots-llc/backgammon-types'
 export { GameEventEmitter } from './events/GameEventEmitter'
-export * from './XG'
+// export * from './XG' // Temporarily disabled for Issue #7 - comprehensive history system

@@ -109,7 +109,10 @@ describe('Game.undoLastMove', () => {
   })
 
   it('should successfully undo a regular point-to-point move', () => {
-    // For this test, we'll mock a game state with a confirmed move
+    // Use actual point IDs from the board
+    const firstPoint = testGame.board.points[0]
+    const secondPoint = testGame.board.points[1]
+    
     const mockGameWithConfirmedMove = {
       ...testGame,
       activePlay: {
@@ -121,33 +124,26 @@ describe('Game.undoLastMove', () => {
           stateKind: 'completed',
           moveKind: 'point-to-point',
           possibleMoves: [],
-          origin: { id: 'point-1', kind: 'point' },
-          destination: { id: 'point-2', kind: 'point' },
+          origin: { id: firstPoint.id, kind: 'point' },
+          destination: { id: secondPoint.id, kind: 'point' },
           isHit: false
         }])
       }
     } as any
 
-    // Mock the board to have checkers in expected positions
-    if (mockGameWithConfirmedMove.board) {
-      // Ensure destination has the player's checker
-      const destinationPoint = mockGameWithConfirmedMove.board.points.find((p: any) => p.id === 'point-2')
-      if (destinationPoint) {
-        destinationPoint.checkers = [{
-          id: 'test-checker',
-          color: testGame.activePlayer.color,
-          checkercontainerId: 'point-2'
-        }]
-      }
-      
-      // Ensure origin exists and is empty (after the move)
-      const originPoint = mockGameWithConfirmedMove.board.points.find((p: any) => p.id === 'point-1')
-      if (originPoint) {
-        originPoint.checkers = []
-      }
-    }
+    // Set up board state: destination has the player's checker, origin is empty
+    secondPoint.checkers = [{
+      id: 'test-checker',
+      color: testGame.activePlayer.color,
+      checkercontainerId: secondPoint.id
+    }]
+    firstPoint.checkers = []
 
     const result = Game.undoLastMove(mockGameWithConfirmedMove)
+    
+    if (!result.success) {
+      console.log('Undo failed with error:', result.error)
+    }
     
     expect(result.success).toBe(true)
     expect(result.game).toBeDefined()
@@ -182,7 +178,10 @@ describe('Game.undoLastMove', () => {
   })
 
   it('should preserve game integrity after undo', () => {
-    // Create a mock game with a valid confirmed move and proper board state
+    // Use actual point IDs from the board
+    const thirdPoint = testGame.board.points[2]
+    const fourthPoint = testGame.board.points[3]
+    
     const mockGameForIntegrityTest = {
       ...testGame,
       activePlay: {
@@ -194,31 +193,26 @@ describe('Game.undoLastMove', () => {
           stateKind: 'completed',
           moveKind: 'point-to-point',
           possibleMoves: [],
-          origin: { id: 'point-3', kind: 'point' },
-          destination: { id: 'point-4', kind: 'point' },
+          origin: { id: thirdPoint.id, kind: 'point' },
+          destination: { id: fourthPoint.id, kind: 'point' },
           isHit: false
         }])
       }
     } as any
 
-    // Mock board state with proper checker placement
-    if (mockGameForIntegrityTest.board) {
-      const destinationPoint = mockGameForIntegrityTest.board.points.find((p: any) => p.id === 'point-4')
-      if (destinationPoint) {
-        destinationPoint.checkers = [{
-          id: 'integrity-checker',
-          color: testGame.activePlayer.color,
-          checkercontainerId: 'point-4'
-        }]
-      }
-      
-      const originPoint = mockGameForIntegrityTest.board.points.find((p: any) => p.id === 'point-3')
-      if (originPoint) {
-        originPoint.checkers = []
-      }
-    }
+    // Set up board state: destination has the player's checker, origin is empty
+    fourthPoint.checkers = [{
+      id: 'integrity-checker',
+      color: testGame.activePlayer.color,
+      checkercontainerId: fourthPoint.id
+    }]
+    thirdPoint.checkers = []
 
     const result = Game.undoLastMove(mockGameForIntegrityTest)
+    
+    if (!result.success) {
+      console.log('Integrity test undo failed with error:', result.error)
+    }
     
     expect(result.success).toBe(true)
     
