@@ -44,10 +44,8 @@ export const ascii = (
 
   let boardDisplay = ''
 
-  // GNU-style header with actual position ID
-  // If gnuPositionId is not set or empty, show a placeholder
-  const displayGnuPositionId = '[position-id-deprecated]'
-  boardDisplay += `Nodots Backgammon GPID: ${displayGnuPositionId}\n`
+  // GNU-style header removed - gnuPositionId is deprecated
+  boardDisplay += `Nodots Backgammon\n`
 
   // Helper to get player label with new standardized format: 'symbol | model | direction >'
   const getPlayerLabel = (player: any, fallback: string) => {

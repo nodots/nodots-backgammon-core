@@ -3,7 +3,6 @@ export { v4 as generateId } from 'uuid'
 export type BackgammonColor = 'black' | 'white'
 
 // Constants
-export { GNU_STARTING_POSITION_ID } from './constants/gnuPositionId'
 export type BackgammonMoveDirection = 'clockwise' | 'counterclockwise'
 
 export type BackgammonEntity =

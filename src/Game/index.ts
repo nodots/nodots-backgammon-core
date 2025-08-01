@@ -276,6 +276,24 @@ export class Game {
     return game
   }
 
+  // Helper to create base game properties
+  private static createBaseGameProperties() {
+    return {
+      createdAt: new Date(),
+      gnuPositionId: '', // Will be calculated after board state is set
+      version: '1.0.0',
+      rules: {},
+      settings: {
+        allowUndo: false,
+        allowResign: true,
+        allowDraw: false,
+        autoPlay: false,
+        showHints: false,
+        showProbabilities: false,
+      },
+    }
+  }
+
   public static initialize = function initializeGame(
     players: BackgammonPlayers,
     id: string = generateId(),
@@ -291,6 +309,7 @@ export class Game {
     switch (stateKind) {
       case 'rolling-for-start':
         return {
+          ...Game.createBaseGameProperties(),
           id,
           stateKind,
           players,
@@ -302,6 +321,7 @@ export class Game {
         if (!activePlayer) throw new Error('Active player must be provided')
         if (!inactivePlayer) throw new Error('Inactive player must be provided')
         return {
+          ...Game.createBaseGameProperties(),
           id,
           stateKind,
           players,
@@ -316,6 +336,7 @@ export class Game {
         if (!activePlayer) throw new Error('Active player must be provided')
         if (!inactivePlayer) throw new Error('Inactive player must be provided')
         return {
+          ...Game.createBaseGameProperties(),
           id,
           stateKind,
           players,
@@ -331,6 +352,7 @@ export class Game {
         if (!inactivePlayer) throw new Error('Inactive player must be provided')
         if (!activePlay) throw new Error('Active play must be provided')
         return {
+          ...Game.createBaseGameProperties(),
           id,
           stateKind,
           players,
@@ -347,6 +369,7 @@ export class Game {
         if (!inactivePlayer) throw new Error('Inactive player must be provided')
         if (!activePlay) throw new Error('Active play must be provided')
         return {
+          ...Game.createBaseGameProperties(),
           id,
           stateKind,
           players,
@@ -1720,6 +1743,180 @@ export class Game {
   }
 
   /**
+   * Undo the last confirmed move within the current turn
+   * This method finds the most recent confirmed move in activePlay.moves and reverses it
+   * @param game - Current game state in 'moving' state with confirmed moves
+   * @returns Result object with success/error and updated game state
+   */
+  public static undoLastMove = function undoLastMove(game: BackgammonGame): {
+    success: boolean
+    error?: string
+    game?: BackgammonGame
+    undoneMove?: any // BackgammonMove adapted for the interface
+    remainingMoveHistory?: any[] // For compatibility with API interface
+  } {
+    // Validate game state - must be in 'moving' state for undo
+    if (game.stateKind !== 'moving') {
+      return {
+        success: false,
+        error: `Cannot undo move from ${game.stateKind} state. Must be in 'moving' state.`,
+      }
+    }
+
+    const activePlay = game.activePlay
+    if (!activePlay || !activePlay.moves) {
+      return {
+        success: false,
+        error: 'No active play found',
+      }
+    }
+
+    // Find confirmed moves in chronological order (most recent first)
+    const movesArray = Array.from(activePlay.moves)
+    const confirmedMoves = movesArray
+      .filter((move) => move.stateKind === 'confirmed' || move.stateKind === 'completed')
+      .sort((a, b) => {
+        // Sort by creation time if available, otherwise maintain array order
+        return 0 // For now, just use the last confirmed move found
+      })
+
+    if (confirmedMoves.length === 0) {
+      return {
+        success: false,
+        error: 'No confirmed moves available to undo',
+      }
+    }
+
+    // Get the most recent confirmed move
+    const moveToUndo = confirmedMoves[confirmedMoves.length - 1]
+    
+    // Validate that the move actually moved a checker (not a 'no-move')
+    if (moveToUndo.moveKind === 'no-move' || !moveToUndo.origin || !moveToUndo.destination) {
+      return {
+        success: false,
+        error: 'Cannot undo a no-move or invalid move',
+      }
+    }
+
+    try {
+      // Create a deep clone of the board to reverse the move
+      let updatedBoard = JSON.parse(JSON.stringify(game.board))
+      
+      // Get the containers involved in the move
+      const originContainer = Board.getCheckerContainer(updatedBoard, moveToUndo.origin.id)
+      const destinationContainer = Board.getCheckerContainer(updatedBoard, moveToUndo.destination.id)
+      
+      // Find the checker that was moved (should be the top checker at destination)
+      const destinationCheckers = destinationContainer.checkers
+      if (destinationCheckers.length === 0) {
+        return {
+          success: false,
+          error: 'No checker found at destination to undo',
+        }
+      }
+      
+      // Get the moved checker (should be the last one added to destination)
+      const movedChecker = destinationCheckers[destinationCheckers.length - 1]
+      
+      // Validate this is the player's checker
+      if (movedChecker.color !== game.activePlayer.color) {
+        return {
+          success: false,
+          error: 'Cannot undo - checker at destination is not yours',
+        }
+      }
+
+      // Remove the checker from destination
+      destinationContainer.checkers.pop()
+      
+      // Handle hit restoration if this was a hitting move
+      if (moveToUndo.isHit && moveToUndo.destination.kind === 'point') {
+        // Find the hit checker on the opponent's bar
+        const opponentDirection = game.activePlayer.direction === 'clockwise' ? 'counterclockwise' : 'clockwise'
+        const opponentBar = updatedBoard.bar[opponentDirection]
+        
+        // Find the most recently hit checker (should be last in bar)
+        const hitCheckers = opponentBar.checkers.filter((c: BackgammonChecker) => c.color !== game.activePlayer.color)
+        if (hitCheckers.length > 0) {
+          const hitChecker = hitCheckers[hitCheckers.length - 1]
+          
+          // Remove from bar
+          const hitCheckerIndex = opponentBar.checkers.findIndex((c: BackgammonChecker) => c.id === hitChecker.id)
+          if (hitCheckerIndex !== -1) {
+            opponentBar.checkers.splice(hitCheckerIndex, 1)
+            
+            // Restore to destination point
+            destinationContainer.checkers.push({
+              id: hitChecker.id,
+              color: hitChecker.color,
+              checkercontainerId: destinationContainer.id,
+            })
+          }
+        }
+      }
+      
+      // Move the player's checker back to origin
+      originContainer.checkers.push({
+        id: movedChecker.id,
+        color: movedChecker.color,
+        checkercontainerId: originContainer.id,
+      })
+      
+      // Update the move state back to 'ready' and remove specific move details
+      const undoneMove = {
+        ...moveToUndo,
+        stateKind: 'ready' as const,
+        moveKind: moveToUndo.moveKind, // Keep the original move kind for re-calculation
+        origin: moveToUndo.origin, // Keep original origin for move generation
+        destination: undefined, // Clear destination since move is undone
+        isHit: false, // Reset hit flag
+        possibleMoves: [], // Will be recalculated when needed
+      }
+      
+      // Update the moves set: replace the confirmed move with the ready move
+      const updatedMoves = new Set([
+        ...movesArray.filter(m => m.id !== moveToUndo.id),
+        undoneMove
+      ])
+      
+      // Update active play
+      const updatedActivePlay = {
+        ...activePlay,
+        moves: updatedMoves,
+      }
+      
+      // Recalculate pip counts after the undo
+      console.log('🧮 Game.undoLastMove: Recalculating pip counts after undo')
+      const updatedPlayers = Player.recalculatePipCounts({
+        ...game,
+        board: updatedBoard,
+      })
+      
+      // Return the updated game state
+      const updatedGame = {
+        ...game,
+        board: updatedBoard,
+        players: updatedPlayers,
+        activePlayer: updatedPlayers.find(p => p.id === game.activePlayer.id) as any,
+        activePlay: updatedActivePlay,
+      }
+      
+      return {
+        success: true,
+        game: updatedGame,
+        undoneMove: moveToUndo, // Return the move that was undone
+        remainingMoveHistory: confirmedMoves.slice(0, -1), // All confirmed moves except the undone one
+      }
+      
+    } catch (error) {
+      return {
+        success: false,
+        error: `Failed to undo move: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      }
+    }
+  }
+
+  /**
    * Get possible moves for the current die value only (just-in-time calculation)
    * This method calculates moves for only the next available die to prevent stale references
    * Call this method after each move execution to get fresh moves based on current board state
@@ -1871,27 +2068,4 @@ export class Game {
     }
   }
 
-  /**
-   * Updates the gnuPositionId for the given game
-   * @param game - The game to update
-   * @returns The game with updated gnuPositionId
-   */
-  public static updateGnuPositionId = function updateGnuPositionId(
-    game: BackgammonGame
-  ): BackgammonGame {
-    try {
-      // Use dynamic import to avoid circular dependency
-      const { exportToGnuPositionId } = require('../Board/gnuPositionId')
-      const gnuPositionId = exportToGnuPositionId(game)
-      logger.info(`Successfully calculated GNU Position ID: ${gnuPositionId} for game state: ${game.stateKind}`)
-      return {
-        ...game,
-        gnuPositionId,
-      }
-    } catch (error) {
-      logger.error(`Failed to update gnuPositionId for game ${game.id} in state ${game.stateKind}:`, error)
-      // Don't swallow the error - let it bubble up so we can see what's failing
-      throw error
-    }
-  }
 }

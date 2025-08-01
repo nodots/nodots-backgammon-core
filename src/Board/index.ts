@@ -22,41 +22,6 @@ import { logger } from '../utils/logger'
 import { ascii } from './ascii'
 import { BOARD_IMPORT_DEFAULT } from './imports'
 
-// Note: Default GNU Position ID is now handled by the constant GNU_STARTING_POSITION_ID
-// Individual boards no longer hardcode this value
-
-// Helper function to create a temporary game context for gnuPositionId generation
-function createTempGameContext(
-  board: BackgammonBoard,
-  players?: BackgammonPlayers,
-  activeColor?: BackgammonColor,
-  gameStateKind?: string
-): BackgammonGame | null {
-  if (!players || players.length < 2 || !activeColor) {
-    return null
-  }
-
-  const activePlayer = players.find((p) => p.color === activeColor)
-  const inactivePlayer = players.find((p) => p.color !== activeColor)
-
-  if (!activePlayer || !inactivePlayer) {
-    return null
-  }
-
-  // Create a minimal game context for gnuPositionId generation
-  const stateKind = gameStateKind === 'moving' ? 'moving' : 'rolled'
-
-  return {
-    id: generateId(),
-    stateKind: stateKind as any,
-    activeColor,
-    activePlayer,
-    inactivePlayer,
-    players,
-    board,
-    // Add minimal required properties for gnuPositionId generation
-  } as BackgammonGame
-}
 
 export const BOARD_POINT_COUNT = 24
 
