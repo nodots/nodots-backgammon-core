@@ -6,6 +6,7 @@ import {
   BackgammonDieValue,
   BackgammonGame,
   BackgammonGameDoubled,
+  BackgammonGameMoved,
   BackgammonGameMoving,
   BackgammonGamePreparingMove,
   BackgammonGameRolled,
@@ -33,6 +34,16 @@ import { Cube } from '../Cube'
 import { Dice } from '../Dice'
 import { BackgammonMoveDirection, Play } from '../Play'
 import { logger } from '../utils/logger'
+
+// Hardcoded constant to avoid import issues during build
+const MAX_PIP_COUNT = 167
+
+// ⚠️  CRITICAL TECH DEBT: DICE DATA DUPLICATION ⚠️
+// This module contains duplicate storage of dice roll values:
+// - player.dice.currentRoll (UI display purposes)
+// - game.activePlay.moves[n].dieValue (move execution logic)
+// This creates maintenance overhead and potential data inconsistencies.
+// See preservation logic in confirmTurn() and confirmTurnFromMoved() for examples.
 export * from '../index'
 
 // GameProps is now imported from @nodots-llc/backgammon-types
@@ -132,7 +143,8 @@ export class Game {
         generateId(),
         'inactive',
         cfg.isRobot,
-        cfg.userId
+        cfg.userId,
+        MAX_PIP_COUNT
       )
     )
 
@@ -175,7 +187,8 @@ export class Game {
                 p.id,
                 'rolled-for-start',
                 p.isRobot,
-                p.userId
+                p.userId,
+                p.pipCount
               )
             : Player.initialize(
                 p.color,
@@ -184,7 +197,8 @@ export class Game {
                 p.id,
                 'inactive',
                 p.isRobot,
-                p.userId
+                p.userId,
+                p.pipCount
               )
         ) as BackgammonPlayers
 
@@ -217,7 +231,8 @@ export class Game {
                 p.id,
                 'rolled-for-start',
                 p.isRobot,
-                p.userId
+                p.userId,
+                p.pipCount
               )
             : Player.initialize(
                 p.color,
@@ -226,7 +241,8 @@ export class Game {
                 p.id,
                 'inactive',
                 p.isRobot,
-                p.userId
+                p.userId,
+                p.pipCount
               )
         ) as BackgammonPlayers
 
@@ -250,20 +266,32 @@ export class Game {
         game = Game.rollForStart(game as BackgammonGameRollingForStart)
       }
 
-      // --- AUTO-ADVANCE ROBOT AFTER WINNING ROLL FOR START ---
-      // If the active player (who won the roll for start) is a robot, automatically advance through their turn
-      if (game.stateKind === 'rolled-for-start' && game.activePlayer?.isRobot) {
-        // Roll for the robot to get to 'rolled' or 'rolling' state
-        const gameAfterRoll = Game.roll(game as BackgammonGameRolledForStart)
-
-        // Game.roll() now always returns 'rolled' state
-        // Robot didn't complete turn automatically, advance to moving state
-        const preparingGame = Game.prepareMove(gameAfterRoll)
-        game = Game.toMoving(preparingGame)
-      }
+      // --- ROBOT AUTOMATION HANDLED BY Robot.makeOptimalMove() ---
+      // Robot automation after winning roll-for-start is now handled by the API layer
+      // calling Robot.makeOptimalMove() which provides complete turn automation
+      // This prevents the problematic auto-advancement that left robots in 'moving' state
+      // without executing actual moves
     }
 
     return game
+  }
+
+  // Helper to create base game properties
+  private static createBaseGameProperties() {
+    return {
+      createdAt: new Date(),
+      gnuPositionId: '', // Will be calculated after board state is set
+      version: '1.0.0',
+      rules: {},
+      settings: {
+        allowUndo: false,
+        allowResign: true,
+        allowDraw: false,
+        autoPlay: false,
+        showHints: false,
+        showProbabilities: false,
+      },
+    }
   }
 
   public static initialize = function initializeGame(
@@ -281,6 +309,7 @@ export class Game {
     switch (stateKind) {
       case 'rolling-for-start':
         return {
+          ...Game.createBaseGameProperties(),
           id,
           stateKind,
           players,
@@ -292,6 +321,7 @@ export class Game {
         if (!activePlayer) throw new Error('Active player must be provided')
         if (!inactivePlayer) throw new Error('Inactive player must be provided')
         return {
+          ...Game.createBaseGameProperties(),
           id,
           stateKind,
           players,
@@ -306,6 +336,7 @@ export class Game {
         if (!activePlayer) throw new Error('Active player must be provided')
         if (!inactivePlayer) throw new Error('Inactive player must be provided')
         return {
+          ...Game.createBaseGameProperties(),
           id,
           stateKind,
           players,
@@ -321,6 +352,7 @@ export class Game {
         if (!inactivePlayer) throw new Error('Inactive player must be provided')
         if (!activePlay) throw new Error('Active play must be provided')
         return {
+          ...Game.createBaseGameProperties(),
           id,
           stateKind,
           players,
@@ -337,6 +369,7 @@ export class Game {
         if (!inactivePlayer) throw new Error('Inactive player must be provided')
         if (!activePlay) throw new Error('Active play must be provided')
         return {
+          ...Game.createBaseGameProperties(),
           id,
           stateKind,
           players,
@@ -362,6 +395,10 @@ export class Game {
     const _exhaustiveCheck: never = stateKind
     throw new Error(`Unhandled stateKind: ${stateKind}`)
   }
+
+  // ============================================================================
+  // GAME STATE TRANSITION METHODS
+  // ============================================================================
 
   public static rollForStart = function rollForStart(
     game: BackgammonGameRollingForStart
@@ -403,7 +440,8 @@ export class Game {
             p.id,
             'rolled-for-start',
             p.isRobot,
-            p.userId
+            p.userId,
+            p.pipCount
           )
         : Player.initialize(
             p.color,
@@ -412,7 +450,8 @@ export class Game {
             p.id,
             'inactive',
             p.isRobot,
-            p.userId
+            p.userId,
+            p.pipCount
           )
     ) as BackgammonPlayers
 
@@ -724,6 +763,100 @@ export class Game {
   }
 
   /**
+   * Switch the order of dice for the active player
+   * Allowed in 'rolled' state OR in 'moving' state when all moves are undone
+   */
+  public static switchDice = function switchDice(
+    game: BackgammonGameRolled | BackgammonGameMoving
+  ): BackgammonGameRolled | BackgammonGameMoving {
+    // Check if dice switching is allowed
+    if (game.stateKind === 'rolled') {
+      // Always allowed in rolled state
+    } else if (game.stateKind === 'moving') {
+      // Only allowed in moving state if all moves are undone (all moves in 'ready' state)
+      const allMovesUndone = game.activePlay?.moves ? 
+        Array.from(game.activePlay.moves).every((move: any) => move.stateKind === 'ready') : 
+        false
+      
+      if (!allMovesUndone) {
+        throw new Error('Cannot switch dice in moving state unless all moves are undone')
+      }
+    } else {
+      // This should never happen given our union type, but include for completeness
+      throw new Error(`Cannot switch dice from ${(game as any).stateKind} state`)
+    }
+
+    const { activePlayer, activePlay } = game
+
+    if (
+      !activePlayer?.dice?.currentRoll ||
+      activePlayer.dice.currentRoll.length !== 2
+    ) {
+      throw new Error('Active player does not have valid dice to switch')
+    }
+
+    // Switch the dice using the Dice class
+    const switchedDice = Dice.switchDice(activePlayer.dice)
+    const updatedActivePlayer = {
+      ...activePlayer,
+      dice: switchedDice,
+    }
+
+    // Update the activePlay to reflect the new dice order
+    const updatedActivePlay = activePlay
+      ? {
+          ...activePlay,
+          moves: activePlay.moves
+            ? (() => {
+                const movesArray = Array.from(activePlay.moves)
+                if (movesArray.length >= 2) {
+                  // Swap the first two moves to match the new dice order
+                  const swappedMoves = [...movesArray]
+                  const temp = swappedMoves[0]
+                  swappedMoves[0] = swappedMoves[1]
+                  swappedMoves[1] = temp
+                  
+                  // CRITICAL: Regenerate possibleMoves for all moves based on new dice order
+                  // This is necessary because possibleMoves were calculated with the old dice order
+                  const regeneratedMoves = swappedMoves.map((move) => {
+                    if (move.stateKind === 'ready') {
+                      // Only regenerate for ready moves - completed moves shouldn't change
+                      const freshPossibleMoves = Board.getPossibleMoves(
+                        game.board,
+                        updatedActivePlayer,
+                        move.dieValue as BackgammonDieValue
+                      )
+                      return {
+                        ...move,
+                        possibleMoves: freshPossibleMoves
+                      }
+                    }
+                    return move
+                  })
+                  
+                  return new Set(regeneratedMoves)
+                }
+                return activePlay.moves
+              })()
+            : activePlay.moves,
+        }
+      : activePlay
+
+    // Update the players array
+    const updatedPlayers = game.players.map((p) =>
+      p.id === activePlayer.id ? updatedActivePlayer : p
+    ) as BackgammonPlayers
+
+    // Return the same state type as input
+    return {
+      ...game,
+      players: updatedPlayers,
+      activePlayer: updatedActivePlayer,
+      activePlay: updatedActivePlay,
+    } as typeof game
+  }
+
+  /**
    * Transition from 'rolled' to 'preparing-move' state
    * This represents the player about to make a decision (move or double)
    */
@@ -781,6 +914,45 @@ export class Game {
 
     // Delegate to the existing offerDouble logic
     return Game.offerDouble(game, game.activePlayer)
+  }
+
+  /**
+   * Transition from 'moving' to 'moved' state
+   * This represents that all moves are completed and the player must confirm their turn
+   */
+  public static toMoved = function toMoved(
+    game: BackgammonGameMoving
+  ): BackgammonGameMoved {
+    if (game.stateKind !== 'moving') {
+      throw new Error(
+        `Cannot transition to moved from ${
+          (game as any).stateKind
+        } state. Must be in 'moving' state.`
+      )
+    }
+
+    // Ensure all moves are completed before transitioning
+    const activePlay = game.activePlay
+    if (!activePlay || !activePlay.moves) {
+      throw new Error('No active play found')
+    }
+
+    const movesArray = Array.from(activePlay.moves)
+    const allMovesCompleted = movesArray.every(
+      (move) => move.stateKind === 'completed'
+    )
+
+    if (!allMovesCompleted) {
+      throw new Error(
+        'Cannot transition to moved state - not all moves are completed'
+      )
+    }
+
+    // Create moved state - human player's turn is complete, waiting for dice click confirmation
+    return {
+      ...game,
+      stateKind: 'moved',
+    } as BackgammonGameMoved
   }
 
   public static move = function move(
@@ -843,11 +1015,22 @@ export class Game {
     }
     // --- END WIN CONDITION CHECK ---
 
+    // Recalculate pip counts after the move
+    console.log('🧮 Game.move: Recalculating pip counts after move')
+    const updatedPlayers = Player.recalculatePipCounts({
+      ...game,
+      board,
+      players: game.players.map((p) =>
+        p.id === movedPlayer.id ? movedPlayer : p
+      ) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayers,
+    })
+
     return {
       ...game,
       stateKind: 'moving',
       board,
-      activePlayer: movedPlayer,
+      players: updatedPlayers,
+      activePlayer: updatedPlayers.find((p) => p.id === movedPlayer.id) as any,
       activePlay: updatedActivePlay,
     } as BackgammonGameMoving
   }
@@ -864,7 +1047,39 @@ export class Game {
     originId: string
   ): BackgammonGameMoving | BackgammonGame {
     // First, execute the move using the existing move method
+    console.log(
+      '[DEBUG] Game.executeAndRecalculate: About to execute move from origin:',
+      originId
+    )
+    
+    // DEBUG: Check if game is defined and has required properties
+    if (!game) {
+      console.error('[DEBUG] CRITICAL: game parameter is undefined/null!')
+      throw new Error('Game parameter is undefined - cannot execute move')
+    }
+    
+    if (!game.board) {
+      console.error('[DEBUG] CRITICAL: game.board is undefined!', {
+        gameStateKind: game.stateKind,
+        gameKeys: Object.keys(game),
+        hasActivePlay: !!game.activePlay,
+        hasActivePlayer: !!game.activePlayer
+      })
+      throw new Error('Game.board is undefined - cannot execute move')
+    }
+    
     const gameAfterMove = Game.move(game, originId)
+
+    console.log(
+      '[DEBUG] Game.executeAndRecalculate: Move executed, game state:',
+      {
+        stateKind: gameAfterMove.stateKind,
+        hasActivePlay: !!(gameAfterMove as any).activePlay,
+        activePlayMoves: (gameAfterMove as any).activePlay?.moves
+          ? Array.from((gameAfterMove as any).activePlay.moves).length
+          : 0,
+      }
+    )
 
     // Check if the game ended (win condition)
     if (gameAfterMove.stateKind === 'completed') {
@@ -874,7 +1089,7 @@ export class Game {
     // Game continues, ensure we have a moving game
     const movingGame = gameAfterMove as BackgammonGameMoving
 
-    // Only auto-complete turn for robot players, human players must confirm manually
+    // For robot players, auto-complete turn if all moves are completed
     if (movingGame.activePlayer.isRobot) {
       // Check if turn should be completed for robot
       const gameAfterTurnCheck = Game.checkAndCompleteTurn(movingGame)
@@ -883,15 +1098,55 @@ export class Game {
       if (gameAfterTurnCheck.activeColor !== movingGame.activeColor) {
         return gameAfterTurnCheck
       }
+    } else {
+      // For human players, check if all moves are completed and transition to 'moved' state
+      const activePlay = movingGame.activePlay
+      if (activePlay && activePlay.moves) {
+        const movesArray = Array.from(activePlay.moves)
+        const allMovesCompleted = movesArray.every(
+          (move) => move.stateKind === 'completed'
+        )
+
+        console.log(
+          '[DEBUG] Game.executeAndRecalculate: Checking move completion:',
+          {
+            totalMoves: movesArray.length,
+            completedMoves: movesArray.filter(
+              (m) => m.stateKind === 'completed'
+            ).length,
+            allMovesCompleted,
+            moveStates: movesArray.map((m) => ({
+              id: m.id,
+              state: m.stateKind,
+              dieValue: m.dieValue,
+            })),
+            activePlayerIsRobot: movingGame.activePlayer?.isRobot,
+          }
+        )
+
+        if (allMovesCompleted) {
+          console.log(
+            '[DEBUG] 🎯 All moves completed! Transitioning to moved state'
+          )
+          // All moves completed for human player, transition to 'moved' state
+          return Game.toMoved(movingGame)
+        } else {
+          console.log(
+            '[DEBUG] ⏳ Not all moves completed yet, staying in moving state'
+          )
+        }
+      }
     }
 
-    // CRITICAL FIX: After executing a move, the activePlay.moves still contains stale references
-    // We need to ensure that when getPossibleMoves() is called next, it uses the updated board state
-    // The key insight is that we don't need to modify the activePlay.moves here -
-    // getPossibleMoves() will handle calculating fresh moves based on the current board state
+    // CRITICAL FIX: After executing a move, the activePlay.moves now contains fresh possibleMoves
+    // for all remaining ready moves thanks to the fix in Play.move()
+    // The movingGame already has the updated board state and refreshed activePlay
 
-    // Turn continues, return the game with fresh board state
-    // The next call to getPossibleMoves() will calculate fresh moves based on this updated board
+    console.log(
+      '[DEBUG] Game.executeAndRecalculate: Move executed successfully, returning updated game with fresh activePlay'
+    )
+
+    // Turn continues, return the game with fresh board state and updated activePlay
     return movingGame
   }
 
@@ -925,9 +1180,17 @@ export class Game {
     // Update players: current becomes inactive, next becomes rolling
     const updatedPlayers = game.players.map((player) => {
       if (player.color === game.activeColor) {
-        return { ...player, stateKind: 'inactive' as const }
+        return {
+          ...player,
+          stateKind: 'inactive' as const,
+          dice: Dice.initialize(player.color, 'inactive'),
+        }
       } else {
-        return { ...player, stateKind: 'rolling' as const }
+        return {
+          ...player,
+          stateKind: 'rolling' as const,
+          dice: Dice.initialize(player.color, 'rolling'),
+        }
       }
     }) as BackgammonPlayers
 
@@ -945,17 +1208,33 @@ export class Game {
       stateKind: 'completed' as const,
     }
 
+    // Recalculate pip counts before transitioning to next player
+    console.log(
+      '🧮 Game turn completion: Recalculating pip counts before transitioning to next player'
+    )
+    const playersWithUpdatedPips = Player.recalculatePipCounts({
+      ...game,
+      players: updatedPlayers,
+    })
+
+    const newActivePlayerWithPips = playersWithUpdatedPips.find(
+      (p) => p.color === nextColor
+    ) as BackgammonPlayerActive
+    const newInactivePlayerWithPips = playersWithUpdatedPips.find(
+      (p) => p.color === game.activeColor
+    ) as BackgammonPlayerInactive
+
     // Return game with next player's turn using Game.initialize for proper typing
     return Game.initialize(
-      updatedPlayers,
+      playersWithUpdatedPips,
       game.id,
       'rolling',
       game.board,
       game.cube,
       undefined, // No active play for next player until they roll
       nextColor,
-      newActivePlayer,
-      newInactivePlayer
+      newActivePlayerWithPips,
+      newInactivePlayerWithPips
     )
   }
 
@@ -1063,9 +1342,35 @@ export class Game {
     // Update players: current becomes inactive, next becomes rolling
     const updatedPlayers = game.players.map((player) => {
       if (player.color === game.activeColor) {
-        return { ...player, stateKind: 'inactive' as const }
+        // CRITICAL FIX: Preserve robot dice currentRoll values when transitioning to inactive
+        // This ensures robot dice continue to display what they rolled
+        //
+        // ⚠️  TECH DEBT WARNING: currentRoll DATA DUPLICATION ISSUE ⚠️
+        // The dice roll values are stored in TWO places in the model:
+        // 1. player.dice.currentRoll - Raw rolled values [x, y]
+        // 2. game.activePlay.moves[n].dieValue - Individual die values used for moves
+        // This duplication creates maintenance overhead and potential inconsistency.
+        // Future refactoring should consolidate this to a single source of truth.
+        //
+        const preservedDice =
+          player.isRobot && player.dice?.currentRoll
+            ? {
+                ...player.dice,
+                stateKind: 'inactive' as const,
+              }
+            : Dice.initialize(player.color, 'inactive')
+
+        return {
+          ...player,
+          stateKind: 'inactive' as const,
+          dice: preservedDice,
+        }
       } else {
-        return { ...player, stateKind: 'rolling' as const }
+        return {
+          ...player,
+          stateKind: 'rolling' as const,
+          dice: Dice.initialize(player.color, 'rolling'),
+        }
       }
     }) as BackgammonPlayers
 
@@ -1077,18 +1382,141 @@ export class Game {
       (p) => p.color === game.activeColor
     ) as BackgammonPlayerInactive
 
+    // Recalculate pip counts before transitioning to next player
+    console.log(
+      '🧮 Game turn completion: Recalculating pip counts before transitioning to next player'
+    )
+    const playersWithUpdatedPips = Player.recalculatePipCounts({
+      ...game,
+      players: updatedPlayers,
+    })
+
+    const newActivePlayerWithPips = playersWithUpdatedPips.find(
+      (p) => p.color === nextColor
+    ) as BackgammonPlayerActive
+    const newInactivePlayerWithPips = playersWithUpdatedPips.find(
+      (p) => p.color === game.activeColor
+    ) as BackgammonPlayerInactive
+
     // Return game with next player's turn using Game.initialize for proper typing
     return Game.initialize(
-      updatedPlayers,
+      playersWithUpdatedPips,
       game.id,
       'rolling',
       game.board,
       game.cube,
       undefined, // No active play for next player until they roll
       nextColor,
-      newActivePlayer,
-      newInactivePlayer
+      newActivePlayerWithPips,
+      newInactivePlayerWithPips
     )
+  }
+
+  /**
+   * Confirm turn from 'moved' state - overload for when player clicks dice after all moves completed
+   * @param game - Game in 'moved' state
+   * @returns Game transitioned to next player in 'rolling' state
+   */
+  public static confirmTurnFromMoved = function confirmTurnFromMoved(
+    game: BackgammonGameMoved
+  ): BackgammonGameRolling {
+    if (game.stateKind !== 'moved') {
+      throw new Error(
+        `Cannot confirm turn from ${
+          (game as any).stateKind
+        } state. Must be in 'moved' state.`
+      )
+    }
+
+    // All moves should already be completed in 'moved' state
+    const activePlay = game.activePlay
+    if (!activePlay || !activePlay.moves) {
+      throw new Error('No active play found')
+    }
+
+    const movesArray = Array.from(activePlay.moves)
+    const allMovesCompleted = movesArray.every(
+      (move) => move.stateKind === 'completed'
+    )
+
+    if (!allMovesCompleted) {
+      throw new Error('Cannot confirm turn - not all moves are completed')
+    }
+
+    // Transition to next player
+    const nextColor = game.activeColor === 'white' ? 'black' : 'white'
+
+    // Update players: current becomes inactive, next becomes rolling
+    const updatedPlayers = game.players.map((player) => {
+      if (player.color === game.activeColor) {
+        // CRITICAL FIX: Preserve robot dice currentRoll values when transitioning to inactive
+        // This ensures robot dice continue to display what they rolled
+        //
+        // ⚠️  TECH DEBT WARNING: currentRoll DATA DUPLICATION ISSUE ⚠️
+        // The dice roll values are stored in TWO places in the model:
+        // 1. player.dice.currentRoll - Raw rolled values [x, y]
+        // 2. game.activePlay.moves[n].dieValue - Individual die values used for moves
+        // This duplication creates maintenance overhead and potential inconsistency.
+        // Future refactoring should consolidate this to a single source of truth.
+        //
+        const preservedDice =
+          player.isRobot && player.dice?.currentRoll
+            ? {
+                ...player.dice,
+                stateKind: 'inactive' as const,
+              }
+            : Dice.initialize(player.color, 'inactive')
+
+        return {
+          ...player,
+          stateKind: 'inactive' as const,
+          dice: preservedDice,
+        }
+      } else {
+        return {
+          ...player,
+          stateKind: 'rolling' as const,
+          dice: Dice.initialize(player.color, 'rolling'),
+        }
+      }
+    }) as BackgammonPlayers
+
+    // Find new active and inactive players
+    const newActivePlayer = updatedPlayers.find(
+      (p) => p.color === nextColor
+    ) as BackgammonPlayerActive
+    const newInactivePlayer = updatedPlayers.find(
+      (p) => p.color === game.activeColor
+    ) as BackgammonPlayerInactive
+
+    // Recalculate pip counts before transitioning to next player
+    console.log(
+      '🧮 Game turn completion: Recalculating pip counts before transitioning to next player'
+    )
+    const playersWithUpdatedPips = Player.recalculatePipCounts({
+      ...game,
+      players: updatedPlayers,
+    })
+
+    const newActivePlayerWithPips = playersWithUpdatedPips.find(
+      (p) => p.color === nextColor
+    ) as BackgammonPlayerActive
+    const newInactivePlayerWithPips = playersWithUpdatedPips.find(
+      (p) => p.color === game.activeColor
+    ) as BackgammonPlayerInactive
+
+    // Return game with next player's turn - transition to 'rolling' state
+    return Game.initialize(
+      playersWithUpdatedPips,
+      game.id,
+      'rolling',
+      game.board,
+      game.cube,
+      undefined, // No active play for next player until they roll
+      nextColor,
+      newActivePlayerWithPips,
+      newInactivePlayerWithPips
+    ) as BackgammonGameRolling
   }
 
   public static activePlayer = function activePlayer(
@@ -1240,7 +1668,8 @@ export class Game {
       player.id,
       'doubled',
       true,
-      player.userId
+      player.userId,
+      player.pipCount
     )
     const inactivePlayer = opponent as BackgammonPlayerInactive
     // Create a BackgammonPlayDoubled (for now, reuse activePlay)
@@ -1364,6 +1793,237 @@ export class Game {
   }
 
   /**
+   * Undo the last confirmed move within the current turn
+   * This method finds the most recent confirmed move in activePlay.moves and reverses it
+   * @param game - Current game state in 'moving' state with confirmed moves
+   * @returns Result object with success/error and updated game state
+   */
+  public static undoLastMove = function undoLastMove(game: BackgammonGame): {
+    success: boolean
+    error?: string
+    game?: BackgammonGame
+    undoneMove?: any // BackgammonMove adapted for the interface
+    remainingMoveHistory?: any[] // For compatibility with API interface
+  } {
+    // Validate game state - must be in 'moving' or 'moved' state for undo
+    if (game.stateKind !== 'moving' && game.stateKind !== 'moved') {
+      return {
+        success: false,
+        error: `Cannot undo move from ${game.stateKind} state. Must be in 'moving' or 'moved' state.`,
+      }
+    }
+
+    const activePlay = game.activePlay
+    if (!activePlay || !activePlay.moves) {
+      return {
+        success: false,
+        error: 'No active play found',
+      }
+    }
+
+    // Find confirmed moves in chronological order (most recent first)
+    const movesArray = Array.from(activePlay.moves)
+    const confirmedMoves = movesArray
+      .filter((move) => move.stateKind === 'confirmed' || move.stateKind === 'completed')
+      .sort((a, b) => {
+        // Sort by creation time if available, otherwise maintain array order
+        return 0 // For now, just use the last confirmed move found
+      })
+
+    if (confirmedMoves.length === 0) {
+      return {
+        success: false,
+        error: 'No confirmed moves available to undo',
+      }
+    }
+
+    // Get the most recent confirmed move
+    const moveToUndo = confirmedMoves[confirmedMoves.length - 1]
+    
+    // Validate that the move actually moved a checker (not a 'no-move')
+    if (moveToUndo.moveKind === 'no-move' || !moveToUndo.origin || !moveToUndo.destination) {
+      return {
+        success: false,
+        error: 'Cannot undo a no-move or invalid move',
+      }
+    }
+
+    try {
+      // Create a deep clone of the board to reverse the move
+      let updatedBoard = JSON.parse(JSON.stringify(game.board))
+      
+      // Get the containers involved in the move
+      const originContainer = Board.getCheckerContainer(updatedBoard, moveToUndo.origin.id)
+      const destinationContainer = Board.getCheckerContainer(updatedBoard, moveToUndo.destination.id)
+      
+      // Find the checker that was moved (should be the top checker at destination)
+      const destinationCheckers = destinationContainer.checkers
+      if (destinationCheckers.length === 0) {
+        return {
+          success: false,
+          error: 'No checker found at destination to undo',
+        }
+      }
+      
+      // Get the moved checker (should be the last one added to destination)
+      const movedChecker = destinationCheckers[destinationCheckers.length - 1]
+      
+      // Validate this is the player's checker
+      if (movedChecker.color !== game.activePlayer.color) {
+        return {
+          success: false,
+          error: 'Cannot undo - checker at destination is not yours',
+        }
+      }
+
+      // Remove the checker from destination
+      destinationContainer.checkers.pop()
+      
+      // Handle hit restoration if this was a hitting move
+      if (moveToUndo.isHit && moveToUndo.destination.kind === 'point') {
+        // Find the hit checker on the opponent's bar
+        const opponentDirection = game.activePlayer.direction === 'clockwise' ? 'counterclockwise' : 'clockwise'
+        const opponentBar = updatedBoard.bar[opponentDirection]
+        
+        // Find the most recently hit checker (should be last in bar)
+        const hitCheckers = opponentBar.checkers.filter((c: BackgammonChecker) => c.color !== game.activePlayer.color)
+        if (hitCheckers.length > 0) {
+          const hitChecker = hitCheckers[hitCheckers.length - 1]
+          
+          // Remove from bar
+          const hitCheckerIndex = opponentBar.checkers.findIndex((c: BackgammonChecker) => c.id === hitChecker.id)
+          if (hitCheckerIndex !== -1) {
+            opponentBar.checkers.splice(hitCheckerIndex, 1)
+            
+            // Restore to destination point
+            destinationContainer.checkers.push({
+              id: hitChecker.id,
+              color: hitChecker.color,
+              checkercontainerId: destinationContainer.id,
+            })
+          }
+        }
+      }
+      
+      // Move the player's checker back to origin
+      originContainer.checkers.push({
+        id: movedChecker.id,
+        color: movedChecker.color,
+        checkercontainerId: originContainer.id,
+      })
+      
+      // Update the move state back to 'ready' and remove specific move details
+      const undoneMove = {
+        ...moveToUndo,
+        stateKind: 'ready' as const,
+        moveKind: moveToUndo.moveKind, // Keep the original move kind for re-calculation
+        origin: moveToUndo.origin, // Keep original origin for move generation
+        destination: undefined, // Clear destination since move is undone
+        isHit: false, // Reset hit flag
+        possibleMoves: [], // Will be recalculated when needed
+      }
+      
+      // Update the moves set: replace the confirmed move with the ready move
+      const updatedMoves = new Set([
+        ...movesArray.filter(m => m.id !== moveToUndo.id),
+        undoneMove
+      ])
+      
+      // Update active play
+      const updatedActivePlay = {
+        ...activePlay,
+        moves: updatedMoves,
+      }
+      
+      // Recalculate pip counts after the undo
+      console.log('🧮 Game.undoLastMove: Recalculating pip counts after undo')
+      const updatedPlayers = Player.recalculatePipCounts({
+        ...game,
+        board: updatedBoard,
+      })
+      
+      // Check if all moves have been undone (all moves are back to 'ready' state)
+      const allMovesUndone = Array.from(updatedMoves).every(move => move.stateKind === 'ready')
+      
+      // Use switch statement to handle state transitions after undo
+      // Note: Undo is only allowed in 'moving' or 'moved' states per API validation
+      const { newGameState, finalPlayers, clearActivePlay } = (() => {
+        switch (game.stateKind) {
+          case 'moved':
+            // From 'moved', always go back to 'moving' to allow more moves
+            return {
+              newGameState: 'moving' as const,
+              finalPlayers: updatedPlayers,
+              clearActivePlay: false
+            }
+            
+          case 'moving':
+            if (allMovesUndone) {
+              // BACKGAMMON RULES FIX: All moves undone - reset to 'rolled' state with preserved dice
+              // Player should NOT be able to roll dice again - they must use the same dice values
+              console.log('🔄 Game.undoLastMove: All moves undone from moving state, resetting to rolled (not rolling!)')
+              const resetPlayers = updatedPlayers.map(player => {
+                if (player.id === game.activePlayer.id) {
+                  // CRITICAL FIX: Preserve the currentRoll when resetting to rolled state
+                  // This ensures player cannot re-roll dice after undo (backgammon rules violation)
+                  const originalCurrentRoll = player.dice?.currentRoll
+                  console.log('🎲 Game.undoLastMove: Preserving dice roll for rolled state:', originalCurrentRoll)
+                  return {
+                    ...player,
+                    dice: Dice.initialize(player.color, 'rolled', player.dice?.id, originalCurrentRoll),
+                    stateKind: 'rolled' as const
+                  }
+                } else {
+                  return {
+                    ...player,
+                    dice: Dice.initialize(player.color, 'inactive', player.dice?.id),
+                    stateKind: 'inactive' as const
+                  }
+                }
+              }) as BackgammonPlayers
+              
+              return {
+                newGameState: 'rolled' as const,
+                finalPlayers: resetPlayers,
+                clearActivePlay: false // CRITICAL FIX: Preserve activePlay with restored moves
+              }
+            } else {
+              // Still have moves remaining - stay in 'moving'
+              return {
+                newGameState: 'moving' as const,
+                finalPlayers: updatedPlayers,
+                clearActivePlay: false
+              }
+            }
+        }
+      })()
+      
+      // Return the updated game state
+      const updatedGame = {
+        ...game,
+        stateKind: newGameState,
+        board: updatedBoard,
+        players: finalPlayers,
+        activePlayer: finalPlayers.find(p => p.id === game.activePlayer.id) as any,
+        activePlay: clearActivePlay ? null : updatedActivePlay,
+      } as BackgammonGame
+      
+      return {
+        success: true,
+        game: updatedGame,
+        undoneMove: moveToUndo, // Return the move that was undone
+        remainingMoveHistory: confirmedMoves.slice(0, -1), // All confirmed moves except the undone one
+      }
+      
+    } catch (error) {
+      return {
+        success: false,
+        error: `Failed to undo move: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      }
+    }
+  }
+
+  /**
    * Get possible moves for the current die value only (just-in-time calculation)
    * This method calculates moves for only the next available die to prevent stale references
    * Call this method after each move execution to get fresh moves based on current board state
@@ -1399,18 +2059,58 @@ export class Game {
       }
     }
 
-    // Get activePlay and moves
+    // Get activePlay and moves - handle case where game is in 'rolled' state after undo
     const activePlay = game.activePlay
+    let movesArr: any[] = []
+    let gameWithActivePlay: BackgammonGame = game
+    
     if (!activePlay || !activePlay.moves) {
-      return {
-        success: false,
-        error: 'No active play found',
+      // ARCHITECTURAL FIX: If no activePlay exists (e.g., after undo), create it from current dice roll
+      if (game.stateKind === 'rolled' && targetPlayer.dice?.currentRoll) {
+        console.log('[Game.getPossibleMoves] Creating activePlay for rolled state after undo')
+        
+        // Create fresh activePlay structure directly using Play.initialize (same as Game.roll does)
+        // Cast targetPlayer to correct type - it should be rolled since we checked dice state
+        const playerRolled = targetPlayer as any // Type assertion since we verified dice state
+        const newActivePlay = Play.initialize(game.board, playerRolled)
+        const movingPlay = {
+          ...newActivePlay,
+          stateKind: 'moving' as const,
+          player: playerRolled,
+        }
+        
+        // Update the players array to ensure activePlayer is in correct state
+        const updatedPlayers = game.players.map((p) =>
+          p.id === targetPlayer.id ? { ...p, stateKind: 'moving' as const } : p
+        )
+        
+        // Create updated game with the new activePlay
+        gameWithActivePlay = {
+          ...game,
+          stateKind: 'moving' as const,
+          activePlay: movingPlay,
+          players: updatedPlayers,
+          activePlayer: { ...targetPlayer, stateKind: 'moving' as const },
+        } as any // Type assertion - we know the structure is correct
+        
+        if (movingPlay.moves) {
+          movesArr = Array.isArray(movingPlay.moves) ? movingPlay.moves : Array.from(movingPlay.moves)
+          console.log(`[Game.getPossibleMoves] Created activePlay with ${movesArr.length} moves from dice roll [${targetPlayer.dice.currentRoll.join(', ')}]`)
+        } else {
+          return {
+            success: false,
+            error: 'Failed to create moves in activePlay',
+          }
+        }
+      } else {
+        return {
+          success: false,
+          error: 'No active play found and cannot create from current game state',
+        }
       }
+    } else {
+      movesArr = Array.isArray(activePlay.moves) ? activePlay.moves : Array.from(activePlay.moves)
     }
-
-    const movesArr = Array.isArray(activePlay.moves)
-      ? activePlay.moves
-      : Array.from(activePlay.moves)
 
     // CRITICAL FIX: Completely ignore stale activePlay.moves and calculate fresh moves
     // based on current board state and available dice values
@@ -1449,13 +2149,12 @@ export class Game {
         )
       }
 
-      // Auto-complete turn when no legal moves remain (only for robot players)
+      // Auto-complete turn when no legal moves remain
       if (
         possibleMoves.length === 0 &&
-        movesArr.every((m) => m.stateKind === 'ready') &&
-        targetPlayer.isRobot
+        movesArr.every((m) => m.stateKind === 'ready')
       ) {
-        logger.debug('[Game] Auto-completing robot turn: no legal moves remain')
+        logger.debug(`[Game] Auto-completing ${targetPlayer.isRobot ? 'robot' : 'human'} turn: no legal moves remain`)
 
         // Mark all remaining moves as completed with no-move
         const completedMoves = movesArr.map((move) => ({
@@ -1479,7 +2178,7 @@ export class Game {
         const nextColor = game.activeColor === 'white' ? 'black' : 'white'
         const updatedGame = {
           ...game,
-          activePlay: completedActivePlay,
+          activePlay: null, // CRITICAL FIX: Clear activePlay when transitioning to next player's rolling state
           stateKind: 'rolling' as const,
           activeColor: nextColor,
         }
@@ -1496,7 +2195,7 @@ export class Game {
         const finalUpdatedGame = {
           ...updatedGame,
           players: updatedPlayers,
-        } as BackgammonGame
+        } as unknown as BackgammonGame
 
         return {
           success: true,
@@ -1512,7 +2211,9 @@ export class Game {
       success: true,
       possibleMoves,
       playerColor: targetPlayer.color,
+      updatedGame: gameWithActivePlay,
       currentDie: currentDie,
     }
   }
+
 }

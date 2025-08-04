@@ -1,6 +1,8 @@
 export { v4 as generateId } from 'uuid'
 
 export type BackgammonColor = 'black' | 'white'
+
+// Constants
 export type BackgammonMoveDirection = 'clockwise' | 'counterclockwise'
 
 export type BackgammonEntity =
@@ -36,10 +38,12 @@ export * from './Checker'
 export * from './Cube'
 export * from './Dice'
 export * from './Game'
+// export * from './History' // Temporarily disabled for Issue #7 - comprehensive history system
 export * from './Move'
 export * from './Play'
 export * from './Player'
 export * from './Robot'
+export * from './Engine'
 
 // Export AI plugin system
 export * from './AI/AIPluginManager'
@@ -72,3 +76,4 @@ export {
 // Re-export all types from @nodots-llc/backgammon-types for convenience
 export * from '@nodots-llc/backgammon-types'
 export { GameEventEmitter } from './events/GameEventEmitter'
+// export * from './XG' // Temporarily disabled for Issue #7 - comprehensive history system

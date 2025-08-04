@@ -13,6 +13,7 @@ import { Game } from '..'
 import { randomBackgammonColor } from '../../'
 import { Play } from '../../Play'
 import { Player } from '../../Player'
+import { Robot } from '../../Robot'
 
 describe('Game', () => {
   describe('Initialization', () => {
@@ -45,6 +46,9 @@ describe('Game', () => {
       expect(game.players).toBeDefined()
       expect(game.players.length).toBe(2)
       expect(game.board).toBeDefined()
+      expect(game.board.id).toBeDefined()
+      expect(typeof game.board.id).toBe('string')
+      expect(game.board.id.length).toBeGreaterThan(0)
       expect(game.cube).toBeDefined()
       expect(game.activeColor).toBeUndefined()
       expect(game.activePlayer).toBeUndefined()
@@ -919,11 +923,24 @@ describe('Game', () => {
   })
 
   describe('Game Creation', () => {
-    it('should create a new game with default settings', () => {
-      const game = Game.createNewGame('user1', 'user2')
+    it('should create a new game with default settings', async () => {
+      const game = Game.createNewGame('user1', 'user2', true, true, false) // Robot vs Human
       expect(game).toBeDefined()
-      // Robot games automatically advance to 'moving' state
-      expect(game.stateKind).toBe('moving')
+      expect(game.stateKind).toBe('rolled-for-start')
+
+      // If a robot won the roll for start, they should automatically complete their turn
+      if (game.activePlayer?.isRobot) {
+        const result = await Robot.makeOptimalMove(game, 'beginner')
+        expect(result.success).toBe(true)
+        expect(result.game).toBeDefined()
+        const finalGame = result.game!
+        expect(finalGame.stateKind).toBe('rolling')
+        expect(finalGame.activePlayer?.isRobot).toBe(false) // Should now be human's turn
+      } else {
+        // Human won, so game should be in rolled-for-start state waiting for human to roll
+        expect(game.stateKind).toBe('rolled-for-start')
+      }
+
       expect(game.players).toHaveLength(2)
       expect(game.activeColor).toBeDefined()
       expect(game.activePlayer).toBeDefined()
@@ -932,7 +949,7 @@ describe('Game', () => {
       expect(game.cube).toBeDefined()
     })
 
-    it('should create a new game with custom color direction configuration', () => {
+    it('should create a new game with custom color direction configuration', async () => {
       const config = {
         blackDirection: 'counterclockwise' as const,
         whiteDirection: 'clockwise' as const,
@@ -947,12 +964,22 @@ describe('Game', () => {
         config
       )
       expect(game).toBeDefined()
-      // Robot games automatically advance to 'moving' state
-      expect(game.stateKind).toBe('moving')
+      expect(game.stateKind).toBe('rolled-for-start')
       expect(game.players).toHaveLength(2)
       expect(game.activeColor).toBe('black')
       expect(game.activePlayer?.color).toBe('black')
       expect(game.inactivePlayer?.color).toBe('white')
+
+      // Black robot should automatically complete their turn since blackFirst: true
+      expect(game.activePlayer?.isRobot).toBe(true)
+      const result = await Robot.makeOptimalMove(game, 'beginner')
+      expect(result.success).toBe(true)
+      expect(result.game).toBeDefined()
+      const finalGame = result.game!
+      expect(finalGame.stateKind).toBe('rolling')
+      expect(finalGame.activeColor).toBe('white') // Should now be white's turn
+      expect(finalGame.activePlayer?.color).toBe('white')
+      expect(finalGame.activePlayer?.isRobot).toBe(true) // White is also a robot
     })
 
     it('should create a new game without auto-rolling for start', () => {

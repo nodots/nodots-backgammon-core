@@ -22,6 +22,10 @@ import {
 } from '@nodots-llc/backgammon-types/dist'
 import { Board, Dice, generateId } from '..'
 import { Play } from '../Play'
+import { PositionAnalyzer } from '../AI/utils/PositionAnalyzer'
+
+// Hardcoded constant to avoid import issues during build
+const MAX_PIP_COUNT = 167
 export * from '../index'
 
 /**
@@ -33,7 +37,7 @@ export class Player {
   id: string = generateId()
   stateKind: BackgammonPlayerStateKind = 'inactive'
   dice!: BackgammonDice
-  pipCount = 167
+  pipCount = MAX_PIP_COUNT
 
   public static initialize = function initializePlayer(
     color: BackgammonColor,
@@ -42,7 +46,8 @@ export class Player {
     id: string = generateId(),
     stateKind: BackgammonPlayerStateKind = 'inactive',
     isRobot: boolean,
-    userId?: string
+    userId?: string,
+    pipCount: number = MAX_PIP_COUNT
   ): BackgammonPlayer {
     const playerUserId = userId || generateId()
 
@@ -55,7 +60,7 @@ export class Player {
           direction,
           stateKind,
           dice: dice || Dice.initialize(color),
-          pipCount: 167,
+          pipCount,
           isRobot,
         } as BackgammonPlayer
       case 'rolling-for-start':
@@ -66,7 +71,7 @@ export class Player {
           direction,
           stateKind,
           dice: dice || Dice.initialize(color),
-          pipCount: 167,
+          pipCount,
           isRobot,
         } as BackgammonPlayerRollingForStart
       case 'rolled-for-start': {
@@ -80,7 +85,7 @@ export class Player {
           direction,
           stateKind,
           dice: rollingDice,
-          pipCount: 167,
+          pipCount,
           isRobot,
         } as BackgammonPlayerRolledForStart
       }
@@ -92,7 +97,7 @@ export class Player {
           direction,
           stateKind,
           dice,
-          pipCount: 167,
+          pipCount,
           isRobot,
         } as BackgammonPlayerRolling
       case 'rolled':
@@ -104,7 +109,7 @@ export class Player {
           direction,
           stateKind,
           dice: rolledDice,
-          pipCount: 167,
+          pipCount,
           isRobot,
         } as BackgammonPlayerRolled
       case 'moving':
@@ -115,7 +120,7 @@ export class Player {
           direction,
           stateKind,
           dice,
-          pipCount: 167,
+          pipCount,
           isRobot,
         } as BackgammonPlayerMoving
       case 'moved':
@@ -126,7 +131,7 @@ export class Player {
           direction,
           stateKind,
           dice,
-          pipCount: 167,
+          pipCount,
           isRobot,
         } as BackgammonPlayerMoved
       case 'winner':
@@ -148,7 +153,7 @@ export class Player {
           direction,
           stateKind: 'doubled',
           dice: dice as BackgammonDiceRolled,
-          pipCount: 167,
+          pipCount,
           isRobot,
         } as BackgammonPlayerDoubled
     }
@@ -227,6 +232,26 @@ export class Player {
       ...player,
       stateKind: 'moving',
     } as BackgammonPlayerMoving
+  }
+
+  /**
+   * Recalculates pip counts for both players based on current board state
+   * @param game - The game state to recalculate pip counts for
+   * @returns Updated players array with recalculated pip counts
+   */
+  public static recalculatePipCounts = function recalculatePipCounts(
+    game: import('@nodots-llc/backgammon-types/dist').BackgammonGame
+  ): import('@nodots-llc/backgammon-types/dist').BackgammonPlayers {
+    return game.players.map(player => {
+      const newPipCount = PositionAnalyzer.calculatePipCount(game, player)
+      console.log(
+        `🧮 Recalculating pip count for ${player.color} ${player.direction}: ${player.pipCount} -> ${newPipCount}`
+      )
+      return {
+        ...player,
+        pipCount: newPipCount
+      }
+    }) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayers
   }
 
   /**

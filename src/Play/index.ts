@@ -178,14 +178,30 @@ export class Play {
     const allMoves = Array.from(play.moves)
     const otherMoves = allMoves.filter((m) => m.id !== move.id) // Remove the executed move by ID
 
-    // 🔧 CORE LOGIC BUG FIX: Do NOT recalculate possibleMoves for remaining ready moves
-    // The original possibleMoves are still valid for the remaining moves
-    // Only the executed move should be marked as completed
+    // CRITICAL FIX: Recalculate possibleMoves for remaining ready moves
+    // After a move is executed, the board state changes and remaining moves need fresh possibleMoves
+    // that reflect the current board state (e.g., checker at new position, not old position)
     const updatedOtherMoves = otherMoves.map((remainingMove) => {
       if (remainingMove.stateKind === 'ready') {
-        // CRITICAL FIX: Do not recalculate moves - this was causing the infinite loop
-        // The remaining moves should stay as they are until they're executed
-        return remainingMove
+        // Recalculate fresh possible moves for this die value on the updated board
+        const freshPossibleMoves = Board.getPossibleMoves(
+          board, // Use the updated board after the move
+          play.player,
+          remainingMove.dieValue
+        )
+        
+        console.log('[DEBUG] Play.move: Recalculated possibleMoves for remaining move:', {
+          moveId: remainingMove.id,
+          dieValue: remainingMove.dieValue,
+          oldPossibleMovesCount: remainingMove.possibleMoves.length,
+          freshPossibleMovesCount: freshPossibleMoves.length,
+          freshOriginIds: freshPossibleMoves.map(pm => pm.origin.id)
+        })
+        
+        return {
+          ...remainingMove,
+          possibleMoves: freshPossibleMoves // Update with fresh moves
+        }
       }
       return remainingMove // Keep completed moves unchanged
     })

@@ -18,6 +18,9 @@ describe('Board', () => {
 
   it('should initialize the board', () => {
     expect(board.id).toBeDefined()
+    expect(board.id).toBeDefined()
+    expect(typeof board.id).toBe('string')
+    expect(board.id.length).toBeGreaterThan(0)
     expect(board.points.length).toBe(24)
     expect(board.bar.clockwise.checkers).toEqual([])
     expect(board.bar.counterclockwise.checkers).toEqual([])
