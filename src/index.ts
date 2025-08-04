@@ -38,7 +38,7 @@ export * from './Checker'
 export * from './Cube'
 export * from './Dice'
 export * from './Game'
-// export * from './History' // Temporarily disabled for Issue #7 - comprehensive history system
+export * from './History'
 export * from './Move'
 export * from './Play'
 export * from './Player'
