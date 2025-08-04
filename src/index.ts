@@ -43,6 +43,7 @@ export * from './Move'
 export * from './Play'
 export * from './Player'
 export * from './Robot'
+export * from './Engine'
 
 // Export AI plugin system
 export * from './AI/AIPluginManager'
