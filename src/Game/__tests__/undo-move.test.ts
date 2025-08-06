@@ -83,7 +83,7 @@ describe('Game.undoLastMove', () => {
     const result = Game.undoLastMove(gameWithNoConfirmedMoves)
 
     expect(result.success).toBe(false)
-    expect(result.error).toBe('No confirmed moves available to undo')
+    expect(result.error).toBe('No completed moves available to undo')
   })
 
   it('should return error when trying to undo a no-move', () => {
