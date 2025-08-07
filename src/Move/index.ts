@@ -135,32 +135,45 @@ export class Move {
 
       // Get the current move (first ready move) from the sequence
       const movesArray = Array.from(activePlay.moves?.values() || [])
-      const currentMove = movesArray.find(move => move.stateKind === 'ready')
-      
+      const currentMove = movesArray.find((move) => move.stateKind === 'ready')
+
       if (!currentMove) {
         // PROPER STATE ASSESSMENT: Check activePlay.moves state machine
-        const readyMoves = movesArray.filter(move => move.stateKind === 'ready')
-        const completedMoves = movesArray.filter(move => 
-          move.stateKind === 'completed' || move.stateKind === 'confirmed'
+        const readyMoves = movesArray.filter(
+          (move) => move.stateKind === 'ready'
         )
-        const inProgressMoves = movesArray.filter(move => move.stateKind === 'in-progress')
-        
+        const completedMoves = movesArray.filter(
+          (move) =>
+            move.stateKind === 'completed' || move.stateKind === 'confirmed'
+        )
+        const inProgressMoves = movesArray.filter(
+          (move) => move.stateKind === 'in-progress'
+        )
+
         console.log('[DEBUG] ActivePlay.moves state assessment:', {
           totalMoves: movesArray.length,
           readyMoves: readyMoves.length,
           completedMoves: completedMoves.length,
           inProgressMoves: inProgressMoves.length,
-          moveStates: movesArray.map(m => ({ id: m.id, state: m.stateKind, dieValue: m.dieValue }))
+          moveStates: movesArray.map((m) => ({
+            id: m.id,
+            state: m.stateKind,
+            dieValue: m.dieValue,
+          })),
         })
-        
+
         // If all moves are completed/confirmed, turn should be completed
-        if (completedMoves.length === movesArray.length && movesArray.length > 0) {
+        if (
+          completedMoves.length === movesArray.length &&
+          movesArray.length > 0
+        ) {
           return {
             success: false,
-            error: 'All moves in activePlay are completed - turn should be completed',
+            error:
+              'All moves in activePlay are completed - turn should be completed',
           }
         }
-        
+
         // If there are in-progress moves, this might be a race condition
         if (inProgressMoves.length > 0) {
           return {
@@ -168,14 +181,14 @@ export class Move {
             error: 'Move already in progress - wait for completion',
           }
         }
-        
+
         // If no ready moves but not all completed, something is wrong with state
         return {
           success: false,
           error: `ActivePlay state inconsistency: ${readyMoves.length} ready, ${completedMoves.length} completed of ${movesArray.length} total moves`,
         }
       }
-      
+
       if (!currentMove.possibleMoves) {
         return {
           success: false,
@@ -185,6 +198,25 @@ export class Move {
 
       // Check if there are any possible moves from the checker's container
       const checkerContainer = checkerInfo.container
+
+      // Enhanced debug logging to understand the mismatch
+      console.log('[DEBUG] Container comparison details:', {
+        checkerContainerId: checkerContainer.id,
+        checkerContainerKind: checkerContainer.kind,
+        checkerContainerPosition:
+          checkerContainer.kind === 'point'
+            ? (checkerContainer as BackgammonPoint).position
+            : 'N/A',
+        possibleMovesOrigins: currentMove.possibleMoves.map((pm) => ({
+          originId: pm.origin.id,
+          originKind: pm.origin.kind,
+          originPosition:
+            pm.origin.kind === 'point'
+              ? (pm.origin as BackgammonPoint).position
+              : 'N/A',
+        })),
+      })
+
       const movesFromThisContainer = currentMove.possibleMoves.filter(
         (pm) => pm.origin.id === checkerContainer.id
       )
@@ -208,50 +240,54 @@ export class Move {
       // CRITICAL FIX: Execute any valid move from this container, regardless of specific checker
       // Multiple checkers from the same point can make the same move
       const moveToExecute = movesFromThisContainer[0]
-        
-        console.log(
-          `[DEBUG] Executing move: die ${
-            moveToExecute.dieValue
-          }, origin ${
-            moveToExecute.origin.kind === 'point'
-              ? 'point-' + moveToExecute.origin.position.clockwise
-              : moveToExecute.origin.kind
-          }, destination ${
-            moveToExecute.destination.kind === 'point'
-              ? 'point-' + moveToExecute.destination.position.clockwise
-              : moveToExecute.destination.kind
-          }`
+
+      console.log(
+        `[DEBUG] Executing move: die ${moveToExecute.dieValue}, origin ${
+          moveToExecute.origin.kind === 'point'
+            ? 'point-' + moveToExecute.origin.position.clockwise
+            : moveToExecute.origin.kind
+        }, destination ${
+          moveToExecute.destination.kind === 'point'
+            ? 'point-' + moveToExecute.destination.position.clockwise
+            : moveToExecute.destination.kind
+        }`
+      )
+
+      // Execute human move directly using Game.move
+      try {
+        const { Game } = await import('..')
+
+        // Ensure game is in correct state for moving
+        let workingGame = game
+
+        if (workingGame.stateKind === 'rolled') {
+          workingGame = Game.prepareMove(workingGame as any)
+          workingGame = Game.toMoving(workingGame)
+        } else if (workingGame.stateKind === 'preparing-move') {
+          workingGame = Game.toMoving(workingGame as any)
+        }
+
+        // Execute the move using executeAndRecalculate to handle automatic state transitions
+        const finalGame = Game.executeAndRecalculate(
+          workingGame as any,
+          moveToExecute.origin.id
         )
 
-        // Execute human move directly using Game.move
-        try {
-          const { Game } = await import('..')
-          
-          // Ensure game is in correct state for moving
-          let workingGame = game
-          
-          if (workingGame.stateKind === 'rolled') {
-            workingGame = Game.prepareMove(workingGame as any)
-            workingGame = Game.toMoving(workingGame)
-          } else if (workingGame.stateKind === 'preparing-move') {
-            workingGame = Game.toMoving(workingGame as any)
-          }
-          
-          // Execute the move using executeAndRecalculate to handle automatic state transitions
-          const finalGame = Game.executeAndRecalculate(workingGame as any, moveToExecute.origin.id)
-          
-          console.log('[DEBUG] Human move completed successfully')
-          return {
-            success: true,
-            game: finalGame as any,
-          }
-        } catch (moveError: unknown) {
-          console.log('[DEBUG] Human move failed:', moveError instanceof Error ? moveError.message : 'Unknown error')
-          return {
-            success: false,
-            error: `Move execution failed: ${moveError instanceof Error ? moveError.message : 'Unknown error'}`,
-          }
+        console.log('[DEBUG] Human move completed successfully')
+        return {
+          success: true,
+          game: finalGame as any,
         }
+      } catch (moveError: unknown) {
+        console.log(
+          '[DEBUG] Human move failed:',
+          moveError instanceof Error ? moveError.message : 'Unknown error'
+        )
+        return {
+          success: false,
+          error: `Move execution failed: ${moveError instanceof Error ? moveError.message : 'Unknown error'}`,
+        }
+      }
     } catch (error) {
       return {
         success: false,
@@ -684,30 +720,20 @@ export class Move {
     board: BackgammonBoard
   ): boolean {
     // Check if all player's checkers are in home board
-    const homeBoard =
-      player.direction === 'clockwise'
-        ? [0, 1, 2, 3, 4, 5]
-        : [18, 19, 20, 21, 22, 23]
+    // GOLDEN RULE: Use point.position[playerDirection] - no conditional logic
+    const pointPosition = point.position[player.direction]
 
-    // Check if the current point is in home board
-    const pointPosition =
-      player.direction === 'clockwise'
-        ? point.position.clockwise
-        : point.position.counterclockwise
-
-    if (!homeBoard.includes(pointPosition)) {
+    // Home board is positions 1-6 (bear-off distance 1-6)
+    if (pointPosition > 6) {
       return false
     }
 
     // Check if ALL player's checkers are in home board
     for (const boardPoint of board.points) {
-      const boardPointPosition =
-        player.direction === 'clockwise'
-          ? boardPoint.position.clockwise
-          : boardPoint.position.counterclockwise
+      const boardPointPosition = boardPoint.position[player.direction]
 
       // If there are player's checkers outside home board, can't bear off
-      if (!homeBoard.includes(boardPointPosition)) {
+      if (boardPointPosition > 6) {
         for (const checker of boardPoint.checkers) {
           if (checker.color === player.color) {
             return false

@@ -2,6 +2,7 @@ import { BackgammonGame } from '@nodots-llc/backgammon-types'
 import { AIPluginManager } from '../AI/AIPluginManager'
 import { BackgammonAIPlugin } from '../AI/interfaces/AIPlugin'
 import { BasicAIPlugin } from '../AI/plugins/BasicAIPlugin'
+import { BlotRobotAIPlugin } from '../AI/plugins/BlotRobotAIPlugin'
 import { Board } from '../Board'
 import { Game } from '../Game'
 import { logger } from '../utils/logger'
@@ -18,9 +19,10 @@ export type RobotSkillLevel = 'beginner' | 'intermediate' | 'advanced'
 export class Robot {
   private static pluginManager = new AIPluginManager()
 
-  // Auto-register built-in basic AI
+  // Auto-register built-in AI plugins
   static {
     this.pluginManager.registerPlugin(new BasicAIPlugin())
+    this.pluginManager.registerPlugin(new BlotRobotAIPlugin())
     this.pluginManager.setDefaultPlugin('basic-ai')
   }
 
@@ -307,11 +309,12 @@ export class Robot {
         return currentGame
       }
 
-      // Select and execute move
-      const selectedMove = Robot.selectMoveByDifficulty(
+      // Select and execute move using AI plugin or difficulty-based selection
+      const selectedMove = Robot.selectMoveByStrategy(
         moveSlot.possibleMoves,
         difficulty,
-        currentGame
+        currentGame,
+        aiPlugin
       )
 
       if (!selectedMove) {
@@ -565,6 +568,30 @@ export class Robot {
    */
   static getDefaultAI(): string | null {
     return this.pluginManager.getDefaultPlugin()
+  }
+
+  /**
+   * Select a move using either AI plugin strategy or difficulty-based selection
+   * @param possibleMoves - Array of possible moves
+   * @param difficulty - Robot difficulty level
+   * @param game - Current game state
+   * @param aiPlugin - Optional AI plugin name to use
+   * @returns Selected move
+   */
+  private static selectMoveByStrategy = function selectMoveByStrategy(
+    possibleMoves: any[],
+    difficulty: RobotSkillLevel,
+    game: BackgammonGame,
+    aiPlugin?: string
+  ): any {
+    // Use specific AI strategy if requested
+    if (aiPlugin === 'blot-robot') {
+      logger.info(`🎯 Using BlotRobot strategy for move selection`)
+      return BlotRobotAIPlugin.selectBlotMove(possibleMoves, game)
+    }
+
+    // Fall back to traditional difficulty-based selection
+    return Robot.selectMoveByDifficulty(possibleMoves, difficulty, game)
   }
 
   /**

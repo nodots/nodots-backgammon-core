@@ -2208,12 +2208,16 @@ export class Game {
         // Transition game to next player's turn
         const nextColor = game.activeColor === 'white' ? 'black' : 'white'
         
-        // CRITICAL FIX: For type compatibility, keeping null but documenting the fix location
-        // The real fix requires extending the type system to support preserved activePlay
+        // ARCHITECTURAL FIX: Preserve activePlay in completed state for undo functionality
+        // This allows undo button to remain visible with completed move data
+        const preservedActivePlay = {
+          ...completedActivePlay,
+          stateKind: 'completed'
+        }
         
         const updatedGame = {
           ...game,
-          activePlay: null, // TODO: Preserve game.activePlay for undo when type system supports it
+          activePlay: preservedActivePlay,
           stateKind: 'rolling' as const,
           activeColor: nextColor,
         }
