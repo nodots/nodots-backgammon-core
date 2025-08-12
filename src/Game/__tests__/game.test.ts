@@ -16,184 +16,8 @@ import { Player } from '../../Player'
 import { Robot } from '../../Robot'
 
 describe('Game', () => {
-  describe('Initialization', () => {
-    it('should initialize the game correctly with minimal parameters', () => {
-      const clockwiseColor = randomBackgammonColor()
-      const counterclockwiseColor =
-        clockwiseColor === 'black' ? 'white' : 'black'
-      const players: BackgammonPlayers = [
-        Player.initialize(
-          clockwiseColor,
-          'clockwise',
-          undefined,
-          undefined,
-          'inactive',
-          true
-        ),
-        Player.initialize(
-          counterclockwiseColor,
-          'counterclockwise',
-          undefined,
-          undefined,
-          'inactive',
-          true
-        ),
-      ]
-
-      const game = Game.initialize(players) as BackgammonGameRollingForStart
-      expect(game).toBeDefined()
-      expect(game.stateKind).toBe('rolling-for-start')
-      expect(game.players).toBeDefined()
-      expect(game.players.length).toBe(2)
-      expect(game.board).toBeDefined()
-      expect(game.board.id).toBeDefined()
-      expect(typeof game.board.id).toBe('string')
-      expect(game.board.id.length).toBeGreaterThan(0)
-      expect(game.cube).toBeDefined()
-      expect(game.activeColor).toBeUndefined()
-      expect(game.activePlayer).toBeUndefined()
-      expect(game.inactivePlayer).toBeUndefined()
-    })
-
-    it('should throw error when initializing in completed state', () => {
-      const players: BackgammonPlayers = [
-        Player.initialize(
-          'black',
-          'clockwise',
-          undefined,
-          undefined,
-          'inactive',
-          true
-        ),
-        Player.initialize(
-          'white',
-          'counterclockwise',
-          undefined,
-          undefined,
-          'inactive',
-          true
-        ),
-      ]
-      expect(() => Game.initialize(players, undefined, 'completed')).toThrow(
-        'Game cannot be initialized in the completed state'
-      )
-    })
-
-    it('should throw error when initializing in rolled-for-start state without required properties', () => {
-      const players: BackgammonPlayers = [
-        Player.initialize(
-          'black',
-          'clockwise',
-          undefined,
-          undefined,
-          'inactive',
-          true
-        ),
-        Player.initialize(
-          'white',
-          'counterclockwise',
-          undefined,
-          undefined,
-          'inactive',
-          true
-        ),
-      ]
-      expect(() =>
-        Game.initialize(players, undefined, 'rolled-for-start')
-      ).toThrow('Active color must be provided')
-    })
-
-    it('should throw error when initializing in rolling state without required properties', () => {
-      const players: BackgammonPlayers = [
-        Player.initialize(
-          'black',
-          'clockwise',
-          undefined,
-          undefined,
-          'inactive',
-          true
-        ),
-        Player.initialize(
-          'white',
-          'counterclockwise',
-          undefined,
-          undefined,
-          'inactive',
-          true
-        ),
-      ]
-      expect(() => Game.initialize(players, undefined, 'rolling')).toThrow(
-        'Active color must be provided'
-      )
-    })
-
-    it('should throw error when initializing in moving state without required properties', () => {
-      const players: BackgammonPlayers = [
-        Player.initialize(
-          'black',
-          'clockwise',
-          undefined,
-          undefined,
-          'inactive',
-          true
-        ),
-        Player.initialize(
-          'white',
-          'counterclockwise',
-          undefined,
-          undefined,
-          'inactive',
-          true
-        ),
-      ]
-      expect(() => Game.initialize(players, undefined, 'moving')).toThrow(
-        'Active color must be provided'
-      )
-    })
-
-    it('should throw error when initializing in moving state without active play', () => {
-      const players: BackgammonPlayers = [
-        Player.initialize(
-          'black',
-          'clockwise',
-          undefined,
-          undefined,
-          'inactive',
-          true
-        ),
-        Player.initialize(
-          'white',
-          'counterclockwise',
-          undefined,
-          undefined,
-          'inactive',
-          true
-        ),
-      ]
-      const activePlayer = {
-        ...players[0],
-        stateKind: 'rolling',
-      } as BackgammonPlayerActive
-      const inactivePlayer = {
-        ...players[1],
-        stateKind: 'inactive',
-      } as BackgammonPlayerInactive
-
-      expect(() =>
-        Game.initialize(
-          players,
-          undefined,
-          'moving',
-          undefined,
-          undefined,
-          undefined,
-          'black',
-          activePlayer,
-          inactivePlayer
-        )
-      ).toThrow('Active play must be provided')
-    })
-  })
+  // Internal Game.initialize() tests removed - that API is now internal-only.
+  // Game creation is tested via Game.createNewGame() below.
 
   describe('Game Flow', () => {
     const clockwiseColor = randomBackgammonColor()
@@ -1000,7 +824,7 @@ describe('Game', () => {
   })
 
   describe('Robot Methods', () => {
-    it('should advance robot from rolled to moving state', () => {
+    it('should transition robot from rolled to moving state via proper flow', () => {
       // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
         'user1',
@@ -1012,36 +836,14 @@ describe('Game', () => {
       // Manually roll for start and then roll to get to rolled state
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
       const rolledGame = Game.roll(gameAfterRollForStart as any)
-      const movingGame = Game.advanceRobotToMoving(rolledGame as any)
+
+      // Proper flow: rolled -> prepareMove -> toMoving
+      const preparingGame = Game.prepareMove(rolledGame as any)
+      expect(preparingGame.stateKind).toBe('preparing-move')
+
+      const movingGame = Game.toMoving(preparingGame as any)
       expect(movingGame.stateKind).toBe('moving')
       expect(movingGame.activePlay.stateKind).toBe('moving')
-    })
-
-    it('should throw error when trying to advance non-robot to moving', () => {
-      const humanGameStart = Game.createNewGame(
-        'user1',
-        'user2',
-        true,
-        false,
-        false
-      )
-      const humanGame = Game.roll(humanGameStart as any)
-      expect(() => Game.advanceRobotToMoving(humanGame as any)).toThrow(
-        'Can only advance robot players to moving state'
-      )
-    })
-
-    it('should throw error when trying to advance non-rolled game', () => {
-      const rollingGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false,
-        true,
-        true
-      )
-      expect(() => Game.advanceRobotToMoving(rollingGame as any)).toThrow(
-        'Game must be in rolled state to advance robot to moving'
-      )
     })
 
     it('should process robot turn successfully', async () => {

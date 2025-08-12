@@ -129,8 +129,19 @@ export class Play {
 
       // 🔧 FIX: Preserve all other moves, just replace the executed one
       const allMoves = Array.from(play.moves)
-      const otherMoves = allMoves.filter((m) => m.id !== move.id)
-      const finalMoves = new Set([...otherMoves, bearOffResult.move])
+      // DEFENSIVE PROGRAMMING: Filter out null/undefined moves and ensure valid move objects
+      const validOtherMoves = allMoves.filter((m) => {
+        if (!m) {
+          logger.warn('Play.move: Found null/undefined move in moves array, excluding from result')
+          return false
+        }
+        if (typeof m !== 'object' || !('id' in m)) {
+          logger.warn('Play.move: Found invalid move object, excluding from result:', m)
+          return false
+        }
+        return m.id !== move.id
+      })
+      const finalMoves = new Set([...validOtherMoves, bearOffResult.move])
 
       return {
         play: {
@@ -176,7 +187,18 @@ export class Play {
     // CRITICAL FIX: Properly manage all moves - replace the consumed ready move with completed move
     // Use filter + add approach to ensure proper move replacement
     const allMoves = Array.from(play.moves)
-    const otherMoves = allMoves.filter((m) => m.id !== move.id) // Remove the executed move by ID
+    // DEFENSIVE PROGRAMMING: Filter out null/undefined moves and ensure valid move objects
+    const otherMoves = allMoves.filter((m) => {
+      if (!m) {
+        logger.warn('Play.move: Found null/undefined move in moves array, excluding from result')
+        return false
+      }
+      if (typeof m !== 'object' || !('id' in m)) {
+        logger.warn('Play.move: Found invalid move object, excluding from result:', m)
+        return false
+      }
+      return m.id !== move.id // Remove the executed move by ID
+    })
 
     // CRITICAL FIX: Recalculate possibleMoves for remaining ready moves
     // After a move is executed, the board state changes and remaining moves need fresh possibleMoves

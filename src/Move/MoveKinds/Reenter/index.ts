@@ -33,13 +33,11 @@ export class Reenter {
     const { player, dieValue } = move
     const direction = player.direction as BackgammonMoveDirection
 
-    // For reentry, we need to find points in the opponent's home board
-    // For clockwise: points 19-24 map to die values 6-1
-    // For counterclockwise: points 1-6 map to die values 1-6
-    const targetPosition =
-      direction === 'clockwise'
-        ? 25 - dieValue // For clockwise, count down from 24 (e.g., die value 1 means point 24)
-        : dieValue // For counterclockwise, count up from 1 (e.g., die value 1 means point 1)
+    // For reentry, both players re-enter on their 19-24 positions (opponent's home board)
+    // This means going back to the beginning of their journey
+    // For clockwise: clockwise positions 19-24, die values map 6→19, 5→20, 4→21, 3→22, 2→23, 1→24
+    // For counterclockwise: counterclockwise positions 19-24, die values map 6→19, 5→20, 4→21, 3→22, 2→23, 1→24
+    const targetPosition = 25 - dieValue // Both players: die 6→19, die 5→20, die 4→21, die 3→22, die 2→23, die 1→24
 
     // Find the point in opponent's home board
     const destination = board.points.find((p: BackgammonPoint) => {

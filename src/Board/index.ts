@@ -137,12 +137,16 @@ export class Board implements BackgammonBoard {
         const hitChecker = destinationClone.checkers[0]
         const hitCheckerColor = hitChecker.color
 
-        // Move the hit checker to the opponent's bar
+        // FIXED: Send hit checker to its own bar based on its direction
+        // Since moving player has 'direction', hit checker (opposite color) has opposite direction
+        const hitCheckerDirection = direction === 'clockwise' ? 'counterclockwise' : 'clockwise'
+        const hitCheckerBar = boardClone.bar[hitCheckerDirection]
+        
         destinationClone.checkers = []
-        opponentBarClone.checkers.push({
+        hitCheckerBar.checkers.push({
           id: hitChecker.id,
           color: hitCheckerColor,
-          checkercontainerId: opponentBarClone.id,
+          checkercontainerId: hitCheckerBar.id,
         })
         // Place the moving checker with its original color
         destinationClone.checkers = [
@@ -251,9 +255,9 @@ export class Board implements BackgammonBoard {
     if (bar.checkers.length > 0) {
       let reentryPoint: number
       if (playerDirection === 'clockwise') {
-        reentryPoint = 25 - dieValue // Fixed: clockwise players re-enter from opponent's home board (points 19-24)
+        reentryPoint = 25 - dieValue // Clockwise players re-enter on clockwise positions 19-24 (opponent's home)
       } else {
-        reentryPoint = dieValue // counterclockwise players re-enter from opponent's home board (points 1-6)
+        reentryPoint = 25 - dieValue // Counterclockwise players re-enter on counterclockwise positions 19-24 (opponent's home)
       }
       const possibleDestination = Board.getPoints(board).find(
         (p: BackgammonPoint) =>

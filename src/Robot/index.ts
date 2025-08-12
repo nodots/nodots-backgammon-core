@@ -2,6 +2,7 @@ import { BackgammonGame } from '@nodots-llc/backgammon-types'
 import { AIPluginManager } from '../AI/AIPluginManager'
 import { BackgammonAIPlugin } from '../AI/interfaces/AIPlugin'
 import { BasicAIPlugin } from '../AI/plugins/BasicAIPlugin'
+import { BlotRobotAIPlugin } from '../AI/plugins/BlotRobotAIPlugin'
 import { Board } from '../Board'
 import { Game } from '../Game'
 import { logger } from '../utils/logger'
@@ -18,9 +19,10 @@ export type RobotSkillLevel = 'beginner' | 'intermediate' | 'advanced'
 export class Robot {
   private static pluginManager = new AIPluginManager()
 
-  // Auto-register built-in basic AI
+  // Auto-register built-in AI plugins
   static {
     this.pluginManager.registerPlugin(new BasicAIPlugin())
+    this.pluginManager.registerPlugin(new BlotRobotAIPlugin())
     this.pluginManager.setDefaultPlugin('basic-ai')
   }
 
@@ -70,6 +72,29 @@ export class Robot {
   }
 
   /**
+   * Process robot turn - simplified wrapper around makeOptimalMove
+   * This method provides a clean interface for the Game.processGameState() method
+   * @param game - Game state where robot needs to take action
+   * @returns Promise with updated game state after robot automation
+   */
+  public static async processRobotTurn(
+    game: BackgammonGame
+  ): Promise<BackgammonGame> {
+    const result = await Robot.makeOptimalMove(game, 'intermediate')
+
+    if (result.success && result.game) {
+      return result.game
+    }
+
+    // If robot automation failed, return original game state
+    logger.warn(
+      'Robot automation failed, returning original state:',
+      result.error
+    )
+    return game
+  }
+
+  /**
    * Pure function for pattern matching on game state - follows FP discriminated union pattern
    */
   private static processGameState = async function processGameState(
@@ -96,7 +121,7 @@ export class Robot {
       default:
         return {
           success: false,
-          error: `Robot cannot act in game state: ${game.stateKind}`,
+          error: `Cannot process game in state: ${game.stateKind}`,
         }
     }
   }
@@ -107,7 +132,7 @@ export class Robot {
   private static processRollingForStart = async function processRollingForStart(
     game: BackgammonGame
   ): Promise<RobotMoveResult> {
-    const hasRobotPlayer = (players: any[]) => 
+    const hasRobotPlayer = (players: any[]) =>
       players.some((player) => player.isRobot)
 
     if (!hasRobotPlayer(game.players)) {
@@ -119,12 +144,12 @@ export class Robot {
 
     try {
       const rolledForStartGame = Game.rollForStart(game as any)
-      
+
       // If robot won, continue with their turn automation
       if (rolledForStartGame.activePlayer?.isRobot) {
         return Robot.processRolledForStart(rolledForStartGame, 'beginner')
       }
-      
+
       return {
         success: true,
         game: rolledForStartGame,
@@ -133,7 +158,8 @@ export class Robot {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to roll for start',
+        error:
+          error instanceof Error ? error.message : 'Failed to roll for start',
       }
     }
   }
@@ -145,7 +171,7 @@ export class Robot {
     game: BackgammonGame,
     difficulty: RobotSkillLevel
   ): Promise<RobotMoveResult> {
-    const validateActiveRobot = (game: BackgammonGame) => 
+    const validateActiveRobot = (game: BackgammonGame) =>
       game.activePlayer?.isRobot
 
     if (!validateActiveRobot(game)) {
@@ -168,9 +194,10 @@ export class Robot {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error
-          ? error.message
-          : 'Failed to handle rolled-for-start',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to handle rolled-for-start',
       }
     }
   }
@@ -182,7 +209,7 @@ export class Robot {
     game: BackgammonGame,
     difficulty: RobotSkillLevel
   ): Promise<RobotMoveResult> {
-    const validateActiveRobot = (game: BackgammonGame) => 
+    const validateActiveRobot = (game: BackgammonGame) =>
       game.activePlayer?.isRobot
 
     if (!validateActiveRobot(game)) {
@@ -195,18 +222,17 @@ export class Robot {
     try {
       // Roll dice - pure function call
       const rolledGame = Game.roll(game as any)
-      
+
       // Complete turn using functional composition
       return Robot.processMovingTurn(rolledGame, difficulty)
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to handle rolling',
+        error:
+          error instanceof Error ? error.message : 'Failed to handle rolling',
       }
     }
   }
-
-
 
   /**
    * Pure functional approach to processing moving turn - follows CLAUDE.md FP guidelines
@@ -217,10 +243,10 @@ export class Robot {
     difficulty: RobotSkillLevel,
     aiPlugin?: string
   ): Promise<RobotMoveResult> {
-    const validateActiveRobot = (game: BackgammonGame) => 
+    const validateActiveRobot = (game: BackgammonGame) =>
       game.activePlayer?.isRobot
 
-    const validateActivePlay = (game: BackgammonGame) => 
+    const validateActivePlay = (game: BackgammonGame) =>
       game.activePlay && (game.activePlay as any).moves
 
     if (!validateActiveRobot(game)) {
@@ -234,7 +260,7 @@ export class Robot {
       // QUICK FIX: Skip problematic state transitions and work directly with original game
       // The original game already has the board and activePlay - just ensure it's in moving state
       let workingGame = game
-      
+
       // Only transition if absolutely necessary
       if (game.stateKind === 'rolled') {
         const preparingGame = Game.prepareMove(game as any)
@@ -242,7 +268,7 @@ export class Robot {
       } else if (game.stateKind === 'preparing-move') {
         workingGame = Game.toMoving(game as any)
       }
-      
+
       if (!validateActivePlay(workingGame)) {
         return {
           success: false,
@@ -251,14 +277,15 @@ export class Robot {
       }
 
       // Functional processing of moves without imperative loops
-      return Robot.processMoveSequence(workingGame, difficulty)
+      return Robot.processMoveSequence(workingGame, difficulty, aiPlugin)
     } catch (error) {
       logger.error('Error in Robot.processMovingTurn:', error)
       return {
         success: false,
-        error: error instanceof Error
-          ? error.message
-          : 'Failed to complete robot turn',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to complete robot turn',
       }
     }
   }
@@ -273,10 +300,10 @@ export class Robot {
       case 'rolled':
         const preparingGame = Game.prepareMove(game as any)
         return Game.toMoving(preparingGame)
-      
+
       case 'preparing-move':
         return Game.toMoving(game as any)
-      
+
       default:
         return game
     }
@@ -287,54 +314,113 @@ export class Robot {
    */
   private static processMoveSequence = async function processMoveSequence(
     game: BackgammonGame,
-    difficulty: RobotSkillLevel
+    difficulty: RobotSkillLevel,
+    aiPlugin?: string
   ): Promise<RobotMoveResult> {
-    const movesArray = Array.from((game.activePlay as any)!.moves)
-    
-    logger.info(`🤖 Robot processing ${movesArray.length} move slots from activePlay.moves`)
-    
+    // DEFENSIVE PROGRAMMING: Validate activePlay.moves exists and is valid
+    const activePlayMoves = (game.activePlay as any)?.moves
+    if (!activePlayMoves) {
+      return {
+        success: false,
+        error: 'No activePlay.moves found - cannot execute robot turn',
+      }
+    }
+
+    const movesArray = Array.from(activePlayMoves).filter((move: any) => {
+      if (!move) {
+        logger.warn(
+          '🤖 Robot.processMoveSequence: Found null/undefined move in activePlay.moves, filtering out'
+        )
+        return false
+      }
+      if (typeof move !== 'object') {
+        logger.warn(
+          `🤖 Robot.processMoveSequence: Found non-object move (${typeof move}), filtering out`
+        )
+        return false
+      }
+      return true
+    })
+
+    logger.info(
+      `🤖 Robot processing ${movesArray.length} valid move slots from activePlay.moves`
+    )
+
     // Functional approach using reduce for sequence processing
-    const processMove = async (currentGame: BackgammonGame, moveSlot: any, index: number): Promise<BackgammonGame> => {
+    const processMove = async (
+      currentGame: BackgammonGame,
+      moveSlot: any,
+      index: number
+    ): Promise<BackgammonGame> => {
+      // DEFENSIVE PROGRAMMING: Handle null/undefined/invalid move slots
+      if (!moveSlot) {
+        logger.warn(`🤖 Move slot ${index + 1} is null/undefined, skipping`)
+        return currentGame
+      }
+      if (typeof moveSlot !== 'object') {
+        logger.warn(
+          `🤖 Move slot ${index + 1} is not an object (${typeof moveSlot}), skipping`
+        )
+        return currentGame
+      }
+      if (!('stateKind' in moveSlot)) {
+        logger.warn(
+          `🤖 Move slot ${index + 1} missing stateKind property, skipping`
+        )
+        return currentGame
+      }
+
       // Skip non-ready moves
       if (moveSlot.stateKind !== 'ready') {
-        logger.info(`🤖 Move slot ${index + 1} already ${moveSlot.stateKind}, skipping`)
+        logger.info(
+          `🤖 Move slot ${index + 1} already ${moveSlot.stateKind}, skipping`
+        )
         return currentGame
       }
 
       // Skip moves with no possible moves
       if (!moveSlot.possibleMoves || moveSlot.possibleMoves.length === 0) {
-        logger.info(`🤖 Move slot ${index + 1} has no possible moves, marking as no-move`)
+        logger.info(
+          `🤖 Move slot ${index + 1} has no possible moves, marking as no-move`
+        )
         return currentGame
       }
 
-      // Select and execute move
-      const selectedMove = Robot.selectMoveByDifficulty(
+      // Select and execute move using AI plugin or difficulty-based selection
+      const selectedMove = Robot.selectMoveByStrategy(
         moveSlot.possibleMoves,
         difficulty,
-        currentGame
+        currentGame,
+        aiPlugin
       )
 
       if (!selectedMove) {
-        logger.warn(`🤖 Could not select move from ${moveSlot.possibleMoves.length} possible moves`)
+        logger.warn(
+          `🤖 Could not select move from ${moveSlot.possibleMoves.length} possible moves`
+        )
         return currentGame
       }
 
-      logger.info(`🤖 Executing move ${index + 1}/${movesArray.length}: ${selectedMove.origin.id} → ${selectedMove.destination.id}`)
+      logger.info(
+        `🤖 Executing move ${index + 1}/${movesArray.length}: ${selectedMove.origin.id} → ${selectedMove.destination.id}`
+      )
 
       // DEBUG: Check if game has board before calling executeAndRecalculate
       if (!currentGame) {
         logger.error(`🤖 CRITICAL: currentGame is undefined!`)
         throw new Error('Game object is undefined - cannot execute move')
       }
-      
+
       if (!currentGame.board) {
         logger.error(`🤖 CRITICAL: currentGame has no board property!`, {
           gameStateKind: currentGame.stateKind,
           gameKeys: Object.keys(currentGame),
           hasActivePlay: !!currentGame.activePlay,
-          hasActivePlayer: !!currentGame.activePlayer
+          hasActivePlayer: !!currentGame.activePlayer,
         })
-        throw new Error('Game object missing board property - cannot execute move')
+        throw new Error(
+          'Game object missing board property - cannot execute move'
+        )
       }
 
       // Execute move - pure function call
@@ -350,17 +436,17 @@ export class Robot {
     // Process moves sequentially using reduce for functional composition
     let gameAfterMoves = game
     let executedMoveCount = 0
-    
+
     for (let i = 0; i < movesArray.length; i++) {
       const moveSlot = movesArray[i]
       const gameBeforeMove = gameAfterMoves
       gameAfterMoves = await processMove(gameAfterMoves, moveSlot, i)
-      
+
       // Count executed moves
       if (gameAfterMoves !== gameBeforeMove) {
         executedMoveCount++
       }
-      
+
       // Check for win condition after each move
       if (gameAfterMoves.stateKind === 'completed') {
         return {
@@ -371,7 +457,9 @@ export class Robot {
       }
     }
 
-    logger.info(`🤖 Robot executed ${executedMoveCount} moves, checking turn completion`)
+    logger.info(
+      `🤖 Robot executed ${executedMoveCount} moves, checking turn completion`
+    )
 
     // Complete turn using pure functions
     const finalGame = Robot.completeTurn(gameAfterMoves)
@@ -394,7 +482,7 @@ export class Robot {
       logger.info('🤖 Turn already completed, game state:', game.stateKind)
       return game
     }
-    
+
     if (Game.canConfirmTurn(game)) {
       logger.info('🤖 All moves completed, confirming turn')
       return Game.confirmTurn(game as any)
@@ -565,6 +653,30 @@ export class Robot {
    */
   static getDefaultAI(): string | null {
     return this.pluginManager.getDefaultPlugin()
+  }
+
+  /**
+   * Select a move using either AI plugin strategy or difficulty-based selection
+   * @param possibleMoves - Array of possible moves
+   * @param difficulty - Robot difficulty level
+   * @param game - Current game state
+   * @param aiPlugin - Optional AI plugin name to use
+   * @returns Selected move
+   */
+  private static selectMoveByStrategy = function selectMoveByStrategy(
+    possibleMoves: any[],
+    difficulty: RobotSkillLevel,
+    game: BackgammonGame,
+    aiPlugin?: string
+  ): any {
+    // Use specific AI strategy if requested
+    if (aiPlugin === 'blot-robot') {
+      logger.info(`🎯 Using BlotRobot strategy for move selection`)
+      return BlotRobotAIPlugin.selectBlotMove(possibleMoves, game)
+    }
+
+    // Fall back to traditional difficulty-based selection
+    return Robot.selectMoveByDifficulty(possibleMoves, difficulty, game)
   }
 
   /**

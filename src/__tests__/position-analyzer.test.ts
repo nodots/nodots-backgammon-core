@@ -36,11 +36,12 @@ describe('PositionAnalyzer', () => {
     const board = Board.createBoardForPlayers('black', 'white')
 
     // Create a basic game that can be used for position analysis
-    mockGame = Game.initialize(
-      [blackPlayer, whitePlayer] as any,
-      generateId(),
-      'rolling-for-start',
-      board
+    mockGame = Game.createNewGame(
+      'black-player',
+      'white-player',
+      false,
+      false,
+      false
     )
   })
 
