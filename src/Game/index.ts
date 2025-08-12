@@ -29,6 +29,7 @@ import {
 } from '@nodots-llc/backgammon-types/dist'
 import { generateId, Player, randomBackgammonColor } from '..'
 import { Board } from '../Board'
+import { exportToGnuPositionId } from '../Board/gnuPositionId'
 import { Checker } from '../Checker'
 import { Cube } from '../Cube'
 import { Dice } from '../Dice'
@@ -59,6 +60,19 @@ export class Game {
   activePlay!: BackgammonPlay
   activePlayer!: BackgammonPlayerActive
   inactivePlayer!: BackgammonPlayerInactive
+
+  /**
+   * Gets the GNU Position ID for the current board state
+   * This is calculated dynamically based on the current game state
+   */
+  get gnuPositionId(): string {
+    try {
+      return exportToGnuPositionId(this as any)
+    } catch (error) {
+      logger.warn('Failed to generate gnuPositionId:', error)
+      return ''
+    }
+  }
 
   /**
    * Creates a new game between two players
@@ -281,7 +295,6 @@ export class Game {
   private static createBaseGameProperties() {
     return {
       createdAt: new Date(),
-      gnuPositionId: '', // Will be calculated after board state is set
       version: '1.0.0',
       rules: {},
       settings: {

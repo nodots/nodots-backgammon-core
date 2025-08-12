@@ -21,6 +21,7 @@ import { PositionAnalyzer } from '../AI/utils/PositionAnalyzer'
 import { logger } from '../utils/logger'
 import { ascii } from './ascii'
 import { BOARD_IMPORT_DEFAULT } from './imports'
+export { exportToGnuPositionId } from './gnuPositionId'
 
 
 export const BOARD_POINT_COUNT = 24
