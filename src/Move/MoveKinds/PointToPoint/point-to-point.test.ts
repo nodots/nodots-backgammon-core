@@ -43,6 +43,7 @@ describe('PointToPoint', () => {
           id: generateId(),
           color: 'black',
           checkercontainerId: board.points[12].id,
+          isMovable: true,
         },
       ]
     })
@@ -79,6 +80,7 @@ describe('PointToPoint', () => {
           id: generateId(),
           color: 'white',
           checkercontainerId: destination.id,
+          isMovable: true,
         },
       ]
 
@@ -113,11 +115,13 @@ describe('PointToPoint', () => {
           id: generateId(),
           color: 'white',
           checkercontainerId: destination.id,
+          isMovable: true,
         },
         {
           id: generateId(),
           color: 'white',
           checkercontainerId: destination.id,
+          isMovable: true,
         },
       ]
 

@@ -73,8 +73,18 @@ describe('PositionAnalyzer', () => {
       // Create a mock game state with checkers on the bar
       const gameWithBar = { ...mockGame }
       gameWithBar.board.bar.clockwise.checkers = [
-        { id: 'checker1', color: 'black', checkercontainerId: 'bar-clockwise' },
-        { id: 'checker2', color: 'black', checkercontainerId: 'bar-clockwise' },
+        {
+          id: 'checker1',
+          color: 'black',
+          checkercontainerId: 'bar-clockwise',
+          isMovable: false,
+        },
+        {
+          id: 'checker2',
+          color: 'black',
+          checkercontainerId: 'bar-clockwise',
+          isMovable: false,
+        },
       ]
 
       const pipCount = PositionAnalyzer.calculatePipCount(
@@ -246,8 +256,18 @@ describe('PositionAnalyzer', () => {
     it('should handle player with checkers on bar', () => {
       const gameWithBar = { ...mockGame }
       gameWithBar.board.bar.clockwise.checkers = [
-        { id: 'checker1', color: 'black', checkercontainerId: 'bar-clockwise' },
-        { id: 'checker2', color: 'black', checkercontainerId: 'bar-clockwise' },
+        {
+          id: 'checker1',
+          color: 'black',
+          checkercontainerId: 'bar-clockwise',
+          isMovable: false,
+        },
+        {
+          id: 'checker2',
+          color: 'black',
+          checkercontainerId: 'bar-clockwise',
+          isMovable: false,
+        },
       ]
 
       const distribution = PositionAnalyzer.evaluateDistribution(
@@ -262,9 +282,24 @@ describe('PositionAnalyzer', () => {
     it('should handle player with borne off checkers', () => {
       const gameWithBearOff = { ...mockGame }
       gameWithBearOff.board.off.clockwise.checkers = [
-        { id: 'checker1', color: 'black', checkercontainerId: 'off-clockwise' },
-        { id: 'checker2', color: 'black', checkercontainerId: 'off-clockwise' },
-        { id: 'checker3', color: 'black', checkercontainerId: 'off-clockwise' },
+        {
+          id: 'checker1',
+          color: 'black',
+          checkercontainerId: 'off-clockwise',
+          isMovable: false,
+        },
+        {
+          id: 'checker2',
+          color: 'black',
+          checkercontainerId: 'off-clockwise',
+          isMovable: false,
+        },
+        {
+          id: 'checker3',
+          color: 'black',
+          checkercontainerId: 'off-clockwise',
+          isMovable: false,
+        },
       ]
 
       const distribution = PositionAnalyzer.evaluateDistribution(

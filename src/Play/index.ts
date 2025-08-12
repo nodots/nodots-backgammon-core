@@ -17,7 +17,7 @@ import {
 } from '@nodots-llc/backgammon-types/dist'
 import { Board, generateId } from '..'
 import { BearOff } from '../Move/MoveKinds/BearOff'
-import { logger } from '../utils/logger'
+import { logger, debug } from '../utils/logger'
 export * from '../index'
 
 const allowedMoveKinds = ['point-to-point', 'reenter', 'bear-off'] as const
@@ -51,7 +51,7 @@ export class Play {
     // First, find any ready move to get the die value
     const anyReadyMove = movesArray.find((m) => m.stateKind === 'ready')
     if (!anyReadyMove) {
-      console.log('[DEBUG] Play.move: No ready moves found in activePlay.moves')
+      debug('Play.move: No ready moves found in activePlay.moves')
       const noMove: BackgammonMoveCompletedNoMove = {
         id: generateId(),
         player: play.player,
@@ -86,7 +86,7 @@ export class Play {
     )
 
     if (!matchingMove) {
-      console.log('[DEBUG] Play.move: No fresh move found for origin:', {
+      debug('Play.move: No fresh move found for origin', {
         originId: origin.id,
         originKind: origin.kind,
         dieValue: dieValue,
@@ -157,7 +157,7 @@ export class Play {
 
     // CRITICAL FIX: Use the exact destination from the fresh move calculation
     // Don't recalculate possible moves - we already have the correct destination
-    console.log('[DEBUG] Play.move: Executing move with fresh destination:', {
+    debug('Play.move: Executing move with fresh destination', {
       originId: matchingMove.origin.id,
       destinationId: matchingMove.destination.id,
       dieValue: dieValue,
@@ -212,7 +212,7 @@ export class Play {
           remainingMove.dieValue
         )
         
-        console.log('[DEBUG] Play.move: Recalculated possibleMoves for remaining move:', {
+        debug('Play.move: Recalculated possibleMoves for remaining move', {
           moveId: remainingMove.id,
           dieValue: remainingMove.dieValue,
           oldPossibleMovesCount: remainingMove.possibleMoves.length,

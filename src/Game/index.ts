@@ -1941,6 +1941,7 @@ export class Game {
               id: hitChecker.id,
               color: hitChecker.color,
               checkercontainerId: destinationContainer.id,
+              isMovable: false,
             })
           }
         }
@@ -1951,6 +1952,7 @@ export class Game {
         id: movedChecker.id,
         color: movedChecker.color,
         checkercontainerId: originContainer.id,
+        isMovable: false,
       })
 
       // Update the move state back to 'ready' and remove specific move details

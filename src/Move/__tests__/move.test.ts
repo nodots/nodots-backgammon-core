@@ -153,11 +153,13 @@ describe('Move', () => {
         id: generateId(),
         color: 'white',
         checkercontainerId: generateId(),
+        isMovable: false,
       }
       const blackChecker: BackgammonChecker = {
         id: generateId(),
         color: 'black',
         checkercontainerId: generateId(),
+        isMovable: false,
       }
 
       const pointWithWhite: BackgammonPoint = {
@@ -183,6 +185,7 @@ describe('Move', () => {
         id: generateId(),
         color: 'white',
         checkercontainerId: generateId(),
+        isMovable: false,
       }
 
       const point: BackgammonPoint = {
@@ -201,6 +204,7 @@ describe('Move', () => {
         id: generateId(),
         color: 'black',
         checkercontainerId: generateId(),
+        isMovable: false,
       }
 
       const point: BackgammonPoint = {
@@ -452,7 +456,12 @@ describe('Move', () => {
         destination: {
           ...board.points[1],
           checkers: [
-            { id: 'opp', color: 'black' as const, checkercontainerId: 'x' },
+            {
+              id: 'opp',
+              color: 'black' as const,
+              checkercontainerId: 'x',
+              isMovable: false,
+            },
           ],
         },
         dieValue: 1,

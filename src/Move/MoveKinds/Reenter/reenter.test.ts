@@ -48,6 +48,7 @@ describe('Reenter', () => {
           id: generateId(),
           color: 'black',
           checkercontainerId: board.bar.clockwise.id,
+          isMovable: true,
         },
       ]
 
@@ -78,6 +79,7 @@ describe('Reenter', () => {
           id: generateId(),
           color: 'black',
           checkercontainerId: board.bar.clockwise.id,
+          isMovable: true,
         },
       ]
 
@@ -88,6 +90,7 @@ describe('Reenter', () => {
           id: generateId(),
           color: 'white',
           checkercontainerId: reentryPoint.id,
+          isMovable: true,
         },
       ]
 
@@ -120,6 +123,7 @@ describe('Reenter', () => {
           id: generateId(),
           color: 'black',
           checkercontainerId: board.bar.clockwise.id,
+          isMovable: true,
         },
       ]
 
@@ -130,11 +134,13 @@ describe('Reenter', () => {
           id: generateId(),
           color: 'white',
           checkercontainerId: reentryPoint.id,
+          isMovable: true,
         },
         {
           id: generateId(),
           color: 'white',
           checkercontainerId: reentryPoint.id,
+          isMovable: true,
         },
       ]
 

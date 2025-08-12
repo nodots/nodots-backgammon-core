@@ -65,8 +65,18 @@ describe.skip('GamePhaseDetector', () => {
         )
         if (point) {
           point.checkers = [
-            { id: generateId(), color: 'black', checkercontainerId: point.id },
-            { id: generateId(), color: 'black', checkercontainerId: point.id },
+            {
+              id: generateId(),
+              color: 'black',
+              checkercontainerId: point.id,
+              isMovable: false,
+            },
+            {
+              id: generateId(),
+              color: 'black',
+              checkercontainerId: point.id,
+              isMovable: false,
+            },
           ]
         }
       }
@@ -79,6 +89,7 @@ describe.skip('GamePhaseDetector', () => {
             id: generateId(),
             color: 'black',
             checkercontainerId: point1.id,
+            isMovable: false,
           })
         }
       }
@@ -102,8 +113,18 @@ describe.skip('GamePhaseDetector', () => {
         const point = raceBoard.points.find((p) => p.position.clockwise === i)
         if (point && i <= 3) {
           point.checkers = [
-            { id: generateId(), color: 'black', checkercontainerId: point.id },
-            { id: generateId(), color: 'black', checkercontainerId: point.id },
+            {
+              id: generateId(),
+              color: 'black',
+              checkercontainerId: point.id,
+              isMovable: false,
+            },
+            {
+              id: generateId(),
+              color: 'black',
+              checkercontainerId: point.id,
+              isMovable: false,
+            },
           ]
         }
       }
@@ -113,8 +134,18 @@ describe.skip('GamePhaseDetector', () => {
         const point = raceBoard.points.find((p) => p.position.clockwise === i)
         if (point && i >= 22) {
           point.checkers = [
-            { id: generateId(), color: 'white', checkercontainerId: point.id },
-            { id: generateId(), color: 'white', checkercontainerId: point.id },
+            {
+              id: generateId(),
+              color: 'white',
+              checkercontainerId: point.id,
+              isMovable: false,
+            },
+            {
+              id: generateId(),
+              color: 'white',
+              checkercontainerId: point.id,
+              isMovable: false,
+            },
           ]
         }
       }
@@ -143,14 +174,34 @@ describe.skip('GamePhaseDetector', () => {
 
       if (anchor1) {
         anchor1.checkers = [
-          { id: generateId(), color: 'black', checkercontainerId: anchor1.id },
-          { id: generateId(), color: 'black', checkercontainerId: anchor1.id },
+          {
+            id: generateId(),
+            color: 'black',
+            checkercontainerId: anchor1.id,
+            isMovable: false,
+          },
+          {
+            id: generateId(),
+            color: 'black',
+            checkercontainerId: anchor1.id,
+            isMovable: false,
+          },
         ]
       }
       if (anchor2) {
         anchor2.checkers = [
-          { id: generateId(), color: 'black', checkercontainerId: anchor2.id },
-          { id: generateId(), color: 'black', checkercontainerId: anchor2.id },
+          {
+            id: generateId(),
+            color: 'black',
+            checkercontainerId: anchor2.id,
+            isMovable: false,
+          },
+          {
+            id: generateId(),
+            color: 'black',
+            checkercontainerId: anchor2.id,
+            isMovable: false,
+          },
         ]
       }
 
@@ -164,11 +215,13 @@ describe.skip('GamePhaseDetector', () => {
             id: generateId(),
             color: 'white',
             checkercontainerId: whitePoint.id,
+            isMovable: false,
           },
           {
             id: generateId(),
             color: 'white',
             checkercontainerId: whitePoint.id,
+            isMovable: false,
           },
         ]
       }
@@ -192,7 +245,12 @@ describe.skip('GamePhaseDetector', () => {
         const point = blitzBoard.points.find((p) => p.position.clockwise === i)
         if (point) {
           point.checkers = [
-            { id: generateId(), color: 'black', checkercontainerId: point.id },
+            {
+              id: generateId(),
+              color: 'black',
+              checkercontainerId: point.id,
+              isMovable: false,
+            },
           ]
         }
       }
@@ -203,6 +261,7 @@ describe.skip('GamePhaseDetector', () => {
           id: generateId(),
           color: 'black',
           checkercontainerId: 'bar-clockwise',
+          isMovable: false,
         },
       ]
 
@@ -231,6 +290,7 @@ describe.skip('GamePhaseDetector', () => {
             id: generateId(),
             color: 'black',
             checkercontainerId: point.id,
+            isMovable: false,
           })
         }
       })
@@ -289,6 +349,7 @@ describe.skip('GamePhaseDetector', () => {
             id: generateId(),
             color: 'black',
             checkercontainerId: point1.id,
+            isMovable: false,
           })
         }
       }
@@ -310,7 +371,12 @@ describe.skip('GamePhaseDetector', () => {
         const point = raceBoard.points.find((p) => p.position.clockwise === i)
         if (point) {
           point.checkers = [
-            { id: generateId(), color: 'black', checkercontainerId: point.id },
+            {
+              id: generateId(),
+              color: 'black',
+              checkercontainerId: point.id,
+              isMovable: false,
+            },
           ]
         }
       }
@@ -319,7 +385,12 @@ describe.skip('GamePhaseDetector', () => {
         const point = raceBoard.points.find((p) => p.position.clockwise === i)
         if (point) {
           point.checkers = [
-            { id: generateId(), color: 'white', checkercontainerId: point.id },
+            {
+              id: generateId(),
+              color: 'white',
+              checkercontainerId: point.id,
+              isMovable: false,
+            },
           ]
         }
       }
@@ -350,6 +421,7 @@ describe.skip('GamePhaseDetector', () => {
             id: generateId(),
             color: 'black',
             checkercontainerId: point.id,
+            isMovable: false,
           })
         }
       })
@@ -364,6 +436,7 @@ describe.skip('GamePhaseDetector', () => {
             id: generateId(),
             color: 'white',
             checkercontainerId: point.id,
+            isMovable: false,
           })
         }
       })
@@ -393,6 +466,7 @@ describe.skip('GamePhaseDetector', () => {
             id: generateId(),
             color: 'black',
             checkercontainerId: point1.id,
+            isMovable: false,
           })
         }
       }
@@ -420,6 +494,7 @@ describe.skip('GamePhaseDetector', () => {
             id: generateId(),
             color: 'black',
             checkercontainerId: point.id,
+            isMovable: false,
           })
         }
       })
@@ -434,6 +509,7 @@ describe.skip('GamePhaseDetector', () => {
             id: generateId(),
             color: 'white',
             checkercontainerId: point.id,
+            isMovable: false,
           })
         }
       })
@@ -453,7 +529,12 @@ describe.skip('GamePhaseDetector', () => {
         const point = blitzBoard.points.find((p) => p.position.clockwise === i)
         if (point) {
           point.checkers = [
-            { id: generateId(), color: 'black', checkercontainerId: point.id },
+            {
+              id: generateId(),
+              color: 'black',
+              checkercontainerId: point.id,
+              isMovable: false,
+            },
           ]
         }
       }
@@ -463,6 +544,7 @@ describe.skip('GamePhaseDetector', () => {
           id: generateId(),
           color: 'black',
           checkercontainerId: 'bar-clockwise',
+          isMovable: false,
         },
       ]
 
@@ -487,6 +569,7 @@ describe.skip('GamePhaseDetector', () => {
             id: generateId(),
             color: 'black',
             checkercontainerId: anchor.id,
+            isMovable: false,
           })
         }
       }
@@ -501,11 +584,13 @@ describe.skip('GamePhaseDetector', () => {
             id: generateId(),
             color: 'white',
             checkercontainerId: whitePoint.id,
+            isMovable: false,
           },
           {
             id: generateId(),
             color: 'white',
             checkercontainerId: whitePoint.id,
+            isMovable: false,
           },
         ]
       }
@@ -534,6 +619,7 @@ describe.skip('GamePhaseDetector', () => {
             id: generateId(),
             color: 'black',
             checkercontainerId: point1.id,
+            isMovable: false,
           })
         }
       }

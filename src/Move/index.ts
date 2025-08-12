@@ -26,6 +26,7 @@ import {
   MoveProps,
 } from '@nodots-llc/backgammon-types/dist'
 import { generateId } from '..'
+import { debug } from '../utils/logger'
 import { BearOff } from './MoveKinds/BearOff'
 import { PointToPoint } from './MoveKinds/PointToPoint'
 import { Reenter } from './MoveKinds/Reenter'
@@ -74,7 +75,7 @@ export class Move {
         }
       }
 
-      console.log('[DEBUG] Game found:', {
+      debug('Game found', {
         gameId,
         stateKind: game.stateKind,
         activeColor: game.activeColor,
@@ -103,7 +104,7 @@ export class Move {
       }
 
       const { checker, container } = checkerInfo
-      console.log('[DEBUG] Checker found:', {
+      debug('Checker found', {
         checkerId: checker.id,
         checkerColor: checker.color,
         containerKind: container.kind,

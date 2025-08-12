@@ -18,11 +18,11 @@ import {
 } from '@nodots-llc/backgammon-types/dist'
 import { Checker, generateId, Player, randomBackgammonColor } from '..'
 import { PositionAnalyzer } from '../AI/utils/PositionAnalyzer'
+import { debug } from '../utils/logger'
 import { logger } from '../utils/logger'
 import { ascii } from './ascii'
 import { BOARD_IMPORT_DEFAULT } from './imports'
 export { exportToGnuPositionId } from './gnuPositionId'
-
 
 export const BOARD_POINT_COUNT = 24
 
@@ -84,7 +84,7 @@ export class Board implements BackgammonBoard {
     // CRITICAL FIX: Validate that the move is still valid at execution time
     // This prevents the "No checker found" error from stale move references
     if (!originClone.checkers || originClone.checkers.length === 0) {
-      console.log('[DEBUG] Board.moveChecker: No checkers at origin point:', {
+      debug('Board.moveChecker: No checkers at origin point', {
         originId: origin.id,
         originKind: origin.kind,
         checkerCount: originClone.checkers?.length || 0,
@@ -96,7 +96,7 @@ export class Board implements BackgammonBoard {
     // Get the checker to move and preserve its color
     const checker = originClone.checkers[originClone.checkers.length - 1]
     if (!checker) {
-      console.log('[DEBUG] Board.moveChecker: Checker is null/undefined:', {
+      debug('Board.moveChecker: Checker is null/undefined', {
         originId: origin.id,
         checkerCount: originClone.checkers.length,
         checkers: originClone.checkers,
@@ -110,7 +110,7 @@ export class Board implements BackgammonBoard {
       !movingCheckerColor ||
       (movingCheckerColor !== 'black' && movingCheckerColor !== 'white')
     ) {
-      console.log('[DEBUG] Board.moveChecker: Invalid checker color:', {
+      debug('Board.moveChecker: Invalid checker color', {
         originId: origin.id,
         checker: checker,
         checkerColor: movingCheckerColor,
@@ -118,7 +118,7 @@ export class Board implements BackgammonBoard {
       throw Error(`Invalid checker color: ${movingCheckerColor}`)
     }
 
-    console.log('[DEBUG] Board.moveChecker: Moving checker:', {
+    debug('Board.moveChecker: Moving checker', {
       originId: origin.id,
       destinationId: destination.id,
       checkerColor: movingCheckerColor,
@@ -140,9 +140,10 @@ export class Board implements BackgammonBoard {
 
         // FIXED: Send hit checker to its own bar based on its direction
         // Since moving player has 'direction', hit checker (opposite color) has opposite direction
-        const hitCheckerDirection = direction === 'clockwise' ? 'counterclockwise' : 'clockwise'
+        const hitCheckerDirection =
+          direction === 'clockwise' ? 'counterclockwise' : 'clockwise'
         const hitCheckerBar = boardClone.bar[hitCheckerDirection]
-        
+
         destinationClone.checkers = []
         hitCheckerBar.checkers.push({
           id: hitChecker.id,
@@ -155,6 +156,7 @@ export class Board implements BackgammonBoard {
             id: checker.id,
             color: movingCheckerColor,
             checkercontainerId: destinationClone.id,
+            isMovable: false,
           },
         ]
       } else {
@@ -163,6 +165,7 @@ export class Board implements BackgammonBoard {
           id: checker.id,
           color: movingCheckerColor,
           checkercontainerId: destinationClone.id,
+          isMovable: false,
         })
       }
     } else if (destination.kind === 'off') {
@@ -171,6 +174,7 @@ export class Board implements BackgammonBoard {
         id: checker.id,
         color: movingCheckerColor,
         checkercontainerId: destinationClone.id,
+        isMovable: false,
       })
     }
 
@@ -827,10 +831,10 @@ export class Board implements BackgammonBoard {
     clockwiseColor: BackgammonColor,
     counterclockwiseColor: BackgammonColor
   ): BackgammonBoard {
-    // DEBUG LOGGING
-    console.log(
-      `[DEBUG] createBoardForPlayers called with clockwiseColor=${clockwiseColor}, counterclockwiseColor=${counterclockwiseColor}`
-    )
+    debug('createBoardForPlayers called', {
+      clockwiseColor,
+      counterclockwiseColor
+    })
 
     // Standard backgammon starting positions
     // Both players start with: 2 on 24, 5 on 13, 3 on 8, 5 on 6

@@ -118,6 +118,7 @@ describe('Reenter', () => {
           id: generateId(),
           color: 'black',
           checkercontainerId: board.points[23].id,
+          isMovable: false,
         },
       ]
 
@@ -175,6 +176,7 @@ describe('Reenter', () => {
           id: generateId(),
           color: player.color === 'white' ? 'black' : 'white',
           checkercontainerId: point.id,
+          isMovable: false,
         }
         point.checkers = [checker, { ...checker, id: generateId() }]
       })
@@ -201,13 +203,24 @@ describe('Reenter', () => {
           id: generateId(),
           color: player.color,
           checkercontainerId: bar.id,
+          isMovable: false,
         },
       ]
       // Block all possible reentry points (points 24 for dieValue 1)
       const destPoint = board.points[23] // Point 24
       destPoint.checkers = [
-        { id: generateId(), color: 'black', checkercontainerId: destPoint.id },
-        { id: generateId(), color: 'black', checkercontainerId: destPoint.id },
+        {
+          id: generateId(),
+          color: 'black',
+          checkercontainerId: destPoint.id,
+          isMovable: false,
+        },
+        {
+          id: generateId(),
+          color: 'black',
+          checkercontainerId: destPoint.id,
+          isMovable: false,
+        },
       ]
       const move: BackgammonMoveReady = {
         id: generateId(),
@@ -286,6 +299,7 @@ describe('Reenter', () => {
           id: generateId(),
           color: player.color === 'white' ? 'black' : 'white',
           checkercontainerId: point.id,
+          isMovable: false,
         }
         point.checkers = [checker, { ...checker, id: generateId() }]
       })
@@ -309,6 +323,7 @@ describe('Reenter', () => {
         id: generateId(),
         color: player.color,
         checkercontainerId: board.points[0].id,
+        isMovable: false,
       })
 
       const move: BackgammonMoveReady = {
@@ -350,6 +365,7 @@ describe('Reenter', () => {
         id: generateId(),
         color: player.color,
         checkercontainerId: board.bar[player.direction].id,
+        isMovable: false,
       })
 
       const move: BackgammonMoveReady = {
@@ -382,6 +398,7 @@ describe('Reenter', () => {
         id: generateId(),
         color: player.color,
         checkercontainerId: board.bar[player.direction].id,
+        isMovable: false,
       }
       board.bar[player.direction].checkers.push(checker)
 
@@ -419,6 +436,7 @@ describe('Reenter', () => {
           id: generateId(),
           color: player.color,
           checkercontainerId: bar.id,
+          isMovable: false,
         },
       ]
       const move: BackgammonMoveReady = {
@@ -507,6 +525,7 @@ describe('Reenter', () => {
           id: generateId(),
           color: player.color,
           checkercontainerId: board.bar[player.direction].id,
+          isMovable: false,
         })
       }
 

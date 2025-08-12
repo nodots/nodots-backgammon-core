@@ -115,6 +115,7 @@ describe('Move', () => {
             id: generateId(),
             color: 'white',
             checkercontainerId: generateId(),
+            isMovable: false,
           },
         ],
       }
@@ -152,11 +153,13 @@ describe('Move', () => {
             id: generateId(),
             color: 'black',
             checkercontainerId: generateId(),
+            isMovable: false,
           },
           {
             id: generateId(),
             color: 'black',
             checkercontainerId: generateId(),
+            isMovable: false,
           },
         ],
       }
@@ -194,11 +197,13 @@ describe('Move', () => {
             id: generateId(),
             color: 'white',
             checkercontainerId: generateId(),
+            isMovable: false,
           },
           {
             id: generateId(),
             color: 'white',
             checkercontainerId: generateId(),
+            isMovable: false,
           },
         ],
       }

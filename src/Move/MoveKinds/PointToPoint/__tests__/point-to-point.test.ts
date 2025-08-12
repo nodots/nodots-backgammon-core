@@ -259,8 +259,18 @@ describe('PointToPoint', () => {
       // Set up destination with 2 black checkers
       const destination = board.points[4]
       destination.checkers = [
-        { color: 'black', id: 'b1', checkercontainerId: destination.id },
-        { color: 'black', id: 'b2', checkercontainerId: destination.id },
+        {
+          color: 'black',
+          id: 'b1',
+          checkercontainerId: destination.id,
+          isMovable: false,
+        },
+        {
+          color: 'black',
+          id: 'b2',
+          checkercontainerId: destination.id,
+          isMovable: false,
+        },
       ]
       const move: BackgammonMoveReady = {
         id: '1',
@@ -320,7 +330,12 @@ describe('PointToPoint', () => {
       // Set up destination with 1 black checker (a blot)
       const destination = board.points[4]
       destination.checkers = [
-        { color: 'black', id: 'b1', checkercontainerId: destination.id },
+        {
+          color: 'black',
+          id: 'b1',
+          checkercontainerId: destination.id,
+          isMovable: false,
+        },
       ]
       // Save original moveChecker
       const originalMoveChecker = Board.moveChecker
@@ -381,9 +396,7 @@ describe('PointToPoint', () => {
     it('should not allow moving from a point with no checkers', () => {
       const { board, player } = setupTestData('white', 'clockwise', 1)
       // Find an empty point
-      const emptyPoint = board.points.find(
-        (p) => p.checkers.length === 0
-      )
+      const emptyPoint = board.points.find((p) => p.checkers.length === 0)
       expect(emptyPoint).toBeDefined()
       const move: BackgammonMoveReady = {
         id: '1',
@@ -405,14 +418,34 @@ describe('PointToPoint', () => {
 
       // Ensure origin has white checkers
       origin.checkers = [
-        { color: 'white', id: 'wo1', checkercontainerId: origin.id },
-        { color: 'white', id: 'wo2', checkercontainerId: origin.id },
+        {
+          color: 'white',
+          id: 'wo1',
+          checkercontainerId: origin.id,
+          isMovable: false,
+        },
+        {
+          color: 'white',
+          id: 'wo2',
+          checkercontainerId: origin.id,
+          isMovable: false,
+        },
       ]
 
       // Set up destination with 2 white checkers
       destination.checkers = [
-        { color: 'white', id: 'w1', checkercontainerId: destination.id },
-        { color: 'white', id: 'w2', checkercontainerId: destination.id },
+        {
+          color: 'white',
+          id: 'w1',
+          checkercontainerId: destination.id,
+          isMovable: false,
+        },
+        {
+          color: 'white',
+          id: 'w2',
+          checkercontainerId: destination.id,
+          isMovable: false,
+        },
       ]
       const initialOriginCount = origin.checkers.length
       const initialDestCount = destination.checkers.length
@@ -431,9 +464,7 @@ describe('PointToPoint', () => {
       expect(result.board.points[5].checkers.length).toBe(
         initialOriginCount - 1
       )
-      expect(result.board.points[4].checkers.length).toBe(
-        initialDestCount + 1
-      )
+      expect(result.board.points[4].checkers.length).toBe(initialDestCount + 1)
     })
 
     it('should not allow moving to a point blocked by 2+ opponent checkers', () => {
@@ -443,14 +474,34 @@ describe('PointToPoint', () => {
 
       // Ensure origin has white checkers
       origin.checkers = [
-        { color: 'white', id: 'wo1', checkercontainerId: origin.id },
-        { color: 'white', id: 'wo2', checkercontainerId: origin.id },
+        {
+          color: 'white',
+          id: 'wo1',
+          checkercontainerId: origin.id,
+          isMovable: false,
+        },
+        {
+          color: 'white',
+          id: 'wo2',
+          checkercontainerId: origin.id,
+          isMovable: false,
+        },
       ]
 
       // Set up destination with 2 black checkers
       destination.checkers = [
-        { color: 'black', id: 'b1', checkercontainerId: destination.id },
-        { color: 'black', id: 'b2', checkercontainerId: destination.id },
+        {
+          color: 'black',
+          id: 'b1',
+          checkercontainerId: destination.id,
+          isMovable: false,
+        },
+        {
+          color: 'black',
+          id: 'b2',
+          checkercontainerId: destination.id,
+          isMovable: false,
+        },
       ]
       const move: BackgammonMoveReady = {
         id: '1',
@@ -475,8 +526,18 @@ describe('PointToPoint', () => {
 
       // Ensure origin has white checkers
       origin.checkers = [
-        { color: 'white', id: 'wo1', checkercontainerId: origin.id },
-        { color: 'white', id: 'wo2', checkercontainerId: origin.id },
+        {
+          color: 'white',
+          id: 'wo1',
+          checkercontainerId: origin.id,
+          isMovable: false,
+        },
+        {
+          color: 'white',
+          id: 'wo2',
+          checkercontainerId: origin.id,
+          isMovable: false,
+        },
       ]
 
       // Use a specific empty destination that works with dieValue 1

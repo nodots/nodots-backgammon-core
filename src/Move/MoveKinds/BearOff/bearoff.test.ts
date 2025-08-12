@@ -82,6 +82,7 @@ describe('BearOff', () => {
           id: generateId(),
           color: 'black',
           checkercontainerId: nonHomePoint.id,
+          isMovable: true,
         },
       ]
 
@@ -105,6 +106,7 @@ describe('BearOff', () => {
           id: generateId(),
           color: 'black',
           checkercontainerId: board.bar.clockwise.id,
+          isMovable: true,
         },
       ]
 
@@ -115,6 +117,7 @@ describe('BearOff', () => {
           id: generateId(),
           color: 'black',
           checkercontainerId: homePoint.id,
+          isMovable: true,
         },
       ]
 
