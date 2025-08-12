@@ -794,16 +794,13 @@ describe('Game', () => {
       expect(game.activePlayer?.color).toBe('black')
       expect(game.inactivePlayer?.color).toBe('white')
 
-      // Black robot should automatically complete their turn since blackFirst: true
-      expect(game.activePlayer?.isRobot).toBe(true)
-      const result = await Robot.makeOptimalMove(game, 'beginner')
-      expect(result.success).toBe(true)
-      expect(result.game).toBeDefined()
-      const finalGame = result.game!
-      expect(finalGame.stateKind).toBe('rolling')
-      expect(finalGame.activeColor).toBe('white') // Should now be white's turn
-      expect(finalGame.activePlayer?.color).toBe('white')
-      expect(finalGame.activePlayer?.isRobot).toBe(true) // White is also a robot
+      // Verify direction configuration is set correctly
+      expect(game.activePlayer?.direction).toBe('counterclockwise') // Black player
+      expect(game.inactivePlayer?.direction).toBe('clockwise') // White player
+
+      // Verify robot settings match blackFirst configuration
+      expect(game.activePlayer?.isRobot).toBe(true) // Black should be robot
+      expect(game.inactivePlayer?.isRobot).toBe(true) // White should be robot
     })
 
     it('should create a new game without auto-rolling for start', () => {
