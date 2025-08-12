@@ -345,7 +345,6 @@ export class Robot {
     logger.info(
       `🤖 Robot processing ${movesArray.length} valid move slots from activePlay.moves`
     )
-
     // Functional approach using reduce for sequence processing
     const processMove = async (
       currentGame: BackgammonGame,
@@ -369,7 +368,6 @@ export class Robot {
         )
         return currentGame
       }
-
       // Skip non-ready moves
       if (moveSlot.stateKind !== 'ready') {
         logger.info(

@@ -1406,8 +1406,8 @@ export class Game {
     // The real fix requires extending the type system to support preserved activePlay
     // For now, keep the original behavior but document the fix location
 
-    // Create game with next player's turn using Game.initialize for proper typing
-    const nextPlayerGame = Game.initialize(
+    // Return game with next player's turn using Game.initialize for proper typing
+    return Game.initialize(
       playersWithUpdatedPips,
       game.id,
       'rolling',
@@ -1418,8 +1418,6 @@ export class Game {
       newActivePlayerWithPips,
       newInactivePlayerWithPips
     )
-
-    return nextPlayerGame
   }
 
   /**
@@ -1518,11 +1516,11 @@ export class Game {
       (p) => p.color === game.activeColor
     ) as BackgammonPlayerInactive
 
-    // Create game with next player's turn - transition to 'rolling' state
+    // Return game with next player's turn - transition to 'rolling' state
     // CRITICAL FIX: Pass undefined for type compatibility, but the core issue is addressed
     // The real fix requires extending the type system to support preserved activePlay
 
-    const nextPlayerGame = Game.initialize(
+    return Game.initialize(
       playersWithUpdatedPips,
       game.id,
       'rolling',
@@ -1533,8 +1531,6 @@ export class Game {
       newActivePlayerWithPips,
       newInactivePlayerWithPips
     ) as BackgammonGameRolling
-
-    return nextPlayerGame
   }
 
   public static activePlayer = function activePlayer(
@@ -2283,7 +2279,6 @@ export class Game {
           ...completedActivePlay,
           stateKind: 'completed',
         }
-
         const updatedGame = {
           ...game,
           activePlay: preservedActivePlay,
