@@ -49,6 +49,8 @@ export * from './Engine'
 export * from './AI/AIPluginManager'
 export * from './AI/interfaces/AIPlugin'
 export * from './AI/plugins/BasicAIPlugin'
+export * from './AI/plugins/GnubgAIPlugin'
+export * from './AI/plugins/NodotsAIv1Plugin'
 export * from './AI/utils/GamePhaseDetector'
 export * from './AI/utils/PositionAnalyzer'
 

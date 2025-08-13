@@ -3,6 +3,8 @@ import { AIPluginManager } from '../AI/AIPluginManager'
 import { BackgammonAIPlugin } from '../AI/interfaces/AIPlugin'
 import { BasicAIPlugin } from '../AI/plugins/BasicAIPlugin'
 import { BlotRobotAIPlugin } from '../AI/plugins/BlotRobotAIPlugin'
+import { GnubgAIPlugin } from '../AI/plugins/GnubgAIPlugin'
+import { NodotsAIv1Plugin } from '../AI/plugins/NodotsAIv1Plugin'
 import { Board } from '../Board'
 import { Game } from '../Game'
 import { logger } from '../utils/logger'
@@ -12,6 +14,14 @@ export interface RobotMoveResult {
   game?: BackgammonGame
   error?: string
   message?: string
+  movesExecuted?: Array<{
+    checkerId: string
+    origin: string
+    destination: string
+    dieValue: number
+    isHit: boolean
+    moveKind: string
+  }>
 }
 
 export type RobotSkillLevel = 'beginner' | 'intermediate' | 'advanced'
@@ -23,6 +33,8 @@ export class Robot {
   static {
     this.pluginManager.registerPlugin(new BasicAIPlugin())
     this.pluginManager.registerPlugin(new BlotRobotAIPlugin())
+    this.pluginManager.registerPlugin(new GnubgAIPlugin())
+    this.pluginManager.registerPlugin(new NodotsAIv1Plugin())
     this.pluginManager.setDefaultPlugin('basic-ai')
   }
 
@@ -345,6 +357,16 @@ export class Robot {
     logger.info(
       `🤖 Robot processing ${movesArray.length} valid move slots from activePlay.moves`
     )
+    
+    // Track executed moves for history recording
+    const executedMoves: Array<{
+      checkerId: string
+      origin: string
+      destination: string
+      dieValue: number
+      isHit: boolean
+      moveKind: string
+    }> = []
     // Functional approach using reduce for sequence processing
     const processMove = async (
       currentGame: BackgammonGame,
@@ -385,7 +407,7 @@ export class Robot {
       }
 
       // Select and execute move using AI plugin or difficulty-based selection
-      const selectedMove = Robot.selectMoveByStrategy(
+      const selectedMove = await Robot.selectMoveByStrategy(
         moveSlot.possibleMoves,
         difficulty,
         currentGame,
@@ -426,6 +448,16 @@ export class Robot {
         currentGame as any,
         selectedMove.origin.id
       )
+      
+      // Track the executed move for history
+      executedMoves.push({
+        checkerId: selectedMove.checker?.id || 'unknown',
+        origin: selectedMove.origin.id,
+        destination: selectedMove.destination.id,
+        dieValue: moveSlot.dieValue || 0,
+        isHit: moveSlot.isHit || false,
+        moveKind: moveSlot.moveKind || 'point-to-point'
+      })
 
       logger.info(`🤖 Move ${index + 1} executed successfully`)
       return gameAfterMove
@@ -451,6 +483,7 @@ export class Robot {
           success: true,
           game: gameAfterMoves,
           message: 'Robot won the game!',
+          movesExecuted: executedMoves
         }
       }
     }
@@ -466,6 +499,7 @@ export class Robot {
       success: true,
       game: finalGame,
       message: `Robot completed full turn successfully (${executedMoveCount} moves executed)`,
+      movesExecuted: executedMoves
     }
   }
 
@@ -654,6 +688,55 @@ export class Robot {
   }
 
   /**
+   * Determine which AI plugin to use based on robot configuration
+   * @param game - Current game state
+   * @param aiPlugin - Optional AI plugin override
+   * @returns AI plugin name to use
+   */
+  private static determineAIPlugin(game: BackgammonGame, aiPlugin?: string): string | null {
+    // If explicitly specified, use that plugin
+    if (aiPlugin) {
+      return aiPlugin
+    }
+
+    // Determine based on active player configuration
+    const activePlayer = game.activePlayer
+    if (!activePlayer || !activePlayer.isRobot) {
+      return null
+    }
+
+    // Check if the robot has a specific email that determines AI type
+    // This would typically come from user configuration, but for now we'll use a simple mapping
+    const playerWithUser = activePlayer as any // Type assertion to access user property
+    if (playerWithUser.user?.email === 'gbg-bot@nodots.com') {
+      return 'gnubg-ai'
+    } else if (playerWithUser.user?.email === 'nbg-bot-v1@nodots.com') {
+      return 'nodots-ai-v1'
+    }
+
+    // Default to basic AI
+    return 'basic-ai'
+  }
+
+  /**
+   * Check if two moves are equivalent
+   * @param move1 - First move to compare
+   * @param move2 - Second move to compare
+   * @returns True if moves are equivalent
+   */
+  private static movesAreEqual(move1: any, move2: any): boolean {
+    if (!move1 || !move2) return false
+    
+    // Compare origin and destination
+    const origin1 = move1.origin?.id || move1.origin
+    const origin2 = move2.origin?.id || move2.origin
+    const dest1 = move1.destination?.id || move1.destination
+    const dest2 = move2.destination?.id || move2.destination
+    
+    return origin1 === origin2 && dest1 === dest2
+  }
+
+  /**
    * Select a move using either AI plugin strategy or difficulty-based selection
    * @param possibleMoves - Array of possible moves
    * @param difficulty - Robot difficulty level
@@ -661,16 +744,70 @@ export class Robot {
    * @param aiPlugin - Optional AI plugin name to use
    * @returns Selected move
    */
-  private static selectMoveByStrategy = function selectMoveByStrategy(
+  private static selectMoveByStrategy = async function selectMoveByStrategy(
     possibleMoves: any[],
     difficulty: RobotSkillLevel,
     game: BackgammonGame,
     aiPlugin?: string
-  ): any {
-    // Use specific AI strategy if requested
-    if (aiPlugin === 'blot-robot') {
-      logger.info(`🎯 Using BlotRobot strategy for move selection`)
-      return BlotRobotAIPlugin.selectBlotMove(possibleMoves, game)
+  ): Promise<any> {
+    // Determine which AI plugin to use based on robot configuration
+    const selectedPlugin = Robot.determineAIPlugin(game, aiPlugin)
+    
+    if (selectedPlugin) {
+      try {
+        logger.info(`🧠 Using AI plugin: ${selectedPlugin}`)
+        
+        switch (selectedPlugin) {
+          case 'gnubg-ai':
+            const gnubgPlugin = Robot.pluginManager.getPlugin('gnubg-ai')
+            if (gnubgPlugin) {
+              const move = await gnubgPlugin.generateMove(game, difficulty)
+              // Find the move in possibleMoves array
+              const matchedMove = possibleMoves.find(pm => 
+                Robot.movesAreEqual(pm, move)
+              )
+              if (matchedMove) {
+                return matchedMove
+              }
+              logger.warn('GNU Backgammon move not found in possible moves, using first available')
+            }
+            break
+            
+          case 'nodots-ai-v1':
+            const nodotsV1Plugin = Robot.pluginManager.getPlugin('nodots-ai-v1')
+            if (nodotsV1Plugin) {
+              const move = await nodotsV1Plugin.generateMove(game, difficulty)
+              const matchedMove = possibleMoves.find(pm => 
+                Robot.movesAreEqual(pm, move)
+              )
+              if (matchedMove) {
+                return matchedMove
+              }
+              logger.warn('Nodots AI v1 move not found in possible moves, using first available')
+            }
+            break
+            
+          case 'blot-robot':
+            logger.info(`🎯 Using BlotRobot strategy for move selection`)
+            return BlotRobotAIPlugin.selectBlotMove(possibleMoves, game)
+            
+          case 'basic-ai':
+            const basicPlugin = Robot.pluginManager.getPlugin('basic-ai')
+            if (basicPlugin) {
+              const move = await basicPlugin.generateMove(game, difficulty)
+              const matchedMove = possibleMoves.find(pm => 
+                Robot.movesAreEqual(pm, move)
+              )
+              if (matchedMove) {
+                return matchedMove
+              }
+            }
+            break
+        }
+      } catch (error) {
+        logger.error(`AI plugin ${selectedPlugin} failed:`, error)
+        logger.info('Falling back to heuristic selection')
+      }
     }
 
     // Fall back to traditional difficulty-based selection
