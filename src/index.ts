@@ -42,17 +42,7 @@ export * from './History'
 export * from './Move'
 export * from './Play'
 export * from './Player'
-export * from './Robot'
 export * from './Engine'
-
-// Export AI plugin system
-export * from './AI/AIPluginManager'
-export * from './AI/interfaces/AIPlugin'
-export * from './AI/plugins/BasicAIPlugin'
-export * from './AI/plugins/GnubgAIPlugin'
-export * from './AI/plugins/NodotsAIv1Plugin'
-export * from './AI/utils/GamePhaseDetector'
-export * from './AI/utils/PositionAnalyzer'
 
 // Export logger utilities for consumers to configure
 export {

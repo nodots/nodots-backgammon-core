@@ -1,7 +1,8 @@
 import { BackgammonGameRollingForStart } from '@nodots-llc/backgammon-types/dist'
 import * as fs from 'fs'
 import * as path from 'path'
-import { Board, Game, Player, Robot } from '..'
+import { Board, Game, Player } from '..'
+// Robot moved to @nodots-llc/backgammon-robots package
 
 // GNU vs Nodots AI Configuration
 const AI_CONFIGS = {
@@ -135,9 +136,18 @@ function dumpGameState(game: any, turnNumber: number, reason: string): string {
   return dump
 }
 
+// Robot simulation functionality moved to @nodots-llc/backgammon-robots package
 export async function simulateGnuVsNodots(
   verbose: boolean = false
 ): Promise<GnuVsNodotsResult> {
+  throw new Error('Robot simulation functionality moved to @nodots-llc/backgammon-robots package')
+}
+
+export async function simulateGnuVsNodots_DISABLED(
+  verbose: boolean = false
+): Promise<GnuVsNodotsResult> {
+  throw new Error('Robot simulation functionality moved to @nodots-llc/backgammon-robots package')
+  /*
   console.log('🤖 Starting GNU vs Nodots AI Simulation...\n')
 
   // Create game-logs directory if it doesn't exist
@@ -276,11 +286,8 @@ export async function simulateGnuVsNodots(
       const maxMovesPerTurn = 10 // Safety limit to prevent infinite loops
 
       while (!turnCompleted && moveCount < maxMovesPerTurn) {
-        const robotResult = await Robot.makeOptimalMove(
-          currentGame,
-          botConfig.difficulty,
-          botConfig.aiPlugin
-        )
+        // Robot functionality moved to @nodots-llc/backgammon-robots package
+        throw new Error('Robot functionality moved to @nodots-llc/backgammon-robots package')
 
         if (!robotResult.success) {
           // Check if this is a legitimate turn completion (no legal moves)
@@ -510,6 +517,8 @@ if (require.main === module) {
       console.error('❌ Simulation failed:', error)
       process.exit(1)
     })
+}
+  */
 }
 
 export { AI_CONFIGS }

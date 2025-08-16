@@ -34,7 +34,7 @@ import { Checker } from '../Checker'
 import { Cube } from '../Cube'
 import { Dice } from '../Dice'
 import { BackgammonMoveDirection, Play } from '../Play'
-import { RobotMoveResult } from '../Robot'
+// RobotMoveResult moved to @nodots-llc/backgammon-robots package
 import { logger } from '../utils/logger'
 
 // Hardcoded constant to avoid import issues during build
@@ -281,11 +281,7 @@ export class Game {
         game = Game.rollForStart(game as BackgammonGameRollingForStart)
       }
 
-      // --- ROBOT AUTOMATION HANDLED BY Robot.makeOptimalMove() ---
-      // Robot automation after winning roll-for-start is now handled by the API layer
-      // calling Robot.makeOptimalMove() which provides complete turn automation
-      // This prevents the problematic auto-advancement that left robots in 'moving' state
-      // without executing actual moves
+      // Robot automation is handled by the @nodots-llc/backgammon-robots package
     }
 
     return game
@@ -492,97 +488,7 @@ export class Game {
     } as BackgammonGameRolledForStart
   }
 
-  /**
-   * Process game state to handle any pending robot automation
-   * This is the hybrid approach that maintains clean architecture while handling automation
-   * @param game - Current game state
-   * @returns Promise with game state after any needed automation
-   */
-  public static async processGameState(
-    game: BackgammonGame
-  ): Promise<BackgammonGame> {
-    const isRobotInMovingState =
-      game.stateKind === 'moving' && game.activePlayer?.isRobot
-    const isRobotRolledForStart =
-      game.stateKind === 'rolled-for-start' && game.activePlayer?.isRobot
-    const isRobotRolled =
-      game.stateKind === 'rolled' && game.activePlayer?.isRobot
-    const isRobotRolling =
-      game.stateKind === 'rolling' && game.activePlayer?.isRobot
-
-    if (isRobotInMovingState) {
-      return game
-    } else if (isRobotRolledForStart) {
-      return Game.processRobotFromRolledForStart(
-        game as BackgammonGameRolledForStart
-      )
-    } else if (isRobotRolled) {
-      const { Robot } = await import('../Robot')
-      return Robot.processRobotTurn(game as BackgammonGameRolled)
-    } else if (isRobotRolling) {
-      const { Robot } = await import('../Robot')
-      return Robot.processRobotTurn(game as BackgammonGameRolling)
-    } else {
-      return game
-    }
-  }
-
-  /**
-   * Process robot automation from rolled-for-start state
-   * @param game - Game in rolled-for-start state with robot active player
-   * @returns Promise with game state after robot completes its turn
-   */
-  private static async processRobotFromRolledForStart(
-    game: BackgammonGameRolledForStart
-  ): Promise<BackgammonGame> {
-    let currentGame: BackgammonGame = game
-    let maxIterations = 10 // Safety limit to prevent infinite loops
-    let iterations = 0
-
-    // Continue processing until it's a human's turn or game ends
-    while (currentGame.activePlayer?.isRobot && iterations < maxIterations) {
-      iterations++
-
-      switch (currentGame.stateKind) {
-        case 'rolled-for-start':
-          // Roll dice for robot
-          currentGame = Game.roll(currentGame as BackgammonGameRolledForStart)
-          break
-
-        case 'rolled':
-          // Process robot turn (moves and confirmation)
-          const { Robot } = await import('../Robot')
-          currentGame = await Robot.processRobotTurn(
-            currentGame as BackgammonGameRolled
-          )
-          break
-
-        case 'moved':
-          // Confirm turn to complete robot's turn
-          currentGame = Game.confirmTurnFromMoved(
-            currentGame as BackgammonGameMoved
-          )
-          break
-
-        default:
-          // Unexpected state or game completed
-          return currentGame
-      }
-
-      // Safety check: if winner exists, return immediately
-      if (currentGame.winner) {
-        return currentGame
-      }
-    }
-
-    if (iterations >= maxIterations) {
-      throw new Error(
-        'Robot automation exceeded maximum iterations - potential infinite loop'
-      )
-    }
-
-    return currentGame
-  }
+  // Robot automation methods removed - now handled by @nodots-llc/backgammon-robots package
 
   public static roll = function roll(
     game: BackgammonGameRolledForStart | BackgammonGameRolling
@@ -2325,11 +2231,29 @@ export class Game {
       }
     }
 
+    // Update movable checkers based on calculated possible moves
+    const movableContainerIds: string[] = []
+    for (const possibleMove of possibleMoves) {
+      if (possibleMove.origin && !movableContainerIds.includes(possibleMove.origin.id)) {
+        movableContainerIds.push(possibleMove.origin.id)
+      }
+    }
+    
+    const updatedBoard = Checker.updateMovableCheckers(
+      gameWithActivePlay.board,
+      movableContainerIds
+    )
+    
+    const finalGameWithActivePlay = {
+      ...gameWithActivePlay,
+      board: updatedBoard,
+    }
+
     return {
       success: true,
       possibleMoves,
       playerColor: targetPlayer.color,
-      updatedGame: gameWithActivePlay,
+      updatedGame: finalGameWithActivePlay,
       currentDie: currentDie,
     }
   }
@@ -2350,25 +2274,11 @@ export class Game {
       if (confirmedGame.activePlayer?.isRobot) {
         try {
           // Dynamic import to avoid circular dependencies
-          const { Robot } = await import('../Robot')
-          const robotResult = await Robot.makeOptimalMove(
-            confirmedGame as any,
-            'intermediate'
-          )
+          // Robot automation moved to @nodots-llc/backgammon-robots package
 
-          if (robotResult.success && robotResult.game) {
-            logger.info(
-              '🤖 Robot automation completed during turn transition (confirmTurn)'
-            )
-            return robotResult.game
-          } else {
-            logger.error(
-              '🤖 Robot automation failed during turn transition (confirmTurn):',
-              robotResult.error
-            )
-            // Return original game state if robot automation fails
-            return confirmedGame
-          }
+          // Robot automation is now external - return game as-is
+          logger.info('🤖 Robot automation is now handled externally')
+          return confirmedGame
         } catch (error) {
           logger.error(
             '🤖 Robot automation error during turn transition (confirmTurn):',
@@ -2398,25 +2308,11 @@ export class Game {
       if (confirmedGame.activePlayer?.isRobot) {
         try {
           // Dynamic import to avoid circular dependencies
-          const { Robot } = await import('../Robot')
-          const robotResult = await Robot.makeOptimalMove(
-            confirmedGame as any,
-            'intermediate'
-          )
+          // Robot automation moved to @nodots-llc/backgammon-robots package
 
-          if (robotResult.success && robotResult.game) {
-            logger.info(
-              '🤖 Robot automation completed during turn transition (confirmTurnFromMoved)'
-            )
-            return robotResult.game as BackgammonGameRolling
-          } else {
-            logger.error(
-              '🤖 Robot automation failed during turn transition (confirmTurnFromMoved):',
-              robotResult.error
-            )
-            // Return original game state if robot automation fails
-            return confirmedGame
-          }
+          // Robot automation is now external - return game as-is
+          logger.info('🤖 Robot automation is now handled externally')
+          return confirmedGame
         } catch (error) {
           logger.error(
             '🤖 Robot automation error during turn transition (confirmTurnFromMoved):',
@@ -2430,21 +2326,5 @@ export class Game {
       return confirmedGame
     }
 
-  /**
-   * Process robot turn with specified difficulty
-   * @param game - Current game state
-   * @param difficulty - Robot difficulty level
-   * @returns Promise with robot move result
-   */
-  public static async processRobotTurn(
-    game: BackgammonGame,
-    difficulty: string
-  ): Promise<RobotMoveResult> {
-    if (!game.activePlayer?.isRobot) {
-      return { success: false, error: 'Active player is not a robot' }
-    }
-
-    const { Robot } = await import('../Robot')
-    return Robot.makeOptimalMove(game, difficulty as any)
-  }
+  // processRobotTurn method removed - now handled by @nodots-llc/backgammon-robots package
 }

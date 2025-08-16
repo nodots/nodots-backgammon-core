@@ -13,7 +13,7 @@ import { Game } from '..'
 import { randomBackgammonColor } from '../../'
 import { Play } from '../../Play'
 import { Player } from '../../Player'
-import { Robot } from '../../Robot'
+// Robot import removed - functionality moved to @nodots-llc/backgammon-robots package
 
 describe('Game', () => {
   // Internal Game.initialize() tests removed - that API is now internal-only.
@@ -748,22 +748,12 @@ describe('Game', () => {
 
   describe('Game Creation', () => {
     it('should create a new game with default settings', async () => {
-      const game = Game.createNewGame('user1', 'user2', true, true, false) // Robot vs Human
+      const game = Game.createNewGame('user1', 'user2', true, false, false) // Human vs Human
       expect(game).toBeDefined()
       expect(game.stateKind).toBe('rolled-for-start')
 
-      // If a robot won the roll for start, they should automatically complete their turn
-      if (game.activePlayer?.isRobot) {
-        const result = await Robot.makeOptimalMove(game, 'beginner')
-        expect(result.success).toBe(true)
-        expect(result.game).toBeDefined()
-        const finalGame = result.game!
-        expect(finalGame.stateKind).toBe('rolling')
-        expect(finalGame.activePlayer?.isRobot).toBe(false) // Should now be human's turn
-      } else {
-        // Human won, so game should be in rolled-for-start state waiting for human to roll
-        expect(game.stateKind).toBe('rolled-for-start')
-      }
+      // Game should be in rolled-for-start state waiting for human to roll
+      expect(game.stateKind).toBe('rolled-for-start')
 
       expect(game.players).toHaveLength(2)
       expect(game.activeColor).toBeDefined()
@@ -798,9 +788,9 @@ describe('Game', () => {
       expect(game.activePlayer?.direction).toBe('counterclockwise') // Black player
       expect(game.inactivePlayer?.direction).toBe('clockwise') // White player
 
-      // Verify robot settings match blackFirst configuration
-      expect(game.activePlayer?.isRobot).toBe(true) // Black should be robot
-      expect(game.inactivePlayer?.isRobot).toBe(true) // White should be robot
+      // Verify human settings
+      expect(game.activePlayer?.isRobot).toBe(false) // Black should be human
+      expect(game.inactivePlayer?.isRobot).toBe(false) // White should be human
     })
 
     it('should create a new game without auto-rolling for start', () => {
@@ -843,19 +833,7 @@ describe('Game', () => {
       expect(movingGame.activePlay.stateKind).toBe('moving')
     })
 
-    it('should process robot turn successfully', async () => {
-      const rolledGame = Game.createNewGame('user1', 'user2', true, true, true)
-      const result = await Game.processRobotTurn(rolledGame as any, 'beginner')
-      expect(result).toBeDefined()
-      expect(result.success).toBeDefined()
-    })
-
-    it('should fail to process robot turn for non-robot player', async () => {
-      const humanGame = Game.createNewGame('user1', 'user2', true, false, false)
-      const result = await Game.processRobotTurn(humanGame as any, 'beginner')
-      expect(result.success).toBe(false)
-      expect(result.error).toBe('Active player is not a robot')
-    })
+    // Robot turn processing tests removed - functionality moved to @nodots-llc/backgammon-robots package
   })
 
   describe('State Transitions', () => {

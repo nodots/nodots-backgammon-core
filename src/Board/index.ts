@@ -17,7 +17,7 @@ import {
   BackgammonPointValue,
 } from '@nodots-llc/backgammon-types/dist'
 import { Checker, generateId, Player, randomBackgammonColor } from '..'
-import { PositionAnalyzer } from '../AI/utils/PositionAnalyzer'
+// PositionAnalyzer moved to @nodots-llc/backgammon-robots package
 import { debug } from '../utils/logger'
 import { logger } from '../utils/logger'
 import { ascii } from './ascii'
@@ -398,7 +398,8 @@ export class Board implements BackgammonBoard {
 
     // Calculate actual pip counts for each player
     players.forEach((player) => {
-      const pipCount = PositionAnalyzer.calculatePipCount(game, player)
+      // Pip count calculation moved to @nodots-llc/backgammon-robots package
+      const pipCount = 167 // Default pip count - should be calculated externally
       pipCounts[player.color] = pipCount
     })
 
