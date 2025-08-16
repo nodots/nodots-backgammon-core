@@ -773,8 +773,8 @@ describe('Game', () => {
         'user1',
         'user2',
         true,
-        true,
-        true,
+        false,
+        false,
         config
       )
       expect(game).toBeDefined()
