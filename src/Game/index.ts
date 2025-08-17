@@ -181,6 +181,15 @@ export class Game {
       board
     ) as BackgammonGameRollingForStart
 
+    // CRITICAL FIX: Recalculate pip counts after game initialization
+    // Players are initialized with MAX_PIP_COUNT, but need actual values based on board setup
+    console.log('🧮 Game.createNewGame: Recalculating initial pip counts after board setup')
+    const playersWithCorrectPipCounts = Player.recalculatePipCounts(game)
+    game = {
+      ...game,
+      players: playersWithCorrectPipCounts
+    }
+
     // Auto roll for start if requested
     if (autoRollForStart) {
       // --- FORCE ROBOT TO WIN ROLL FOR START IF PLAYING AGAINST HUMAN ---
@@ -933,13 +942,14 @@ export class Game {
 
     // Recalculate pip counts after the move
     console.log('🧮 Game.move: Recalculating pip counts after move')
-    const updatedPlayers = Player.recalculatePipCounts({
+    const gameWithUpdatedBoard = {
       ...game,
       board,
       players: game.players.map((p) =>
         p.id === movedPlayer.id ? movedPlayer : p
       ) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayers,
-    })
+    }
+    const updatedPlayers = Player.recalculatePipCounts(gameWithUpdatedBoard)
 
     return {
       ...game,
@@ -1820,6 +1830,9 @@ export class Game {
       destinationContainer.checkers.pop()
 
       // Handle hit restoration if this was a hitting move
+      // TODO: Future improvement - if moveToUndo.isHit is false but there are opponent checkers
+      // on the bar, we could infer this was a hitting move and restore them. However, this
+      // requires careful logic to avoid incorrect restorations in complex scenarios.
       if (moveToUndo.isHit && moveToUndo.destination.kind === 'point') {
         // Find the hit checker on the opponent's bar
         const opponentDirection =
@@ -1834,6 +1847,8 @@ export class Game {
         )
         if (hitCheckers.length > 0) {
           const hitChecker = hitCheckers[hitCheckers.length - 1]
+
+          console.log(`🔄 Game.undoLastMove: Restoring hit checker ${hitChecker.id.slice(0, 8)} from ${opponentDirection} bar to ${moveToUndo.destination.kind}:${moveToUndo.destination.id}`)
 
           // Remove from bar
           const hitCheckerIndex = opponentBar.checkers.findIndex(
@@ -1861,7 +1876,14 @@ export class Game {
         isMovable: false,
       })
 
-      // Update the move state back to 'ready' and remove specific move details
+      // Recalculate possible moves for the undone move based on restored board state
+      const freshPossibleMoves = Board.getPossibleMoves(
+        updatedBoard,
+        game.activePlayer,
+        moveToUndo.dieValue
+      )
+
+      // Update the move state back to 'ready' with recalculated possible moves
       const undoneMove = {
         ...moveToUndo,
         stateKind: 'ready' as const,
@@ -1869,7 +1891,7 @@ export class Game {
         origin: moveToUndo.origin, // Keep original origin for move generation
         destination: undefined, // Clear destination since move is undone
         isHit: false, // Reset hit flag
-        possibleMoves: [], // Will be recalculated when needed
+        possibleMoves: freshPossibleMoves, // Use freshly calculated possible moves
       }
 
       // Update the moves set: replace the confirmed move with the ready move
@@ -1878,10 +1900,36 @@ export class Game {
         undoneMove,
       ])
 
+      // When all moves are undone, recalculate possible moves for all ready moves
+      let finalUpdatedMoves = updatedMoves
+      const allMovesUndoneCheck = Array.from(updatedMoves).every(
+        (move) => move.stateKind === 'ready'
+      )
+      
+      if (allMovesUndoneCheck) {
+        // Recalculate possible moves for all ready moves with the restored board state
+        finalUpdatedMoves = new Set(
+          Array.from(updatedMoves).map((move) => {
+            if (move.stateKind === 'ready' && move.dieValue) {
+              const freshPossibleMoves = Board.getPossibleMoves(
+                updatedBoard,
+                game.activePlayer,
+                move.dieValue
+              )
+              return {
+                ...move,
+                possibleMoves: freshPossibleMoves,
+              }
+            }
+            return move
+          })
+        )
+      }
+
       // Update active play
       const updatedActivePlay = {
         ...activePlay,
-        moves: updatedMoves,
+        moves: finalUpdatedMoves,
       }
 
       // Recalculate pip counts after the undo
@@ -1892,9 +1940,7 @@ export class Game {
       })
 
       // Check if all moves have been undone (all moves are back to 'ready' state)
-      const allMovesUndone = Array.from(updatedMoves).every(
-        (move) => move.stateKind === 'ready'
-      )
+      const allMovesUndone = allMovesUndoneCheck
 
       // Use switch statement to handle state transitions after undo
       // Note: Undo is only allowed in 'moving' or 'moved' states per API validation

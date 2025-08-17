@@ -243,8 +243,7 @@ export class Player {
     game: import('@nodots-llc/backgammon-types/dist').BackgammonGame
   ): import('@nodots-llc/backgammon-types/dist').BackgammonPlayers {
     return game.players.map(player => {
-      // Pip count calculation moved to @nodots-llc/backgammon-robots package
-      const newPipCount = player.pipCount || 167 // Use existing or default
+      const newPipCount = Player.calculatePipCount(game, player.color)
       console.log(
         `🧮 Recalculating pip count for ${player.color} ${player.direction}: ${player.pipCount} -> ${newPipCount}`
       )
@@ -253,6 +252,38 @@ export class Player {
         pipCount: newPipCount
       }
     }) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayers
+  }
+
+  /**
+   * Calculates the pip count for a specific player color in a game.
+   * @param game - The game to calculate pip count for
+   * @param color - The color of the player to calculate pip count for
+   * @returns The pip count for the specified player
+   */
+  public static calculatePipCount = function calculatePipCount(
+    game: import('@nodots-llc/backgammon-types/dist').BackgammonGame, 
+    color: import('@nodots-llc/backgammon-types/dist').BackgammonColor
+  ): number {
+    let pipCount = 0
+    
+    const player = game.players.find(p => p.color === color)
+    if (!player) return 0
+
+    // Count pips for checkers on points
+    game.board.points.forEach(point => {
+      const playerCheckers = point.checkers.filter(checker => checker.color === color)
+      if (playerCheckers.length > 0) {
+        // For each checker on the board, determine its position from its owner's direction
+        const positionFromOwnerDirection = point.position[player.direction]
+        pipCount += playerCheckers.length * positionFromOwnerDirection
+      }
+    })
+
+    // Bar is 25
+    const barCheckers = game.board.bar[player.direction].checkers.filter(checker => checker.color === color)
+    pipCount += barCheckers.length * 25
+
+    return pipCount
   }
 
   /**

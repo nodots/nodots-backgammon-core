@@ -163,6 +163,23 @@ export class Play {
       dieValue: dieValue,
     })
 
+    // CRITICAL FIX: Detect if a hit will occur before executing the move
+    // Check if destination is a point with exactly one opponent checker
+    let isHit = false
+    if (matchingMove.destination.kind === 'point') {
+      const destination = Board.getCheckerContainer(board, matchingMove.destination.id)
+      if (destination.kind === 'point' && 
+          destination.checkers.length === 1 && 
+          destination.checkers[0].color !== move.player.color) {
+        isHit = true
+        debug('Play.move: Hit detected', {
+          destinationId: matchingMove.destination.id,
+          hitCheckerColor: destination.checkers[0].color,
+          movingPlayerColor: move.player.color,
+        })
+      }
+    }
+
     board = Board.moveChecker(
       board,
       matchingMove.origin,
@@ -181,7 +198,7 @@ export class Play {
       possibleMoves: [],
       origin: matchingMove.origin,
       destination: matchingMove.destination,
-      isHit: false,
+      isHit: isHit,
     }
 
     // CRITICAL FIX: Properly manage all moves - replace the consumed ready move with completed move
