@@ -665,6 +665,12 @@ export class Game {
                   swappedMoves[0] = swappedMoves[1]
                   swappedMoves[1] = temp
 
+                  // CRITICAL: Update dieValue to match new dice order after swapping
+                  // This fixes the data duplication bug between dice.currentRoll and moves[].dieValue
+                  const [newFirstDie, newSecondDie] = switchedDice.currentRoll
+                  swappedMoves[0] = { ...swappedMoves[0], dieValue: newFirstDie }
+                  swappedMoves[1] = { ...swappedMoves[1], dieValue: newSecondDie }
+
                   // CRITICAL: Regenerate possibleMoves for all moves based on new dice order
                   // This is necessary because possibleMoves were calculated with the old dice order
                   const regeneratedMoves = swappedMoves.map((move) => {
@@ -1963,52 +1969,17 @@ export class Game {
               )
               const resetPlayers = updatedPlayers.map((player) => {
                 if (player.id === game.activePlayer.id) {
-                  // CRITICAL FIX: Reconstruct original dice values from activePlay.moves dieValues
-                  // If dice were switched, the moves array was reversed - we need to restore original order
-                  const movesArray = game.activePlay?.moves
-                    ? Array.from(game.activePlay.moves)
-                    : []
-                  let originalCurrentRoll:
-                    | [BackgammonDieValue, BackgammonDieValue]
-                    | undefined
-
-                  if (movesArray.length >= 2) {
-                    // Check if current dice differ from moves order (indicating dice were switched)
-                    const currentDiceOrder = player.dice?.currentRoll || []
-                    const movesOrder = [
-                      movesArray[0].dieValue,
-                      movesArray[1].dieValue,
-                    ]
-
-                    if (
-                      currentDiceOrder[0] === movesOrder[0] &&
-                      currentDiceOrder[1] === movesOrder[1]
-                    ) {
-                      // Dice were NOT switched - use moves order as-is
-                      originalCurrentRoll = [
-                        movesArray[0].dieValue as BackgammonDieValue,
-                        movesArray[1].dieValue as BackgammonDieValue,
-                      ]
-                    } else {
-                      // Dice were switched - reverse moves order to get original
-                      originalCurrentRoll = [
-                        movesArray[1].dieValue as BackgammonDieValue,
-                        movesArray[0].dieValue as BackgammonDieValue,
-                      ]
-                    }
-                  } else if (movesArray.length >= 1) {
-                    // For doubles or single die: duplicate the die value
-                    const dieValue = movesArray[0]
-                      .dieValue as BackgammonDieValue
-                    originalCurrentRoll = [dieValue, dieValue]
-                  } else {
-                    // Fallback to current dice state if no moves available
-                    originalCurrentRoll = player.dice?.currentRoll
-                  }
+                  // DICE SWITCHING FIX: Preserve dice state from moves, not from stale player dice
+                  // When dice have been switched, the moves reflect the correct switched dice values
+                  // This fixes the bug where undo incorrectly reverts switched dice
+                  const movesArray = Array.from(updatedActivePlay.moves)
+                  const preservedCurrentRoll = movesArray.length >= 2 
+                    ? [movesArray[0].dieValue, movesArray[1].dieValue] as [BackgammonDieValue, BackgammonDieValue]
+                    : game.activePlayer.dice?.currentRoll
 
                   console.log(
-                    '🎲 Game.undoLastMove: Reconstructed original dice from activePlay.moves:',
-                    originalCurrentRoll
+                    '🎲 Game.undoLastMove: Preserving ORIGINAL dice state (supports dice switching):',
+                    preservedCurrentRoll
                   )
                   return {
                     ...player,
@@ -2016,7 +1987,7 @@ export class Game {
                       player.color,
                       'rolled',
                       player.dice?.id,
-                      originalCurrentRoll
+                      preservedCurrentRoll
                     ),
                     stateKind: 'rolled' as const,
                   }
