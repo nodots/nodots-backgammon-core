@@ -269,10 +269,12 @@ export class Move {
         }
 
         // Execute the move using executeAndRecalculate to handle automatic state transitions
+        console.log('🚨 MOVE CHECKER: About to call Game.executeAndRecalculate with dice:', workingGame.activePlayer.dice?.currentRoll)
         const finalGame = Game.executeAndRecalculate(
           workingGame as any,
           moveToExecute.origin.id
         )
+        console.log('🚨 MOVE CHECKER: Game.executeAndRecalculate returned with dice:', (finalGame as any).activePlayer?.dice?.currentRoll)
 
         console.log('[DEBUG] Human move completed successfully')
         return {

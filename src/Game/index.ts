@@ -683,10 +683,15 @@ export class Game {
                       )
                       return {
                         ...move,
+                        player: updatedActivePlayer,  // Update player reference with switched dice
                         possibleMoves: freshPossibleMoves,
                       }
                     }
-                    return move
+                    // Update player reference for non-ready moves too
+                    return {
+                      ...move,
+                      player: updatedActivePlayer  // Update player reference with switched dice
+                    }
                   })
 
                   return new Set(regeneratedMoves)
@@ -814,6 +819,7 @@ export class Game {
     game: BackgammonGameMoving,
     originId: string
   ): BackgammonGameMoving | BackgammonGame {
+    console.log('🚨 DICE SWITCHING BUG: Game.move called with dice:', game.activePlayer.dice?.currentRoll)
     let { activePlay, board } = game
 
     // Check if activePlay exists
@@ -833,10 +839,14 @@ export class Game {
     const playResult = Player.move(board, activePlay, originId)
     board = playResult.board
 
-    // Update activePlayer from the move result if available
+    // DICE SWITCHING FIX: Preserve dice state from original activePlayer
+    // playResult.move.player might have stale dice info (from before dice switching)
     let movedPlayer =
       playResult.move && playResult.move.player
-        ? playResult.move.player
+        ? {
+            ...playResult.move.player,
+            dice: game.activePlayer.dice  // Preserve switched dice state
+          }
         : game.activePlayer
 
     // Always update activePlay from playResult (fallback to activePlay if undefined)
@@ -957,12 +967,21 @@ export class Game {
     }
     const updatedPlayers = Player.recalculatePipCounts(gameWithUpdatedBoard)
 
+    // DICE SWITCHING DEBUG: Check what's happening to dice and moves state
+    const finalActivePlayer = updatedPlayers.find((p) => p.id === movedPlayer.id) as any
+    const finalMoves = Array.from(updatedActivePlay.moves || [])
+    console.log('🎲 [DICE DEBUG] Game.move result:')
+    console.log('  game.activePlayer.dice:', game.activePlayer.dice?.currentRoll)
+    console.log('  finalActivePlayer.dice:', finalActivePlayer?.dice?.currentRoll)
+    console.log('  finalMoves.dieValues:', finalMoves.map((m: any) => m.dieValue))
+    console.log('  finalMoves.states:', finalMoves.map((m: any) => m.stateKind))
+
     return {
       ...game,
       stateKind: 'moving',
       board,
       players: updatedPlayers,
-      activePlayer: updatedPlayers.find((p) => p.id === movedPlayer.id) as any,
+      activePlayer: finalActivePlayer,
       activePlay: updatedActivePlay,
     } as BackgammonGameMoving
   }
