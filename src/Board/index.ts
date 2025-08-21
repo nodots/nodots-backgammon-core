@@ -266,8 +266,10 @@ export class Board implements BackgammonBoard {
       }
       const possibleDestination = Board.getPoints(board).find(
         (p: BackgammonPoint) =>
-          // Point is not blocked by 2+ opponent checkers
-          (p.checkers.length < 2 || p.checkers[0].color === player.color) &&
+          // Point must be empty, have only one opponent checker (hit), or have player's own checkers (stacking)
+          (p.checkers.length === 0 ||
+            (p.checkers.length === 1 && p.checkers[0].color !== player.color) ||
+            (p.checkers.length > 0 && p.checkers[0].color === player.color)) &&
           // Point must match the reentry point for the player's direction
           p.position[playerDirection] === reentryPoint
       )
@@ -387,6 +389,37 @@ export class Board implements BackgammonBoard {
     }
 
     return possibleMoves
+  }
+
+  public static getPossibleMovesWithIntelligentDiceSwitching = function getPossibleMovesWithIntelligentDiceSwitching(
+    board: BackgammonBoard,
+    player: BackgammonPlayer,
+    dieValue: BackgammonDieValue,
+    otherDieValue: BackgammonDieValue
+  ): { moves: BackgammonMoveSkeleton[], usedDieValue: BackgammonDieValue } {
+    // First try with the original die value
+    const originalMoves = Board.getPossibleMoves(board, player, dieValue)
+    
+    if (originalMoves.length > 0) {
+      // Original die has moves, use it
+      return { moves: originalMoves, usedDieValue: dieValue }
+    }
+    
+    // Original die has no moves, try the other die value
+    const alternativeMoves = Board.getPossibleMoves(board, player, otherDieValue)
+    
+    if (alternativeMoves.length > 0) {
+      // Alternative die has moves, use it (automatic dice switching)
+      debug('Board.getPossibleMovesWithIntelligentDiceSwitching: Auto-switching dice', {
+        originalDie: dieValue,
+        switchedToDie: otherDieValue,
+        movesFound: alternativeMoves.length
+      })
+      return { moves: alternativeMoves, usedDieValue: otherDieValue }
+    }
+    
+    // Neither die value has moves, return empty with original die
+    return { moves: [], usedDieValue: dieValue }
   }
 
   public static getPipCounts = function getPipCounts(game: BackgammonGame) {

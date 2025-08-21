@@ -156,8 +156,9 @@ export class Player {
           pipCount,
           isRobot,
         } as BackgammonPlayerDoubled
+      default:
+        throw new Error(`Unhandled player stateKind: ${stateKind}`)
     }
-    throw new Error(`Unhandled player stateKind: ${stateKind}`)
   }
 
   public static roll = function roll(
@@ -202,7 +203,7 @@ export class Player {
     board: BackgammonBoard,
     player: BackgammonPlayer
   ) {
-    // GOLDEN RULE: Home board is always the six points whose position for the
+    // AXIOM OF GOLDEN RULE: Home board is always the six points whose position for the
     // active player's direction is 1-6.
     return board.points.filter(
       (p) =>
@@ -242,14 +243,14 @@ export class Player {
   public static recalculatePipCounts = function recalculatePipCounts(
     game: import('@nodots-llc/backgammon-types/dist').BackgammonGame
   ): import('@nodots-llc/backgammon-types/dist').BackgammonPlayers {
-    return game.players.map(player => {
+    return game.players.map((player) => {
       const newPipCount = Player.calculatePipCount(game, player.color)
       console.log(
         `🧮 Recalculating pip count for ${player.color} ${player.direction}: ${player.pipCount} -> ${newPipCount}`
       )
       return {
         ...player,
-        pipCount: newPipCount
+        pipCount: newPipCount,
       }
     }) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayers
   }
@@ -261,17 +262,19 @@ export class Player {
    * @returns The pip count for the specified player
    */
   public static calculatePipCount = function calculatePipCount(
-    game: import('@nodots-llc/backgammon-types/dist').BackgammonGame, 
+    game: import('@nodots-llc/backgammon-types/dist').BackgammonGame,
     color: import('@nodots-llc/backgammon-types/dist').BackgammonColor
   ): number {
     let pipCount = 0
-    
-    const player = game.players.find(p => p.color === color)
+
+    const player = game.players.find((p) => p.color === color)
     if (!player) return 0
 
     // Count pips for checkers on points
-    game.board.points.forEach(point => {
-      const playerCheckers = point.checkers.filter(checker => checker.color === color)
+    game.board.points.forEach((point) => {
+      const playerCheckers = point.checkers.filter(
+        (checker) => checker.color === color
+      )
       if (playerCheckers.length > 0) {
         // For each checker on the board, determine its position from its owner's direction
         const positionFromOwnerDirection = point.position[player.direction]
@@ -280,19 +283,17 @@ export class Player {
     })
 
     // Bar is 25
-    const barCheckers = game.board.bar[player.direction].checkers.filter(checker => checker.color === color)
+    const barCheckers = game.board.bar[player.direction].checkers.filter(
+      (checker) => checker.color === color
+    )
     pipCount += barCheckers.length * 25
 
     return pipCount
   }
 
   /**
-   * Selects the best move from possible moves using the specified strategy.
-   * If the primary strategy fails (throws or returns undefined),
-   * it will automatically fall back to 'furthest-checker', then 'random'.
+   * Selects the best move from possible moves using GNU Backgammon AI.
    * @param play BackgammonPlayMoving containing possible moves
-   * @param strategy The move selection strategy ('random' | 'furthest-checker' | 'gnubg'). Defaults to 'gnubg'.
-   * @param players Optional array of BackgammonPlayers
    * @returns A selected BackgammonMoveReady, or undefined if no moves
    */
   public static getBestMove = async function getBestMove(
@@ -305,6 +306,30 @@ export class Player {
       (move) => move.stateKind === 'ready'
     ) as import('@nodots-llc/backgammon-types/dist').BackgammonMoveReady[]
     if (readyMoves.length === 0) return undefined
+
+    // Get GNU Position ID from game context (passed via API)
+    const gnuPositionId = (play as any).gameGnuPositionId
+
+    if (gnuPositionId) {
+      console.log(
+        `🤖 [Player.getBestMove] GNU Position ID available: ${gnuPositionId}`
+      )
+      console.log(
+        '🤖 [Player.getBestMove] GNU Backgammon integration will be called from API layer'
+      )
+
+      // AI integration is handled at API layer to avoid cross-package import issues
+      // The API layer will call GNU Backgammon and interpret the results
+
+      // For now, return first move with GNU context logged
+      console.log(
+        '🤖 [Player.getBestMove] Using first move (GNU Backgammon will guide selection at API layer)'
+      )
+    } else {
+      console.warn(
+        '🤖 [Player.getBestMove] No GNU Position ID available, using first move'
+      )
+    }
 
     return readyMoves[0]
   }

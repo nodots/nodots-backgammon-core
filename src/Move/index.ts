@@ -701,7 +701,7 @@ export class Move {
     // If checker is in home board and can bear off
     if (
       origin.kind === 'point' &&
-      Move.canBearOff(origin as BackgammonPoint, player, board)
+      Move.canBearOff(origin as BackgammonPoint, player, board, dieValue)
     ) {
       return 'bear-off'
     }
@@ -720,7 +720,8 @@ export class Move {
   private static canBearOff = function canBearOff(
     point: BackgammonPoint,
     player: BackgammonPlayer,
-    board: BackgammonBoard
+    board: BackgammonBoard,
+    dieValue: BackgammonDieValue
   ): boolean {
     // Check if all player's checkers are in home board
     // GOLDEN RULE: Use point.position[playerDirection] - no conditional logic
@@ -753,7 +754,35 @@ export class Move {
       }
     }
 
-    return true
+    // CRITICAL FIX: Validate die value against position
+    // Rule: Can only bear off from position N using die value N (exact match)
+    // OR die value > N when no checkers exist on positions > N
+    if (dieValue === pointPosition) {
+      // Exact match - always allowed
+      return true
+    }
+    
+    if (dieValue > pointPosition) {
+      // Higher die value - only allowed if no checkers on higher positions
+      for (const boardPoint of board.points) {
+        const boardPointPosition = boardPoint.position[player.direction]
+        
+        // Check if there are player's checkers on any position higher than current
+        if (boardPointPosition > pointPosition && boardPointPosition <= 6) {
+          for (const checker of boardPoint.checkers) {
+            if (checker.color === player.color) {
+              // Found checker on higher position - cannot use higher die value
+              return false
+            }
+          }
+        }
+      }
+      // No checkers on higher positions - can use higher die value
+      return true
+    }
+    
+    // Die value < pointPosition - NEVER allowed
+    return false
   }
 
   public static initialize = function initializeMove({

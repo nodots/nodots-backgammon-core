@@ -56,12 +56,25 @@ describe('Game Turn Passing - Core Methods', () => {
         },
         // Copy other required properties
         id: 'test-id',
-        players: [],
-        board: {},
+        players: [
+          { color: 'white', stateKind: 'moving', dice: { stateKind: 'rolled' }, direction: 'clockwise' },
+          { color: 'black', stateKind: 'inactive', dice: { stateKind: 'inactive' }, direction: 'counterclockwise' },
+        ],
+        board: {
+          points: [],
+          bar: {
+            clockwise: { checkers: [] },
+            counterclockwise: { checkers: [] }
+          },
+          off: {
+            clockwise: { checkers: [] },
+            counterclockwise: { checkers: [] }
+          }
+        },
         cube: {},
         activeColor: 'white',
-        activePlayer: {},
-        inactivePlayer: {},
+        activePlayer: { color: 'white', stateKind: 'moving', direction: 'clockwise' },
+        inactivePlayer: { color: 'black', stateKind: 'inactive', direction: 'counterclockwise' },
       } as unknown as BackgammonGameMoving
 
       const result = Game.toMoved(fakeMovingGame)
@@ -121,10 +134,20 @@ describe('Game Turn Passing - Core Methods', () => {
         id: 'test-id',
         activeColor: 'white',
         players: [
-          { color: 'white', stateKind: 'moved', dice: { stateKind: 'rolled' } },
-          { color: 'black', stateKind: 'inactive', dice: { stateKind: 'inactive' } },
+          { color: 'white', stateKind: 'moved', dice: { stateKind: 'rolled' }, direction: 'clockwise' },
+          { color: 'black', stateKind: 'inactive', dice: { stateKind: 'inactive' }, direction: 'counterclockwise' },
         ],
-        board: { points: [] },
+        board: { 
+          points: [],
+          bar: {
+            clockwise: { checkers: [] },
+            counterclockwise: { checkers: [] }
+          },
+          off: {
+            clockwise: { checkers: [] },
+            counterclockwise: { checkers: [] }
+          }
+        },
         cube: {},
       } as unknown as BackgammonGameMoved
 
@@ -147,10 +170,20 @@ describe('Game Turn Passing - Core Methods', () => {
         id: 'test-id',
         activeColor: 'black', // Start with black
         players: [
-          { color: 'white', stateKind: 'inactive', dice: { stateKind: 'inactive' } },
-          { color: 'black', stateKind: 'moved', dice: { stateKind: 'rolled' } },
+          { color: 'white', stateKind: 'inactive', dice: { stateKind: 'inactive' }, direction: 'clockwise' },
+          { color: 'black', stateKind: 'moved', dice: { stateKind: 'rolled' }, direction: 'counterclockwise' },
         ],
-        board: { points: [] },
+        board: { 
+          points: [],
+          bar: {
+            clockwise: { checkers: [] },
+            counterclockwise: { checkers: [] }
+          },
+          off: {
+            clockwise: { checkers: [] },
+            counterclockwise: { checkers: [] }
+          }
+        },
         cube: {},
       } as unknown as BackgammonGameMoved
 
@@ -172,10 +205,20 @@ describe('Game Turn Passing - Core Methods', () => {
         id: 'test-id',
         activeColor: 'white',
         players: [
-          { color: 'white', stateKind: 'moving', dice: { stateKind: 'rolled' } },
-          { color: 'black', stateKind: 'inactive', dice: { stateKind: 'inactive' } },
+          { color: 'white', stateKind: 'moving', dice: { stateKind: 'rolled' }, direction: 'clockwise' },
+          { color: 'black', stateKind: 'inactive', dice: { stateKind: 'inactive' }, direction: 'counterclockwise' },
         ],
-        board: { points: [] },
+        board: { 
+          points: [],
+          bar: {
+            clockwise: { checkers: [] },
+            counterclockwise: { checkers: [] }
+          },
+          off: {
+            clockwise: { checkers: [] },
+            counterclockwise: { checkers: [] }
+          }
+        },
         cube: {},
       } as unknown as BackgammonGameMoving
 

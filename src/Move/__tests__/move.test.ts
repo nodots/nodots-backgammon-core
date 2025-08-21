@@ -351,7 +351,7 @@ describe('Move', () => {
       const { board, player } = setupTest(
         'white',
         'clockwise',
-        [1, 1],
+        [6, 5], // Use dice that can actually bear off from point 6
         boardImport
       )
       const move: BackgammonMoveReady = {
@@ -360,7 +360,7 @@ describe('Move', () => {
         stateKind: 'ready',
         moveKind: 'bear-off',
         origin: board.points[5], // Point 6 (has 4 white checkers)
-        dieValue: 1,
+        dieValue: 6, // Use exact die value for point 6
         possibleMoves: [],
       }
 
@@ -546,11 +546,86 @@ describe('Move', () => {
           counterclockwise: { checkers: [] },
         },
       }
-      expect((Move as any).canBearOff(point, player, minimalBoard)).toBe(true)
+      expect((Move as any).canBearOff(point, player, minimalBoard, 1)).toBe(true)
       const notHome = { position: { clockwise: 10, counterclockwise: 15 } }
-      expect((Move as any).canBearOff(notHome, player, minimalBoard)).toBe(
+      expect((Move as any).canBearOff(notHome, player, minimalBoard, 1)).toBe(
         false
       )
+    })
+
+    it('canBearOff validates die value against position - CRITICAL BUG FIX', () => {
+      const player = { direction: 'clockwise', color: 'white' }
+      
+      // Setup board with checkers on positions 3, 4, 5, and 6 - reproduces original bug
+      const boardWithMultiplePositions = {
+        points: [
+          // Position 3 with checkers
+          { 
+            position: { clockwise: 3, counterclockwise: 22 }, 
+            checkers: [{ color: 'white' }] 
+          },
+          // Position 4 with checkers 
+          { 
+            position: { clockwise: 4, counterclockwise: 21 }, 
+            checkers: [{ color: 'white' }, { color: 'white' }, { color: 'white' }] 
+          },
+          // Position 5 with checkers
+          { 
+            position: { clockwise: 5, counterclockwise: 20 }, 
+            checkers: [{ color: 'white' }, { color: 'white' }] 
+          },
+          // Position 6 with checkers
+          { 
+            position: { clockwise: 6, counterclockwise: 19 }, 
+            checkers: [{ color: 'white' }, { color: 'white' }, { color: 'white' }] 
+          }
+        ],
+        bar: {
+          clockwise: { checkers: [] },
+          counterclockwise: { checkers: [] },
+        },
+      }
+      
+      const position6 = { position: { clockwise: 6, counterclockwise: 19 } }
+      const position5 = { position: { clockwise: 5, counterclockwise: 20 } }
+      const position4 = { position: { clockwise: 4, counterclockwise: 21 } }
+      const position3 = { position: { clockwise: 3, counterclockwise: 22 } }
+      
+      // EXACT MATCH: Should allow position 6 with die 6
+      expect((Move as any).canBearOff(position6, player, boardWithMultiplePositions, 6)).toBe(true)
+      
+      // CRITICAL BUG CASE: Should NOT allow position 6 with die 3 when lower positions have checkers
+      expect((Move as any).canBearOff(position6, player, boardWithMultiplePositions, 3)).toBe(false)
+      expect((Move as any).canBearOff(position6, player, boardWithMultiplePositions, 4)).toBe(false)
+      expect((Move as any).canBearOff(position6, player, boardWithMultiplePositions, 5)).toBe(false)
+      
+      // Should NOT allow position 5 with die 3 when lower positions have checkers
+      expect((Move as any).canBearOff(position5, player, boardWithMultiplePositions, 3)).toBe(false)
+      expect((Move as any).canBearOff(position5, player, boardWithMultiplePositions, 4)).toBe(false)
+      
+      // Should allow exact matches
+      expect((Move as any).canBearOff(position5, player, boardWithMultiplePositions, 5)).toBe(true)
+      expect((Move as any).canBearOff(position4, player, boardWithMultiplePositions, 4)).toBe(true)
+      expect((Move as any).canBearOff(position3, player, boardWithMultiplePositions, 3)).toBe(true)
+      
+      // Should allow higher die values only when no checkers on higher positions
+      const boardWithOnlyPosition3 = {
+        points: [
+          { 
+            position: { clockwise: 3, counterclockwise: 22 }, 
+            checkers: [{ color: 'white' }] 
+          }
+        ],
+        bar: {
+          clockwise: { checkers: [] },
+          counterclockwise: { checkers: [] },
+        },
+      }
+      
+      // Should allow position 3 with higher dice when no checkers on positions 4,5,6
+      expect((Move as any).canBearOff(position3, player, boardWithOnlyPosition3, 4)).toBe(true)
+      expect((Move as any).canBearOff(position3, player, boardWithOnlyPosition3, 5)).toBe(true)
+      expect((Move as any).canBearOff(position3, player, boardWithOnlyPosition3, 6)).toBe(true)
     })
 
     it('getPossibleMovesForChecker returns possible moves for available dice', () => {

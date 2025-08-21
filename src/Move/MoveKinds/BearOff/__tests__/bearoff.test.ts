@@ -157,6 +157,45 @@ describe('BearOff', () => {
   })
 
   describe('Invalid Bear Off Scenarios', () => {
+    it('should not allow bearing off with lower die value than point position', () => {
+      // Setup board with all checkers in home board
+      const boardImport: BackgammonCheckerContainerImport[] = [
+        {
+          position: { clockwise: 6, counterclockwise: 19 },
+          checkers: { qty: 1, color: 'white' },
+        },
+        {
+          position: { clockwise: 4, counterclockwise: 21 },
+          checkers: { qty: 1, color: 'white' },
+        },
+        // Rest of checkers on point 1
+        {
+          position: { clockwise: 1, counterclockwise: 24 },
+          checkers: { qty: 13, color: 'white' },
+        },
+      ]
+      const { board, player } = setupTestBoard(boardImport)
+
+      // Try to bear off from point 6 with die value 3 (lower than required)
+      const origin = board.points.find(
+        (p: BackgammonPoint) => p.position[player.direction] === 6
+      )!
+
+      const move: BackgammonMoveReady = {
+        id: generateId(),
+        player,
+        stateKind: 'ready',
+        moveKind: 'bear-off',
+        origin,
+        dieValue: 3, // Using lower die value than point position
+        possibleMoves: [],
+      }
+
+      expect(() => BearOff.move(board, move)).toThrow(
+        'Cannot bear off from point 6 with die value 3. Die value must be at least 6'
+      )
+    })
+
     it('should not allow bearing off when checkers exist outside home board', () => {
       // Setup board with a checker outside home board (point 7)
       const boardImport: BackgammonCheckerContainerImport[] = [

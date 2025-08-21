@@ -2,6 +2,7 @@ import {
   BackgammonBoard,
   BackgammonChecker,
   BackgammonCube,
+  BackgammonDieValue,
   BackgammonMoveCompletedNoMove,
   BackgammonMoveCompletedWithMove,
   BackgammonMoveOrigin,
@@ -70,18 +71,21 @@ export class Play {
       } as BackgammonPlayResult
     }
 
-    // Get the die value from any ready move
+    // Get the die value from any ready move and find other available die values
     const dieValue = anyReadyMove.dieValue
+    const otherReadyMoves = movesArray.filter((m) => m.stateKind === 'ready' && m.dieValue !== dieValue)
+    const otherDieValue = otherReadyMoves.length > 0 ? otherReadyMoves[0].dieValue : dieValue
 
-    // Calculate fresh possible moves for this die value
-    const freshPossibleMoves = Board.getPossibleMoves(
+    // Calculate fresh possible moves with intelligent dice switching
+    const moveResult = Board.getPossibleMovesWithIntelligentDiceSwitching(
       board,
       play.player,
-      dieValue
+      dieValue,
+      otherDieValue
     )
 
     // Find the specific move for the exact origin ID provided
-    const matchingMove = freshPossibleMoves.find(
+    const matchingMove = moveResult.moves.find(
       (pm) => pm.origin.id === origin.id
     )
 
@@ -90,13 +94,13 @@ export class Play {
         originId: origin.id,
         originKind: origin.kind,
         dieValue: dieValue,
-        freshMovesCount: freshPossibleMoves.length,
-        freshMoveOriginIds: freshPossibleMoves.map((pm) => pm.origin.id),
+        freshMovesCount: moveResult.moves.length,
+        freshMoveOriginIds: moveResult.moves.map((pm) => pm.origin.id),
       })
       const noMove: BackgammonMoveCompletedNoMove = {
         id: generateId(),
         player: play.player,
-        dieValue: dieValue,
+        dieValue: moveResult.usedDieValue,
         stateKind: 'completed',
         moveKind: 'no-move',
         possibleMoves: [],
@@ -115,11 +119,24 @@ export class Play {
     const move: BackgammonMoveReady = {
       id: anyReadyMove.id, // Use the ID from the original ready move
       player: play.player,
-      dieValue: dieValue,
+      dieValue: moveResult.usedDieValue, // Use the effective die value (may be switched)
       stateKind: 'ready',
       moveKind: anyReadyMove.moveKind,
       possibleMoves: [matchingMove], // Use the fresh move
       origin: matchingMove.origin, // Use the exact origin from fresh calculation
+    }
+    
+    // If dice were switched, update the player's current roll to reflect the new order
+    if (moveResult.usedDieValue !== dieValue && otherDieValue !== dieValue) {
+      const currentRoll = [...play.player.dice.currentRoll]
+      if (currentRoll[0] !== currentRoll[1]) { // Only swap if not doubles
+        play.player.dice.currentRoll = [currentRoll[1], currentRoll[0]]
+        debug('Play.move: Swapped dice for checker move', {
+          originalRoll: currentRoll,
+          newRoll: play.player.dice.currentRoll,
+          usedDieValue: moveResult.usedDieValue
+        })
+      }
     }
 
     // --- PATCH: Handle bear-off moves using BearOff.move ---
@@ -276,55 +293,94 @@ export class Play {
 
     // For doubles, we need to track which origins we've used to distribute moves properly
     const usedOrigins = new Map<string, number>() // originId -> count
+    
+    // 🔧 CRITICAL BUG FIX: Track which die values have been used for bar reentry
+    // This prevents both checkers from reentering using the same effective die value
+    const usedBarReentryDice = new Set<number>()
 
     for (let i = 0; i < moveCount; i++) {
       const dieValue = roll[i % 2]
 
       if (barCheckersLeft > 0) {
-        // Handle checkers on the bar
-        const possibleMoves = Board.getPossibleMoves(board, player, dieValue)
-        if (possibleMoves.length > 0) {
-          // Reentry is possible for this die: add 'reenter' move with possibleMoves
-          movesArr.push({
-            id: generateId(),
-            player,
-            dieValue,
-            stateKind: 'ready',
-            moveKind: 'reenter',
-            possibleMoves: possibleMoves, // Store the actual possible moves
-            origin: bar,
-          })
-          barCheckersLeft-- // Only decrement if a reentry actually happens
+        // 🔧 BUG FIX: Check both die values for reentry, but ensure each die is used only once
+        let availableDieValues: number[] = []
+        
+        if (!isDoubles) {
+          // For mixed rolls like [1,4], each die can only be used once for reentry
+          availableDieValues = roll.filter(die => !usedBarReentryDice.has(die))
         } else {
-          // No reentry possible for this die: add 'no-move', checker stays on bar
+          // For doubles like [2,2], can use any remaining dice (up to 4 total moves)
+          availableDieValues = [dieValue] // All dice have same value, so just use the current one
+        }
+        
+        let reentryMoveCreated = false
+        
+        // Try each available die value for reentry
+        for (const availableDieValue of availableDieValues) {
+          const possibleMoves = Board.getPossibleMoves(board, player, availableDieValue as BackgammonDieValue)
+          
+          if (possibleMoves.length > 0) {
+            // Reentry is possible with this die value
+            movesArr.push({
+              id: generateId(),
+              player,
+              dieValue: availableDieValue as BackgammonDieValue,
+              stateKind: 'ready',
+              moveKind: 'reenter',
+              possibleMoves: possibleMoves,
+              origin: bar,
+            })
+            barCheckersLeft--
+            
+            // Mark this die value as used for bar reentry (only for mixed rolls)
+            if (!isDoubles) {
+              usedBarReentryDice.add(availableDieValue)
+            }
+            
+            reentryMoveCreated = true
+            break // Found a valid reentry, stop trying other dice
+          }
+        }
+        
+        if (!reentryMoveCreated) {
+          // No reentry possible with any available die: add 'no-move', checker stays on bar
           movesArr.push({
             id: generateId(),
             player,
             dieValue,
             stateKind: 'ready',
             moveKind: 'no-move',
-            possibleMoves: [], // No moves possible
+            possibleMoves: [],
             origin: bar,
           })
           // barCheckersLeft is NOT decremented here
         }
       } else {
-        // No checkers on the bar - generate moves for normal board positions
-        const possibleMoves = Board.getPossibleMoves(board, player, dieValue)
+        // No checkers on the bar - generate moves for normal board positions with intelligent dice switching
+        const otherDieValue = roll[1 - (i % 2)] // Get the other die value
+        const moveResult = Board.getPossibleMovesWithIntelligentDiceSwitching(
+          board, 
+          player, 
+          dieValue, 
+          otherDieValue
+        )
+        const possibleMoves = moveResult.moves
+        const effectiveDieValue = moveResult.usedDieValue
+        
+        // If dice were switched, update the player's current roll to reflect the new order
+        if (effectiveDieValue !== dieValue) {
+          const currentRoll = [...player.dice.currentRoll]
+          if (currentRoll[0] !== currentRoll[1]) { // Only swap if not doubles
+            player.dice.currentRoll = [currentRoll[1], currentRoll[0]]
+            debug('Play.initialize: Swapped dice for regular move', {
+              originalRoll: currentRoll,
+              newRoll: player.dice.currentRoll,
+              usedDieValue: effectiveDieValue
+            })
+          }
+        }
 
         if (possibleMoves.length > 0) {
-          // Determine move kind based on the possible moves
-          let moveKind: 'point-to-point' | 'bear-off' | 'reenter' =
-            'point-to-point'
-
-          // Check if any of the possible moves are bear-offs
-          const hasBearOffMove = possibleMoves.some(
-            (move) => move.destination.kind === 'off'
-          )
-          if (hasBearOffMove) {
-            moveKind = 'bear-off'
-          }
-
           // 🔧 CRITICAL FIX: For doubles, distribute moves across available origins
           // instead of always using the first possible move's origin
           let selectedMove = possibleMoves[0] // Default to first move
@@ -365,21 +421,33 @@ export class Play {
           const originId = selectedMove.origin.id
           usedOrigins.set(originId, (usedOrigins.get(originId) || 0) + 1)
 
+          // 🐛 BUG FIX: Determine moveKind based on the specific selectedMove, not all possible moves
+          // This prevents point-to-point moves from being incorrectly classified as bear-off
+          let moveKind: 'point-to-point' | 'bear-off' | 'reenter' = 'point-to-point'
+          
+          if (selectedMove.destination.kind === 'off') {
+            moveKind = 'bear-off'
+          } else if (selectedMove.origin.kind === 'bar') {
+            moveKind = 'reenter'
+          } else {
+            moveKind = 'point-to-point'
+          }
+
           movesArr.push({
             id: generateId(),
             player,
-            dieValue,
+            dieValue: effectiveDieValue, // Use the effective die value (may be switched)
             stateKind: 'ready',
             moveKind,
             possibleMoves: possibleMoves, // Store all possible moves
             origin: selectedMove.origin, // Use the selected move's origin
           })
         } else {
-          // No possible moves for this die
+          // No possible moves for this die (even with switching)
           movesArr.push({
             id: generateId(),
             player,
-            dieValue,
+            dieValue: effectiveDieValue, // Use the effective die value
             stateKind: 'ready',
             moveKind: 'no-move',
             possibleMoves: [], // No moves possible

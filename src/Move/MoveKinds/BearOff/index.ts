@@ -121,6 +121,23 @@ export class BearOff {
       // GOLDEN RULE: Bear-off distance is ALWAYS originPoint.position[direction]
       distanceToBearOff = originPoint.position[direction]
 
+      // CRITICAL: Cannot use a lower die value than the point position
+      if (dieValue < distanceToBearOff) {
+        logger.debug(
+          '[BearOff] Attempted to bear off with lower die value than required:',
+          {
+            dieValue,
+            originPosition: originPoint.position[direction],
+            distanceToBearOff,
+            playerColor: player.color,
+            playerDirection: player.direction,
+          }
+        )
+        throw Error(
+          `Cannot bear off from point ${distanceToBearOff} with die value ${dieValue}. Die value must be at least ${distanceToBearOff}`
+        )
+      }
+
       // If using a higher die than needed, only allow if no checkers on higher points
       if (dieValue > distanceToBearOff) {
         const hasCheckerOnHigher = homeboard.some(
