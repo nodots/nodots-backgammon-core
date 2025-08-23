@@ -254,6 +254,26 @@ export class Play {
           freshOriginIds: freshPossibleMoves.map(pm => pm.origin.id)
         })
         
+        // CRITICAL BUG FIX: Handle case where recalculated possibleMoves is empty
+        // When no moves are possible after board update, convert to completed no-move
+        if (freshPossibleMoves.length === 0) {
+          debug('Play.move: Converting remaining move to no-move (no possible moves after recalculation)', {
+            moveId: remainingMove.id,
+            dieValue: remainingMove.dieValue,
+            originalMoveKind: remainingMove.moveKind
+          })
+          
+          return {
+            ...remainingMove,
+            stateKind: 'completed' as const,
+            moveKind: 'no-move' as const,
+            possibleMoves: [], // No moves possible
+            origin: undefined,
+            destination: undefined,
+            isHit: false,
+          }
+        }
+        
         return {
           ...remainingMove,
           possibleMoves: freshPossibleMoves // Update with fresh moves
