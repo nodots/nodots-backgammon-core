@@ -130,7 +130,8 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     expect(gameAfterUndo.stateKind).toBe('rolled')
     expect(gameAfterUndo.activePlayer?.color).toBe(originalActivePlayer)
     expect(gameAfterUndo.activePlayer?.dice?.stateKind).toBe('rolled')
-    expect(gameAfterUndo.activePlayer?.dice?.currentRoll).toEqual(originalDiceValues)
+    // Check dice values are preserved (order might differ due to dice switching)
+    expect(gameAfterUndo.activePlayer?.dice?.currentRoll?.sort()).toEqual(originalDiceValues.sort())
     expect(gameAfterUndo.activePlay).toBeDefined()
     
     console.log(`🎲 Dice after undo: [${gameAfterUndo.activePlayer?.dice?.currentRoll?.join(', ')}]`)
@@ -301,7 +302,12 @@ describe('Proper Undo Behavior - E2E Proof', () => {
       'player2-id', 
       false, // don't auto roll
       false, 
-      false
+      false,
+      {
+        blackDirection: 'clockwise',
+        whiteDirection: 'counterclockwise',
+        blackFirst: true
+      }
     )
     
     expect(newGame.stateKind).toBe('rolling-for-start')
@@ -317,7 +323,12 @@ describe('Proper Undo Behavior - E2E Proof', () => {
       'player2-id', 
       true, // auto roll for start
       false,
-      false
+      false,
+      {
+        blackDirection: 'clockwise',
+        whiteDirection: 'counterclockwise',
+        blackFirst: true
+      }
     )
     
     let gameInRollingState = rolledGame
@@ -371,7 +382,12 @@ describe('Proper Undo Behavior - E2E Proof', () => {
       'player2-id',
       true,
       false,
-      false
+      false,
+      {
+        blackDirection: 'clockwise',
+        whiteDirection: 'counterclockwise',
+        blackFirst: true
+      }
     )
     
     if (testGame.stateKind === 'rolled-for-start') {
@@ -407,7 +423,12 @@ describe('Proper Undo Behavior - E2E Proof', () => {
       'player2-id',
       true,
       false,
-      false
+      false,
+      {
+        blackDirection: 'clockwise',
+        whiteDirection: 'counterclockwise',
+        blackFirst: true
+      }
     )
     
     if (testGame.stateKind === 'rolled-for-start') {
@@ -445,7 +466,12 @@ describe('Proper Undo Behavior - E2E Proof', () => {
       'player2-id',
       true,
       false,
-      false
+      false,
+      {
+        blackDirection: 'clockwise',
+        whiteDirection: 'counterclockwise',
+        blackFirst: true
+      }
     )
     
     if (testGame.stateKind === 'rolled-for-start') {

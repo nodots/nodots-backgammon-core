@@ -40,15 +40,7 @@ import { logger } from '../utils/logger'
 // Hardcoded constant to avoid import issues during build
 const MAX_PIP_COUNT = 167
 
-// ⚠️  CRITICAL TECH DEBT: DICE DATA DUPLICATION ⚠️
-// This module contains duplicate storage of dice roll values:
-// - player.dice.currentRoll (UI display purposes)
-// - game.activePlay.moves[n].dieValue (move execution logic)
-// This creates maintenance overhead and potential data inconsistencies.
-// See preservation logic in confirmTurn() and confirmTurnFromMoved() for examples.
 export * from '../index'
-
-// GameProps is now imported from @nodots-llc/backgammon-types
 
 export class Game {
   id: string = generateId()
@@ -183,11 +175,13 @@ export class Game {
 
     // CRITICAL FIX: Recalculate pip counts after game initialization
     // Players are initialized with MAX_PIP_COUNT, but need actual values based on board setup
-    console.log('🧮 Game.createNewGame: Recalculating initial pip counts after board setup')
+    console.log(
+      '🧮 Game.createNewGame: Recalculating initial pip counts after board setup'
+    )
     const playersWithCorrectPipCounts = Player.recalculatePipCounts(game)
     game = {
       ...game,
-      players: playersWithCorrectPipCounts
+      players: playersWithCorrectPipCounts,
     }
 
     // Auto roll for start if requested
@@ -668,8 +662,14 @@ export class Game {
                   // CRITICAL: Update dieValue to match new dice order after swapping
                   // This fixes the data duplication bug between dice.currentRoll and moves[].dieValue
                   const [newFirstDie, newSecondDie] = switchedDice.currentRoll
-                  swappedMoves[0] = { ...swappedMoves[0], dieValue: newFirstDie }
-                  swappedMoves[1] = { ...swappedMoves[1], dieValue: newSecondDie }
+                  swappedMoves[0] = {
+                    ...swappedMoves[0],
+                    dieValue: newFirstDie,
+                  }
+                  swappedMoves[1] = {
+                    ...swappedMoves[1],
+                    dieValue: newSecondDie,
+                  }
 
                   // CRITICAL: Regenerate possibleMoves for all moves based on new dice order
                   // This is necessary because possibleMoves were calculated with the old dice order
@@ -683,14 +683,14 @@ export class Game {
                       )
                       return {
                         ...move,
-                        player: updatedActivePlayer,  // Update player reference with switched dice
+                        player: updatedActivePlayer, // Update player reference with switched dice
                         possibleMoves: freshPossibleMoves,
                       }
                     }
                     // Update player reference for non-ready moves too
                     return {
                       ...move,
-                      player: updatedActivePlayer  // Update player reference with switched dice
+                      player: updatedActivePlayer, // Update player reference with switched dice
                     }
                   })
 
@@ -819,7 +819,10 @@ export class Game {
     game: BackgammonGameMoving,
     originId: string
   ): BackgammonGameMoving | BackgammonGame {
-    console.log('🚨 DICE SWITCHING BUG: Game.move called with dice:', game.activePlayer.dice?.currentRoll)
+    logger.info(
+      'DICE SWITCHING BUG: Game.move called with dice:',
+      game.activePlayer.dice?.currentRoll
+    )
     let { activePlay, board } = game
 
     // Check if activePlay exists
@@ -845,7 +848,7 @@ export class Game {
       playResult.move && playResult.move.player
         ? {
             ...playResult.move.player,
-            dice: game.activePlayer.dice  // Preserve switched dice state
+            dice: game.activePlayer.dice, // Preserve switched dice state
           }
         : game.activePlayer
 
@@ -957,7 +960,7 @@ export class Game {
     // --- END WIN CONDITION CHECK ---
 
     // Recalculate pip counts after the move
-    console.log('🧮 Game.move: Recalculating pip counts after move')
+    logger.info('🧮 Game.move: Recalculating pip counts after move')
     const gameWithUpdatedBoard = {
       ...game,
       board,
@@ -968,13 +971,27 @@ export class Game {
     const updatedPlayers = Player.recalculatePipCounts(gameWithUpdatedBoard)
 
     // DICE SWITCHING DEBUG: Check what's happening to dice and moves state
-    const finalActivePlayer = updatedPlayers.find((p) => p.id === movedPlayer.id) as any
+    const finalActivePlayer = updatedPlayers.find(
+      (p) => p.id === movedPlayer.id
+    ) as any
     const finalMoves = Array.from(updatedActivePlay.moves || [])
     console.log('🎲 [DICE DEBUG] Game.move result:')
-    console.log('  game.activePlayer.dice:', game.activePlayer.dice?.currentRoll)
-    console.log('  finalActivePlayer.dice:', finalActivePlayer?.dice?.currentRoll)
-    console.log('  finalMoves.dieValues:', finalMoves.map((m: any) => m.dieValue))
-    console.log('  finalMoves.states:', finalMoves.map((m: any) => m.stateKind))
+    console.log(
+      '  game.activePlayer.dice:',
+      game.activePlayer.dice?.currentRoll
+    )
+    console.log(
+      '  finalActivePlayer.dice:',
+      finalActivePlayer?.dice?.currentRoll
+    )
+    console.log(
+      '  finalMoves.dieValues:',
+      finalMoves.map((m: any) => m.dieValue)
+    )
+    console.log(
+      '  finalMoves.states:',
+      finalMoves.map((m: any) => m.stateKind)
+    )
 
     return {
       ...game,
@@ -1873,7 +1890,9 @@ export class Game {
         if (hitCheckers.length > 0) {
           const hitChecker = hitCheckers[hitCheckers.length - 1]
 
-          console.log(`🔄 Game.undoLastMove: Restoring hit checker ${hitChecker.id.slice(0, 8)} from ${opponentDirection} bar to ${moveToUndo.destination.kind}:${moveToUndo.destination.id}`)
+          console.log(
+            `🔄 Game.undoLastMove: Restoring hit checker ${hitChecker.id.slice(0, 8)} from ${opponentDirection} bar to ${moveToUndo.destination.kind}:${moveToUndo.destination.id}`
+          )
 
           // Remove from bar
           const hitCheckerIndex = opponentBar.checkers.findIndex(
@@ -1930,7 +1949,7 @@ export class Game {
       const allMovesUndoneCheck = Array.from(updatedMoves).every(
         (move) => move.stateKind === 'ready'
       )
-      
+
       if (allMovesUndoneCheck) {
         // Recalculate possible moves for all ready moves with the restored board state
         finalUpdatedMoves = new Set(
@@ -1992,9 +2011,13 @@ export class Game {
                   // When dice have been switched, the moves reflect the correct switched dice values
                   // This fixes the bug where undo incorrectly reverts switched dice
                   const movesArray = Array.from(updatedActivePlay.moves)
-                  const preservedCurrentRoll = movesArray.length >= 2 
-                    ? [movesArray[0].dieValue, movesArray[1].dieValue] as [BackgammonDieValue, BackgammonDieValue]
-                    : game.activePlayer.dice?.currentRoll
+                  const preservedCurrentRoll =
+                    movesArray.length >= 2
+                      ? ([movesArray[0].dieValue, movesArray[1].dieValue] as [
+                          BackgammonDieValue,
+                          BackgammonDieValue,
+                        ])
+                      : game.activePlayer.dice?.currentRoll
 
                   console.log(
                     '🎲 Game.undoLastMove: Preserving ORIGINAL dice state (supports dice switching):',
@@ -2270,16 +2293,19 @@ export class Game {
     // Update movable checkers based on calculated possible moves
     const movableContainerIds: string[] = []
     for (const possibleMove of possibleMoves) {
-      if (possibleMove.origin && !movableContainerIds.includes(possibleMove.origin.id)) {
+      if (
+        possibleMove.origin &&
+        !movableContainerIds.includes(possibleMove.origin.id)
+      ) {
         movableContainerIds.push(possibleMove.origin.id)
       }
     }
-    
+
     const updatedBoard = Checker.updateMovableCheckers(
       gameWithActivePlay.board,
       movableContainerIds
     )
-    
+
     const finalGameWithActivePlay = {
       ...gameWithActivePlay,
       board: updatedBoard,

@@ -157,8 +157,8 @@ describe('BearOff', () => {
   })
 
   describe('Invalid Bear Off Scenarios', () => {
-    it('should not allow bearing off with lower die value than point position', () => {
-      // Setup board with all checkers in home board
+    it('should not allow bearing off with lower die value when checkers exist on higher points in home board', () => {
+      // Setup board with checkers on points 4 and 6 in home board
       const boardImport: BackgammonCheckerContainerImport[] = [
         {
           position: { clockwise: 6, counterclockwise: 19 },
@@ -176,9 +176,10 @@ describe('BearOff', () => {
       ]
       const { board, player } = setupTestBoard(boardImport)
 
-      // Try to bear off from point 6 with die value 3 (lower than required)
+      // Try to bear off from point 4 with die value 3 (lower than required)
+      // This should fail because there's a checker on higher point 6
       const origin = board.points.find(
-        (p: BackgammonPoint) => p.position[player.direction] === 6
+        (p: BackgammonPoint) => p.position[player.direction] === 4
       )!
 
       const move: BackgammonMoveReady = {
@@ -187,12 +188,12 @@ describe('BearOff', () => {
         stateKind: 'ready',
         moveKind: 'bear-off',
         origin,
-        dieValue: 3, // Using lower die value than point position
+        dieValue: 3, // Using lower die value than point position, with checker on higher point
         possibleMoves: [],
       }
 
       expect(() => BearOff.move(board, move)).toThrow(
-        'Cannot bear off from point 6 with die value 3. Die value must be at least 6'
+        'Cannot bear off from point 4 with die value 3 while checkers exist on higher points in home board'
       )
     })
 
@@ -337,6 +338,47 @@ describe('BearOff', () => {
           ?.checkers.length
       ).toBe(1) // One checker should remain
       // Check that one checker was moved to the off position
+      expect(moveResult.board.off[player.direction].checkers.length).toBe(1)
+    })
+
+    it('BUG FIX: should allow bearing off with lower die value when no checkers on higher points', () => {
+      // This reproduces the exact bug from game c45a1515-774b-404a-8d3c-1947d7d3eeb3
+      // where the human player got stuck trying to bear off from point 6 with die value 5
+      const boardImport: BackgammonCheckerContainerImport[] = [
+        {
+          position: { clockwise: 6, counterclockwise: 19 },
+          checkers: { qty: 1, color: 'white' },
+        },
+        // All other checkers are on lower points (1-5) - no checkers on points 7-24
+        {
+          position: { clockwise: 1, counterclockwise: 24 },
+          checkers: { qty: 14, color: 'white' },
+        },
+      ]
+      const { board, player } = setupTestBoard(boardImport)
+
+      const origin = board.points.find(
+        (p: BackgammonPoint) => p.position[player.direction] === 6
+      )!
+
+      const move: BackgammonMoveReady = {
+        id: generateId(),
+        player,
+        stateKind: 'ready',
+        moveKind: 'bear-off',
+        origin,
+        dieValue: 5, // Lower than point position (6), but should be allowed
+        possibleMoves: [],
+      }
+
+      // Before fix: this would throw "Cannot bear off from point 6 with die value 5"
+      // After fix: this should succeed per backgammon rules
+      const moveResult = BearOff.move(board, move)
+      expect(moveResult.move.stateKind).toBe('completed')
+      expect(
+        moveResult.board.points.find((p) => p.position[player.direction] === 6)
+          ?.checkers.length
+      ).toBe(0)
       expect(moveResult.board.off[player.direction].checkers.length).toBe(1)
     })
   })

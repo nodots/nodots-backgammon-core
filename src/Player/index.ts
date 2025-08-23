@@ -22,7 +22,7 @@ import {
 } from '@nodots-llc/backgammon-types/dist'
 import { Board, Dice, generateId } from '..'
 import { Play } from '../Play'
-// PositionAnalyzer moved to @nodots-llc/backgammon-robots package
+import { logger } from '../utils/logger'
 
 // Hardcoded constant to avoid import issues during build
 const MAX_PIP_COUNT = 167
@@ -245,7 +245,7 @@ export class Player {
   ): import('@nodots-llc/backgammon-types/dist').BackgammonPlayers {
     return game.players.map((player) => {
       const newPipCount = Player.calculatePipCount(game, player.color)
-      console.log(
+      logger.info(
         `🧮 Recalculating pip count for ${player.color} ${player.direction}: ${player.pipCount} -> ${newPipCount}`
       )
       return {

@@ -121,21 +121,32 @@ export class BearOff {
       // GOLDEN RULE: Bear-off distance is ALWAYS originPoint.position[direction]
       distanceToBearOff = originPoint.position[direction]
 
-      // CRITICAL: Cannot use a lower die value than the point position
+      // CRITICAL BUG FIX: Can use a lower die value if no checkers on higher points in home board
       if (dieValue < distanceToBearOff) {
-        logger.debug(
-          '[BearOff] Attempted to bear off with lower die value than required:',
-          {
-            dieValue,
-            originPosition: originPoint.position[direction],
-            distanceToBearOff,
-            playerColor: player.color,
-            playerDirection: player.direction,
-          }
+        // Check if there are checkers on higher points within the home board
+        const hasCheckerOnHigherHomePoints = homeboard.some(
+          (p) =>
+            (p as BackgammonPoint).position[direction] >
+              originPoint.position[direction] &&
+            p.checkers.some((c) => c.color === player.color)
         )
-        throw Error(
-          `Cannot bear off from point ${distanceToBearOff} with die value ${dieValue}. Die value must be at least ${distanceToBearOff}`
-        )
+        
+        if (hasCheckerOnHigherHomePoints) {
+          logger.debug(
+            '[BearOff] Cannot use lower die value when checkers exist on higher home board points:',
+            {
+              dieValue,
+              originPosition: originPoint.position[direction],
+              distanceToBearOff,
+              playerColor: player.color,
+              playerDirection: player.direction,
+            }
+          )
+          throw Error(
+            `Cannot bear off from point ${distanceToBearOff} with die value ${dieValue} while checkers exist on higher points in home board`
+          )
+        }
+        // If no checkers on higher home board points, allow the bear-off with lower die value
       }
 
       // If using a higher die than needed, only allow if no checkers on higher points
