@@ -35,7 +35,7 @@ import { Cube } from '../Cube'
 import { Dice } from '../Dice'
 import { BackgammonMoveDirection, Play } from '../Play'
 // RobotMoveResult moved to @nodots-llc/backgammon-robots package
-import { logger } from '../utils/logger'
+import { logger, debug } from '../utils/logger'
 
 // Hardcoded constant to avoid import issues during build
 const MAX_PIP_COUNT = 167
@@ -899,11 +899,26 @@ export class Game {
               move.dieValue
             )
 
-            // Update the move with fresh possible moves
-            move.possibleMoves = freshPossibleMoves
+            // CRITICAL BUG FIX: Handle case where recalculated possibleMoves is empty
+            // When no moves are possible after board update, convert to completed no-move
+            // This prevents stuck games with ready moves that have no valid possibleMoves
+            if (!freshPossibleMoves || freshPossibleMoves.length === 0) {
+              move.stateKind = 'completed'
+              move.moveKind = 'no-move'
+              move.possibleMoves = []
+              move.origin = undefined
+              move.destination = undefined
+              move.isHit = false
+              debug('Game.move: Converting move to no-move (no possible moves after recalculation)', {
+                moveId: move.id,
+                dieValue: move.dieValue,
+                originalMoveKind: move.moveKind
+              })
+            } else {
+              // Update the move with fresh possible moves
+              move.possibleMoves = freshPossibleMoves
 
-            // Add origins to movable containers
-            if (freshPossibleMoves && Array.isArray(freshPossibleMoves)) {
+              // Add origins to movable containers
               for (const possibleMove of freshPossibleMoves) {
                 if (
                   possibleMove.origin &&
