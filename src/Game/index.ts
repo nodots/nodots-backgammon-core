@@ -939,9 +939,24 @@ export class Game {
     }
     board = Checker.updateMovableCheckers(board, movableContainerIds)
 
+    // Recalculate pip counts after the move BEFORE win condition check
+    // This ensures final pip counts are correct when the game ends
+    logger.info('🧮 Game.move: Recalculating pip counts after move')
+    const gameWithUpdatedBoard = {
+      ...game,
+      board,
+      players: game.players.map((p) =>
+        p.id === movedPlayer.id ? movedPlayer : p
+      ) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayers,
+    }
+    const updatedPlayers = Player.recalculatePipCounts(gameWithUpdatedBoard)
+    
+    // Update movedPlayer with correct pip count
+    movedPlayer = updatedPlayers.find((p) => p.id === movedPlayer.id) as any || movedPlayer
+
     // --- WIN CONDITION CHECK ---
     // Check if the player has won (all checkers off) AFTER the move is processed
-    // IMPORTANT: This check must happen after the checker is moved off the board
+    // IMPORTANT: This check must happen after the checker is moved off the board AND pip counts recalculated
     const direction = movedPlayer.direction
     const playerOff = board.off[direction]
     const playerCheckersOff = playerOff.checkers.filter(
@@ -956,6 +971,7 @@ export class Game {
       playerOffCheckers: playerOff.checkers.length,
       movedPlayerColor: movedPlayer.color,
       movedPlayerDirection: movedPlayer.direction,
+      pipCount: movedPlayer.pipCount, // Now shows correct 0 pip count
     })
     if (playerCheckersOff === 15 && lastMoveKind === 'bear-off') {
       // Player has borne off all checkers, they win
@@ -970,20 +986,10 @@ export class Game {
         board,
         activePlayer: winner,
         activePlay: updatedActivePlay,
+        players: updatedPlayers, // Include recalculated pip counts in completed game
       } as any // TODO: type as BackgammonGameCompleted
     }
     // --- END WIN CONDITION CHECK ---
-
-    // Recalculate pip counts after the move
-    logger.info('🧮 Game.move: Recalculating pip counts after move')
-    const gameWithUpdatedBoard = {
-      ...game,
-      board,
-      players: game.players.map((p) =>
-        p.id === movedPlayer.id ? movedPlayer : p
-      ) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayers,
-    }
-    const updatedPlayers = Player.recalculatePipCounts(gameWithUpdatedBoard)
 
     // DICE SWITCHING DEBUG: Check what's happening to dice and moves state
     const finalActivePlayer = updatedPlayers.find(
