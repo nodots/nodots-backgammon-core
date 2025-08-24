@@ -329,8 +329,8 @@ export class Play {
           // For mixed rolls like [1,4], each die can only be used once for reentry
           availableDieValues = roll.filter(die => !usedBarReentryDice.has(die))
         } else {
-          // For doubles like [2,2], can use any remaining dice (up to 4 total moves)
-          availableDieValues = [dieValue] // All dice have same value, so just use the current one
+          // For doubles like [2,2], can use the same die value multiple times (up to 4 total moves)
+          availableDieValues = [dieValue]
         }
         
         let reentryMoveCreated = false
