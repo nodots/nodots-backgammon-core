@@ -49,14 +49,19 @@ describe('ROLLED-FOR-START Dice State', () => {
     expect(gameAfterRollForStart.stateKind).toBe('rolled-for-start')
     expect(gameAfterRollForStart.activeColor).toBeDefined()
 
-    // 3. Check the active player's dice state - should be 'rolling' (ready to roll)
+    // 3. Check the active player's dice state - should be 'rolled-for-start' (has roll for start value)
     const activePlayer = gameAfterRollForStart.activePlayer
     console.log('Active player dice state:', activePlayer.dice.stateKind)
     console.log('Active player state:', activePlayer.stateKind)
 
-    // CORRECT: The active player has rolling dice and is ready to roll
-    expect(activePlayer.dice.stateKind).toBe('rolling') // This is correct!
+    // After rollForStart, the active player has rolled-for-start dice (showing their start roll)
+    expect(activePlayer.dice.stateKind).toBe('rolled-for-start')
     expect(activePlayer.stateKind).toBe('rolled-for-start')
+    // The dice should have a currentRoll with the start roll value
+    expect(activePlayer.dice.currentRoll).toBeDefined()
+    expect(activePlayer.dice.currentRoll![0]).toBeGreaterThanOrEqual(1)
+    expect(activePlayer.dice.currentRoll![0]).toBeLessThanOrEqual(6)
+    expect(activePlayer.dice.currentRoll![1]).toBeUndefined() // Second die is undefined for start rolls
 
     // 4. Try to roll dice - this should work
     try {

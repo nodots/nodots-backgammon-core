@@ -543,8 +543,9 @@ describe('Game', () => {
       expect(Game.canRefuseDouble(doubledGame, inactivePlayer)).toBe(true)
       const completedGame = Game.refuseDouble(doubledGame, inactivePlayer)
       expect(completedGame.stateKind).toBe('completed')
-      expect(completedGame.winner!.color).toBe(activePlayer.color)
-      expect(completedGame.winner!.stateKind).toBe('winner')
+      expect(completedGame.winner).toBe(activePlayer.id)
+      const winningPlayer = completedGame.players.find(p => p.id === completedGame.winner)
+      expect(winningPlayer?.stateKind).toBe('winner')
     })
 
     it('should not allow a player to accept their own double', () => {
@@ -639,8 +640,9 @@ describe('Game', () => {
       // Accept double to reach 64
       const acceptedGame = Game.acceptDouble(rolledGame, inactivePlayer)
       expect(acceptedGame.stateKind).toBe('completed')
-      expect(acceptedGame.winner!.color).toBe(inactivePlayer.color)
-      expect(acceptedGame.winner!.stateKind).toBe('winner')
+      expect(acceptedGame.winner).toBe(inactivePlayer.id)
+      const winningPlayer = acceptedGame.players.find(p => p.id === acceptedGame.winner)
+      expect(winningPlayer?.stateKind).toBe('winner')
       expect(acceptedGame.cube.value).toBe(64)
       expect(acceptedGame.cube.stateKind).toBe('maxxed')
     })
@@ -736,8 +738,10 @@ describe('Game', () => {
       const result = firstResult
       expect(result.stateKind).toBe('completed')
       expect(result.winner).toBeDefined()
-      expect(result.winner.color).toBe('white')
-      expect(result.winner.stateKind).toBe('winner')
+      expect(result.winner).toBe(whitePlayer.id)
+      const winningPlayer = result.players.find((p: any) => p.id === result.winner)
+      expect(winningPlayer?.color).toBe('white')
+      expect(winningPlayer?.stateKind).toBe('winner')
       expect(
         result.board.off.clockwise.checkers.filter(
           (c: any) => c.color === 'white'
@@ -750,15 +754,15 @@ describe('Game', () => {
     it('should create a new game with default settings', async () => {
       const game = Game.createNewGame('user1', 'user2', true, false, false) // Human vs Human
       expect(game).toBeDefined()
-      expect(game.stateKind).toBe('rolled-for-start')
+      expect(game.stateKind).toBe('rolling-for-start')
 
-      // Game should be in rolled-for-start state waiting for human to roll
-      expect(game.stateKind).toBe('rolled-for-start')
+      // Game should be in rolling-for-start state for automatic roll
+      expect(game.stateKind).toBe('rolling-for-start')
 
       expect(game.players).toHaveLength(2)
-      expect(game.activeColor).toBeDefined()
-      expect(game.activePlayer).toBeDefined()
-      expect(game.inactivePlayer).toBeDefined()
+      expect(game.activeColor).toBeUndefined()
+      expect(game.activePlayer).toBeUndefined()
+      expect(game.inactivePlayer).toBeUndefined()
       expect(game.board).toBeDefined()
       expect(game.cube).toBeDefined()
     })
@@ -778,19 +782,21 @@ describe('Game', () => {
         config
       )
       expect(game).toBeDefined()
-      expect(game.stateKind).toBe('rolled-for-start')
+      expect(game.stateKind).toBe('rolling-for-start')
       expect(game.players).toHaveLength(2)
-      expect(game.activeColor).toBe('black')
-      expect(game.activePlayer?.color).toBe('black')
-      expect(game.inactivePlayer?.color).toBe('white')
+      expect(game.activeColor).toBeUndefined()
+      expect(game.activePlayer).toBeUndefined()
+      expect(game.inactivePlayer).toBeUndefined()
 
-      // Verify direction configuration is set correctly
-      expect(game.activePlayer?.direction).toBe('counterclockwise') // Black player
-      expect(game.inactivePlayer?.direction).toBe('clockwise') // White player
+      // Verify direction configuration is set correctly in players array
+      const blackPlayer = game.players.find(p => p.color === 'black')
+      const whitePlayer = game.players.find(p => p.color === 'white')
+      expect(blackPlayer?.direction).toBe('counterclockwise') // Black player
+      expect(whitePlayer?.direction).toBe('clockwise') // White player
 
       // Verify human settings
-      expect(game.activePlayer?.isRobot).toBe(false) // Black should be human
-      expect(game.inactivePlayer?.isRobot).toBe(false) // White should be human
+      expect(blackPlayer?.isRobot).toBe(false) // Black should be human
+      expect(whitePlayer?.isRobot).toBe(false) // White should be human
     })
 
     it('should create a new game without auto-rolling for start', () => {

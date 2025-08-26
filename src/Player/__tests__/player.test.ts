@@ -7,6 +7,7 @@ import {
   BackgammonMoveReady,
   BackgammonPlayer,
   BackgammonPlayerRolling,
+  BackgammonPlayerRollingForStart,
   BackgammonPoint,
 } from '@nodots-llc/backgammon-types/dist'
 import { Player } from '..'
@@ -76,6 +77,28 @@ describe('Player', () => {
       )
       expect(movedPlayer.stateKind).toBe('moved')
       expect(movedPlayer.pipCount).toBe(167)
+    })
+  })
+
+  describe('rollForStart', () => {
+    it('should roll for start and update player state', () => {
+      const rollingForStartPlayer = Player.initialize(
+        color,
+        direction,
+        undefined,
+        undefined,
+        'rolling-for-start',
+        true
+      ) as BackgammonPlayerRollingForStart
+      const rolledForStartPlayer = Player.rollForStart(rollingForStartPlayer)
+
+      expect(rolledForStartPlayer.stateKind).toBe('rolled-for-start')
+      expect(rolledForStartPlayer.dice.stateKind).toBe('rolled-for-start')
+      expect(rolledForStartPlayer.dice.currentRoll).toBeDefined()
+      expect(rolledForStartPlayer.dice.currentRoll![0]).toBeGreaterThanOrEqual(1)
+      expect(rolledForStartPlayer.dice.currentRoll![0]).toBeLessThanOrEqual(6)
+      expect(rolledForStartPlayer.dice.currentRoll![1]).toBeUndefined()
+      expect(rolledForStartPlayer.dice.total).toBe(rolledForStartPlayer.dice.currentRoll![0])
     })
   })
 

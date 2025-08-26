@@ -70,14 +70,12 @@ export class Player {
           color,
           direction,
           stateKind,
-          dice: dice || Dice.initialize(color),
+          dice: dice || Dice.initialize(color, 'rolling-for-start'),
           pipCount,
           isRobot,
         } as BackgammonPlayerRollingForStart
       case 'rolled-for-start': {
-        // For rolled-for-start players, their dice should be 'rolling' (ready to roll)
-        // since they won the roll-for-start and can now roll for their first turn
-        const rollingDice = dice || Dice.initialize(color, 'rolling')
+        const rollingDice = dice || Dice.initialize(color, 'rolled-for-start')
         return {
           id,
           userId: playerUserId,
@@ -158,6 +156,18 @@ export class Player {
         } as BackgammonPlayerDoubled
       default:
         throw new Error(`Unhandled player stateKind: ${stateKind}`)
+    }
+  }
+
+  public static rollForStart = function rollForStart(
+    player: BackgammonPlayerRollingForStart
+  ): BackgammonPlayerRolledForStart {
+    const { dice } = player
+    const rolledDice = Dice.rollForStart(dice)
+    return {
+      ...player,
+      stateKind: 'rolled-for-start',
+      dice: rolledDice,
     }
   }
 
