@@ -38,6 +38,7 @@ describe('Bear-off possibleMoves Recalculation Bug', () => {
       direction: 'clockwise',
       pipCount: 15,
       isRobot: true,
+      rollForStartValue: 2,
     }
 
     return { boardImport, player }
@@ -165,6 +166,7 @@ describe('Bear-off possibleMoves Recalculation Bug', () => {
       direction: 'clockwise',
       pipCount: 15,
       isRobot: true,
+      rollForStartValue: 6,
     }
     
     const board = Board.initialize(boardImport)

@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals'
 import {
   BackgammonDiceInactive,
   BackgammonDiceRolled,
+  BackgammonDiceRollingForStart,
   BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
 import { Dice } from '..'
@@ -232,6 +233,72 @@ describe('Dice', () => {
         total: 7,
       }
       expect(Dice.isDouble(rolledDice)).toBe(false)
+    })
+  })
+
+  describe('Rolling for Start', () => {
+    it('should roll for start correctly', () => {
+      const dice = Dice.initialize(
+        randomColor,
+        'rolling-for-start'
+      ) as BackgammonDiceRollingForStart
+      
+      const rolledForStartDice = Dice.rollForStart(dice)
+      
+      expect(rolledForStartDice).toBeDefined()
+      expect(rolledForStartDice.id).toBe(dice.id)
+      expect(rolledForStartDice.stateKind).toBe('rolled-for-start')
+      expect(rolledForStartDice.color).toBe(dice.color)
+      expect(rolledForStartDice.currentRoll).toBeDefined()
+      expect(rolledForStartDice.currentRoll![0]).toBeGreaterThanOrEqual(1)
+      expect(rolledForStartDice.currentRoll![0]).toBeLessThanOrEqual(6)
+      expect(rolledForStartDice.currentRoll![1]).toBeUndefined()
+      expect(rolledForStartDice.total).toBe(rolledForStartDice.currentRoll![0])
+    })
+
+    it('should initialize dice in rolling-for-start state correctly', () => {
+      const dice = Dice.initialize(randomColor, 'rolling-for-start')
+      expect(dice).toBeDefined()
+      expect(dice.stateKind).toBe('rolling-for-start')
+      expect(dice.color).toBe(randomColor)
+      expect(dice.currentRoll).toBeUndefined()
+      expect(dice.total).toBeUndefined()
+    })
+
+    it('should initialize dice in rolled-for-start state correctly', () => {
+      const dice = Dice.initialize(randomColor, 'rolled-for-start', undefined, [3, undefined])
+      expect(dice).toBeDefined()
+      expect(dice.stateKind).toBe('rolled-for-start')
+      expect(dice.color).toBe(randomColor)
+      expect(dice.currentRoll).toEqual([3, undefined])
+      expect(dice.total).toBe(3)
+    })
+
+    test('should have uniform distribution for start rolls', () => {
+      const rolls: number[] = []
+      for (let i = 0; i < monteCarloRuns; i++) {
+        const dice = Dice.initialize(
+          randomColor,
+          'rolling-for-start'
+        ) as BackgammonDiceRollingForStart
+        const rolled = Dice.rollForStart(dice)
+        rolls.push(rolled.currentRoll![0])
+      }
+      
+      const counts = new Array(6).fill(0)
+      rolls.forEach((value) => {
+        counts[value - 1]++
+      })
+      
+      const expectedCount = monteCarloRuns / 6
+      counts.forEach((count, index) => {
+        const deviation = Math.abs(count - expectedCount) / expectedCount
+        expect(deviation).toBeLessThan(0.05) // Allowing 5% deviation
+        const percentage = ((count / monteCarloRuns) * 100).toFixed(2)
+        console.log(
+          `Start roll value ${index + 1} appeared ${count} times (${percentage}%)`
+        )
+      })
     })
   })
 })

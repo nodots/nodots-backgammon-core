@@ -8,24 +8,23 @@ describe('GameEngine', () => {
   beforeEach(() => {
     // Create a test game with known state
     testGame = Game.createNewGame(
-      'player1',
-      'player2',
-      true,
-      false, // player1 is human
-      true,  // player2 is robot
-      {
-        blackDirection: 'clockwise',
-        whiteDirection: 'counterclockwise',
-        blackFirst: true,
-      }
+      { userId: 'player1', isRobot: false },
+      { userId: 'player2', isRobot: true }
     )
 
     // Advance to moving state for testing
-    if (testGame.stateKind === 'rolled-for-start') {
-      const rolledGame = Game.roll(testGame as any)
-      if (rolledGame.stateKind === 'rolled') {
-        const preparingGame = Game.prepareMove(rolledGame)
-        testGame = Game.toMoving(preparingGame)
+    if (testGame.stateKind === 'rolling-for-start') {
+      // First roll for start to determine who goes first
+      const rolledForStartGame = Game.rollForStart(testGame as any)
+      
+      if (rolledForStartGame.stateKind === 'rolled-for-start') {
+        // Then roll for the game
+        const rolledGame = Game.roll(rolledForStartGame as any)
+        
+        if (rolledGame.stateKind === 'rolled') {
+          const preparingGame = Game.prepareMove(rolledGame)
+          testGame = Game.toMoving(preparingGame)
+        }
       }
     }
   })
@@ -57,7 +56,10 @@ describe('GameEngine', () => {
 
     it('should reject moves from wrong game state', () => {
       // Create a game in wrong state
-      const rollingGame = Game.createNewGame('p1', 'p2', false)
+      const rollingGame = Game.createNewGame(
+        { userId: 'p1', isRobot: false },
+        { userId: 'p2', isRobot: false }
+      )
       const isValid = GameEngine.validateMove(rollingGame, 'any-checker')
       expect(isValid).toBe(false)
     })
@@ -124,7 +126,10 @@ describe('GameEngine', () => {
     })
 
     it('should return empty moves for invalid game state', () => {
-      const rollingGame = Game.createNewGame('p1', 'p2', false)
+      const rollingGame = Game.createNewGame(
+        { userId: 'p1', isRobot: false },
+        { userId: 'p2', isRobot: false }
+      )
       const result = GameEngine.getPossibleMoves(rollingGame)
       
       expect(result.success).toBe(false)

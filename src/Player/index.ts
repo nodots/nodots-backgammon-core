@@ -42,56 +42,77 @@ export class Player {
   public static initialize = function initializePlayer(
     color: BackgammonColor,
     direction: BackgammonMoveDirection,
-    dice: BackgammonDice = Dice.initialize(color),
-    id: string = generateId(),
     stateKind: BackgammonPlayerStateKind = 'inactive',
     isRobot: boolean,
     userId?: string,
-    pipCount: number = MAX_PIP_COUNT
+    pipCount: number = MAX_PIP_COUNT,
+    id?: string
   ): BackgammonPlayer {
+    const playerId = id || generateId()
     const playerUserId = userId || generateId()
+    
+    // Determine appropriate dice state based on player stateKind
+    const getDiceForState = (stateKind: BackgammonPlayerStateKind): BackgammonDice => {
+      switch (stateKind) {
+        case 'inactive':
+          return Dice.initialize(color)
+        case 'rolling-for-start':
+          return Dice.initialize(color, 'rolling-for-start')
+        case 'rolled-for-start':
+          return Dice.initialize(color, 'rolled-for-start')
+        case 'rolling':
+        case 'rolled':
+        case 'moving':
+        case 'moved':
+        case 'doubled':
+          return Dice.initialize(color, 'inactive')
+        case 'winner':
+          return Dice.initialize(color)
+        default:
+          return Dice.initialize(color)
+      }
+    }
+
+    const dice = getDiceForState(stateKind)
 
     switch (stateKind) {
       case 'inactive':
         return {
-          id,
+          id: playerId,
           userId: playerUserId,
           color,
           direction,
           stateKind,
-          dice: dice || Dice.initialize(color),
+          dice,
           pipCount,
           isRobot,
         } as BackgammonPlayer
       case 'rolling-for-start':
         return {
-          id,
+          id: playerId,
           userId: playerUserId,
           color,
           direction,
           stateKind,
-          dice: dice || Dice.initialize(color),
+          dice,
           pipCount,
           isRobot,
         } as BackgammonPlayerRollingForStart
       case 'rolled-for-start': {
-        // For rolled-for-start players, their dice should be 'rolling' (ready to roll)
-        // since they won the roll-for-start and can now roll for their first turn
-        const rollingDice = dice || Dice.initialize(color, 'rolling')
         return {
-          id,
+          id: playerId,
           userId: playerUserId,
           color,
           direction,
           stateKind,
-          dice: rollingDice,
+          dice,
           pipCount,
           isRobot,
         } as BackgammonPlayerRolledForStart
       }
       case 'rolling':
         return {
-          id,
+          id: playerId,
           userId: playerUserId,
           color,
           direction,
@@ -101,20 +122,19 @@ export class Player {
           isRobot,
         } as BackgammonPlayerRolling
       case 'rolled':
-        const rolledDice = dice as BackgammonDiceRolled
         return {
-          id,
+          id: playerId,
           userId: playerUserId,
           color,
           direction,
           stateKind,
-          dice: rolledDice,
+          dice: dice as BackgammonDiceRolled,
           pipCount,
           isRobot,
         } as BackgammonPlayerRolled
       case 'moving':
         return {
-          id,
+          id: playerId,
           userId: playerUserId,
           color,
           direction,
@@ -125,7 +145,7 @@ export class Player {
         } as BackgammonPlayerMoving
       case 'moved':
         return {
-          id,
+          id: playerId,
           userId: playerUserId,
           color,
           direction,
@@ -136,7 +156,7 @@ export class Player {
         } as BackgammonPlayerMoved
       case 'winner':
         return {
-          id,
+          id: playerId,
           userId: playerUserId,
           color,
           direction,
@@ -147,7 +167,7 @@ export class Player {
         } as BackgammonPlayerWinner
       case 'doubled':
         return {
-          id,
+          id: playerId,
           userId: playerUserId,
           color,
           direction,
@@ -158,6 +178,19 @@ export class Player {
         } as BackgammonPlayerDoubled
       default:
         throw new Error(`Unhandled player stateKind: ${stateKind}`)
+    }
+  }
+
+  public static rollForStart = function rollForStart(
+    player: BackgammonPlayerRollingForStart
+  ): BackgammonPlayerRolledForStart {
+    const { dice } = player
+    const rolledDice = Dice.rollForStart(dice)
+    return {
+      ...player,
+      stateKind: 'rolled-for-start',
+      dice: rolledDice,
+      rollForStartValue: rolledDice.currentRoll[0],
     }
   }
 

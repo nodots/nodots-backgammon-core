@@ -7,6 +7,7 @@ import {
   BackgammonMoveReady,
   BackgammonPlayer,
   BackgammonPlayerRolling,
+  BackgammonPlayerRollingForStart,
   BackgammonPoint,
 } from '@nodots-llc/backgammon-types/dist'
 import { Player } from '..'
@@ -22,8 +23,6 @@ describe('Player', () => {
     player = Player.initialize(
       color,
       direction,
-      undefined,
-      undefined,
       'inactive',
       true
     )
@@ -44,8 +43,6 @@ describe('Player', () => {
       const rollingPlayer = Player.initialize(
         color,
         direction,
-        undefined,
-        undefined,
         'rolling',
         true
       ) as BackgammonPlayerRolling
@@ -56,8 +53,6 @@ describe('Player', () => {
       const winnerPlayer = Player.initialize(
         color,
         direction,
-        undefined,
-        undefined,
         'winner',
         true
       )
@@ -69,8 +64,6 @@ describe('Player', () => {
       const movedPlayer = Player.initialize(
         color,
         direction,
-        undefined,
-        undefined,
         'moved',
         true
       )
@@ -79,13 +72,31 @@ describe('Player', () => {
     })
   })
 
+  describe('rollForStart', () => {
+    it('should roll for start and update player state', () => {
+      const rollingForStartPlayer = Player.initialize(
+        color,
+        direction,
+        'rolling-for-start',
+        true
+      ) as BackgammonPlayerRollingForStart
+      const rolledForStartPlayer = Player.rollForStart(rollingForStartPlayer)
+
+      expect(rolledForStartPlayer.stateKind).toBe('rolled-for-start')
+      expect(rolledForStartPlayer.dice.stateKind).toBe('rolled-for-start')
+      expect(rolledForStartPlayer.dice.currentRoll).toBeDefined()
+      expect(rolledForStartPlayer.dice.currentRoll![0]).toBeGreaterThanOrEqual(1)
+      expect(rolledForStartPlayer.dice.currentRoll![0]).toBeLessThanOrEqual(6)
+      expect(rolledForStartPlayer.dice.currentRoll![1]).toBeUndefined()
+      expect(rolledForStartPlayer.dice.total).toBe(rolledForStartPlayer.dice.currentRoll![0])
+    })
+  })
+
   describe('roll', () => {
     it('should roll dice and update player state', () => {
       const rollingPlayer = Player.initialize(
         color,
         direction,
-        undefined,
-        undefined,
         'rolling',
         true
       ) as BackgammonPlayerRolling
@@ -116,8 +127,6 @@ describe('Player', () => {
       const counterClockwisePlayer = Player.initialize(
         'black',
         'counterclockwise',
-        undefined,
-        undefined,
         'inactive',
         true
       )
@@ -149,8 +158,6 @@ describe('Player', () => {
       const counterClockwisePlayer = Player.initialize(
         'black',
         'counterclockwise',
-        undefined,
-        undefined,
         'inactive',
         true
       )
@@ -172,8 +179,6 @@ describe('Player', () => {
       const playerMoving = Player.initialize(
         color,
         direction,
-        undefined,
-        undefined,
         'moving',
         true
       ) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayerMoving
@@ -218,8 +223,6 @@ describe('Player', () => {
       const playerMoving = Player.initialize(
         color,
         direction,
-        undefined,
-        undefined,
         'moving',
         true
       ) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayerMoving

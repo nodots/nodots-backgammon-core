@@ -28,6 +28,7 @@ describe('PointToPoint isHit Flag Bug Investigation', () => {
     direction: direction,
     pipCount: 167,
     isRobot: true,
+    rollForStartValue: 6,
   })
 
   const createBoardWithBlot = (

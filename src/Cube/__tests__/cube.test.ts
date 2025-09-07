@@ -33,6 +33,7 @@ describe('Cube', () => {
       },
       pipCount: 167,
       isRobot: true,
+      rollForStartValue: 4,
     }
     const opponent: BackgammonPlayerInactive = {
       id: generateId(),
@@ -48,6 +49,7 @@ describe('Cube', () => {
       },
       pipCount: 167,
       isRobot: true,
+      rollForStartValue: 4,
     }
 
     players = [player, opponent]
@@ -79,6 +81,7 @@ describe('Cube', () => {
       },
       pipCount: 167,
       isRobot: true,
+      rollForStartValue: 4,
     }
     const opponent: BackgammonPlayerInactive = {
       id: generateId(),
@@ -94,6 +97,7 @@ describe('Cube', () => {
       },
       pipCount: 167,
       isRobot: true,
+      rollForStartValue: 4,
     }
 
     players = [player, opponent]
@@ -120,6 +124,7 @@ describe('Cube', () => {
       },
       pipCount: 167,
       isRobot: true,
+      rollForStartValue: 4,
     }
     const opponent: BackgammonPlayerInactive = {
       id: generateId(),
@@ -135,6 +140,7 @@ describe('Cube', () => {
       },
       pipCount: 167,
       isRobot: true,
+      rollForStartValue: 4,
     }
     cube = Cube.initialize({
       value: undefined,

@@ -12,7 +12,7 @@ export const ascii = (
   players?: BackgammonPlayers,
   activePlayer?: BackgammonPlayer,
   moveNotation?: string,
-  playerModels?: { [playerId: string]: string }
+  playerModels?: Record<string, string>
 ): string => {
   // Validate board exists and has required properties
   if (!board) {
@@ -40,7 +40,6 @@ export const ascii = (
   }
 
   const points = board.points
-  const bar = board.bar
 
   let boardDisplay = ''
 
@@ -48,15 +47,15 @@ export const ascii = (
   boardDisplay += `Nodots Backgammon\n`
 
   // Helper to get player label with new standardized format: 'symbol | model | direction >'
-  const getPlayerLabel = (player: any, fallback: string) => {
+  const getPlayerLabel = (player: BackgammonPlayer | undefined, fallback: string) => {
     const symbol = player?.color === 'black' ? 'X' : 'O'
-    const model = playerModels?.[player?.id] || fallback
-    const direction = player?.direction || 'unknown'
+    const model = (player?.id && playerModels?.[player.id]) ?? fallback
+    const direction = player?.direction ?? 'unknown'
     const activeIndicator =
-      activePlayer && activePlayer.id === player?.id ? ' *ACTIVE*' : ''
+      activePlayer?.id === player?.id ? ' *ACTIVE*' : ''
 
     return `${symbol} | ${model} | ${direction} >${activeIndicator} - ${
-      player?.id || 'unknown'
+      player?.id ?? 'unknown'
     }`
   }
 
@@ -74,7 +73,7 @@ export const ascii = (
   const getPointByVisualPosition = (
     visualPos: number
   ): BackgammonPoint | null =>
-    points.find((point) => point.position.clockwise === visualPos) || null
+    points.find((point) => point.position.clockwise === visualPos) ?? null
 
   // Helper to get checker symbol array for a point
   const getCheckerSymbols = (visualPos: number) => {
@@ -86,9 +85,7 @@ export const ascii = (
   }
 
   // Total number of checker rows (top + bottom)
-  const TOTAL_CHECKER_ROWS = MAX_VISIBLE_CHECKERS * 2
   // The vertical center row index (0-based, across all checker rows)
-  const BAR_ROW_INDEX = Math.floor(TOTAL_CHECKER_ROWS / 2)
   let checkerRowIndex = 0
 
   // Build top half (positions 13-18 | bar | 19-24)

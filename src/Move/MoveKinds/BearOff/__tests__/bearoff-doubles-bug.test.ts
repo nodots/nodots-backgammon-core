@@ -46,6 +46,7 @@ describe('Bear-off Doubles Bug', () => {
       direction: 'clockwise',
       pipCount: 15,
       isRobot: true,
+      rollForStartValue: 3,
     }
 
     return { boardImport, player }

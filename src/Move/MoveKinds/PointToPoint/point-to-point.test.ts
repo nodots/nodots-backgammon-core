@@ -35,6 +35,7 @@ describe('PointToPoint', () => {
           total: 3,
         } as BackgammonDiceRolled,
         isRobot: true,
+        rollForStartValue: 6,
       }
 
       // Add a black checker to point 13 (index 12)

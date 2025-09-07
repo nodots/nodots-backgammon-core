@@ -30,14 +30,14 @@ function getPlayerAndOpponent(game: BackgammonGame): {
       // In rolled-for-start, activePlayer indicates who won the roll and will be the first player on roll.
       // This state is just before the first actual turn where checkers move.
       // GNU Pos ID usually represents a position where someone is about to move checkers.
-      // Depending on strict interpretation, one might disallow this state or use this activePlayer.
-      playerOnRoll = (game as any).activePlayer // Assuming activePlayer here means the one to start.
+      // Use the activePlayer property which exists in rolled-for-start state
+      playerOnRoll = game.activePlayer
       break
 
     case 'rolling-for-start':
       // In rolling-for-start, no active player is determined yet, but we can still calculate GNU Position ID
       // For starting position, conventionally use white as player on roll (standard GNU convention)
-      playerOnRoll = game.players.find((p) => p.color === 'white') || game.players[0]
+      playerOnRoll = game.players.find((p) => p.color === 'white') ?? game.players[0]
       logger.info(`Using ${playerOnRoll?.color} as player on roll for rolling-for-start state`)
       break
 
@@ -64,12 +64,11 @@ function getPlayerAndOpponent(game: BackgammonGame): {
     case 'completed':
       // Game is completed - use the last active player (from winner's perspective)
       // If we have a winner, use them; otherwise just use the first player
-      if ((game as any).winner) {
-        playerOnRoll = game.players.find((p) => p.id === (game as any).winner.id)
+      const completedGame = game as BackgammonGame & { winner?: BackgammonPlayer }
+      if (completedGame.winner) {
+        playerOnRoll = game.players.find((p) => p.id === completedGame.winner?.id)
       }
-      if (!playerOnRoll) {
-        playerOnRoll = game.players[0]
-      }
+      playerOnRoll ??= game.players[0]
       break
   }
 
@@ -77,11 +76,11 @@ function getPlayerAndOpponent(game: BackgammonGame): {
     throw new Error('Could not determine player on roll.')
   }
 
-  const opponent = game.players.find((p) => p.id !== playerOnRoll!.id)
+  const opponent = game.players.find((p) => p.id !== playerOnRoll.id)
   if (!opponent) {
     throw new Error('Opponent not found')
   }
-  return { playerOnRoll: playerOnRoll!, opponent }
+  return { playerOnRoll, opponent }
 }
 
 // Helper to get checker count on a specific point for a given player
@@ -121,7 +120,7 @@ export function exportToGnuPositionId(game: BackgammonGame): string {
     bitString += '1'.repeat(checkers)
     bitString += '0'
   }
-  let playerBarCheckers = getCheckersOnBar(board, playerOnRoll)
+  const playerBarCheckers = getCheckersOnBar(board, playerOnRoll)
   bitString += '1'.repeat(playerBarCheckers)
   bitString += '0'
 
@@ -136,7 +135,7 @@ export function exportToGnuPositionId(game: BackgammonGame): string {
     bitString += '1'.repeat(checkers)
     bitString += '0'
   }
-  let opponentBarCheckers = getCheckersOnBar(board, opponent)
+  const opponentBarCheckers = getCheckersOnBar(board, opponent)
   bitString += '1'.repeat(opponentBarCheckers)
   bitString += '0'
 

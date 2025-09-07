@@ -13,8 +13,6 @@ describe('ROLLED-FOR-START Dice State', () => {
     const player1 = Player.initialize(
       'white',
       'clockwise',
-      undefined,
-      'player1',
       'inactive',
       true,
       'user1'
@@ -22,8 +20,6 @@ describe('ROLLED-FOR-START Dice State', () => {
     const player2 = Player.initialize(
       'black',
       'counterclockwise',
-      undefined,
-      'player2',
       'inactive',
       true,
       'user2'
@@ -34,11 +30,8 @@ describe('ROLLED-FOR-START Dice State', () => {
   it('should have dice in rolling state for active player in rolled-for-start state', () => {
     // 1. Create game in rolling-for-start state
     const game = Game.createNewGame(
-      'user1',
-      'user2',
-      false,
-      false,
-      false
+      { userId: 'user1', isRobot: false },
+      { userId: 'user2', isRobot: false }
     ) as BackgammonGameRollingForStart
     expect(game.stateKind).toBe('rolling-for-start')
 
@@ -49,14 +42,19 @@ describe('ROLLED-FOR-START Dice State', () => {
     expect(gameAfterRollForStart.stateKind).toBe('rolled-for-start')
     expect(gameAfterRollForStart.activeColor).toBeDefined()
 
-    // 3. Check the active player's dice state - should be 'rolling' (ready to roll)
+    // 3. Check the active player's dice state - should be 'rolled-for-start' (has roll for start value)
     const activePlayer = gameAfterRollForStart.activePlayer
     console.log('Active player dice state:', activePlayer.dice.stateKind)
     console.log('Active player state:', activePlayer.stateKind)
 
-    // CORRECT: The active player has rolling dice and is ready to roll
-    expect(activePlayer.dice.stateKind).toBe('rolling') // This is correct!
+    // After rollForStart, the active player has rolled-for-start dice (showing their start roll)
+    expect(activePlayer.dice.stateKind).toBe('rolled-for-start')
     expect(activePlayer.stateKind).toBe('rolled-for-start')
+    // The dice should have a currentRoll with the start roll value
+    expect(activePlayer.dice.currentRoll).toBeDefined()
+    expect(activePlayer.dice.currentRoll![0]).toBeGreaterThanOrEqual(1)
+    expect(activePlayer.dice.currentRoll![0]).toBeLessThanOrEqual(6)
+    expect(activePlayer.dice.currentRoll![1]).toBeUndefined() // Second die is undefined for start rolls
 
     // 4. Try to roll dice - this should work
     try {
@@ -77,11 +75,8 @@ describe('ROLLED-FOR-START Dice State', () => {
   it('should allow active player to roll from rolled-for-start state', () => {
     // Create a game and advance to rolled-for-start state
     const game = Game.createNewGame(
-      'user1',
-      'user2',
-      false,
-      false,
-      false
+      { userId: 'user1', isRobot: false },
+      { userId: 'user2', isRobot: false }
     ) as BackgammonGameRollingForStart
     const gameRolledForStart = Game.rollForStart(
       game

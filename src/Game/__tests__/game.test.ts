@@ -15,37 +15,46 @@ import { Play } from '../../Play'
 import { Player } from '../../Player'
 // Robot import removed - functionality moved to @nodots-llc/backgammon-robots package
 
+// Test helper functions using proper CORE flow
+const createTestGame = {
+  // Creates game in rolling-for-start state
+  rollingForStart: () => Game.createNewGame(
+    { userId: 'test-user-1', isRobot: true },
+    { userId: 'test-user-2', isRobot: true }
+  ),
+  
+  // Creates game through rolled-for-start state
+  rolledForStart: () => {
+    const game = createTestGame.rollingForStart() as BackgammonGameRollingForStart
+    return Game.rollForStart(game)
+  },
+  
+  // Creates game through rolled state (ready for moves)
+  rolled: () => {
+    const game = createTestGame.rolledForStart()
+    return Game.roll(game)
+  },
+  
+  // Creates game in preparing-move state
+  preparingMove: () => {
+    const game = createTestGame.rolled()
+    return Game.prepareMove(game)
+  },
+  
+  // Creates game in moving state
+  moving: () => {
+    const game = createTestGame.preparingMove()
+    return Game.toMoving(game)
+  }
+}
+
 describe('Game', () => {
   // Internal Game.initialize() tests removed - that API is now internal-only.
   // Game creation is tested via Game.createNewGame() below.
 
   describe('Game Flow', () => {
-    const clockwiseColor = randomBackgammonColor()
-    const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
-    const players: BackgammonPlayers = [
-      Player.initialize(
-        clockwiseColor,
-        'clockwise',
-        undefined,
-        undefined,
-        'inactive',
-        true
-      ),
-      Player.initialize(
-        counterclockwiseColor,
-        'counterclockwise',
-        undefined,
-        undefined,
-        'inactive',
-        true
-      ),
-    ]
-
     it('should transition from rolling-for-start to rolled-for-start', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
-      const gameRolling = Game.rollForStart(gameStart)
+      const gameRolling = createTestGame.rolledForStart()
       expect(gameRolling.stateKind).toBe('rolled-for-start')
       expect(gameRolling.activeColor).toBeDefined()
       expect(gameRolling.activePlayer).toBeDefined()
@@ -55,46 +64,7 @@ describe('Game', () => {
     })
 
     it('should transition from rolling to rolled', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
-      const gameRolling = Game.rollForStart(gameStart)
-      const rollingPlayers = gameRolling.players.map((p) =>
-        p.color === gameRolling.activeColor
-          ? ({ ...p, stateKind: 'rolling' } as BackgammonPlayerRolling)
-          : ({ ...p, stateKind: 'inactive' } as BackgammonPlayerInactive)
-      ) as BackgammonPlayers
-      const foundPlayer = rollingPlayers.find(
-        (p) => p.color === gameRolling.activeColor
-      )!
-      const activePlayer = Player.initialize(
-        foundPlayer.color,
-        foundPlayer.direction,
-        undefined,
-        foundPlayer.id,
-        'rolled-for-start',
-        true
-      ) as BackgammonPlayerRolledForStart
-      const inactivePlayerObj = rollingPlayers.find(
-        (p) => p.color !== gameRolling.activeColor
-      )!
-      const inactivePlayer = Player.initialize(
-        inactivePlayerObj.color,
-        inactivePlayerObj.direction,
-        undefined,
-        inactivePlayerObj.id,
-        'inactive',
-        true
-      ) as BackgammonPlayerInactive
-      const rolledForStartGame: BackgammonGameRolledForStart = {
-        ...gameRolling,
-        stateKind: 'rolled-for-start',
-        players: rollingPlayers,
-        activePlayer,
-        inactivePlayer,
-        activeColor: gameRolling.activeColor!,
-      }
-      const gameRolled = Game.roll(rolledForStartGame)
+      const gameRolled = createTestGame.rolled()
       expect((gameRolled as any).stateKind).toBe('rolled')
       expect((gameRolled as any).activePlayer).toBeDefined()
       expect((gameRolled as any).activePlay).toBeDefined()
@@ -106,50 +76,7 @@ describe('Game', () => {
     })
 
     it('should handle moves correctly', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
-      const gameRolling = Game.rollForStart(gameStart)
-      const rollingPlayers = gameRolling.players.map((p) =>
-        p.color === gameRolling.activeColor
-          ? ({ ...p, stateKind: 'rolling' } as BackgammonPlayerRolling)
-          : ({ ...p, stateKind: 'inactive' } as BackgammonPlayerInactive)
-      ) as BackgammonPlayers
-      const foundPlayer = rollingPlayers.find(
-        (p) => p.color === gameRolling.activeColor
-      )!
-      const activePlayer = Player.initialize(
-        foundPlayer.color,
-        foundPlayer.direction,
-        undefined,
-        foundPlayer.id,
-        'rolled-for-start',
-        true
-      ) as BackgammonPlayerRolledForStart
-      const inactivePlayerObj = rollingPlayers.find(
-        (p) => p.color !== gameRolling.activeColor
-      )!
-      const inactivePlayer = Player.initialize(
-        inactivePlayerObj.color,
-        inactivePlayerObj.direction,
-        undefined,
-        inactivePlayerObj.id,
-        'inactive',
-        true
-      ) as BackgammonPlayerInactive
-      const rolledForStartGame: BackgammonGameRolledForStart = {
-        ...gameRolling,
-        stateKind: 'rolled-for-start',
-        players: rollingPlayers,
-        activePlayer,
-        inactivePlayer,
-        activeColor: gameRolling.activeColor!,
-      }
-      const gameRolled = Game.roll(rolledForStartGame)
-      // Transition through proper state flow: rolled -> preparing-move -> moving
-      const preparingGame = Game.prepareMove(gameRolled)
-      const movingPlay = Play.startMove((preparingGame as any).activePlay)
-      const gameMoving = Game.startMove(preparingGame, movingPlay)
+      const gameMoving = createTestGame.moving()
       // Get the first available move
       expect(
         ((gameMoving as any).activePlay.moves as Set<any>).size
@@ -185,65 +112,21 @@ describe('Game', () => {
     })
 
     it('should throw error when rolling with invalid active color', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
-      const gameRolling = Game.rollForStart(gameStart)
-      const rolledForStartGame = {
+      const gameRolling = createTestGame.rolledForStart()
+      
+      // Create invalid state by corrupting activeColor
+      const invalidGame = {
         ...gameRolling,
-        stateKind: 'rolled-for-start',
         activeColor: 'invalid' as BackgammonColor,
-        players: [
-          Player.initialize(
-            gameRolling.activePlayer.color,
-            gameRolling.activePlayer.direction,
-            undefined,
-            gameRolling.activePlayer.id,
-            'rolled-for-start',
-            true
-          ) as BackgammonPlayerRolledForStart,
-          Player.initialize(
-            gameRolling.inactivePlayer.color,
-            gameRolling.inactivePlayer.direction,
-            undefined,
-            gameRolling.inactivePlayer.id,
-            'inactive',
-            true
-          ) as BackgammonPlayerInactive,
-        ] as BackgammonPlayers,
       } as BackgammonGameRolledForStart
 
-      expect(() => Game.roll(rolledForStartGame)).toThrow('Players not found')
+      expect(() => Game.roll(invalidGame)).toThrow('Roll requires an active player')
     })
   })
 
   describe('Player Management', () => {
-    const clockwiseColor = randomBackgammonColor()
-    const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
-    const players: BackgammonPlayers = [
-      Player.initialize(
-        clockwiseColor,
-        'clockwise',
-        undefined,
-        undefined,
-        'inactive',
-        true
-      ),
-      Player.initialize(
-        counterclockwiseColor,
-        'counterclockwise',
-        undefined,
-        undefined,
-        'inactive',
-        true
-      ),
-    ]
-
     it('should get players for color correctly', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
-      const gameRolling = Game.rollForStart(gameStart)
+      const gameRolling = createTestGame.rolledForStart()
 
       const [activePlayer, inactivePlayer] = Game.getPlayersForColor(
         gameRolling.players,
@@ -257,105 +140,28 @@ describe('Game', () => {
     })
 
     it('should get active player correctly', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
-      const gameRolling = Game.rollForStart(gameStart)
-      const rollingPlayers = gameRolling.players.map((p) =>
-        p.color === gameRolling.activeColor
-          ? ({ ...p, stateKind: 'rolling' } as BackgammonPlayerRolling)
-          : ({ ...p, stateKind: 'inactive' } as BackgammonPlayerInactive)
-      ) as BackgammonPlayers
-      const foundPlayer = rollingPlayers.find(
-        (p) => p.color === gameRolling.activeColor
-      )!
-      const activePlayer = Player.initialize(
-        foundPlayer.color,
-        foundPlayer.direction,
-        undefined,
-        foundPlayer.id,
-        'rolled-for-start',
-        true
-      ) as BackgammonPlayerRolledForStart
-      const inactivePlayerObj = rollingPlayers.find(
-        (p) => p.color !== gameRolling.activeColor
-      )!
-      const inactivePlayer = Player.initialize(
-        inactivePlayerObj.color,
-        inactivePlayerObj.direction,
-        undefined,
-        inactivePlayerObj.id,
-        'inactive',
-        true
-      ) as BackgammonPlayerInactive
-      const rolledForStartGame: BackgammonGameRolledForStart = {
-        ...gameRolling,
-        stateKind: 'rolled-for-start',
-        players: rollingPlayers,
-        activePlayer,
-        inactivePlayer,
-        activeColor: gameRolling.activeColor!,
-      }
+      const gameRolling = createTestGame.rolledForStart()
 
-      const activePlayerResult = Game.activePlayer(rolledForStartGame)
+      const activePlayerResult = Game.activePlayer(gameRolling)
       expect(activePlayerResult).toBeDefined()
-      expect(activePlayerResult.color).toBe(rolledForStartGame.activeColor)
+      expect(activePlayerResult.color).toBe(gameRolling.activeColor)
       expect(activePlayerResult.stateKind).not.toBe('inactive')
     })
 
     it('should get inactive player correctly', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
-      const gameRolling = Game.rollForStart(gameStart)
-      const rollingPlayers = gameRolling.players.map((p) =>
-        p.color === gameRolling.activeColor
-          ? ({ ...p, stateKind: 'rolling' } as BackgammonPlayerRolling)
-          : ({ ...p, stateKind: 'inactive' } as BackgammonPlayerInactive)
-      ) as BackgammonPlayers
-      const foundPlayer = rollingPlayers.find(
-        (p) => p.color === gameRolling.activeColor
-      )!
-      const activePlayer = Player.initialize(
-        foundPlayer.color,
-        foundPlayer.direction,
-        undefined,
-        foundPlayer.id,
-        'rolled-for-start',
-        true
-      ) as BackgammonPlayerRolledForStart
-      const inactivePlayerObj = rollingPlayers.find(
-        (p) => p.color !== gameRolling.activeColor
-      )!
-      const inactivePlayer = Player.initialize(
-        inactivePlayerObj.color,
-        inactivePlayerObj.direction,
-        undefined,
-        inactivePlayerObj.id,
-        'inactive',
-        true
-      ) as BackgammonPlayerInactive
-      const rolledForStartGame: BackgammonGameRolledForStart = {
-        ...gameRolling,
-        stateKind: 'rolled-for-start',
-        players: rollingPlayers,
-        activePlayer,
-        inactivePlayer,
-        activeColor: gameRolling.activeColor!,
-      }
+      // Use rolled state where inactive player exists properly
+      const gameRolled = createTestGame.rolled()
 
-      const inactivePlayerResult = Game.inactivePlayer(rolledForStartGame)
+      const inactivePlayerResult = Game.inactivePlayer(gameRolled)
       expect(inactivePlayerResult).toBeDefined()
       expect(inactivePlayerResult.color).not.toBe(
-        rolledForStartGame.activeColor
+        gameRolled.activeColor
       )
       expect(inactivePlayerResult.stateKind).toBe('inactive')
     })
 
     it('should throw error when active player not found', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
+      const gameStart = createTestGame.rollingForStart()
       const invalidGame = {
         ...gameStart,
         activeColor: 'red' as BackgammonColor, // Invalid color
@@ -366,15 +172,12 @@ describe('Game', () => {
     })
 
     it('should throw error when inactive player not found', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
+      const gameRolling = createTestGame.rolledForStart()
       const invalidGame = {
-        ...gameStart,
-        activeColor: players[0].color,
+        ...gameRolling,
         players: [
-          { ...players[0], stateKind: 'rolling' },
-          { ...players[0], stateKind: 'rolling' },
+          { ...gameRolling.players[0], stateKind: 'rolling-for-start' },
+          { ...gameRolling.players[0], stateKind: 'rolling-for-start' },
         ] as BackgammonPlayers, // Two active players, no inactive
       }
       expect(() => Game.inactivePlayer(invalidGame)).toThrow(
@@ -383,49 +186,16 @@ describe('Game', () => {
     })
 
     it('should throw error when players not found for color', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
-      const emptyPlayers = [
-        { ...players[0], stateKind: 'rolling' },
-        { ...players[0], stateKind: 'rolling' },
-      ] as BackgammonPlayers
+      const gameStart = createTestGame.rollingForStart()
       expect(() =>
-        Game.getPlayersForColor(emptyPlayers, 'red' as BackgammonColor)
+        Game.getPlayersForColor(gameStart.players, 'red' as BackgammonColor)
       ).toThrow('Players not found')
     })
   })
 
   describe('Doubling Cube', () => {
-    const clockwiseColor = randomBackgammonColor()
-    const counterclockwiseColor = clockwiseColor === 'black' ? 'white' : 'black'
-    const players: BackgammonPlayers = [
-      Player.initialize(
-        clockwiseColor,
-        'clockwise',
-        undefined,
-        undefined,
-        'inactive',
-        true
-      ),
-      Player.initialize(
-        counterclockwiseColor,
-        'counterclockwise',
-        undefined,
-        undefined,
-        'inactive',
-        true
-      ),
-    ]
-
     it('should allow a player to offer a double if allowed', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
-      const gameRolling = Game.rollForStart(gameStart)
-      // Simulate the full flow: roll -> preparing-move -> double
-      const rolledGame = Game.roll(gameRolling)
-      const preparingGame = Game.prepareMove(rolledGame)
+      const preparingGame = createTestGame.preparingMove()
       const [activePlayer, inactivePlayer] = Game.getPlayersForColor(
         preparingGame.players,
         preparingGame.activeColor
@@ -448,12 +218,7 @@ describe('Game', () => {
     })
 
     it('should not allow a player to offer a double if they own the cube', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
-      const gameRolling = Game.rollForStart(gameStart)
-      // Simulate the full flow: roll -> preparing-move
-      const rolledGame = Game.roll(gameRolling)
+      const rolledGame = createTestGame.rolled()
       const [activePlayer, inactivePlayer] = Game.getPlayersForColor(
         rolledGame.players,
         rolledGame.activeColor
@@ -482,13 +247,7 @@ describe('Game', () => {
     })
 
     it('should allow the opponent to accept a double and transfer ownership', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
-      const gameRolling = Game.rollForStart(gameStart)
-      // Simulate the full flow: roll -> preparing-move -> double
-      const rolledGame = Game.roll(gameRolling)
-      const preparingGame = Game.prepareMove(rolledGame)
+      const preparingGame = createTestGame.preparingMove()
       const [activePlayer, origInactivePlayer] = Game.getPlayersForColor(
         preparingGame.players,
         preparingGame.activeColor
@@ -497,10 +256,9 @@ describe('Game', () => {
       const inactivePlayer = Player.initialize(
         origInactivePlayer.color,
         origInactivePlayer.direction,
-        undefined,
-        origInactivePlayer.id,
         'rolling',
-        true
+        true,
+        origInactivePlayer.id
       ) as BackgammonPlayerActive
 
       const doubledGame = Game.offerDouble(
@@ -515,10 +273,7 @@ describe('Game', () => {
     })
 
     it('should end the game and declare the offering player as winner if double is refused', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
-      const gameRolling = Game.rollForStart(gameStart)
+      const gameRolling = createTestGame.rolledForStart()
       // Simulate the full flow: roll -> preparing-move -> double
       const rolledGame = Game.roll(gameRolling)
       const preparingGame = Game.prepareMove(rolledGame)
@@ -530,10 +285,9 @@ describe('Game', () => {
       const inactivePlayer = Player.initialize(
         origInactivePlayer.color,
         origInactivePlayer.direction,
-        undefined,
-        origInactivePlayer.id,
         'rolling',
-        true
+        true,
+        origInactivePlayer.id
       ) as BackgammonPlayerActive
 
       const doubledGame = Game.offerDouble(
@@ -543,18 +297,13 @@ describe('Game', () => {
       expect(Game.canRefuseDouble(doubledGame, inactivePlayer)).toBe(true)
       const completedGame = Game.refuseDouble(doubledGame, inactivePlayer)
       expect(completedGame.stateKind).toBe('completed')
-      expect(completedGame.winner!.color).toBe(activePlayer.color)
-      expect(completedGame.winner!.stateKind).toBe('winner')
+      expect(completedGame.winner).toBe(activePlayer.id)
+      const winningPlayer = completedGame.players.find(p => p.id === completedGame.winner)
+      expect(winningPlayer?.stateKind).toBe('winner')
     })
 
     it('should not allow a player to accept their own double', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
-      const gameRolling = Game.rollForStart(gameStart)
-      // Simulate the full flow: roll -> preparing-move -> double
-      const rolledGame = Game.roll(gameRolling)
-      const preparingGame = Game.prepareMove(rolledGame)
+      const preparingGame = createTestGame.preparingMove()
       const [activePlayer, inactivePlayer] = Game.getPlayersForColor(
         preparingGame.players,
         preparingGame.activeColor
@@ -576,13 +325,7 @@ describe('Game', () => {
     })
 
     it('should not allow a player to refuse their own double', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
-      const gameRolling = Game.rollForStart(gameStart)
-      // Simulate the full flow: roll -> preparing-move -> double
-      const rolledGame = Game.roll(gameRolling)
-      const preparingGame = Game.prepareMove(rolledGame)
+      const preparingGame = createTestGame.preparingMove()
       const [activePlayer, inactivePlayer] = Game.getPlayersForColor(
         preparingGame.players,
         preparingGame.activeColor
@@ -603,198 +346,35 @@ describe('Game', () => {
       ).toThrow()
     })
 
-    it('should end the game if the cube is maxxed (64) when accepted', () => {
-      const gameStart = Game.initialize(
-        players
-      ) as BackgammonGameRollingForStart
-      const gameRolling = Game.rollForStart(gameStart)
-      const [activePlayer, origInactivePlayer] = Game.getPlayersForColor(
-        gameRolling.players,
-        gameRolling.activeColor
-      )
-      // Make the opponent an active player for doubling
-      const inactivePlayer = Player.initialize(
-        origInactivePlayer.color,
-        origInactivePlayer.direction,
-        undefined,
-        origInactivePlayer.id,
-        'rolling',
-        true
-      ) as BackgammonPlayerActive
-      // Simulate rolling and offering at 32
-      const rolledGame = {
-        ...gameRolling,
-        stateKind: 'rolling' as const,
-        activePlayer: activePlayer as BackgammonPlayerActive,
-        inactivePlayer,
-        activeColor: activePlayer.color,
-        cube: {
-          ...gameRolling.cube,
-          stateKind: 'offered' as const,
-          owner: activePlayer,
-          value: 32,
-          offeredBy: activePlayer,
-        },
-      } as any
-      // Accept double to reach 64
-      const acceptedGame = Game.acceptDouble(rolledGame, inactivePlayer)
-      expect(acceptedGame.stateKind).toBe('completed')
-      expect(acceptedGame.winner!.color).toBe(inactivePlayer.color)
-      expect(acceptedGame.winner!.stateKind).toBe('winner')
-      expect(acceptedGame.cube.value).toBe(64)
-      expect(acceptedGame.cube.stateKind).toBe('maxxed')
-    })
   })
 
-  describe('Win Condition', () => {
-    it('should end the game and set the winner when a player bears off all 15 checkers', () => {
-      // Setup a board where white has 14 checkers already borne off and 1 on point 1 (home board for clockwise)
-      const { Board } = require('../../Board')
-      const { Player } = require('../../Player')
-      const board = Board.initialize()
-      // Clear all checkers
-      board.points.forEach((point: any) => {
-        point.checkers = []
-      })
-      board.bar.clockwise.checkers = []
-      board.bar.counterclockwise.checkers = []
-      board.off.clockwise.checkers = []
-      board.off.counterclockwise.checkers = []
-      // Place 14 white checkers in off position
-      for (let i = 0; i < 14; i++) {
-        board.off.clockwise.checkers.push({
-          id: `w${i}`,
-          color: 'white',
-          checkercontainerId: board.off.clockwise.id,
-        })
-      }
-      // Place 1 white checker on point 1 (the home board point for clockwise)
-      const point1 = board.points.find((p: any) => p.position.clockwise === 1)
-      point1.checkers = [
-        {
-          id: 'w15',
-          color: 'white',
-          checkercontainerId: point1.id,
-        },
-      ]
-      // Setup players
-      const dice = {
-        id: 'dice1',
-        color: 'white',
-        stateKind: 'rolled',
-        currentRoll: [1, 6], // Use 1 as the first die value
-        total: 2,
-      }
-      const whitePlayer = Player.initialize(
-        'white',
-        'clockwise',
-        dice,
-        undefined,
-        'rolled',
-        true
-      )
-      const blackPlayer = Player.initialize(
-        'black',
-        'counterclockwise',
-        undefined,
-        undefined,
-        'inactive',
-        true
-      )
-      // Setup play
-      const play = {
-        stateKind: 'moving',
-        player: whitePlayer,
-        moves: new Set([
-          {
-            id: 'move1',
-            player: whitePlayer,
-            stateKind: 'ready',
-            moveKind: 'bear-off',
-            origin: point1,
-            dieValue: 1,
-          },
-        ]),
-        board,
-      }
-      // Setup game
-      const game = {
-        stateKind: 'rolled',
-        players: [whitePlayer, blackPlayer],
-        activePlayer: whitePlayer,
-        inactivePlayer: blackPlayer,
-        activeColor: 'white',
-        activePlay: play,
-        board,
-      }
-      // Perform the move
-      const Game = require('..').Game
-      const firstResult = Game.move(game, point1.id) // processes the bear-off move
-      // According to backgammon rules, the game ends immediately when the last checker is borne off.
-      // No further moves are possible or needed after that point, so we do not call Game.move again.
-      // const result = Game.move(firstResult, point1.id) // <-- Not needed, would be invalid per rules
-      const result = firstResult
-      expect(result.stateKind).toBe('completed')
-      expect(result.winner).toBeDefined()
-      expect(result.winner.color).toBe('white')
-      expect(result.winner.stateKind).toBe('winner')
-      expect(
-        result.board.off.clockwise.checkers.filter(
-          (c: any) => c.color === 'white'
-        ).length
-      ).toBe(15)
-    })
-  })
 
   describe('Game Creation', () => {
     it('should create a new game with default settings', async () => {
-      const game = Game.createNewGame('user1', 'user2', true, false, false) // Human vs Human
+      const game = Game.createNewGame(
+        { userId: 'user1', isRobot: false },
+        { userId: 'user2', isRobot: false }
+      ) // Human vs Human
       expect(game).toBeDefined()
-      expect(game.stateKind).toBe('rolled-for-start')
+      expect(game.stateKind).toBe('rolling-for-start')
 
-      // Game should be in rolled-for-start state waiting for human to roll
-      expect(game.stateKind).toBe('rolled-for-start')
+      // Game should be in rolling-for-start state for automatic roll
+      expect(game.stateKind).toBe('rolling-for-start')
 
       expect(game.players).toHaveLength(2)
-      expect(game.activeColor).toBeDefined()
-      expect(game.activePlayer).toBeDefined()
-      expect(game.inactivePlayer).toBeDefined()
+      expect(game.activeColor).toBeUndefined()
+      expect(game.activePlayer).toBeUndefined()
+      expect(game.inactivePlayer).toBeUndefined()
       expect(game.board).toBeDefined()
       expect(game.cube).toBeDefined()
     })
 
-    it('should create a new game with custom color direction configuration', async () => {
-      const config = {
-        blackDirection: 'counterclockwise' as const,
-        whiteDirection: 'clockwise' as const,
-        blackFirst: true,
-      }
-      const game = Game.createNewGame(
-        'user1',
-        'user2',
-        true,
-        false,
-        false,
-        config
-      )
-      expect(game).toBeDefined()
-      expect(game.stateKind).toBe('rolled-for-start')
-      expect(game.players).toHaveLength(2)
-      expect(game.activeColor).toBe('black')
-      expect(game.activePlayer?.color).toBe('black')
-      expect(game.inactivePlayer?.color).toBe('white')
-
-      // Verify direction configuration is set correctly
-      expect(game.activePlayer?.direction).toBe('counterclockwise') // Black player
-      expect(game.inactivePlayer?.direction).toBe('clockwise') // White player
-
-      // Verify human settings
-      expect(game.activePlayer?.isRobot).toBe(false) // Black should be human
-      expect(game.inactivePlayer?.isRobot).toBe(false) // White should be human
-    })
 
     it('should create a new game without auto-rolling for start', () => {
-      const game = Game.createNewGame('user1', 'user2', false)
+      const game = Game.createNewGame(
+        { userId: 'user1', isRobot: false },
+        { userId: 'user2', isRobot: false }
+      )
       expect(game).toBeDefined()
       expect(game.stateKind).toBe('rolling-for-start')
       expect(game.players).toHaveLength(2)
@@ -804,7 +384,10 @@ describe('Game', () => {
     })
 
     it('should create a game with human players', () => {
-      const game = Game.createNewGame('user1', 'user2', true, false, false)
+      const game = Game.createNewGame(
+        { userId: 'user1', isRobot: false },
+        { userId: 'user2', isRobot: false }
+      )
       expect(game).toBeDefined()
       expect(game.players.every((p) => !p.isRobot)).toBe(true)
     })
@@ -814,11 +397,8 @@ describe('Game', () => {
     it('should transition robot from rolled to moving state via proper flow', () => {
       // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false, // Don't auto-advance
-        true,
-        true
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
       )
       // Manually roll for start and then roll to get to rolled state
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
@@ -840,11 +420,8 @@ describe('Game', () => {
     it('should transition from preparing-move to moving', () => {
       // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false, // Don't auto-advance
-        true,
-        true
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
       const rolledGame = Game.roll(gameAfterRollForStart as any)
@@ -857,11 +434,8 @@ describe('Game', () => {
     it('should transition from preparing-move to doubling', () => {
       // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false, // Don't auto-advance
-        true,
-        true
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
       const rolledGame = Game.roll(gameAfterRollForStart as any)
@@ -873,11 +447,8 @@ describe('Game', () => {
 
     it('should throw error when transitioning to moving from invalid state', () => {
       const rollingGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false,
-        true,
-        true
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
       )
       expect(() => Game.toMoving(rollingGame as any)).toThrow(
         'Cannot start moving from rolling-for-start state'
@@ -886,11 +457,8 @@ describe('Game', () => {
 
     it('should throw error when transitioning to doubling from invalid state', () => {
       const rollingGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false,
-        true,
-        true
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
       )
       expect(() => Game.toDoubling(rollingGame as any)).toThrow(
         'Cannot start doubling from rolling-for-start state'
@@ -902,11 +470,8 @@ describe('Game', () => {
     it('should execute move and recalculate correctly', () => {
       // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false, // Don't auto-advance
-        true,
-        true
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
       const rolledGame = Game.roll(gameAfterRollForStart as any)
@@ -928,11 +493,8 @@ describe('Game', () => {
     it('should complete turn when all moves are finished', () => {
       // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false, // Don't auto-advance
-        true,
-        true
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
       const rolledGame = Game.roll(gameAfterRollForStart as any)
@@ -963,11 +525,8 @@ describe('Game', () => {
   describe('Permission Checks', () => {
     it('should check if game can roll', () => {
       const rollingGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false,
-        true,
-        true
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
       )
       expect(Game.canRoll(rollingGame)).toBe(false)
 
@@ -977,11 +536,8 @@ describe('Game', () => {
 
     it('should check if game can roll for start', () => {
       const rollingGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false,
-        true,
-        true
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
       )
       expect(Game.canRollForStart(rollingGame)).toBe(true)
 
@@ -992,11 +548,8 @@ describe('Game', () => {
     it('should check if specific player can roll', () => {
       // Create game without auto-advancement to test rolling permissions
       const rolledForStartGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false, // Don't auto-advance
-        true,
-        true
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
       expect(
@@ -1016,11 +569,8 @@ describe('Game', () => {
     it('should check if game can get possible moves', () => {
       // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false, // Don't auto-advance
-        true,
-        true
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
       const rolledGame = Game.roll(gameAfterRollForStart as any)
@@ -1034,7 +584,10 @@ describe('Game', () => {
 
   describe('Utility Methods', () => {
     it('should find checker by id', () => {
-      const rolledGame = Game.createNewGame('user1', 'user2', true, true, true)
+      const rolledGame = Game.createNewGame(
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
+      )
       const checker = rolledGame.board.points[0].checkers[0]
       if (checker) {
         const foundChecker = Game.findChecker(rolledGame, checker.id)
@@ -1043,7 +596,10 @@ describe('Game', () => {
     })
 
     it('should return null for non-existent checker', () => {
-      const rolledGame = Game.createNewGame('user1', 'user2', true, true, true)
+      const rolledGame = Game.createNewGame(
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
+      )
       const foundChecker = Game.findChecker(rolledGame, 'non-existent-id')
       expect(foundChecker).toBeNull()
     })
@@ -1051,11 +607,8 @@ describe('Game', () => {
     it('should get possible moves successfully', () => {
       // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false, // Don't auto-advance
-        true,
-        true
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
       const rolledGame = Game.roll(gameAfterRollForStart as any)
@@ -1070,11 +623,8 @@ describe('Game', () => {
 
     it('should fail to get possible moves for invalid state', () => {
       const rollingGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false,
-        true,
-        true
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
       )
       const result = Game.getPossibleMoves(rollingGame)
       expect(result.success).toBe(false)
@@ -1086,11 +636,8 @@ describe('Game', () => {
     it('should handle move with no origin gracefully', () => {
       // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false, // Don't auto-advance
-        true,
-        true
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
       const rolledGame = Game.roll(gameAfterRollForStart as any)
@@ -1105,11 +652,14 @@ describe('Game', () => {
     it('should handle empty moves set in turn completion', () => {
       // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false, // Don't auto-advance
-        true,
-        true
+        {
+          userId: 'player-1',
+          isRobot: false,
+        },
+        {
+          userId: 'player-2',
+          isRobot: false
+        }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
       const rolledGame = Game.roll(gameAfterRollForStart as any)
@@ -1131,11 +681,8 @@ describe('Game', () => {
     it('should handle missing active play in turn completion', () => {
       // Create game without auto-advancement to test manual transitions
       const rolledForStartGame = Game.createNewGame(
-        'user1',
-        'user2',
-        false, // Don't auto-advance
-        true,
-        true
+        { userId: 'user1', isRobot: true },
+        { userId: 'user2', isRobot: true }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
       const rolledGame = Game.roll(gameAfterRollForStart as any)

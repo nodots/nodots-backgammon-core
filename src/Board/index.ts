@@ -18,8 +18,7 @@ import {
 } from '@nodots-llc/backgammon-types/dist'
 import { Checker, generateId, Player, randomBackgammonColor } from '..'
 // PositionAnalyzer moved to @nodots-llc/backgammon-robots package
-import { debug } from '../utils/logger'
-import { logger } from '../utils/logger'
+import { debug, logger } from '../utils/logger'
 import { ascii } from './ascii'
 import { BOARD_IMPORT_DEFAULT } from './imports'
 export { exportToGnuPositionId } from './gnuPositionId'
@@ -391,48 +390,74 @@ export class Board implements BackgammonBoard {
     return possibleMoves
   }
 
-  public static getPossibleMovesWithIntelligentDiceSwitching = function getPossibleMovesWithIntelligentDiceSwitching(
-    board: BackgammonBoard,
-    player: BackgammonPlayer,
-    dieValue: BackgammonDieValue,
-    otherDieValue: BackgammonDieValue
-  ): { moves: BackgammonMoveSkeleton[], usedDieValue: BackgammonDieValue } {
-    // First try with the original die value
-    const originalMoves = Board.getPossibleMoves(board, player, dieValue)
-    
-    if (originalMoves.length > 0) {
-      // Original die has moves, use it
-      return { moves: originalMoves, usedDieValue: dieValue }
+  public static getPossibleMovesWithIntelligentDiceSwitching =
+    function getPossibleMovesWithIntelligentDiceSwitching(
+      board: BackgammonBoard,
+      player: BackgammonPlayer,
+      dieValue: BackgammonDieValue,
+      otherDieValue: BackgammonDieValue
+    ): { moves: BackgammonMoveSkeleton[]; usedDieValue: BackgammonDieValue } {
+      // First try with the original die value
+      const originalMoves = Board.getPossibleMoves(board, player, dieValue)
+
+      if (originalMoves.length > 0) {
+        // Original die has moves, use it
+        return { moves: originalMoves, usedDieValue: dieValue }
+      }
+
+      // Original die has no moves, try the other die value
+      const alternativeMoves = Board.getPossibleMoves(
+        board,
+        player,
+        otherDieValue
+      )
+
+      if (alternativeMoves.length > 0) {
+        // Alternative die has moves, use it (automatic dice switching)
+        debug(
+          'Board.getPossibleMovesWithIntelligentDiceSwitching: Auto-switching dice',
+          {
+            originalDie: dieValue,
+            switchedToDie: otherDieValue,
+            movesFound: alternativeMoves.length,
+          }
+        )
+        return { moves: alternativeMoves, usedDieValue: otherDieValue }
+      }
+
+      // Neither die value has moves, return empty with original die
+      return { moves: [], usedDieValue: dieValue }
     }
-    
-    // Original die has no moves, try the other die value
-    const alternativeMoves = Board.getPossibleMoves(board, player, otherDieValue)
-    
-    if (alternativeMoves.length > 0) {
-      // Alternative die has moves, use it (automatic dice switching)
-      debug('Board.getPossibleMovesWithIntelligentDiceSwitching: Auto-switching dice', {
-        originalDie: dieValue,
-        switchedToDie: otherDieValue,
-        movesFound: alternativeMoves.length
-      })
-      return { moves: alternativeMoves, usedDieValue: otherDieValue }
-    }
-    
-    // Neither die value has moves, return empty with original die
-    return { moves: [], usedDieValue: dieValue }
-  }
 
   public static getPipCounts = function getPipCounts(game: BackgammonGame) {
     const { board, players } = game
     const pipCounts = {
-      black: 167,
-      white: 167,
+      black: 0,
+      white: 0,
     }
 
     // Calculate actual pip counts for each player
     players.forEach((player) => {
-      // Pip count calculation moved to @nodots-llc/backgammon-robots package
-      const pipCount = 167 // Default pip count - should be calculated externally
+      let pipCount = 0
+
+      // Count pips for checkers on points
+      board.points.forEach((point) => {
+        const playerCheckers = point.checkers.filter(
+          (checker) => checker.color === player.color
+        )
+        if (playerCheckers.length > 0) {
+          // For each checker on the board, determine its position from its owner's direction
+          const positionFromOwnerDirection = point.position[player.direction]
+          pipCount += playerCheckers.length * positionFromOwnerDirection
+        }
+      })
+
+      // Bar is 25
+      const barCheckers = board.bar[player.direction].checkers.filter(
+        (checker) => checker.color === player.color
+      )
+      pipCount += barCheckers.length * 25
+
       pipCounts[player.color] = pipCount
     })
 
@@ -776,16 +801,12 @@ export class Board implements BackgammonBoard {
       Player.initialize(
         clockwiseColor,
         'clockwise',
-        undefined,
-        undefined,
-        clockwiseColor === activeColor ? 'rolling' : 'inactive',
+        counterclockwiseColor === activeColor ? 'rolling' : 'inactive',
         true
       ),
       Player.initialize(
         counterclockwiseColor,
         'counterclockwise',
-        undefined,
-        undefined,
         counterclockwiseColor === activeColor ? 'rolling' : 'inactive',
         true
       ),
@@ -867,7 +888,7 @@ export class Board implements BackgammonBoard {
   ): BackgammonBoard {
     debug('createBoardForPlayers called', {
       clockwiseColor,
-      counterclockwiseColor
+      counterclockwiseColor,
     })
 
     // Standard backgammon starting positions

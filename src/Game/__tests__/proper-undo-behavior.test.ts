@@ -45,19 +45,15 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     console.log('\n📋 PHASE 1: INITIALIZING GAME')
     
     let currentGame = Game.createNewGame(
-      'player1-id',
-      'player2-id',
-      true, // auto roll for start
-      false, // player1 is not robot
-      false, // player2 is not robot
-      {
-        blackDirection: 'clockwise',
-        whiteDirection: 'counterclockwise',
-        blackFirst: true
-      }
+      { userId: 'player1-id', isRobot: false }, // player1 is not robot
+      { userId: 'player2-id', isRobot: false }  // player2 is not robot
     )
     
-    // Advance to rolled state
+    // Advance through roll-for-start to rolled state
+    if (currentGame.stateKind === 'rolling-for-start') {
+      currentGame = Game.rollForStart(currentGame as any)
+    }
+    
     if (currentGame.stateKind === 'rolled-for-start') {
       currentGame = Game.roll(currentGame as any)
     }
@@ -298,16 +294,8 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     
     // Test undo in rolling-for-start state
     const newGame = Game.createNewGame(
-      'player1-id', 
-      'player2-id', 
-      false, // don't auto roll
-      false, 
-      false,
-      {
-        blackDirection: 'clockwise',
-        whiteDirection: 'counterclockwise',
-        blackFirst: true
-      }
+      { userId: 'player1-id', isRobot: false },
+      { userId: 'player2-id', isRobot: false }
     )
     
     expect(newGame.stateKind).toBe('rolling-for-start')
@@ -319,19 +307,15 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     
     // Test undo in rolling state
     const rolledGame = Game.createNewGame(
-      'player1-id',
-      'player2-id', 
-      true, // auto roll for start
-      false,
-      false,
-      {
-        blackDirection: 'clockwise',
-        whiteDirection: 'counterclockwise',
-        blackFirst: true
-      }
+      { userId: 'player1-id', isRobot: false },
+      { userId: 'player2-id', isRobot: false }
     )
     
     let gameInRollingState = rolledGame
+    if (gameInRollingState.stateKind === 'rolling-for-start') {
+      gameInRollingState = Game.rollForStart(gameInRollingState as any)
+    }
+    
     if (gameInRollingState.stateKind === 'rolled-for-start') {
       gameInRollingState = Game.roll(gameInRollingState as any)
       // Confirm turn to get to next player's rolling state
@@ -378,17 +362,13 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     
     // Create a game and advance to moving state
     let testGame = Game.createNewGame(
-      'player1-id',
-      'player2-id',
-      true,
-      false,
-      false,
-      {
-        blackDirection: 'clockwise',
-        whiteDirection: 'counterclockwise',
-        blackFirst: true
-      }
+      { userId: 'player1-id', isRobot: false },
+      { userId: 'player2-id', isRobot: false }
     )
+    
+    if (testGame.stateKind === 'rolling-for-start') {
+      testGame = Game.rollForStart(testGame as any)
+    }
     
     if (testGame.stateKind === 'rolled-for-start') {
       testGame = Game.roll(testGame as any)
@@ -419,17 +399,13 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     
     // Create a game and advance to moving state without making any moves
     let testGame = Game.createNewGame(
-      'player1-id',
-      'player2-id',
-      true,
-      false,
-      false,
-      {
-        blackDirection: 'clockwise',
-        whiteDirection: 'counterclockwise',
-        blackFirst: true
-      }
+      { userId: 'player1-id', isRobot: false },
+      { userId: 'player2-id', isRobot: false }
     )
+    
+    if (testGame.stateKind === 'rolling-for-start') {
+      testGame = Game.rollForStart(testGame as any)
+    }
     
     if (testGame.stateKind === 'rolled-for-start') {
       testGame = Game.roll(testGame as any)
@@ -462,17 +438,13 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     
     // Create and advance game to moving state
     let testGame = Game.createNewGame(
-      'player1-id',
-      'player2-id',
-      true,
-      false,
-      false,
-      {
-        blackDirection: 'clockwise',
-        whiteDirection: 'counterclockwise',
-        blackFirst: true
-      }
+      { userId: 'player1-id', isRobot: false },
+      { userId: 'player2-id', isRobot: false }
     )
+    
+    if (testGame.stateKind === 'rolling-for-start') {
+      testGame = Game.rollForStart(testGame as any)
+    }
     
     if (testGame.stateKind === 'rolled-for-start') {
       testGame = Game.roll(testGame as any)
@@ -538,19 +510,15 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     console.log('\n🎯 TESTING COMPLETE MULTI-TURN GAME FLOW')
     
     let currentGame = Game.createNewGame(
-      'player1-id',
-      'player2-id',
-      true,
-      false,
-      false,
-      {
-        blackDirection: 'clockwise',
-        whiteDirection: 'counterclockwise', 
-        blackFirst: true
-      }
+      { userId: 'player1-id', isRobot: false },
+      { userId: 'player2-id', isRobot: false }
     )
     
     // Track original player for verification
+    if (currentGame.stateKind === 'rolling-for-start') {
+      currentGame = Game.rollForStart(currentGame as any)
+    }
+    
     if (currentGame.stateKind === 'rolled-for-start') {
       currentGame = Game.roll(currentGame as any)
     }

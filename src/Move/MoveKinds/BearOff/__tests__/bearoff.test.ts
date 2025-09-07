@@ -72,6 +72,7 @@ describe('BearOff', () => {
       direction: 'clockwise',
       pipCount: 15, // All checkers in home board
       isRobot: true,
+      rollForStartValue: 4,
     }
     return { board, player, currentRoll }
   }

@@ -47,6 +47,7 @@ describe('PointToPoint', () => {
       direction: direction,
       pipCount: 167,
       isRobot: true,
+      rollForStartValue: 5,
     }
 
     return { board, player, currentRoll }

@@ -3,10 +3,13 @@ import {
   BackgammonDice,
   BackgammonDiceInactive,
   BackgammonDiceRolled,
+  BackgammonDiceRolledForStart,
   BackgammonDiceRolling,
+  BackgammonDiceRollingForStart,
   BackgammonDiceStateKind,
   BackgammonDieValue,
   BackgammonRoll,
+  BackgammonRollForStart,
 } from '@nodots-llc/backgammon-types/dist'
 import { generateId } from '..'
 
@@ -15,9 +18,11 @@ export class Dice {
     color: BackgammonColor,
     stateKind: BackgammonDiceStateKind = 'inactive',
     id: string = generateId(),
-    currentRoll: BackgammonRoll | undefined = undefined
+    currentRoll: BackgammonRoll | BackgammonRollForStart | undefined = undefined
   ): BackgammonDice {
-    const total = currentRoll ? currentRoll[0] + currentRoll[1] : undefined
+    const total = currentRoll && currentRoll[1] !== undefined 
+      ? currentRoll[0] + currentRoll[1] 
+      : currentRoll ? currentRoll[0] : undefined
 
     switch (stateKind) {
       case 'inactive':
@@ -36,6 +41,25 @@ export class Dice {
           currentRoll,
           total,
         } as BackgammonDiceRolling
+      case 'rolling-for-start':
+        return {
+          id,
+          stateKind: 'rolling-for-start',
+          color,
+          currentRoll,
+          total,
+        } as BackgammonDiceRollingForStart
+      case 'rolled-for-start':
+        if (!currentRoll) {
+          throw new Error('currentRoll is required for rolled-for-start dice')
+        }
+        return {
+          id,
+          stateKind: 'rolled-for-start',
+          color,
+          currentRoll: currentRoll as BackgammonRollForStart,
+          total: currentRoll[0], // For start rolls, only first die counts
+        } as any
       case 'rolled':
         if (!currentRoll) {
           throw new Error('currentRoll is required for rolled dice')
@@ -83,6 +107,18 @@ export class Dice {
     dice: BackgammonDiceRolled
   ): boolean {
     return dice.currentRoll![0] === dice.currentRoll![1]
+  }
+
+  public static rollForStart = function rollForStart(
+    dice: BackgammonDiceRollingForStart
+  ): BackgammonDiceRolledForStart {
+    const currentRoll: BackgammonRollForStart = [Dice.rollDie(), undefined]
+    return {
+      ...dice,
+      stateKind: 'rolled-for-start',
+      currentRoll,
+      total: currentRoll[0], // For start rolls, only first die counts
+    } as any
   }
 
   static rollDie = function rollDie(): BackgammonDieValue {
