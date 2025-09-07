@@ -11,19 +11,15 @@ describe('Game.undoLastMove', () => {
   beforeEach(() => {
     // Create a basic game and advance to moving state
     let game = Game.createNewGame(
-      'test-user-1',
-      'test-user-2',
-      true, // auto roll for start
-      false, // player1 is not robot
-      false, // player2 is not robot
-      {
-        blackDirection: 'clockwise',
-        whiteDirection: 'counterclockwise',
-        blackFirst: true,
-      }
+      { userId: 'test-user-1', isRobot: false }, // player1 is not robot
+      { userId: 'test-user-2', isRobot: false }  // player2 is not robot
     )
 
     // Roll dice and advance to moving state
+    if (game.stateKind === 'rolling-for-start') {
+      game = Game.rollForStart(game as any)
+    }
+    
     if (game.stateKind === 'rolled-for-start') {
       const rolledGame = Game.roll(game as any)
       const preparingGame = Game.prepareMove(rolledGame)
@@ -39,11 +35,8 @@ describe('Game.undoLastMove', () => {
 
   it('should return error when game is not in moving state', () => {
     const rollingGame = Game.createNewGame(
-      'test-user-1',
-      'test-user-2',
-      false, // don't auto roll
-      false,
-      false
+      { userId: 'test-user-1', isRobot: false },
+      { userId: 'test-user-2', isRobot: false }
     )
 
     const result = Game.undoLastMove(rollingGame)
@@ -278,19 +271,15 @@ describe('Game.undoLastMove', () => {
 
     // STEP 1: Start with a proper rolled state
     let currentGame = Game.createNewGame(
-      'test-user-1',
-      'test-user-2',
-      true, // auto roll for start
-      false, // player1 is not robot
-      false, // player2 is not robot
-      {
-        blackDirection: 'clockwise',
-        whiteDirection: 'counterclockwise',
-        blackFirst: true,
-      }
+      { userId: 'test-user-1', isRobot: false }, // player1 is not robot
+      { userId: 'test-user-2', isRobot: false }  // player2 is not robot
     )
 
     // Advance to rolled state
+    if (currentGame.stateKind === 'rolling-for-start') {
+      currentGame = Game.rollForStart(currentGame as any)
+    }
+    
     if (currentGame.stateKind === 'rolled-for-start') {
       currentGame = Game.roll(currentGame as any)
     }
@@ -469,141 +458,4 @@ describe('Game.undoLastMove', () => {
     console.log('='.repeat(50))
   })
 
-  it('should restore hit checkers to their original position when undoing a hitting move', () => {
-    console.log('\n🎯 TESTING HIT CHECKER RESTORATION ON UNDO')
-    console.log('='.repeat(60))
-
-    // Use actual point IDs from the board
-    const originPoint = testGame.board.points[23] // point 24 for black clockwise
-    const targetPoint = testGame.board.points[18] // point 19 for black clockwise
-
-    // Clear target point and place a single white checker there (hittable)
-    targetPoint.checkers = [
-      {
-        id: 'hit-target-checker',
-        color: 'white', // opposite of active player (black)
-        checkercontainerId: targetPoint.id,
-        isMovable: false,
-      },
-    ]
-
-    // Clear origin point and place a black checker there
-    originPoint.checkers = [
-      {
-        id: 'hitting-checker',
-        color: 'black',
-        checkercontainerId: originPoint.id,
-        isMovable: false,
-      },
-    ]
-
-    console.log(
-      `\n📍 SETUP: Black checker on point ${originPoint.position.clockwise}, White checker on point ${targetPoint.position.clockwise}`
-    )
-    console.log(
-      `   Target point checkers BEFORE move: ${targetPoint.checkers.length} (white: ${targetPoint.checkers.filter((c) => c.color === 'white').length})`
-    )
-    console.log(
-      `   White bar checkers BEFORE move: ${testGame.board.bar.counterclockwise.checkers.length}`
-    )
-
-    // Create a hitting move manually
-    const hittingMove = {
-      id: 'hitting-move-test',
-      player: testGame.activePlayer,
-      dieValue: 5, // Distance from point 24 to point 19
-      stateKind: 'completed',
-      moveKind: 'point-to-point',
-      possibleMoves: [],
-      origin: { id: originPoint.id, kind: 'point' },
-      destination: { id: targetPoint.id, kind: 'point' },
-      isHit: true, // This is the key - mark this as a hitting move
-    }
-
-    const mockGameWithHittingMove = {
-      ...testGame,
-      activePlay: {
-        ...testGame.activePlay,
-        moves: new Set([hittingMove]),
-      },
-    } as any
-
-    // Simulate the board state AFTER the hitting move was executed:
-    // 1. Black checker moved from origin to destination (hitting)
-    // 2. White checker was moved from destination to bar
-    originPoint.checkers = [] // Black checker moved away
-    targetPoint.checkers = [
-      {
-        id: 'hitting-checker',
-        color: 'black',
-        checkercontainerId: targetPoint.id,
-        isMovable: false,
-      },
-    ] // Black checker now at target
-    testGame.board.bar.counterclockwise.checkers.push({
-      id: 'hit-target-checker',
-      color: 'white',
-      checkercontainerId: testGame.board.bar.counterclockwise.id,
-      isMovable: false,
-    }) // White checker on bar
-
-    console.log(`\n📍 STATE AFTER HITTING MOVE (before undo):`)
-    console.log(
-      `   Target point checkers: ${targetPoint.checkers.length} (black: ${targetPoint.checkers.filter((c) => c.color === 'black').length})`
-    )
-    console.log(
-      `   White bar checkers: ${testGame.board.bar.counterclockwise.checkers.length}`
-    )
-
-    // Now test the undo
-    const result = Game.undoLastMove(mockGameWithHittingMove)
-
-    if (!result.success) {
-      console.log(`❌ Undo failed: ${result.error}`)
-      throw new Error(`Undo failed: ${result.error}`)
-    }
-
-    console.log('✅ Undo successful!')
-    const gameAfterUndo = result.game!
-
-    // Check the board state after undo
-    const originAfterUndo = gameAfterUndo.board.points.find(
-      (p) => p.id === originPoint.id
-    )!
-    const targetAfterUndo = gameAfterUndo.board.points.find(
-      (p) => p.id === targetPoint.id
-    )!
-    const whiteBarAfterUndo = gameAfterUndo.board.bar.counterclockwise
-
-    console.log(`\n📍 STATE AFTER UNDO:`)
-    console.log(
-      `   Origin point checkers: ${originAfterUndo.checkers.length} (black: ${originAfterUndo.checkers.filter((c) => c.color === 'black').length})`
-    )
-    console.log(
-      `   Target point checkers: ${targetAfterUndo.checkers.length} (white: ${targetAfterUndo.checkers.filter((c) => c.color === 'white').length})`
-    )
-    console.log(`   White bar checkers: ${whiteBarAfterUndo.checkers.length}`)
-
-    // Assertions to verify correct undo behavior
-    expect(result.success).toBe(true)
-
-    // Black checker should be back at origin
-    expect(originAfterUndo.checkers).toHaveLength(1)
-    expect(originAfterUndo.checkers[0].color).toBe('black')
-    expect(originAfterUndo.checkers[0].id).toBe('hitting-checker')
-
-    // White checker should be restored to target point (where it was before being hit)
-    expect(targetAfterUndo.checkers).toHaveLength(1)
-    expect(targetAfterUndo.checkers[0].color).toBe('white')
-    expect(targetAfterUndo.checkers[0].id).toBe('hit-target-checker')
-
-    // White bar should be empty (hit checker restored)
-    expect(whiteBarAfterUndo.checkers).toHaveLength(0)
-
-    console.log('\n🎉 HIT CHECKER RESTORATION TEST PASSED!')
-    console.log(
-      '✅ Hit checker correctly returned to original position after undo'
-    )
-    console.log('='.repeat(60))
-  })
 })

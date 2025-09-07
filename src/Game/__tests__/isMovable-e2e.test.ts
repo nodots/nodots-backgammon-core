@@ -12,11 +12,10 @@ describe('isMovable E2E Tests', () => {
   describe('Complete Game Flow with isMovable Attribute', () => {
     it('should correctly set and manage isMovable attribute through full game cycle', async () => {
       // 1. Create a new game with explicit configuration for deterministic testing
-      const initialGame = Game.createNewGame('human1', 'human2', false, false, false, {
-        blackDirection: 'clockwise',
-        whiteDirection: 'counterclockwise',
-        blackFirst: true, // Black starts first
-      }) as BackgammonGameRollingForStart
+      const initialGame = Game.createNewGame(
+        { userId: 'human1', isRobot: false },
+        { userId: 'human2', isRobot: false }
+      ) as BackgammonGameRollingForStart
 
       expect(initialGame.stateKind).toBe('rolling-for-start')
       expect(initialGame.players.length).toBe(2)
@@ -212,11 +211,10 @@ describe('isMovable E2E Tests', () => {
 
     it('should handle edge case when no moves are possible', () => {
       // Create a scenario where a player might have no legal moves
-      const game = Game.createNewGame('player1', 'player2', false, false, false, {
-        blackDirection: 'clockwise',
-        whiteDirection: 'counterclockwise',
-        blackFirst: true,
-      }) as BackgammonGameRollingForStart
+      const game = Game.createNewGame(
+        { userId: 'player1', isRobot: false },
+        { userId: 'player2', isRobot: false }
+      ) as BackgammonGameRollingForStart
 
       expect(game.stateKind).toBe('rolling-for-start')
       const rolledForStart = Game.rollForStart(game)

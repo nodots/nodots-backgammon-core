@@ -27,7 +27,7 @@
     "test:single": "jest -t",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "build": "tsc",
+    "build": "rm -rf node_modules package-lock.json; npm install --no-workspaces; tsc",
     "clean": "rm -rf dist coverage",
     "update-coverage": "node scripts/update-coverage.js",
     "simulate": "ts-node src/scripts/simulate.ts",

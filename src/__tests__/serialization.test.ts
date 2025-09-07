@@ -1,7 +1,6 @@
 import { describe, expect, it } from '@jest/globals'
 import {
   deserializeGameState,
-  ensureMovesAreArray,
   ensureMovesAreSet,
   serializeGameState,
 } from '../utils/serialization'
@@ -112,7 +111,7 @@ describe('Serialization utilities', () => {
   describe('deserializeGameState', () => {
     it('should deserialize simple objects', () => {
       const jsonString = '{"name":"test","value":42}'
-      const result = deserializeGameState(jsonString)
+      const result = deserializeGameState(jsonString) as any
 
       expect(result).toEqual({ name: 'test', value: 42 })
     })
@@ -138,7 +137,7 @@ describe('Serialization utilities', () => {
         otherData: 'test',
       })
 
-      const result = deserializeGameState(jsonString)
+      const result = deserializeGameState(jsonString) as any
 
       expect(result.activePlay.moves).toBeInstanceOf(Set)
       expect(result.activePlay.moves.size).toBe(2)
@@ -166,7 +165,7 @@ describe('Serialization utilities', () => {
         simple: 'data',
       })
 
-      const result = deserializeGameState(jsonString)
+      const result = deserializeGameState(jsonString) as any
 
       expect(result.level1.level2.moves).toBeInstanceOf(Set)
       expect(result.level1.level2.moves.size).toBe(1)
@@ -182,7 +181,7 @@ describe('Serialization utilities', () => {
         },
       })
 
-      const result = deserializeGameState(jsonString)
+      const result = deserializeGameState(jsonString) as any
 
       expect(result.activePlay.moves).toBeInstanceOf(Set)
       expect(result.activePlay.moves.size).toBe(0)
@@ -196,7 +195,7 @@ describe('Serialization utilities', () => {
         },
       })
 
-      const result = deserializeGameState(jsonString)
+      const result = deserializeGameState(jsonString) as any
 
       expect(Array.isArray(result.regularArray)).toBe(true)
       expect(result.regularArray).toEqual(['item1', 'item2'])
@@ -211,7 +210,7 @@ describe('Serialization utilities', () => {
         booleanValue: true,
       })
 
-      const result = deserializeGameState(jsonString)
+      const result = deserializeGameState(jsonString) as any
 
       expect(result.nullValue).toBe(null)
       expect(result.stringValue).toBe('test')
@@ -240,7 +239,7 @@ describe('Serialization utilities', () => {
         otherProperty: 'value',
       }
 
-      const result = ensureMovesAreSet(activePlay)
+      const result = ensureMovesAreSet(activePlay) as any
 
       expect(result.moves).toBeInstanceOf(Set)
       expect(result.moves.has(move1)).toBe(true)
@@ -261,7 +260,7 @@ describe('Serialization utilities', () => {
         otherProperty: 'value',
       }
 
-      const result = ensureMovesAreSet(activePlay)
+      const result = ensureMovesAreSet(activePlay) as any
 
       expect(result.moves).toBeInstanceOf(Set)
       expect(result.moves.has(move1)).toBe(true)
@@ -283,7 +282,7 @@ describe('Serialization utilities', () => {
         otherProperty: 'value',
       }
 
-      const result = ensureMovesAreSet(activePlay)
+      const result = ensureMovesAreSet(activePlay) as any
 
       expect(result).toEqual(activePlay)
       expect(result.otherProperty).toBe('value')
@@ -295,7 +294,7 @@ describe('Serialization utilities', () => {
         otherProperty: 'value',
       }
 
-      const result = ensureMovesAreSet(activePlay)
+      const result = ensureMovesAreSet(activePlay) as any
 
       expect(result.moves).toBeInstanceOf(Set)
       expect(result.moves.size).toBe(0)
@@ -303,89 +302,6 @@ describe('Serialization utilities', () => {
     })
   })
 
-  describe('ensureMovesAreArray', () => {
-    it('should convert moves Set to array', () => {
-      const move1: MockMove = {
-        id: 'move-1',
-        origin: 'origin-1',
-        destination: 'dest-1',
-        dieValue: 5,
-      }
-      const move2: MockMove = {
-        id: 'move-2',
-        origin: 'origin-2',
-        destination: 'dest-2',
-        dieValue: 1,
-      }
-
-      const activePlay = {
-        moves: new Set([move1, move2]),
-        otherProperty: 'value',
-      }
-
-      const result = ensureMovesAreArray(activePlay)
-
-      expect(Array.isArray(result.moves)).toBe(true)
-      expect(result.moves).toHaveLength(2)
-      expect(result.moves).toContainEqual(move1)
-      expect(result.moves).toContainEqual(move2)
-      expect(result.otherProperty).toBe('value')
-    })
-
-    it('should preserve existing array objects', () => {
-      const move1: MockMove = {
-        id: 'move-1',
-        origin: 'origin-1',
-        destination: 'dest-1',
-        dieValue: 6,
-      }
-
-      const activePlay = {
-        moves: [move1],
-        otherProperty: 'value',
-      }
-
-      const result = ensureMovesAreArray(activePlay)
-
-      expect(Array.isArray(result.moves)).toBe(true)
-      expect(result.moves).toContainEqual(move1)
-      expect(result.otherProperty).toBe('value')
-    })
-
-    it('should handle null activePlay', () => {
-      const result = ensureMovesAreArray(null)
-      expect(result).toBe(null)
-    })
-
-    it('should handle undefined activePlay', () => {
-      const result = ensureMovesAreArray(undefined)
-      expect(result).toBe(undefined)
-    })
-
-    it('should handle activePlay without moves property', () => {
-      const activePlay = {
-        otherProperty: 'value',
-      }
-
-      const result = ensureMovesAreArray(activePlay)
-
-      expect(result).toEqual(activePlay)
-      expect(result.otherProperty).toBe('value')
-    })
-
-    it('should handle empty moves Set', () => {
-      const activePlay = {
-        moves: new Set(),
-        otherProperty: 'value',
-      }
-
-      const result = ensureMovesAreArray(activePlay)
-
-      expect(Array.isArray(result.moves)).toBe(true)
-      expect(result.moves).toHaveLength(0)
-      expect(result.otherProperty).toBe('value')
-    })
-  })
 
   describe('round-trip serialization', () => {
     it('should maintain data integrity through serialize-deserialize cycle', () => {
@@ -413,7 +329,7 @@ describe('Serialization utilities', () => {
       }
 
       const serialized = serializeGameState(originalState)
-      const deserialized = deserializeGameState(serialized)
+      const deserialized = deserializeGameState(serialized) as any
 
       expect(deserialized.activePlay.moves).toBeInstanceOf(Set)
       expect(deserialized.activePlay.moves.size).toBe(2)

@@ -21,6 +21,7 @@ describe('Move', () => {
         direction: 'clockwise' as BackgammonMoveDirection,
         stateKind: 'rolled',
         pipCount: 167,
+        rollForStartValue: 3,
         dice: {
           id: generateId(),
           color: 'black',
@@ -62,6 +63,7 @@ describe('Move', () => {
         direction: 'clockwise',
         stateKind: 'rolled',
         pipCount: 167,
+        rollForStartValue: 3,
         dice: {
           id: generateId(),
           color: 'black',
@@ -93,6 +95,7 @@ describe('Move', () => {
         direction: 'clockwise',
         stateKind: 'rolled',
         pipCount: 167,
+        rollForStartValue: 3,
         dice: {
           id: generateId(),
           color: 'black',
@@ -131,6 +134,7 @@ describe('Move', () => {
         direction: 'clockwise',
         stateKind: 'rolled',
         pipCount: 167,
+        rollForStartValue: 3,
         dice: {
           id: generateId(),
           color: 'black',
@@ -175,6 +179,7 @@ describe('Move', () => {
         direction: 'clockwise',
         stateKind: 'rolled',
         pipCount: 167,
+        rollForStartValue: 3,
         dice: {
           id: generateId(),
           color: 'black',

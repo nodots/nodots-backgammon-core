@@ -45,15 +45,11 @@ describe('Move.moveChecker', () => {
       'white',
       'clockwise',
       undefined,
-      undefined,
-      undefined,
       false
     )
     const player2: BackgammonPlayer = Player.initialize(
       'black',
       'counterclockwise',
-      undefined,
-      undefined,
       undefined,
       false
     )
@@ -84,15 +80,11 @@ describe('Move.moveChecker', () => {
       'white',
       'clockwise',
       undefined,
-      undefined,
-      undefined,
       false
     )
     const player2: BackgammonPlayer = Player.initialize(
       'black',
       'counterclockwise',
-      undefined,
-      undefined,
       undefined,
       false
     )
@@ -139,15 +131,11 @@ describe('Minimal black move sequence with debug', () => {
       'white',
       'clockwise',
       undefined,
-      undefined,
-      undefined,
       false
     )
     const player2 = Player.initialize(
       'black',
       'counterclockwise',
-      undefined,
-      undefined,
       undefined,
       false
     )

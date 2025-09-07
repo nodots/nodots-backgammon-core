@@ -15,8 +15,6 @@ describe('Player rollForStartValue functionality', () => {
       const player = Player.initialize(
         'white',
         'clockwise',
-        Dice.initialize('white', 'rolling-for-start'),
-        'player-1',
         'rolling-for-start',
         false,
         'user-1'
@@ -36,17 +34,17 @@ describe('Player rollForStartValue functionality', () => {
 
     it('should preserve rollForStartValue through Player.initialize', () => {
       // Initialize a player with a rollForStartValue
-      const player = Player.initialize(
-        'black',
-        'counterclockwise',
-        undefined,
-        'player-2',
-        'inactive',
-        false,
-        'user-2',
-        167,
-        3 as BackgammonDieValue
-      )
+      const player = {
+        ...Player.initialize(
+          'black',
+          'counterclockwise',
+          'inactive',
+          false,
+          'user-2',
+          167
+        ),
+        rollForStartValue: 3 as BackgammonDieValue
+      }
 
       // Verify the rollForStartValue is preserved
       expect(player.rollForStartValue).toBe(3)
@@ -60,8 +58,6 @@ describe('Player rollForStartValue functionality', () => {
         Player.initialize(
           'white',
           'clockwise',
-          undefined,
-          'player-1',
           'rolling-for-start',
           false,
           'user-1'
@@ -69,8 +65,6 @@ describe('Player rollForStartValue functionality', () => {
         Player.initialize(
           'black',
           'counterclockwise',
-          undefined,
-          'player-2',
           'rolling-for-start',
           false,
           'user-2'
@@ -117,8 +111,6 @@ describe('Player rollForStartValue functionality', () => {
         Player.initialize(
           'white',
           'clockwise',
-          undefined,
-          'player-1',
           'rolling-for-start',
           false,
           'user-1'
@@ -126,8 +118,6 @@ describe('Player rollForStartValue functionality', () => {
         Player.initialize(
           'black',
           'counterclockwise',
-          undefined,
-          'player-2',
           'rolling-for-start',
           false,
           'user-2'
@@ -168,8 +158,6 @@ describe('Player rollForStartValue functionality', () => {
         Player.initialize(
           'white',
           'clockwise',
-          undefined,
-          'player-1',
           'rolling-for-start',
           false,
           'user-1'
@@ -177,8 +165,6 @@ describe('Player rollForStartValue functionality', () => {
         Player.initialize(
           'black',
           'counterclockwise',
-          undefined,
-          'player-2',
           'rolling-for-start',
           false,
           'user-2'
@@ -225,32 +211,32 @@ describe('Player rollForStartValue functionality', () => {
       const initialRollValue = 5 as BackgammonDieValue
 
       // Create player with rollForStartValue
-      const inactivePlayer = Player.initialize(
-        'white',
-        'clockwise',
-        Dice.initialize('white', 'inactive'),
-        'player-1',
-        'inactive',
-        false,
-        'user-1',
-        167,
-        initialRollValue
-      )
+      const inactivePlayer = {
+        ...Player.initialize(
+          'white',
+          'clockwise',
+          'inactive',
+          false,
+          'user-1',
+          167
+        ),
+        rollForStartValue: initialRollValue
+      }
 
       expect(inactivePlayer.rollForStartValue).toBe(initialRollValue)
 
       // Transition to rolling
-      const rollingPlayer = Player.initialize(
-        'white',
-        'clockwise',
-        Dice.initialize('white', 'rolling'),
-        'player-1',
-        'rolling',
-        false,
-        'user-1',
-        167,
-        initialRollValue
-      )
+      const rollingPlayer = {
+        ...Player.initialize(
+          'white',
+          'clockwise',
+          'rolling',
+          false,
+          'user-1',
+          167
+        ),
+        rollForStartValue: initialRollValue
+      }
 
       expect(rollingPlayer.rollForStartValue).toBe(initialRollValue)
 

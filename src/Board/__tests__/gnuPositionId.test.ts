@@ -7,16 +7,8 @@ describe('exportToGnuPositionId', () => {
     // White is clockwise, black is counterclockwise
     // The expected ID '4HPwATDgc/ABMA' assumes white (clockwise) is on roll
     const game = Game.createNewGame(
-      'player1',
-      'player2',
-      false, // Don't auto roll for start
-      true, // player1IsRobot
-      true, // player2IsRobot
-      {
-        blackDirection: 'counterclockwise',
-        whiteDirection: 'clockwise',
-        blackFirst: false, // This ensures white goes first
-      }
+      { userId: 'player1', isRobot: true },
+      { userId: 'player2', isRobot: true }
     )
 
     // Manually set up the game state with white as the active player

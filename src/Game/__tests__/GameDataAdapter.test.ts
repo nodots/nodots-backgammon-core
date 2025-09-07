@@ -17,8 +17,6 @@ describe('GameDataAdapter', () => {
         Player.initialize(
           'white',
           'clockwise',
-          undefined,
-          'player1',
           'inactive',
           false,
           'user1'
@@ -26,8 +24,6 @@ describe('GameDataAdapter', () => {
         Player.initialize(
           'black',
           'counterclockwise',
-          undefined,
-          'player2',
           'inactive',
           false,
           'user2'
@@ -63,8 +59,6 @@ describe('GameDataAdapter', () => {
         Player.initialize(
           'white',
           'clockwise',
-          undefined,
-          'player1',
           'inactive',
           false,
           'user1'
@@ -72,8 +66,6 @@ describe('GameDataAdapter', () => {
         Player.initialize(
           'black',
           'counterclockwise',
-          undefined,
-          'player2',
           'inactive',
           false,
           'user2'

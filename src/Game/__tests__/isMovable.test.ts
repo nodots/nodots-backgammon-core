@@ -4,11 +4,10 @@ import { BackgammonGameRolled } from '@nodots-llc/backgammon-types/dist'
 describe('isMovable attribute', () => {
   it('should set isMovable to true for checkers that can be moved after rolling dice', () => {
     // Create a new game without auto-rolling for start
-    const game = Game.createNewGame('player1', 'player2', false, false, false, {
-      blackDirection: 'clockwise',
-      whiteDirection: 'counterclockwise',
-      blackFirst: true,
-    })
+    const game = Game.createNewGame(
+      { userId: 'player1', isRobot: false },
+      { userId: 'player2', isRobot: false }
+    )
 
     // Game should be in rolling-for-start state
     if (game.stateKind !== 'rolling-for-start') {
@@ -78,11 +77,10 @@ describe('isMovable attribute', () => {
 
   it('should have isMovable attribute defined on all checkers', () => {
     // Create a new game that starts in rolling-for-start state
-    const game = Game.createNewGame('player1', 'player2', true, false, false, {
-      blackDirection: 'clockwise',
-      whiteDirection: 'counterclockwise', 
-      blackFirst: true,
-    })
+    const game = Game.createNewGame(
+      { userId: 'player1', isRobot: true },
+      { userId: 'player2', isRobot: false }
+    )
 
     // Check that all checkers have the isMovable attribute defined
     for (const point of game.board.points) {

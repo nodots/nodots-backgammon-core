@@ -17,15 +17,18 @@ import {
   BackgammonMoveOrigin,
   BackgammonMoveSkeleton,
   BackgammonPlay,
+  BackgammonPlayer,
   BackgammonPlayerActive,
   BackgammonPlayerDoubled,
   BackgammonPlayerInactive,
+  BackgammonPlayerRolled,
   BackgammonPlayerRolling,
   BackgammonPlayerRollingForStart,
   BackgammonPlayers,
   BackgammonPlayerWinner,
   BackgammonPlayMoving,
   BackgammonPlayRolled,
+  BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
 import { generateId, Player } from '..'
 import { Board } from '../Board'
@@ -66,100 +69,41 @@ export class Game {
     }
   }
 
-  /**
-   * Creates a new game between two players
-   * This is the main entry point for creating games - handles all player assignments and board setup
-   *
-   * @param player1UserId - User ID for player 1
-   * @param player2UserId - User ID for player 2
-   * @param autoRollForStart - Whether to auto roll for start
-   * @param player1IsRobot - Whether player 1 is a robot
-   * @param player2IsRobot - Whether player 2 is a robot
-   * @param colorDirectionConfig - Optional: { blackDirection, whiteDirection, blackFirst } for explicit control (for tests)
-   */
   public static createNewGame = function createNewGame(
-    player1UserId: string,
-    player2UserId: string,
-    autoRollForStart: boolean = true,
-    player1IsRobot: boolean = true,
-    player2IsRobot: boolean = true,
-    colorDirectionConfig?: {
-      blackDirection: BackgammonMoveDirection
-      whiteDirection: BackgammonMoveDirection
-      blackFirst?: boolean
-    }
+    player1: { userId: string; isRobot: boolean },
+    player2: { userId: string; isRobot: boolean }
   ): BackgammonGame {
     // Determine color and direction assignments
     let blackDirection: BackgammonMoveDirection
     let whiteDirection: BackgammonMoveDirection
-    let blackFirst: boolean
 
-    if (colorDirectionConfig) {
-      blackDirection = colorDirectionConfig.blackDirection
-      whiteDirection = colorDirectionConfig.whiteDirection
-      blackFirst = colorDirectionConfig.blackFirst ?? true
+    // Randomize directions for real games
+    if (Math.random() < 0.5) {
+      blackDirection = 'clockwise'
+      whiteDirection = 'counterclockwise'
     } else {
-      // Randomize directions for real games
-      if (Math.random() < 0.5) {
-        blackDirection = 'clockwise'
-        whiteDirection = 'counterclockwise'
-        blackFirst = true
-      } else {
-        blackDirection = 'counterclockwise'
-        whiteDirection = 'clockwise'
-        blackFirst = false
-      }
+      blackDirection = 'counterclockwise'
+      whiteDirection = 'clockwise'
     }
 
-    // Assign user IDs and robot flags to colors
-    const playerConfigs = blackFirst
-      ? [
-          {
-            color: 'black' as BackgammonColor,
-            direction: blackDirection,
-            userId: player1UserId,
-            isRobot: player1IsRobot,
-          },
-          {
-            color: 'white' as BackgammonColor,
-            direction: whiteDirection,
-            userId: player2UserId,
-            isRobot: player2IsRobot,
-          },
-        ]
-      : [
-          {
-            color: 'white' as BackgammonColor,
-            direction: whiteDirection,
-            userId: player1UserId,
-            isRobot: player1IsRobot,
-          },
-          {
-            color: 'black' as BackgammonColor,
-            direction: blackDirection,
-            userId: player2UserId,
-            isRobot: player2IsRobot,
-          },
-        ]
-
-    const players = playerConfigs.map((cfg) =>
-      Player.initialize(
-        cfg.color as BackgammonColor,
-        cfg.direction,
-        undefined,
-        generateId(),
-        'inactive',
-        cfg.isRobot,
-        cfg.userId,
-        MAX_PIP_COUNT
-      )
+    const white = Player.initialize(
+      'white',
+      whiteDirection,
+      'rolling-for-start',
+      player1.isRobot
     )
+    const black = Player.initialize(
+      'black',
+      blackDirection,
+      'rolling-for-start',
+      player2.isRobot
+    )
+
+    const players = [white, black]
 
     // Ensure players is a tuple of length 2
     const playersTuple = players as [(typeof players)[0], (typeof players)[1]]
 
-    // Create board with proper dual numbering system
-    // The board expects: createBoardForPlayers(clockwiseColor, counterclockwiseColor)
     const board = Board.createBoardForPlayers(
       blackDirection === 'clockwise' ? 'black' : 'white',
       blackDirection === 'counterclockwise' ? 'black' : 'white'
@@ -173,11 +117,6 @@ export class Game {
       board
     ) as BackgammonGameRollingForStart
 
-    // CRITICAL FIX: Recalculate pip counts after game initialization
-    // Players are initialized with MAX_PIP_COUNT, but need actual values based on board setup
-    logger.info(
-      '🧮 Game.createNewGame: Recalculating initial pip counts after board setup'
-    )
     const playersWithCorrectPipCounts = Player.recalculatePipCounts(game)
     game = {
       ...game,
@@ -216,8 +155,8 @@ export class Game {
     cube: BackgammonCube = Cube.initialize(),
     activePlay?: BackgammonPlay,
     activeColor?: BackgammonColor,
-    activePlayer?: BackgammonPlayerActive,
-    inactivePlayer?: BackgammonPlayerInactive,
+    activePlayer?: BackgammonPlayer,
+    inactivePlayer?: BackgammonPlayer,
     origin?: BackgammonMoveOrigin
   ): BackgammonGame {
     switch (stateKind) {
@@ -318,9 +257,13 @@ export class Game {
     game: BackgammonGameRollingForStart
   ): BackgammonGameRolledForStart {
     const { players } = game
-    const clockwise = players.find((p) => p.direction === 'clockwise')
+    const clockwise = players.find(
+      (p) => p.direction === 'clockwise' && p.stateKind === 'rolling-for-start'
+    )
     const counterclockwise = players.find(
-      (p) => p.direction === 'counterclockwise'
+      (p) =>
+        p.direction === 'counterclockwise' &&
+        p.stateKind === 'rolling-for-start'
     )
 
     if (!clockwise || !counterclockwise) {
@@ -329,36 +272,13 @@ export class Game {
       )
     }
 
-    // Convert players to rolling-for-start state if needed
-    const clockwiseRolling =
-      clockwise.stateKind === 'rolling-for-start'
-        ? (clockwise as BackgammonPlayerRollingForStart)
-        : (Player.initialize(
-            clockwise.color,
-            clockwise.direction,
-            undefined,
-            clockwise.id,
-            'rolling-for-start',
-            clockwise.isRobot,
-            clockwise.userId
-          ) as BackgammonPlayerRollingForStart)
-
-    const counterclockwiseRolling =
-      counterclockwise.stateKind === 'rolling-for-start'
-        ? (counterclockwise as BackgammonPlayerRollingForStart)
-        : (Player.initialize(
-            counterclockwise.color,
-            counterclockwise.direction,
-            undefined,
-            counterclockwise.id,
-            'rolling-for-start',
-            counterclockwise.isRobot,
-            counterclockwise.userId
-          ) as BackgammonPlayerRollingForStart)
-
     // Roll dice for both players
-    const rolledClockwise = Player.rollForStart(clockwiseRolling)
-    const rolledCounterclockwise = Player.rollForStart(counterclockwiseRolling)
+    const rolledClockwise = Player.rollForStart(
+      clockwise as BackgammonPlayerRollingForStart
+    )
+    const rolledCounterclockwise = Player.rollForStart(
+      counterclockwise as BackgammonPlayerRollingForStart
+    )
 
     // Determine who goes first based on the rolls
     const clockwiseRoll = rolledClockwise.dice.currentRoll![0]
@@ -375,8 +295,12 @@ export class Game {
     }
 
     const rollingForStartPlayers = [rolledClockwise, rolledCounterclockwise]
-    const activePlayer = rollingForStartPlayers.find((p) => p.color === activeColor)!
-    const inactivePlayer = rollingForStartPlayers.find((p) => p.color !== activeColor)!
+    const activePlayer = rollingForStartPlayers.find(
+      (p) => p.color === activeColor
+    )!
+    const inactivePlayer = rollingForStartPlayers.find(
+      (p) => p.color !== activeColor
+    )!
 
     return {
       ...game,
@@ -393,40 +317,91 @@ export class Game {
   ): BackgammonGameRolled {
     if (game.stateKind === 'rolled-for-start') {
       const { players, activeColor } = game
-      const rollingPlayers = players.map((p) => {
-        if (p.color === activeColor) {
-          // Ensure dice is in 'rolling' state
-          const dice =
-            p.dice.stateKind === 'rolling'
-              ? p.dice
-              : Dice.initialize(p.color, 'rolling')
-          return {
-            ...p,
-            stateKind: 'rolling',
-            dice,
-          } as BackgammonPlayerRolling
-        }
-        return {
-          ...p,
-          stateKind: 'inactive',
-        } as BackgammonPlayerInactive
-      }) as BackgammonPlayers
-      const newActivePlayer = rollingPlayers.find(
-        (p) => p.color === activeColor
-      ) as BackgammonPlayerRolling
-      const inactivePlayer = rollingPlayers.find(
-        (p) => p.color !== activeColor
-      ) as BackgammonPlayerInactive
-      const rollingGame: BackgammonGameRolling = {
-        ...game,
-        stateKind: 'rolling',
-        players: rollingPlayers,
-        activePlayer: newActivePlayer,
-        inactivePlayer,
-        activeColor: activeColor!,
+      const activePlayer = players.find((p) => p.color === activeColor)
+      if (!activePlayer) throw Error(`Roll requires an active player`)
+      const inactivePlayer = players.find((p) => p.id !== activePlayer.id)
+      if (!inactivePlayer) throw Error(`Roll requires and inactive player`)
+      if (
+        !activePlayer?.rollForStartValue ||
+        !inactivePlayer?.rollForStartValue
+      ) {
+        throw new Error('Players do not have rollForStartValues')
       }
-      return Game.roll(rollingGame)
+
+      // Use roll-for-start values for the winner's first roll
+      const currentRoll: BackgammonRoll = [
+        activePlayer.rollForStartValue,
+        inactivePlayer.rollForStartValue,
+      ]
+
+      const rolledPlayer: BackgammonPlayerRolled = {
+        ...activePlayer,
+        stateKind: 'rolled',
+        dice: {
+          ...activePlayer.dice,
+          stateKind: 'rolled',
+          currentRoll: currentRoll, // Use actual roll-for-start values
+          total: currentRoll[0] + currentRoll[1],
+        },
+        rollForStartValue: activePlayer.rollForStartValue,
+      }
+
+      const unrolledPlayer: BackgammonPlayerInactive = {
+        ...inactivePlayer,
+        stateKind: 'inactive',
+        dice: {
+          ...inactivePlayer.dice,
+          stateKind: 'inactive',
+          currentRoll: undefined,
+          total: 0,
+        },
+        rollForStartValue: inactivePlayer.rollForStartValue,
+      }
+
+      const activePlay = Play.initialize(game.board, rolledPlayer)
+      
+      // Update the board with movable checkers
+      const movableContainerIds: string[] = []
+      const movesArray = Array.from(activePlay.moves)
+      for (const move of movesArray) {
+        switch (move.stateKind) {
+          case 'ready':
+            if (move.possibleMoves) {
+              for (const possibleMove of move.possibleMoves) {
+                if (
+                  possibleMove.origin &&
+                  !movableContainerIds.includes(possibleMove.origin.id)
+                ) {
+                  movableContainerIds.push(possibleMove.origin.id)
+                }
+              }
+            }
+            break
+          case 'completed':
+          case 'confirmed':
+          case 'in-progress':
+            // These moves don't have movable checkers
+            break
+        }
+      }
+      const updatedBoard = Checker.updateMovableCheckers(
+        game.board,
+        movableContainerIds
+      )
+
+      return {
+        ...game,
+        stateKind: 'rolled',
+        players: [rolledPlayer, unrolledPlayer],
+        activeColor: rolledPlayer.color,
+        activePlayer: rolledPlayer,
+        inactivePlayer: unrolledPlayer,
+        activePlay,
+        board: updatedBoard,
+      }
     }
+
+    // DEBUG: This branch generates NEW random dice (should not be called after roll-for-start)
     const { players, board, activeColor } = game
     if (!activeColor) throw new Error('Active color must be provided')
     let [activePlayerForColor, inactivePlayerForColor] =
@@ -490,7 +465,6 @@ export class Game {
       board: updatedBoard,
     } as BackgammonGameRolled
 
-    // Always return 'rolled' state - robot automation is handled by rollWithAutomation()
     return rolledGame
   }
 
@@ -1577,8 +1551,6 @@ export class Game {
     const activePlayer = Player.initialize(
       player.color,
       player.direction,
-      player.dice,
-      player.id,
       'doubled',
       true,
       player.userId,

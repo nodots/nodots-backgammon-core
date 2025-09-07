@@ -9,8 +9,8 @@ describe('Pip Count Bear Off Bug', () => {
     
     // Create players
     const players: BackgammonPlayers = [
-      Player.initialize('white', 'clockwise', undefined, undefined, 'inactive', false),
-      Player.initialize('black', 'counterclockwise', undefined, undefined, 'inactive', false)
+      Player.initialize('white', 'clockwise', 'inactive', false),
+      Player.initialize('black', 'counterclockwise', 'inactive', false)
     ]
 
     // Create a mock game with all white checkers borne off
@@ -62,8 +62,8 @@ describe('Pip Count Bear Off Bug', () => {
     
     // Create players
     const players: BackgammonPlayers = [
-      Player.initialize('white', 'clockwise', undefined, undefined, 'inactive', false),
-      Player.initialize('black', 'counterclockwise', undefined, undefined, 'inactive', false)
+      Player.initialize('white', 'clockwise', 'inactive', false),
+      Player.initialize('black', 'counterclockwise', 'inactive', false)
     ]
 
     // Find point 1 for white (clockwise) player

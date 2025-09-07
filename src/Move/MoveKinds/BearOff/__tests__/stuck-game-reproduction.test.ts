@@ -82,6 +82,7 @@ describe('Stuck Game Reproduction - Game ID f9521db8-0e63-4c16-a5ac-86d77a7132e2
       direction: 'clockwise',
       pipCount: 45, // Realistic pip count for bear-off phase
       isRobot: true,
+      rollForStartValue: 3,
     }
 
     return { boardImport, player }

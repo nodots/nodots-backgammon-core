@@ -23,18 +23,16 @@ describe('Game Turn Passing', () => {
       Player.initialize(
         'white',
         'clockwise',
-        undefined,
-        undefined,
         isWhiteActive ? 'moving' : 'inactive',
-        false
+        false,
+        'test-user-white'
       ),
       Player.initialize(
         'black',
         'counterclockwise',
-        undefined,
-        undefined,
         isWhiteActive ? 'inactive' : 'moving',
-        false
+        false,
+        'test-user-black'
       ),
     ]
 
@@ -100,7 +98,6 @@ describe('Game Turn Passing', () => {
       settings: {
         allowUndo: false,
         allowResign: true,
-        allowDraw: false,
         autoPlay: false,
         showHints: false,
         showProbabilities: false,

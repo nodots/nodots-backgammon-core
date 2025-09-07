@@ -4,13 +4,13 @@ import { BackgammonMove } from '@nodots-llc/backgammon-types/dist'
  * Custom JSON serializer that properly handles Set objects
  * Sets are converted to arrays during serialization
  */
-export function serializeGameState(gameState: any): string {
-  return JSON.stringify(gameState, (key, value) => {
+export function serializeGameState(gameState: unknown): string {
+  return JSON.stringify(gameState, (key, value: unknown) => {
     // Convert Set objects to arrays for proper serialization
     if (value instanceof Set) {
-      return Array.from(value)
+      return Array.from(value) as unknown[]
     }
-    return value
+    return value as unknown
   })
 }
 
@@ -18,8 +18,8 @@ export function serializeGameState(gameState: any): string {
  * Custom JSON deserializer that properly reconstructs Set objects
  * Arrays in moves fields are converted back to Sets
  */
-export function deserializeGameState(jsonString: string): any {
-  const gameState = JSON.parse(jsonString)
+export function deserializeGameState(jsonString: string): unknown {
+  const gameState = JSON.parse(jsonString) as unknown
 
   // Recursively find and fix Set objects
   return reconstructSets(gameState)
@@ -29,25 +29,25 @@ export function deserializeGameState(jsonString: string): any {
  * Recursively reconstructs Set objects from arrays
  * This handles nested game states and play objects
  */
-function reconstructSets(obj: any): any {
+function reconstructSets(obj: unknown): unknown {
   if (obj === null || typeof obj !== 'object') {
     return obj
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(reconstructSets)
+    return (obj as unknown[]).map(reconstructSets)
   }
 
-  const result: any = {}
-  for (const [key, value] of Object.entries(obj)) {
+  const result: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
     if (key === 'moves' && Array.isArray(value)) {
       // Convert moves array back to Set
       result[key] = new Set(value as BackgammonMove[])
-    } else if (typeof value === 'object' && value !== null) {
+    } else if (value !== null && typeof value === 'object') {
       // Recursively process nested objects
-      result[key] = reconstructSets(value)
+      result[key] = reconstructSets(value as unknown)
     } else {
-      result[key] = value
+      result[key] = value as unknown
     }
   }
 
@@ -58,15 +58,16 @@ function reconstructSets(obj: any): any {
  * Utility function to ensure moves are properly converted to Set
  * Use this when loading game data from external sources
  */
-export function ensureMovesAreSet(activePlay: any): any {
+export function ensureMovesAreSet(activePlay: unknown): unknown {
   if (!activePlay) {
     return activePlay
   }
 
-  if (activePlay.moves && Array.isArray(activePlay.moves)) {
+  const playWithMoves = activePlay as { moves?: BackgammonMove[] | Set<BackgammonMove> }
+  if (playWithMoves.moves && Array.isArray(playWithMoves.moves)) {
     return {
       ...activePlay,
-      moves: new Set(activePlay.moves as BackgammonMove[]),
+      moves: new Set(playWithMoves.moves),
     }
   }
 
@@ -77,15 +78,16 @@ export function ensureMovesAreSet(activePlay: any): any {
  * Utility function to ensure moves are properly converted to Array
  * Use this when saving game data to external sources
  */
-export function ensureMovesAreArray(activePlay: any): any {
+export function ensureMovesAreArray(activePlay: unknown): unknown {
   if (!activePlay) {
     return activePlay
   }
 
-  if (activePlay.moves && activePlay.moves instanceof Set) {
+  const playWithMoves = activePlay as { moves?: BackgammonMove[] | Set<BackgammonMove> }
+  if (playWithMoves.moves && playWithMoves.moves instanceof Set) {
     return {
       ...activePlay,
-      moves: Array.from(activePlay.moves),
+      moves: Array.from(playWithMoves.moves),
     }
   }
 

@@ -8,9 +8,7 @@ describe('Position 24 Fix Tests', () => {
     const clockwisePlayer = Player.initialize(
       'black',
       'clockwise',
-      undefined,
-      undefined,
-      undefined,
+      'inactive',
       false
     )
 
@@ -40,9 +38,7 @@ describe('Position 24 Fix Tests', () => {
     const counterclockwisePlayer = Player.initialize(
       'black',
       'counterclockwise',
-      undefined,
-      undefined,
-      undefined,
+      'inactive',
       false
     )
 
@@ -79,9 +75,7 @@ describe('Position 24 Fix Tests', () => {
     const clockwisePlayer = Player.initialize(
       'white',
       'clockwise',
-      undefined,
-      undefined,
-      undefined,
+      'inactive',
       false
     )
 
@@ -115,9 +109,7 @@ describe('Position 24 Fix Tests', () => {
     const counterclockwisePlayer = Player.initialize(
       'black',
       'counterclockwise',
-      undefined,
-      undefined,
-      undefined,
+      'inactive',
       false
     )
 

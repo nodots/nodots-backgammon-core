@@ -23,8 +23,6 @@ describe('Player', () => {
     player = Player.initialize(
       color,
       direction,
-      undefined,
-      undefined,
       'inactive',
       true
     )
@@ -45,8 +43,6 @@ describe('Player', () => {
       const rollingPlayer = Player.initialize(
         color,
         direction,
-        undefined,
-        undefined,
         'rolling',
         true
       ) as BackgammonPlayerRolling
@@ -57,8 +53,6 @@ describe('Player', () => {
       const winnerPlayer = Player.initialize(
         color,
         direction,
-        undefined,
-        undefined,
         'winner',
         true
       )
@@ -70,8 +64,6 @@ describe('Player', () => {
       const movedPlayer = Player.initialize(
         color,
         direction,
-        undefined,
-        undefined,
         'moved',
         true
       )
@@ -85,8 +77,6 @@ describe('Player', () => {
       const rollingForStartPlayer = Player.initialize(
         color,
         direction,
-        undefined,
-        undefined,
         'rolling-for-start',
         true
       ) as BackgammonPlayerRollingForStart
@@ -107,8 +97,6 @@ describe('Player', () => {
       const rollingPlayer = Player.initialize(
         color,
         direction,
-        undefined,
-        undefined,
         'rolling',
         true
       ) as BackgammonPlayerRolling
@@ -139,8 +127,6 @@ describe('Player', () => {
       const counterClockwisePlayer = Player.initialize(
         'black',
         'counterclockwise',
-        undefined,
-        undefined,
         'inactive',
         true
       )
@@ -172,8 +158,6 @@ describe('Player', () => {
       const counterClockwisePlayer = Player.initialize(
         'black',
         'counterclockwise',
-        undefined,
-        undefined,
         'inactive',
         true
       )
@@ -195,8 +179,6 @@ describe('Player', () => {
       const playerMoving = Player.initialize(
         color,
         direction,
-        undefined,
-        undefined,
         'moving',
         true
       ) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayerMoving
@@ -241,8 +223,6 @@ describe('Player', () => {
       const playerMoving = Player.initialize(
         color,
         direction,
-        undefined,
-        undefined,
         'moving',
         true
       ) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayerMoving

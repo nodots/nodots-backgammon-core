@@ -13,8 +13,6 @@ describe('ROLLED-FOR-START Dice State', () => {
     const player1 = Player.initialize(
       'white',
       'clockwise',
-      undefined,
-      'player1',
       'inactive',
       true,
       'user1'
@@ -22,8 +20,6 @@ describe('ROLLED-FOR-START Dice State', () => {
     const player2 = Player.initialize(
       'black',
       'counterclockwise',
-      undefined,
-      'player2',
       'inactive',
       true,
       'user2'
@@ -34,11 +30,8 @@ describe('ROLLED-FOR-START Dice State', () => {
   it('should have dice in rolling state for active player in rolled-for-start state', () => {
     // 1. Create game in rolling-for-start state
     const game = Game.createNewGame(
-      'user1',
-      'user2',
-      false,
-      false,
-      false
+      { userId: 'user1', isRobot: false },
+      { userId: 'user2', isRobot: false }
     ) as BackgammonGameRollingForStart
     expect(game.stateKind).toBe('rolling-for-start')
 
@@ -82,11 +75,8 @@ describe('ROLLED-FOR-START Dice State', () => {
   it('should allow active player to roll from rolled-for-start state', () => {
     // Create a game and advance to rolled-for-start state
     const game = Game.createNewGame(
-      'user1',
-      'user2',
-      false,
-      false,
-      false
+      { userId: 'user1', isRobot: false },
+      { userId: 'user2', isRobot: false }
     ) as BackgammonGameRollingForStart
     const gameRolledForStart = Game.rollForStart(
       game
