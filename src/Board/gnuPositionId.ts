@@ -30,8 +30,8 @@ function getPlayerAndOpponent(game: BackgammonGame): {
       // In rolled-for-start, activePlayer indicates who won the roll and will be the first player on roll.
       // This state is just before the first actual turn where checkers move.
       // GNU Pos ID usually represents a position where someone is about to move checkers.
-      // Depending on strict interpretation, one might disallow this state or use this activePlayer.
-      playerOnRoll = (game as unknown as BackgammonGameRolled).activePlayer // Assuming activePlayer here means the one to start.
+      // Use the activePlayer property which exists in rolled-for-start state
+      playerOnRoll = game.activePlayer
       break
 
     case 'rolling-for-start':
