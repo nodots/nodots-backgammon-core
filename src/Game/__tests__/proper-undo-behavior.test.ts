@@ -44,18 +44,18 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     // ===============================
     console.log('\n📋 PHASE 1: INITIALIZING GAME')
     
-    let currentGame = Game.createNewGame(
+    let currentGame: any = Game.createNewGame(
       { userId: 'player1-id', isRobot: false }, // player1 is not robot
       { userId: 'player2-id', isRobot: false }  // player2 is not robot
     )
     
     // Advance through roll-for-start to rolled state
     if (currentGame.stateKind === 'rolling-for-start') {
-      currentGame = Game.rollForStart(currentGame as any)
-    }
-    
-    if (currentGame.stateKind === 'rolled-for-start') {
-      currentGame = Game.roll(currentGame as any)
+      const rolledForStartGame = Game.rollForStart(currentGame)
+      
+      if (rolledForStartGame.stateKind === 'rolled-for-start') {
+        currentGame = Game.roll(rolledForStartGame)
+      }
     }
     
     expect(currentGame.stateKind).toBe('rolled')
@@ -72,10 +72,9 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     // ===============================
     console.log('\n📋 PHASE 2: MAKING FIRST MOVE')
     
-    const preparedGame = Game.prepareMove(currentGame as any)
-    console.log(`✅ Game prepared - State: ${preparedGame.stateKind}`)
-    
-    const movingGame = Game.toMoving(preparedGame)
+    // Direct transition to moving (no intermediate states)
+    const movingGame = Game.toMoving(currentGame as any)
+    console.log(`✅ Game in moving state - State: ${movingGame.stateKind}`)
     expect(movingGame.stateKind).toBe('moving')
     console.log(`✅ Game in moving state - State: ${movingGame.stateKind}`)
     
@@ -155,8 +154,7 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     // Transition back to moving state
     let gameReadyForSecondMove = updatedGameAfterUndo
     if (gameReadyForSecondMove.stateKind !== 'moving') {
-      const preparedAgain = Game.prepareMove(gameReadyForSecondMove as any)
-      gameReadyForSecondMove = Game.toMoving(preparedAgain)
+      gameReadyForSecondMove = Game.toMoving(gameReadyForSecondMove as any)
     }
     
     expect(gameReadyForSecondMove.stateKind).toBe('moving')
@@ -311,16 +309,15 @@ describe('Proper Undo Behavior - E2E Proof', () => {
       { userId: 'player2-id', isRobot: false }
     )
     
-    let gameInRollingState = rolledGame
+    let gameInRollingState: any = rolledGame
     if (gameInRollingState.stateKind === 'rolling-for-start') {
-      gameInRollingState = Game.rollForStart(gameInRollingState as any)
+      gameInRollingState = Game.rollForStart(gameInRollingState)
     }
     
     if (gameInRollingState.stateKind === 'rolled-for-start') {
-      gameInRollingState = Game.roll(gameInRollingState as any)
-      // Confirm turn to get to next player's rolling state
-      const prepared = Game.prepareMove(gameInRollingState as any)
-      const moving = Game.toMoving(prepared)
+      gameInRollingState = Game.roll(gameInRollingState)
+      // Transition directly to moving state
+      const moving = Game.toMoving(gameInRollingState as any)
       
       // Make all moves until we can confirm
       let movingGameState: BackgammonGame = moving
@@ -361,21 +358,20 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     console.log('\n🎯 TESTING UNDO WITH MISSING ACTIVE PLAY')
     
     // Create a game and advance to moving state
-    let testGame = Game.createNewGame(
+    let testGame: any = Game.createNewGame(
       { userId: 'player1-id', isRobot: false },
       { userId: 'player2-id', isRobot: false }
     )
     
     if (testGame.stateKind === 'rolling-for-start') {
-      testGame = Game.rollForStart(testGame as any)
+      testGame = Game.rollForStart(testGame)
     }
     
     if (testGame.stateKind === 'rolled-for-start') {
-      testGame = Game.roll(testGame as any)
+      testGame = Game.roll(testGame)
     }
     
-    const prepared = Game.prepareMove(testGame as any)
-    const moving = Game.toMoving(prepared)
+    const moving = Game.toMoving(testGame as any)
     
     // Artificially remove activePlay to test error handling
     const gameWithoutActivePlay = {
@@ -398,21 +394,20 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     console.log('\n🎯 TESTING UNDO WITH NO CONFIRMED MOVES')
     
     // Create a game and advance to moving state without making any moves
-    let testGame = Game.createNewGame(
+    let testGame: any = Game.createNewGame(
       { userId: 'player1-id', isRobot: false },
       { userId: 'player2-id', isRobot: false }
     )
     
     if (testGame.stateKind === 'rolling-for-start') {
-      testGame = Game.rollForStart(testGame as any)
+      testGame = Game.rollForStart(testGame)
     }
     
     if (testGame.stateKind === 'rolled-for-start') {
-      testGame = Game.roll(testGame as any)
+      testGame = Game.roll(testGame)
     }
     
-    const prepared = Game.prepareMove(testGame as any)
-    const moving = Game.toMoving(prepared)
+    const moving = Game.toMoving(testGame as any)
     
     // At this point, all moves should be in 'ready' state, none confirmed
     expect(moving.stateKind).toBe('moving')
@@ -437,21 +432,20 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     console.log('\n🎯 TESTING UNDO WITH MULTIPLE MOVES')
     
     // Create and advance game to moving state
-    let testGame = Game.createNewGame(
+    let testGame: any = Game.createNewGame(
       { userId: 'player1-id', isRobot: false },
       { userId: 'player2-id', isRobot: false }
     )
     
     if (testGame.stateKind === 'rolling-for-start') {
-      testGame = Game.rollForStart(testGame as any)
+      testGame = Game.rollForStart(testGame)
     }
     
     if (testGame.stateKind === 'rolled-for-start') {
-      testGame = Game.roll(testGame as any)
+      testGame = Game.roll(testGame)
     }
     
-    const prepared = Game.prepareMove(testGame as any)
-    let movingGame = Game.toMoving(prepared)
+    let movingGame = Game.toMoving(testGame as any)
     
     // Make multiple moves if possible
     let moveCount = 0
@@ -509,18 +503,18 @@ describe('Proper Undo Behavior - E2E Proof', () => {
   it('PROOF: Complete multi-turn game flow with undo restrictions', () => {
     console.log('\n🎯 TESTING COMPLETE MULTI-TURN GAME FLOW')
     
-    let currentGame = Game.createNewGame(
+    let currentGame: any = Game.createNewGame(
       { userId: 'player1-id', isRobot: false },
       { userId: 'player2-id', isRobot: false }
     )
     
     // Track original player for verification
     if (currentGame.stateKind === 'rolling-for-start') {
-      currentGame = Game.rollForStart(currentGame as any)
+      currentGame = Game.rollForStart(currentGame)
     }
     
     if (currentGame.stateKind === 'rolled-for-start') {
-      currentGame = Game.roll(currentGame as any)
+      currentGame = Game.roll(currentGame)
     }
     
     const firstPlayerColor = currentGame.activePlayer?.color
@@ -530,8 +524,7 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     console.log('\n--- FIRST PLAYER\'S TURN ---')
     
     // Make move and undo (should work)
-    const prepared1 = Game.prepareMove(currentGame as any)
-    const moving1 = Game.toMoving(prepared1)
+    const moving1 = Game.toMoving(currentGame as any)
     
     const movesArray1 = Array.from(moving1.activePlay!.moves)
     const readyMove1 = movesArray1.find(m => m.stateKind === 'ready')
@@ -550,8 +543,7 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     const possibleMovesResult1 = Game.getPossibleMoves(gameAfterUndo1)
     const updatedGame1 = possibleMovesResult1.updatedGame!
     
-    const prepared1Again = Game.prepareMove(updatedGame1 as any)
-    const moving1Again = Game.toMoving(prepared1Again)
+    const moving1Again = Game.toMoving(updatedGame1 as any)
     let gameAfterMove1Again: BackgammonGame = Game.executeAndRecalculate(moving1Again, possibleMove1.origin.id)
     
     // Make additional moves until we can confirm
@@ -598,8 +590,7 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     console.log(`✅ Second player rolled dice`)
     
     // Second player can undo their own moves (but not first player's)
-    const prepared2 = Game.prepareMove(rolledGame2 as any)
-    const moving2 = Game.toMoving(prepared2)
+    const moving2 = Game.toMoving(rolledGame2 as any)
     
     const movesArray2 = Array.from(moving2.activePlay!.moves)
     const readyMove2 = movesArray2.find(m => m.stateKind === 'ready')

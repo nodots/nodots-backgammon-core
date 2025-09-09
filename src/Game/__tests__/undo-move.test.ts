@@ -17,13 +17,18 @@ describe('Game.undoLastMove', () => {
 
     // Roll dice and advance to moving state
     if (game.stateKind === 'rolling-for-start') {
-      game = Game.rollForStart(game as any)
-    }
-    
-    if (game.stateKind === 'rolled-for-start') {
-      const rolledGame = Game.roll(game as any)
-      const preparingGame = Game.prepareMove(rolledGame)
-      testGame = Game.toMoving(preparingGame)
+      const rolledForStartGame = Game.rollForStart(game as any)
+      
+      if (rolledForStartGame.stateKind === 'rolled-for-start') {
+        const rolledGame = Game.roll(rolledForStartGame as any)
+        testGame = Game.toMoving(rolledGame)
+      } else {
+        // If not in expected state, force create a moving game
+        testGame = {
+          ...game,
+          stateKind: 'moving',
+        } as BackgammonGameMoving
+      }
     } else {
       // If not in expected state, force create a moving game
       testGame = {
@@ -270,18 +275,18 @@ describe('Game.undoLastMove', () => {
     console.log('='.repeat(60))
 
     // STEP 1: Start with a proper rolled state
-    let currentGame = Game.createNewGame(
+    let currentGame: any = Game.createNewGame(
       { userId: 'test-user-1', isRobot: false }, // player1 is not robot
       { userId: 'test-user-2', isRobot: false }  // player2 is not robot
     )
 
     // Advance to rolled state
     if (currentGame.stateKind === 'rolling-for-start') {
-      currentGame = Game.rollForStart(currentGame as any)
-    }
-    
-    if (currentGame.stateKind === 'rolled-for-start') {
-      currentGame = Game.roll(currentGame as any)
+      const rolledForStartGame = Game.rollForStart(currentGame)
+      
+      if (rolledForStartGame.stateKind === 'rolled-for-start') {
+        currentGame = Game.roll(rolledForStartGame)
+      }
     }
 
     console.log(`\n📋 STEP 1 - INITIAL STATE: ${currentGame.stateKind}`)
@@ -293,10 +298,7 @@ describe('Game.undoLastMove', () => {
     // STEP 2: Transition to moving state and make a move
     console.log('\n📍 STEP 2: Transitioning to moving state...')
 
-    const preparedGame = Game.prepareMove(currentGame as any)
-    console.log(`   Prepared state: ${preparedGame.stateKind}`)
-
-    const movingGame = Game.toMoving(preparedGame)
+    const movingGame = Game.toMoving(currentGame as any)
     console.log(`   Moving state: ${movingGame.stateKind}`)
 
     // STEP 3: Make an actual move
@@ -405,8 +407,7 @@ describe('Game.undoLastMove', () => {
       let gameReadyToMove = updatedGame
       if (gameReadyToMove.stateKind !== 'moving') {
         if (gameReadyToMove.stateKind === 'rolled') {
-          const preparingGame = Game.prepareMove(gameReadyToMove as any)
-          gameReadyToMove = Game.toMoving(preparingGame)
+          gameReadyToMove = Game.toMoving(gameReadyToMove as any)
           console.log(
             `   Transitioned to moving state: ${gameReadyToMove.stateKind}`
           )

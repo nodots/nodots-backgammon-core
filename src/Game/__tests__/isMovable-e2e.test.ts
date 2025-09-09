@@ -106,10 +106,7 @@ describe('isMovable E2E Tests', () => {
       }
 
       // 9. Transition to moving state to test isMovable updates after moves
-      const preparingMoveGame = Game.prepareMove(rolledGame)
-      expect(preparingMoveGame.stateKind).toBe('preparing-move')
-
-      const movingGame = Game.toMoving(preparingMoveGame) as BackgammonGameMoving
+      const movingGame = Game.toMoving(rolledGame) as BackgammonGameMoving
       expect(movingGame.stateKind).toBe('moving')
 
       // Find a valid move to execute

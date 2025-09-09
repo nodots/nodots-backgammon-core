@@ -46,10 +46,6 @@ function getPlayerAndOpponent(game: BackgammonGame): {
       playerOnRoll = game.activePlayer
       break
 
-    case 'preparing-move':
-      // Player is preparing to make moves - use the active player
-      playerOnRoll = game.activePlayer
-      break
 
     case 'doubled':
       // Double offered - use the active player (the one who offered the double)
