@@ -6,7 +6,6 @@ import {
   BackgammonDieValue,
   BackgammonGame,
   BackgammonGameMoving,
-  BackgammonGamePreparingMove,
   BackgammonGameRolled,
   BackgammonMove,
   BackgammonMoveConfirmed,
@@ -82,16 +81,17 @@ export class Move {
         hasActivePlay: !!game.activePlay,
       })
 
-      // 2. Validate game state (must be 'rolled', 'preparing-move', or 'moving')
-      if (
-        game.stateKind !== 'rolled' &&
-        game.stateKind !== 'preparing-move' &&
-        game.stateKind !== 'moving'
-      ) {
-        return {
-          success: false,
-          error: `Game is not in a state where moving is allowed. Current state: ${game.stateKind}`,
-        }
+      // 2. Validate game state (must be 'rolled' or 'moving')
+      switch (game.stateKind) {
+        case 'rolled':
+        case 'moving':
+          // Valid states for moving
+          break
+        default:
+          return {
+            success: false,
+            error: `Game is not in a state where moving is allowed. Current state: ${game.stateKind}`,
+          }
       }
 
       // 3. Find checker by checkerId in board
@@ -259,13 +259,22 @@ export class Move {
         const { Game } = await import('..')
 
         // Ensure game is in correct state for moving
-        let workingGame = game
+        let workingGame: BackgammonGameMoving
 
-        if (workingGame.stateKind === 'rolled') {
-          workingGame = Game.prepareMove(workingGame as any)
-          workingGame = Game.toMoving(workingGame)
-        } else if (workingGame.stateKind === 'preparing-move') {
-          workingGame = Game.toMoving(workingGame as any)
+        switch (game.stateKind) {
+          case 'rolled': {
+            // Direct transition: rolled -> moving
+            workingGame = Game.toMoving(game as BackgammonGameRolled)
+            break
+          }
+          case 'moving':
+            // Already in moving state, no transition needed
+            workingGame = game as BackgammonGameMoving
+            break
+          default:
+            throw new Error(
+              `Cannot execute move from ${(game as any).stateKind} state. Must be in rolled or moving state.`
+            )
         }
 
         // Execute the move using executeAndRecalculate to handle automatic state transitions
@@ -331,19 +340,11 @@ export class Move {
         switch (game.stateKind) {
           case 'rolled': {
             console.log(
-              '[DEBUG] Robot transitioning from rolled to preparing-move to moving state'
+              '[DEBUG] Robot transitioning from rolled directly to moving state'
             )
             try {
-              // First transition to preparing-move
-              const preparingGame = Game.prepareMove(
-                game as BackgammonGameRolled
-              )
-              console.log('[DEBUG] Transitioned to preparing-move:', {
-                gameState: preparingGame.stateKind,
-              })
-
-              // Then transition to moving
-              const movingGame = Game.toMoving(preparingGame)
+              // Direct transition to moving
+              const movingGame = Game.toMoving(game as BackgammonGameRolled)
               console.log('[DEBUG] Transition completed:', {
                 newGameState: movingGame.stateKind,
                 newActivePlayState: movingGame.activePlay?.stateKind,
@@ -364,35 +365,6 @@ export class Move {
             }
           }
 
-          case 'preparing-move': {
-            console.log(
-              '[DEBUG] Robot transitioning from preparing-move to moving state'
-            )
-            try {
-              // Direct transition from preparing-move to moving
-              const movingGame = Game.toMoving(
-                game as BackgammonGamePreparingMove
-              )
-              console.log('[DEBUG] Transition completed:', {
-                newGameState: movingGame.stateKind,
-                newActivePlayState: movingGame.activePlay?.stateKind,
-              })
-              return movingGame
-            } catch (transitionError: unknown) {
-              const errorMessage =
-                transitionError instanceof Error
-                  ? transitionError.message
-                  : 'Unknown error'
-              console.log(
-                '[DEBUG] Robot state transition from preparing-move failed:',
-                errorMessage
-              )
-              throw new Error(
-                `Failed to transition from preparing-move to moving state: ${errorMessage}`
-              )
-            }
-          }
-
           case 'moving': {
             console.log(
               '[DEBUG] Robot: Game already in moving state, no transition needed'
@@ -409,7 +381,7 @@ export class Move {
             throw new Error(
               `Invalid game state for robot move: ${
                 (game as any).stateKind
-              }. Expected 'rolled', 'preparing-move', or 'moving'.`
+              }. Expected 'rolled' or 'moving'.`
             )
           }
         }

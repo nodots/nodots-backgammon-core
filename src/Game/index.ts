@@ -3,12 +3,12 @@ import {
   BackgammonChecker,
   BackgammonColor,
   BackgammonCube,
+  BackgammonCubeValue,
   BackgammonDieValue,
   BackgammonGame,
   BackgammonGameDoubled,
   BackgammonGameMoved,
   BackgammonGameMoving,
-  BackgammonGamePreparingMove,
   BackgammonGameRolled,
   BackgammonGameRolledForStart,
   BackgammonGameRolling,
@@ -21,6 +21,7 @@ import {
   BackgammonPlayerActive,
   BackgammonPlayerDoubled,
   BackgammonPlayerInactive,
+  BackgammonPlayerMoving,
   BackgammonPlayerRolled,
   BackgammonPlayerRolling,
   BackgammonPlayerRollingForStart,
@@ -72,7 +73,7 @@ export class Game {
   public static createNewGame = function createNewGame(
     player1: { userId: string; isRobot: boolean },
     player2: { userId: string; isRobot: boolean }
-  ): BackgammonGame {
+  ): BackgammonGameRollingForStart {
     // Determine color and direction assignments
     let blackDirection: BackgammonMoveDirection
     let whiteDirection: BackgammonMoveDirection
@@ -110,7 +111,7 @@ export class Game {
     )
 
     // Initialize game
-    let game: BackgammonGame = Game.initialize(
+    let game = Game.initialize(
       playersTuple,
       generateId(),
       'rolling-for-start',
@@ -199,23 +200,6 @@ export class Game {
           activePlayer,
           inactivePlayer,
         } as BackgammonGameRolling
-      case 'preparing-move':
-        if (!activeColor) throw new Error('Active color must be provided')
-        if (!activePlayer) throw new Error('Active player must be provided')
-        if (!inactivePlayer) throw new Error('Inactive player must be provided')
-        if (!activePlay) throw new Error('Active play must be provided')
-        return {
-          ...Game.createBaseGameProperties(),
-          id,
-          stateKind,
-          players,
-          board,
-          cube,
-          activeColor,
-          activePlayer,
-          inactivePlayer,
-          activePlay,
-        } as BackgammonGamePreparingMove
       case 'moving':
         if (!activeColor) throw new Error('Active color must be provided')
         if (!activePlayer) throw new Error('Active player must be provided')
@@ -239,8 +223,6 @@ export class Game {
         throw new Error('Game cannot be initialized in the moved state')
       case 'completed':
         throw new Error('Game cannot be initialized in the completed state')
-      case 'doubling':
-        throw new Error('Game cannot be initialized in the doubling state')
       case 'doubled':
         throw new Error('Game cannot be initialized in the doubled state')
     }
@@ -313,7 +295,7 @@ export class Game {
   }
 
   public static roll = function roll(
-    game: BackgammonGameRolledForStart | BackgammonGameRolling
+    game: BackgammonGameRolledForStart | BackgammonGameRolling | BackgammonGameDoubled
   ): BackgammonGameRolled {
     if (game.stateKind === 'rolled-for-start') {
       const { players, activeColor } = game
@@ -359,7 +341,7 @@ export class Game {
       }
 
       const activePlay = Play.initialize(game.board, rolledPlayer)
-      
+
       // Update the board with movable checkers
       const movableContainerIds: string[] = []
       const movesArray = Array.from(activePlay.moves)
@@ -399,6 +381,78 @@ export class Game {
         activePlay,
         board: updatedBoard,
       }
+    }
+
+    if (game.stateKind === 'doubled') {
+      // Handle rolling from doubled state (after accepting a double)
+      const { players, board, activeColor } = game
+      if (!activeColor) throw new Error('Active color must be provided')
+      let [activePlayerForColor, inactivePlayerForColor] =
+        Game.getPlayersForColor(players, activeColor!)
+      if (activePlayerForColor.stateKind !== 'doubled') {
+        throw new Error('Active player must be in doubled state')
+      }
+      const activePlayerDoubled = activePlayerForColor as BackgammonPlayerDoubled
+      const inactivePlayer = inactivePlayerForColor
+      if (!inactivePlayer) throw new Error('Inactive player not found')
+
+      // Roll new dice for the doubled player
+      const playerRolled = Player.roll({
+        ...activePlayerDoubled,
+        stateKind: 'rolling'
+      } as any)
+      const activePlay = Play.initialize(board, playerRolled)
+
+      const rolledPlay = {
+        ...activePlay,
+        stateKind: 'rolled',
+        player: playerRolled,
+      } as BackgammonPlayRolled
+
+      // Update the board with movable checkers
+      const movableContainerIds: string[] = []
+      const movesArray = Array.from(activePlay.moves)
+      for (const move of movesArray) {
+        switch (move.stateKind) {
+          case 'ready':
+            if (move.possibleMoves) {
+              for (const possibleMove of move.possibleMoves) {
+                if (
+                  possibleMove.origin &&
+                  !movableContainerIds.includes(possibleMove.origin.id)
+                ) {
+                  movableContainerIds.push(possibleMove.origin.id)
+                }
+              }
+            }
+            break
+          case 'completed':
+          case 'confirmed':
+          case 'in-progress':
+            // These moves don't have movable checkers
+            break
+        }
+      }
+      const updatedBoard = Checker.updateMovableCheckers(
+        board,
+        movableContainerIds
+      )
+
+      // Update the players array to include the rolled player
+      const updatedPlayers = players.map((p) =>
+        p.id === playerRolled.id ? playerRolled : p
+      ) as BackgammonPlayers
+
+      const rolledGame = {
+        ...game,
+        stateKind: 'rolled',
+        players: updatedPlayers,
+        activePlayer: playerRolled,
+        activePlay: rolledPlay,
+        board: updatedBoard,
+      } as BackgammonGameRolled
+
+      return rolledGame
     }
 
     // DEBUG: This branch generates NEW random dice (should not be called after roll-for-start)
@@ -476,26 +530,30 @@ export class Game {
     game: BackgammonGameRolled | BackgammonGameMoving
   ): BackgammonGameRolled | BackgammonGameMoving {
     // Check if dice switching is allowed
-    if (game.stateKind === 'rolled') {
-      // Always allowed in rolled state
-    } else if (game.stateKind === 'moving') {
-      // Only allowed in moving state if all moves are undone (all moves in 'ready' state)
-      const allMovesUndone = game.activePlay?.moves
-        ? Array.from(game.activePlay.moves).every(
-            (move: any) => move.stateKind === 'ready'
-          )
-        : false
+    switch (game.stateKind) {
+      case 'rolled':
+        // Always allowed in rolled state
+        break
+      case 'moving': {
+        // Only allowed in moving state if all moves are undone (all moves in 'ready' state)
+        const allMovesUndone = game.activePlay?.moves
+          ? Array.from(game.activePlay.moves).every(
+              (move: any) => move.stateKind === 'ready'
+            )
+          : false
 
-      if (!allMovesUndone) {
-        throw new Error(
-          'Cannot switch dice in moving state unless all moves are undone'
-        )
+        if (!allMovesUndone) {
+          throw new Error(
+            'Cannot switch dice in moving state unless all moves are undone'
+          )
+        }
+        break
       }
-    } else {
-      // This should never happen given our union type, but include for completeness
-      throw new Error(
-        `Cannot switch dice from ${(game as any).stateKind} state`
-      )
+      default:
+        // This should never happen given our union type, but include for completeness
+        throw new Error(
+          `Cannot switch dice from ${(game as any).stateKind} state`
+        )
     }
 
     const { activePlayer, activePlay } = game
@@ -585,65 +643,81 @@ export class Game {
     } as typeof game
   }
 
-  /**
-   * Transition from 'rolled' to 'preparing-move' state
-   * This represents the player about to make a decision (move or double)
-   */
-  public static prepareMove = function prepareMove(
-    game: BackgammonGameRolled
-  ): BackgammonGamePreparingMove {
-    if (game.stateKind !== 'rolled') {
-      throw new Error(`Cannot prepare move from ${game.stateKind} state`)
-    }
 
-    // The preparing-move state maintains the same play and player state
-    // but indicates that a decision (move or double) is about to be made
-    return {
-      ...game,
-      stateKind: 'preparing-move',
-    } as BackgammonGamePreparingMove
-  }
 
   /**
-   * Transition from 'preparing-move' or 'doubled' to 'moving' state
+   * Transition from 'rolled' or 'doubled' to 'moving' state
    * This must be called before any moves can be made
    */
   public static toMoving = function toMoving(
-    game: BackgammonGamePreparingMove | BackgammonGameDoubled
+    game: BackgammonGameRolled | BackgammonGameDoubled
   ): BackgammonGameMoving {
-    const isValidState =
-      game.stateKind === 'preparing-move' || game.stateKind === 'doubled'
-
-    if (!isValidState) {
-      throw new Error(
-        `Cannot start moving from ${
-          (game as any).stateKind
-        } state. Must be in 'preparing-move' or 'doubled' state.`
-      )
+    switch (game.stateKind) {
+      case 'rolled':
+      case 'doubled':
+        // Valid states - continue with transition
+        break
+      default:
+        throw new Error(
+          `Cannot start moving from ${
+            (game as any).stateKind
+          } state. Must be in 'rolled' or 'doubled' state.`
+        )
     }
 
-    const movingPlay = Play.startMove(game.activePlay)
+    // Handle different play states based on current game state
+    let movingPlay: BackgammonPlayMoving
+
+    switch (game.stateKind) {
+      case 'rolled':
+        // Transition the player state from rolled to moving first
+        const movingPlayer = {
+          ...Player.initialize(
+            game.activePlayer.color,
+            game.activePlayer.direction,
+            'moving',
+            game.activePlayer.isRobot,
+            game.activePlayer.userId,
+            game.activePlayer.pipCount,
+            game.activePlayer.id
+          ),
+          dice: game.activePlayer.dice, // Preserve the dice from the rolled state
+        } as BackgammonPlayerMoving
+        
+        // Initialize the play with the rolled player to populate possible moves
+        const initializedPlay = Play.initialize(game.board, game.activePlayer)
+        movingPlay = {
+          ...initializedPlay,
+          stateKind: 'moving',
+          player: movingPlayer,
+        } as BackgammonPlayMoving
+        
+        // Update players array with moving player
+        const updatedPlayers = game.players.map((p) =>
+          p.id === game.activePlayer.id ? movingPlayer : p
+        ) as BackgammonPlayers
+        
+        return {
+          ...game,
+          stateKind: 'moving',
+          activePlay: movingPlay,
+          activePlayer: movingPlayer,
+          players: updatedPlayers,
+        } as BackgammonGameMoving
+        
+      case 'doubled':
+        // Convert BackgammonPlayDoubled to BackgammonPlayMoving
+        movingPlay = Play.startMove(game.activePlay as any)
+        break
+      default:
+        throw new Error(
+          `Unexpected game state in toMoving: ${(game as any).stateKind}`
+        )
+    }
+
     return Game.startMove(game, movingPlay)
   }
 
-  /**
-   * Transition from 'preparing-move' to 'doubling' state
-   * This represents offering a double to the opponent
-   */
-  public static toDoubling = function toDoubling(
-    game: BackgammonGamePreparingMove
-  ): BackgammonGame {
-    if (game.stateKind !== 'preparing-move') {
-      throw new Error(
-        `Cannot start doubling from ${
-          (game as any).stateKind
-        } state. Must be in 'preparing-move' state.`
-      )
-    }
-
-    // Delegate to the existing offerDouble logic
-    return Game.offerDouble(game, game.activePlayer)
-  }
 
   /**
    * Transition from 'moving' to 'moved' state
@@ -692,6 +766,18 @@ export class Game {
       'DICE SWITCHING BUG: Game.move called with dice:',
       game.activePlayer.dice?.currentRoll
     )
+
+    // Validate game state using switch
+    switch (game.stateKind) {
+      case 'moving':
+        // Valid state for moving
+        break
+      default:
+        throw new Error(
+          `Cannot move from ${(game as any).stateKind} state. Must be in 'moving' state.`
+        )
+    }
+
     let { activePlay, board } = game
 
     // Check if activePlay exists
@@ -701,11 +787,15 @@ export class Game {
       )
     }
 
-    // Require explicit moving state - no automatic transitions
-    if (activePlay.stateKind !== 'moving') {
-      throw new Error(
-        `Cannot move from ${activePlay.stateKind} state. Call Game.toMoving() first.`
-      )
+    // Validate activePlay state using switch
+    switch (activePlay.stateKind) {
+      case 'moving':
+        // Valid state for activePlay
+        break
+      default:
+        throw new Error(
+          `Cannot move from ${activePlay.stateKind} state. ActivePlay must be in 'moving' state.`
+        )
     }
 
     const playResult = Player.move(board, activePlay, originId)
@@ -1449,7 +1539,7 @@ export class Game {
   }
 
   public static startMove = function startMove(
-    game: BackgammonGamePreparingMove | BackgammonGameDoubled,
+    game: BackgammonGameDoubled,
     movingPlay: BackgammonPlayMoving
   ): BackgammonGameMoving {
     return {
@@ -1465,10 +1555,10 @@ export class Game {
     game: BackgammonGame,
     player: BackgammonPlayerActive
   ): boolean {
-    // Allow doubling from preparing-move state only (after rolling)
+    // Allow doubling from rolling state only (before rolling dice)
     // Only if player does not own the cube and cube is not maxxed or already offered
     return (
-      game.stateKind === 'preparing-move' &&
+      game.stateKind === 'rolling' &&
       game.cube.stateKind !== 'maxxed' &&
       game.cube.stateKind !== 'offered' &&
       (!game.cube.owner || game.cube.owner.id !== player.id)
@@ -1481,7 +1571,7 @@ export class Game {
    * Validates if rolling is allowed in the current game state
    */
   public static canRoll(game: BackgammonGame): boolean {
-    return game.stateKind === 'rolled-for-start' || game.stateKind === 'rolling'
+    return game.stateKind === 'rolled-for-start' || game.stateKind === 'rolling' || game.stateKind === 'doubled'
   }
 
   /**
@@ -1516,7 +1606,7 @@ export class Game {
    * Validates if moves can be calculated for the current game state
    */
   public static canGetPossibleMoves(game: BackgammonGame): boolean {
-    return game.stateKind === 'rolled' || game.stateKind === 'preparing-move'
+    return game.stateKind === 'rolled'
   }
 
   // --- Checker Management ---
@@ -1538,45 +1628,6 @@ export class Game {
     }
   }
 
-  public static offerDouble(
-    game: BackgammonGame,
-    player: BackgammonPlayerActive
-  ): BackgammonGame {
-    if (!Game.canOfferDouble(game, player))
-      throw new Error('Cannot offer double')
-    // Set cube to 'offered' state and transition to 'doubling' game state
-    // Find the opponent
-    const opponent = game.players.find((p) => p.id !== player.id)!
-    // Convert players to correct types
-    const activePlayer = Player.initialize(
-      player.color,
-      player.direction,
-      'doubled',
-      true,
-      player.userId,
-      player.pipCount
-    )
-    const inactivePlayer = opponent as BackgammonPlayerInactive
-    // Create a BackgammonPlayDoubled (for now, reuse activePlay)
-    const activePlay = game.activePlay as any // TODO: ensure correct type
-    return {
-      ...game,
-      stateKind: 'doubling',
-      cube: {
-        ...game.cube,
-        stateKind: 'offered',
-        owner: player,
-        value: game.cube.value
-          ? (game.cube.value as Exclude<typeof game.cube.value, undefined>)
-          : 2,
-        offeredBy: player,
-      },
-      activePlayer,
-      inactivePlayer,
-      activePlay,
-      activeColor: player.color,
-    } as any // TODO: type as BackgammonGameDoubling
-  }
 
   public static canAcceptDouble(
     game: BackgammonGame,
@@ -2020,7 +2071,6 @@ export class Game {
     // Validate game state
     if (
       game.stateKind !== 'rolled' &&
-      game.stateKind !== 'preparing-move' &&
       game.stateKind !== 'moving'
     ) {
       return {
@@ -2303,4 +2353,118 @@ export class Game {
     }
 
   // processRobotTurn method removed - now handled by @nodots-llc/backgammon-robots package
+
+  /**
+   * Get capabilities for rolled state interactions
+   * Determines what actions are available to the player in 'rolled' state
+   */
+  public static getRolledStateCapabilities =
+    function getRolledStateCapabilities(game: BackgammonGameRolled): {
+      canSwitchDice: boolean
+      canDouble: boolean
+      canMove: boolean
+    } {
+      const { activePlayer, activePlay, cube } = game
+
+      // Can switch dice if dice values are different
+      const canSwitchDice =
+        activePlayer.dice?.currentRoll &&
+        activePlayer.dice.currentRoll[0] !== activePlayer.dice.currentRoll[1]
+
+      // Can double if player doesn't own cube, cube isn't maxxed, and cube isn't already offered
+      const canDouble =
+        cube.stateKind !== 'maxxed' &&
+        cube.stateKind !== 'offered' &&
+        (!cube.owner || cube.owner.id !== activePlayer.id) &&
+        (cube.value || 2) < 64
+
+      // Can move if there are moves with ready state and possible moves
+      const canMove = activePlay.moves
+        ? Array.from(activePlay.moves).some(
+            (move) =>
+              move.stateKind === 'ready' &&
+              move.possibleMoves &&
+              move.possibleMoves.length > 0
+          )
+        : false
+
+      return {
+        canSwitchDice: Boolean(canSwitchDice),
+        canDouble,
+        canMove,
+      }
+    }
+
+  /**
+   * Execute doubling action from rolled state (after rolling dice)
+   * Transitions from 'rolled' to 'doubled' state and offers double to opponent
+   */
+  public static double = function double(
+    game: BackgammonGameRolled
+  ): BackgammonGameDoubled {
+    if (game.stateKind !== 'rolled') {
+      throw new Error(`Cannot double from ${game.stateKind} state. Must be in 'rolled' state.`)
+    }
+
+    if (!Game.canOfferDouble(game, game.activePlayer)) {
+      throw new Error('Doubling is not allowed in current game state')
+    }
+
+    const { activePlayer, cube } = game
+
+    // Calculate new cube value - initial doubling sets cube to 2
+    const newValue = (
+      cube.value ? Math.min(cube.value * 2, 64) : 2
+    ) as BackgammonCubeValue
+
+    // Create updated cube in 'offered' state (waiting for opponent response)
+    const updatedCube = {
+      ...cube,
+      stateKind: 'offered' as const,
+      value: newValue,
+      offeredBy: activePlayer,
+    }
+
+    // Convert active player to doubled state
+    const doubledPlayer = {
+      ...activePlayer,
+      stateKind: 'doubled' as const,
+      dice: {
+        ...activePlayer.dice,
+        stateKind: 'rolled' as const,
+      }
+    } as BackgammonPlayerDoubled
+
+    // Update players array
+    const updatedPlayers = game.players.map((p) =>
+      p.id === activePlayer.id ? doubledPlayer : p
+    ) as BackgammonPlayers
+
+    // Update game statistics if they exist
+    const updatedStatistics = game.statistics
+      ? {
+          ...game.statistics,
+          totalDoubles: game.statistics.totalDoubles + 1,
+          cubeHistory: [
+            ...game.statistics.cubeHistory,
+            {
+              turn: game.statistics.totalRolls,
+              value: newValue || 2,
+              offeredBy: activePlayer.color,
+              accepted: false, // Not yet accepted - just offered
+            },
+          ],
+        }
+      : undefined
+
+    // Return game in 'doubled' state (waiting for opponent to accept/refuse)
+    return {
+      ...game,
+      stateKind: 'doubled',
+      cube: updatedCube,
+      players: updatedPlayers,
+      activePlayer: doubledPlayer,
+      statistics: updatedStatistics,
+    } as BackgammonGameDoubled
+  }
 }

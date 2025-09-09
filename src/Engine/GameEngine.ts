@@ -45,13 +45,11 @@ export class GameEngine {
     // Check if state allows moves
     switch (state.stateKind) {
       case 'moving':
-      case 'rolled':
         break
       case 'rolling-for-start':
       case 'rolled-for-start':
       case 'rolling':
-      case 'preparing-move':
-      case 'doubling':
+      case 'rolled':
       case 'doubled':
       case 'moved':
       case 'completed':
@@ -104,8 +102,6 @@ export class GameEngine {
       case 'rolled-for-start':
       case 'rolling':
       case 'rolled':
-      case 'preparing-move':
-      case 'doubling':
       case 'doubled':
       case 'moved':
       case 'completed':
@@ -167,14 +163,12 @@ export class GameEngine {
     currentDie?: number
   } {
     switch (state.stateKind) {
-      case 'rolled':
-      case 'preparing-move':
       case 'moving':
         break
       case 'rolling-for-start':
       case 'rolled-for-start':
       case 'rolling':
-      case 'doubling':
+      case 'rolled':
       case 'doubled':
       case 'moved':
       case 'completed':
