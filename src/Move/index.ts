@@ -87,6 +87,16 @@ export class Move {
         case 'moving':
           // Valid states for moving
           break
+        case 'rolling-for-start':
+        case 'rolled-for-start':
+        case 'rolling':
+        case 'doubled':
+        case 'moved':
+        case 'completed':
+          return {
+            success: false,
+            error: `Game is not in a state where moving is allowed. Current state: ${game.stateKind}`,
+          }
         default:
           return {
             success: false,

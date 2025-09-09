@@ -37,8 +37,7 @@ const createTestGame = {
   
   // Creates game in moving state (simplified - no intermediate states)
   moving: () => {
-    const game = createTestGame.rolled()
-    return Game.toMoving(game)
+    return createTestGame.rolled()
   }
 }
 
@@ -399,10 +398,9 @@ describe('Game', () => {
       )
       // Manually roll for start and then roll to get to rolled state
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
-      const rolledGame = Game.roll(gameAfterRollForStart as any)
 
-      // Simplified flow: rolled -> toMoving (no intermediate states)
-      const movingGame = Game.toMoving(rolledGame)
+      // Direct transition: roll now returns BackgammonGameMoving
+      const movingGame = Game.roll(gameAfterRollForStart as any)
       expect(movingGame.stateKind).toBe('moving')
       expect(movingGame.activePlay.stateKind).toBe('moving')
     })
@@ -418,9 +416,8 @@ describe('Game', () => {
         { userId: 'user2', isRobot: true }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
-      const rolledGame = Game.roll(gameAfterRollForStart as any)
-      // Direct transition: rolled -> moving (no intermediate states)
-      const movingGame = Game.toMoving(rolledGame)
+      // Direct transition: roll now returns BackgammonGameMoving
+      const movingGame = Game.roll(gameAfterRollForStart as any)
       expect(movingGame.stateKind).toBe('moving')
       expect(movingGame.activePlay.stateKind).toBe('moving')
     })
@@ -433,9 +430,9 @@ describe('Game', () => {
         { userId: 'user1', isRobot: true },
         { userId: 'user2', isRobot: true }
       )
-      expect(() => Game.toMoving(rollingGame as any)).toThrow(
-        'Cannot start moving from rolling-for-start state'
-      )
+      // Game.toMoving no longer exists - Game.roll() returns BackgammonGameMoving directly
+      // but this test should still fail if we try to roll from wrong state
+      expect(() => Game.roll(rollingGame as any)).toThrow()
     })
 
     // NOTE: toDoubling error test removed because toDoubling method no longer exists
@@ -449,9 +446,8 @@ describe('Game', () => {
         { userId: 'user2', isRobot: true }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
-      const rolledGame = Game.roll(gameAfterRollForStart as any)
-      // Removed prepareMove - using rolledGame directly
-      const movingGame = Game.toMoving(rolledGame)
+      // Direct transition: roll now returns BackgammonGameMoving
+      const movingGame = Game.roll(gameAfterRollForStart as any)
 
       // Get first available move
       const moves = Array.from(movingGame.activePlay.moves)
