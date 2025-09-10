@@ -352,7 +352,7 @@ export class Move {
             throw new Error(
               `Invalid game state for robot move: ${
                 (game as any).stateKind
-              }. Expected 'rolled' or 'moving'.`
+              }. Expected 'moving'.`
             )
           }
         }

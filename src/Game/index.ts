@@ -454,7 +454,7 @@ export class Game {
       return movingGame
     }
 
-    // DEBUG: This branch generates NEW random dice (should not be called after roll-for-start)
+    // Handle rolling from 'rolling' state (generate new dice)  
     const { players, board, activeColor } = game
     if (!activeColor) throw new Error('Active color must be provided')
     let [activePlayerForColor, inactivePlayerForColor] =
@@ -697,7 +697,6 @@ export class Game {
           `Cannot move from ${(game as any).stateKind} state. Must be in 'moving' state.`
         )
     }
-
     let { activePlay, board } = game
 
     // Check if activePlay exists
