@@ -4,6 +4,7 @@ import {
   BackgammonColor,
   BackgammonDieValue,
   BackgammonPlayerRolled,
+  BackgammonPlayerMoving,
   BackgammonPlayMoving,
   BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
@@ -105,8 +106,14 @@ describe('Stuck Game Reproduction - Game ID f9521db8-0e63-4c16-a5ac-86d77a7132e2
     console.log('Point 1:', board.points.find(p => p.position.clockwise === 1)?.checkers.length || 0, 'white checkers')
     console.log('Off:', board.off.clockwise.checkers.length, 'white checkers')
 
+    // Convert player from rolled to moving state
+    const movingPlayer: BackgammonPlayerMoving = {
+      ...player,
+      stateKind: 'moving' as const
+    }
+
     // Initialize play with doubles [6,6]
-    let play = Play.initialize(board, player)
+    let play = Play.initialize(board, movingPlayer)
     console.log('\n=== Play Initialization ===')
     console.log('Total moves created:', play.moves.size)
     

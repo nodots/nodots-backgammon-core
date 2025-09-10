@@ -5,7 +5,6 @@ import {
   BackgammonDieValue,
   BackgammonGame,
   BackgammonGameMoving,
-  BackgammonGameRolled,
   BackgammonMove,
   BackgammonMoveSkeleton,
   BackgammonPlayerActive,
@@ -49,7 +48,6 @@ export class GameEngine {
       case 'rolling-for-start':
       case 'rolled-for-start':
       case 'rolling':
-      case 'rolled':
       case 'doubled':
       case 'moved':
       case 'completed':
@@ -101,7 +99,6 @@ export class GameEngine {
       case 'rolling-for-start':
       case 'rolled-for-start':
       case 'rolling':
-      case 'rolled':
       case 'doubled':
       case 'moved':
       case 'completed':
@@ -168,7 +165,6 @@ export class GameEngine {
       case 'rolling-for-start':
       case 'rolled-for-start':
       case 'rolling':
-      case 'rolled':
       case 'doubled':
       case 'moved':
       case 'completed':

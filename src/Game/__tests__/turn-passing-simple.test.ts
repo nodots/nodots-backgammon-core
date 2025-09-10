@@ -84,14 +84,14 @@ describe('Game Turn Passing - Core Methods', () => {
     })
   })
 
-  describe('Game.confirmTurnFromMoved()', () => {
+  describe('Game.confirmTurn() from moved state', () => {
     it('should throw error when transitioning from non-moved state', () => {
       const fakeMovingGame = {
         stateKind: 'moving',
       } as any
 
       expect(() => {
-        Game.confirmTurnFromMoved(fakeMovingGame)
+        Game.confirmTurn(fakeMovingGame)
       }).toThrow('Cannot confirm turn from moving state. Must be in \'moved\' state.')
     })
 
@@ -102,7 +102,7 @@ describe('Game Turn Passing - Core Methods', () => {
       } as any
 
       expect(() => {
-        Game.confirmTurnFromMoved(fakeMovedGame)
+        Game.confirmTurn(fakeMovedGame)
       }).toThrow('No active play found')
     })
 
@@ -118,7 +118,7 @@ describe('Game Turn Passing - Core Methods', () => {
       } as unknown as BackgammonGameMoved
 
       expect(() => {
-        Game.confirmTurnFromMoved(fakeMovedGame)
+        Game.confirmTurn(fakeMovedGame)
       }).toThrow('Cannot confirm turn - not all moves are completed')
     })
 
@@ -151,7 +151,7 @@ describe('Game Turn Passing - Core Methods', () => {
         cube: {},
       } as unknown as BackgammonGameMoved
 
-      const result = Game.confirmTurnFromMoved(fakeMovedGame)
+      const result = Game.confirmTurn(fakeMovedGame)
 
       expect(result.stateKind).toBe('rolling')
       expect(result.activeColor).toBe('black') // Should switch to black
@@ -187,7 +187,7 @@ describe('Game Turn Passing - Core Methods', () => {
         cube: {},
       } as unknown as BackgammonGameMoved
 
-      const result = Game.confirmTurnFromMoved(fakeMovedGame)
+      const result = Game.confirmTurn(fakeMovedGame)
 
       expect(result.stateKind).toBe('rolling')
       expect(result.activeColor).toBe('white') // Should switch to white
@@ -228,7 +228,7 @@ describe('Game Turn Passing - Core Methods', () => {
       expect(movedGame.activeColor).toBe('white') // Still white's turn
 
       // Step 2: Confirm turn and transition to next player
-      const nextPlayerGame = Game.confirmTurnFromMoved(movedGame)
+      const nextPlayerGame = Game.confirmTurn(movedGame)
       expect(nextPlayerGame.stateKind).toBe('rolling')
       expect(nextPlayerGame.activeColor).toBe('black') // Now black's turn
       expect(nextPlayerGame.activePlay).toBeUndefined() // Clear activePlay

@@ -215,14 +215,14 @@ describe('Proper Undo Behavior - E2E Proof', () => {
           gameAfterConfirmation = Game.confirmTurn(currentGameState as BackgammonGameMoving)
         } else if (currentGameState.stateKind === 'moved') {
           console.log('🔄 Confirming from moved state...')
-          gameAfterConfirmation = Game.confirmTurnFromMoved(currentGameState as BackgammonGameMoved)
+          gameAfterConfirmation = Game.confirmTurn(currentGameState as BackgammonGameMoved)
         } else {
           throw new Error(`Unexpected game state after making moves: ${currentGameState.stateKind}`)
         }
       }
     } else if (gameReadyToConfirm.stateKind === 'moved') {
       console.log('🔄 Confirming from moved state...')
-      gameAfterConfirmation = Game.confirmTurnFromMoved(gameReadyToConfirm as BackgammonGameMoved)
+      gameAfterConfirmation = Game.confirmTurn(gameReadyToConfirm as BackgammonGameMoved)
     } else {
       throw new Error(`Unexpected game state for confirmation: ${gameReadyToConfirm.stateKind}`)
     }
@@ -336,7 +336,7 @@ describe('Proper Undo Behavior - E2E Proof', () => {
       if (movingGameState.stateKind === 'moving' && Game.canConfirmTurn(movingGameState as BackgammonGameMoving)) {
         gameInRollingState = Game.confirmTurn(movingGameState as BackgammonGameMoving)
       } else if (movingGameState.stateKind === 'moved') {
-        gameInRollingState = Game.confirmTurnFromMoved(movingGameState as BackgammonGameMoved)
+        gameInRollingState = Game.confirmTurn(movingGameState as BackgammonGameMoved)
       }
     }
     
@@ -564,7 +564,7 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     if (gameAfterMove1Again.stateKind === 'moving' && Game.canConfirmTurn(gameAfterMove1Again as BackgammonGameMoving)) {
       gameAfterTurn1 = Game.confirmTurn(gameAfterMove1Again as BackgammonGameMoving)
     } else if (gameAfterMove1Again.stateKind === 'moved') {
-      gameAfterTurn1 = Game.confirmTurnFromMoved(gameAfterMove1Again as BackgammonGameMoved)
+      gameAfterTurn1 = Game.confirmTurn(gameAfterMove1Again as BackgammonGameMoved)
     } else {
       throw new Error(`Cannot confirm turn in state: ${gameAfterMove1Again.stateKind}`)
     }

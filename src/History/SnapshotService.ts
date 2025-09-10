@@ -1019,8 +1019,6 @@ function getDiceStateKind(game: BackgammonGame, color: BackgammonColor): 'inacti
       return 'rolled'
     case 'rolling':
       return 'rolling'
-    case 'rolled':
-      return 'rolled'
     case 'moving':
       return 'moving'
     case 'doubled':

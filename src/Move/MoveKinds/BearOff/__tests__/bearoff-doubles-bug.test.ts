@@ -4,6 +4,7 @@ import {
   BackgammonColor,
   BackgammonDieValue,
   BackgammonPlayerRolled,
+  BackgammonPlayerMoving,
   BackgammonPlayMoving,
   BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
@@ -61,8 +62,14 @@ describe('Bear-off Doubles Bug', () => {
     console.log('Point 5 checkers:', board.points.find(p => p.position.clockwise === 5)?.checkers.length || 0)
     console.log('Off checkers:', board.off.clockwise.checkers.length)
 
+    // Convert player from rolled to moving state
+    const movingPlayer: BackgammonPlayerMoving = {
+      ...player,
+      stateKind: 'moving' as const
+    }
+
     // Initialize the play with doubles [6,6] - should create 4 moves
-    let play = Play.initialize(board, player)
+    let play = Play.initialize(board, movingPlayer)
     console.log('=== After Play.initialize ===')
     console.log('Total moves created:', play.moves.size)
     console.log('Moves:', Array.from(play.moves).map(m => ({ 

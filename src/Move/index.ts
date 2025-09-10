@@ -6,7 +6,6 @@ import {
   BackgammonDieValue,
   BackgammonGame,
   BackgammonGameMoving,
-  BackgammonGameRolled,
   BackgammonMove,
   BackgammonMoveConfirmed,
   BackgammonMoveConfirmedNoMove,
@@ -81,11 +80,10 @@ export class Move {
         hasActivePlay: !!game.activePlay,
       })
 
-      // 2. Validate game state (must be 'rolled' or 'moving')
+      // 2. Validate game state (must be 'moving')
       switch (game.stateKind) {
-        case 'rolled':
         case 'moving':
-          // Valid states for moving
+          // Valid state for moving
           break
         case 'rolling-for-start':
         case 'rolled-for-start':
@@ -93,11 +91,6 @@ export class Move {
         case 'doubled':
         case 'moved':
         case 'completed':
-          return {
-            success: false,
-            error: `Game is not in a state where moving is allowed. Current state: ${game.stateKind}`,
-          }
-        default:
           return {
             success: false,
             error: `Game is not in a state where moving is allowed. Current state: ${game.stateKind}`,
@@ -272,18 +265,13 @@ export class Move {
         let workingGame: BackgammonGameMoving
 
         switch (game.stateKind) {
-          case 'rolled': {
-            // Direct transition: rolled -> moving
-            workingGame = Game.toMoving(game as BackgammonGameRolled)
-            break
-          }
           case 'moving':
             // Already in moving state, no transition needed
             workingGame = game as BackgammonGameMoving
             break
           default:
             throw new Error(
-              `Cannot execute move from ${(game as any).stateKind} state. Must be in rolled or moving state.`
+              `Cannot execute move from ${(game as any).stateKind} state. Must be in moving state.`
             )
         }
 
@@ -348,33 +336,6 @@ export class Move {
         game: BackgammonGame
       ): BackgammonGameMoving => {
         switch (game.stateKind) {
-          case 'rolled': {
-            console.log(
-              '[DEBUG] Robot transitioning from rolled directly to moving state'
-            )
-            try {
-              // Direct transition to moving
-              const movingGame = Game.toMoving(game as BackgammonGameRolled)
-              console.log('[DEBUG] Transition completed:', {
-                newGameState: movingGame.stateKind,
-                newActivePlayState: movingGame.activePlay?.stateKind,
-              })
-              return movingGame
-            } catch (transitionError: unknown) {
-              const errorMessage =
-                transitionError instanceof Error
-                  ? transitionError.message
-                  : 'Unknown error'
-              console.log(
-                '[DEBUG] Robot state transition failed:',
-                errorMessage
-              )
-              throw new Error(
-                `Failed to transition to moving state: ${errorMessage}`
-              )
-            }
-          }
-
           case 'moving': {
             console.log(
               '[DEBUG] Robot: Game already in moving state, no transition needed'
@@ -555,7 +516,7 @@ export class Move {
    */
   private static getPossibleMovesForChecker =
     function getPossibleMovesForChecker(
-      game: BackgammonGameRolled | BackgammonGameMoving,
+      game: BackgammonGameMoving,
       checker: BackgammonChecker,
       origin: BackgammonCheckerContainer
     ): BackgammonMoveReady[] {

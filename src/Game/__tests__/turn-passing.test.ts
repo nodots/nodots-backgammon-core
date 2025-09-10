@@ -169,12 +169,12 @@ describe('Game Turn Passing', () => {
     })
   })
 
-  describe('Game.confirmTurnFromMoved()', () => {
+  describe('Game.confirmTurn() from moved state', () => {
     it('should transition from moved to rolling state for next player', () => {
       const movingGame = createGameWithCompletedMoves()
       const movedGame = Game.toMoved(movingGame)
 
-      const nextTurnGame = Game.confirmTurnFromMoved(movedGame)
+      const nextTurnGame = Game.confirmTurn(movedGame)
 
       expect(nextTurnGame.stateKind).toBe('rolling')
       expect(nextTurnGame.activeColor).toBe('black') // Should switch to black
@@ -189,7 +189,7 @@ describe('Game Turn Passing', () => {
       const movingGame = createGameWithCompletedMoves()
 
       expect(() => {
-        Game.confirmTurnFromMoved(movingGame as any)
+        Game.confirmTurn(movingGame as any)
       }).toThrow(
         "Cannot confirm turn from moving state. Must be in 'moved' state."
       )
@@ -199,7 +199,7 @@ describe('Game Turn Passing', () => {
       // Test white to black transition
       const whiteMovingGame = createGameWithCompletedMoves('white')
       const whiteMovedGame = Game.toMoved(whiteMovingGame)
-      const blackTurnGame = Game.confirmTurnFromMoved(whiteMovedGame)
+      const blackTurnGame = Game.confirmTurn(whiteMovedGame)
 
       expect(blackTurnGame.activeColor).toBe('black')
       expect(blackTurnGame.activePlayer.color).toBe('black')
@@ -208,7 +208,7 @@ describe('Game Turn Passing', () => {
       const blackMovingGame = createGameWithCompletedMoves('black')
 
       const blackMovedGame = Game.toMoved(blackMovingGame)
-      const whiteTurnGame = Game.confirmTurnFromMoved(blackMovedGame)
+      const whiteTurnGame = Game.confirmTurn(blackMovedGame)
 
       expect(whiteTurnGame.activeColor).toBe('white')
       expect(whiteTurnGame.activePlayer.color).toBe('white')
@@ -228,7 +228,7 @@ describe('Game Turn Passing', () => {
       expect(movedGame.activeColor).toBe('white') // Still white's turn until confirmed
 
       // Step 2: Confirm turn (player clicks dice)
-      const nextPlayerGame = Game.confirmTurnFromMoved(movedGame)
+      const nextPlayerGame = Game.confirmTurn(movedGame)
       expect(nextPlayerGame.stateKind).toBe('rolling')
       expect(nextPlayerGame.activeColor).toBe('black') // Now black's turn
       expect(nextPlayerGame.activePlayer.color).toBe('black')
@@ -250,7 +250,7 @@ describe('Game Turn Passing', () => {
 
       // Transition through the states
       const movedGame = Game.toMoved(movingGame)
-      const nextPlayerGame = Game.confirmTurnFromMoved(movedGame)
+      const nextPlayerGame = Game.confirmTurn(movedGame)
 
       // Verify game integrity is maintained
       expect(nextPlayerGame.id).toBe(originalGameId)
