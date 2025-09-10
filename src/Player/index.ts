@@ -50,9 +50,11 @@ export class Player {
   ): BackgammonPlayer {
     const playerId = id || generateId()
     const playerUserId = userId || generateId()
-    
+
     // Determine appropriate dice state based on player stateKind
-    const getDiceForState = (stateKind: BackgammonPlayerStateKind): BackgammonDice => {
+    const getDiceForState = (
+      stateKind: BackgammonPlayerStateKind
+    ): BackgammonDice => {
       switch (stateKind) {
         case 'inactive':
           return Dice.initialize(color)

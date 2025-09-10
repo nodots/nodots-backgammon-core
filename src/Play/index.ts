@@ -9,11 +9,9 @@ import {
   BackgammonMoveReady,
   BackgammonMoves,
   BackgammonPlayerMoving,
-  BackgammonPlayerRolled,
   BackgammonPlayerRolling,
   BackgammonPlayMoving,
   BackgammonPlayResult,
-  BackgammonPlayRolled,
   BackgammonPlayStateKind,
 } from '@nodots-llc/backgammon-types/dist'
 import { Board, generateId } from '..'
@@ -37,12 +35,11 @@ export class Play {
   board!: BackgammonBoard
   player!:
     | BackgammonPlayerRolling
-    | BackgammonPlayerRolled
     | BackgammonPlayerMoving
 
   public static move = function move(
     board: BackgammonBoard,
-    play: BackgammonPlayRolled | BackgammonPlayMoving,
+    play: BackgammonPlayMoving,
     origin: BackgammonMoveOrigin
   ): BackgammonPlayResult {
     const movesArray = Array.from(play.moves)
@@ -284,8 +281,21 @@ export class Play {
 
     const finalMoves = new Set([...updatedOtherMoves, completedMove]) // Add updated moves + completed move
 
+    // Check if all moves are now completed
+    const allMovesCompleted = Array.from(finalMoves).every(
+      (move) => move.stateKind === 'completed'
+    )
+
+    // Update play stateKind to 'moved' when all moves are completed
+    const playStateKind = allMovesCompleted ? 'moved' : 'moving'
+
     return {
-      play: { ...play, moves: finalMoves, board },
+      play: { 
+        ...play, 
+        moves: finalMoves, 
+        board,
+        stateKind: playStateKind as 'moving' | 'moved'
+      },
       board,
       move: completedMove,
     } as BackgammonPlayResult
@@ -293,8 +303,8 @@ export class Play {
 
   public static initialize = function initialize(
     board: BackgammonBoard,
-    player: BackgammonPlayerRolled
-  ): BackgammonPlayRolled {
+    player: BackgammonPlayerMoving
+  ): BackgammonPlayMoving {
     const roll = player.dice.currentRoll
     const movesArr: BackgammonMoveReady[] = []
 
@@ -483,12 +493,12 @@ export class Play {
       board,
       player,
       moves: new Set(movesArr),
-      stateKind: 'rolled',
-    } as BackgammonPlayRolled
+      stateKind: 'moving',
+    } as BackgammonPlayMoving
   }
 
   public static startMove = function startMove(
-    play: BackgammonPlayRolled
+    play: BackgammonPlayMoving
   ): BackgammonPlayMoving {
     logger.debug('[Play] Starting move:', {
       playId: play.id,

@@ -3,7 +3,6 @@ import {
   BackgammonColor,
   BackgammonGame,
   BackgammonGameMoving,
-  BackgammonGameRolled,
   BackgammonPlayer,
 } from '@nodots-llc/backgammon-types/dist'
 import { logger } from '../utils/logger'
@@ -20,9 +19,8 @@ function getPlayerAndOpponent(game: BackgammonGame): {
 
   // EXHAUSTIVE switch on BackgammonGameStateKind for player determination
   switch (game.stateKind) {
-    case 'rolled':
     case 'moving':
-      playerOnRoll = (game as BackgammonGameRolled | BackgammonGameMoving)
+      playerOnRoll = (game as BackgammonGameMoving)
         .activePlayer
       break
 

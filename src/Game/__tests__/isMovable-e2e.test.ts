@@ -146,7 +146,7 @@ describe('isMovable E2E Tests', () => {
           finalGame = gameAfterMove
         }
       } else if (gameAfterMove.stateKind === 'moved') {
-        finalGame = Game.confirmTurnFromMoved(gameAfterMove)
+        finalGame = Game.confirmTurn(gameAfterMove)
       }
 
       // 12. Verify isMovable behavior based on game state

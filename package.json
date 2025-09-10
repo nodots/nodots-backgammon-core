@@ -41,7 +41,6 @@
     "publish:npm": "npm publish --access public"
   },
   "dependencies": {
-    "@nodots-llc/backgammon-ai": "file:../ai",
     "@nodots-llc/backgammon-types": "file:../types",
     "uuid": "^11.1.0"
   },
