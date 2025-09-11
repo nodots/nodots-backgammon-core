@@ -3,7 +3,7 @@ import {
   BackgammonColor,
   BackgammonMoveDirection,
   BackgammonMoveReady,
-  BackgammonPlayerRolled,
+  BackgammonPlayerMoving,
 } from '@nodots-llc/backgammon-types/dist'
 import { PointToPoint } from '..'
 import { generateId } from '../../../../'
@@ -13,7 +13,7 @@ describe('PointToPoint isHit Flag Bug Investigation', () => {
   const createTestPlayer = (
     color: BackgammonColor = 'white',
     direction: BackgammonMoveDirection = 'clockwise'
-  ): BackgammonPlayerRolled => ({
+  ): BackgammonPlayerMoving => ({
     id: generateId(),
     userId: generateId(),
     color: color,

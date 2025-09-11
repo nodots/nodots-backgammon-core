@@ -78,7 +78,7 @@ const createMockGame = (stateKind: string = 'rolling'): BackgammonGame => {
     case 'rolled':
       return {
         ...baseGame,
-        stateKind: 'rolled' as const
+        stateKind: 'moving' as const
       } as unknown as BackgammonGame
     case 'moving':
       return {

@@ -75,7 +75,7 @@ describe('Game Turn Passing', () => {
     // Create a mock moving game
     const movingGame: BackgammonGameMoving = {
       id: 'test-game-id',
-      stateKind: 'moving',
+      stateKind: 'rolled',
       players,
       board,
       cube,
@@ -86,7 +86,7 @@ describe('Game Turn Passing', () => {
       inactivePlayer,
       activePlay: {
         id: 'test-play-id',
-        stateKind: 'moving',
+        stateKind: 'rolled',
         player: activePlayer,
         board,
         moves: new Set([mockMove1, mockMove2]),

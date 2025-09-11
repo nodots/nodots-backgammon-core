@@ -5,7 +5,6 @@ import {
   BackgammonMoveReady,
   BackgammonMoveResult,
   BackgammonPlayerMoving,
-  BackgammonPlayerRolled,
   BackgammonPoint,
 } from '@nodots-llc/backgammon-types/dist'
 import { Board, Player } from '../../..'
@@ -14,7 +13,7 @@ import { logger } from '../../../utils/logger'
 export class BearOff {
   public static isA = function isABearOff(
     board: BackgammonBoard,
-    player: BackgammonPlayerMoving | BackgammonPlayerRolled
+    player: BackgammonPlayerMoving
   ): BackgammonMoveInProgress | false {
     // If there are checkers on the bar, cannot bear off
     const barCheckers = board.bar[player.direction].checkers.filter(

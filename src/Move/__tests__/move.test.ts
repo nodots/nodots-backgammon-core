@@ -11,7 +11,6 @@ import {
   BackgammonMoveSkeleton,
   BackgammonPlayer,
   BackgammonPlayerMoving,
-  BackgammonPlayerRolled,
   BackgammonPoint,
   BackgammonPointValue,
   BackgammonRoll,
@@ -41,7 +40,7 @@ describe('Move', () => {
       currentRoll: roll,
       total: roll[0] + roll[1],
     }
-    const player: BackgammonPlayerRolled = {
+    const player: BackgammonPlayerMoving = {
       id: generateId(),
       userId: generateId(),
       color,
@@ -246,7 +245,7 @@ describe('Move', () => {
       }
       const move: BackgammonMoveReady = {
         id: generateId(),
-        player: inactivePlayer as unknown as BackgammonPlayerRolled, // Type assertion for test
+        player: inactivePlayer as unknown as BackgammonPlayerMoving, // Type assertion for test
         stateKind: 'ready',
         moveKind: 'point-to-point',
         origin: board.points[0],
@@ -413,7 +412,7 @@ describe('Move', () => {
       const { board, player } = setupTest()
       const movingPlayer: BackgammonPlayerMoving = {
         ...player,
-        stateKind: 'moving',
+        stateKind: 'rolled',
       }
       const move: BackgammonMoveInProgress = {
         id: generateId(),
@@ -441,7 +440,7 @@ describe('Move', () => {
         dice: {
           id: 'd1',
           color: 'white' as const,
-          stateKind: 'rolled' as const,
+          stateKind: 'moving' as const,
           currentRoll: [1, 2],
           total: 3,
         },

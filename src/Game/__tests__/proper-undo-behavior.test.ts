@@ -73,7 +73,7 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     console.log('\n📋 PHASE 2: MAKING FIRST MOVE')
     
     // Direct transition to moving (no intermediate states)
-    const movingGame = Game.toMoving(currentGame as any)
+    const movingGame = Game.roll(currentGame as any)
     console.log(`✅ Game in moving state - State: ${movingGame.stateKind}`)
     expect(movingGame.stateKind).toBe('moving')
     console.log(`✅ Game in moving state - State: ${movingGame.stateKind}`)
@@ -154,7 +154,7 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     // Transition back to moving state
     let gameReadyForSecondMove = updatedGameAfterUndo
     if (gameReadyForSecondMove.stateKind !== 'moving') {
-      gameReadyForSecondMove = Game.toMoving(gameReadyForSecondMove as any)
+      gameReadyForSecondMove = Game.roll(gameReadyForSecondMove as any)
     }
     
     expect(gameReadyForSecondMove.stateKind).toBe('moving')
@@ -184,18 +184,19 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     let gameAfterConfirmation: BackgammonGame
     
     if (gameReadyToConfirm.stateKind === 'moving') {
-      // Check if we can confirm the turn
-      const canConfirm = Game.canConfirmTurn(gameReadyToConfirm as BackgammonGameMoving)
-      console.log(`🔍 Can confirm turn: ${canConfirm}`)
+      // First transition to moved state, then confirm
+      console.log('🔄 Transitioning to moved state...')
+      const gameInMovedState = Game.toMoved(gameReadyToConfirm as BackgammonGameMoving)
+      console.log('🔄 Confirming turn from moved state...')
+      gameAfterConfirmation = Game.confirmTurn(gameInMovedState)
+    } else if (gameReadyToConfirm.stateKind === 'moved') {
+      console.log('🔄 Confirming turn from moved state...')
+      gameAfterConfirmation = Game.confirmTurn(gameReadyToConfirm as BackgammonGameMoved)
+    } else {
+      // Make additional moves until we can confirm, or skip to show cross-turn undo blocked
+      console.log('⚠️ Cannot confirm turn yet - making additional moves or transitioning to moved state...')
       
-      if (canConfirm) {
-        console.log('🔄 Confirming from moving state...')
-        gameAfterConfirmation = Game.confirmTurn(gameReadyToConfirm as BackgammonGameMoving)
-      } else {
-        // Make additional moves until we can confirm, or skip to show cross-turn undo blocked
-        console.log('⚠️ Cannot confirm turn yet - making additional moves or transitioning to moved state...')
-        
-        // Try to execute all remaining moves
+      // Try to execute all remaining moves
         let currentGameState: BackgammonGame = gameReadyToConfirm
         while (currentGameState.stateKind === 'moving') {
           const movesArray = Array.from((currentGameState as BackgammonGameMoving).activePlay!.moves)
@@ -333,8 +334,10 @@ describe('Proper Undo Behavior - E2E Proof', () => {
         }
       }
       
-      if (movingGameState.stateKind === 'moving' && Game.canConfirmTurn(movingGameState as BackgammonGameMoving)) {
-        gameInRollingState = Game.confirmTurn(movingGameState as BackgammonGameMoving)
+      if (movingGameState.stateKind === 'moving') {
+        // Transition to moved state, then confirm
+        const movedState = Game.toMoved(movingGameState as BackgammonGameMoving)
+        gameInRollingState = Game.confirmTurn(movedState)
       } else if (movingGameState.stateKind === 'moved') {
         gameInRollingState = Game.confirmTurn(movingGameState as BackgammonGameMoved)
       }
@@ -561,8 +564,10 @@ describe('Proper Undo Behavior - E2E Proof', () => {
     
     // Confirm turn (pass to next player)
     let gameAfterTurn1: BackgammonGame
-    if (gameAfterMove1Again.stateKind === 'moving' && Game.canConfirmTurn(gameAfterMove1Again as BackgammonGameMoving)) {
-      gameAfterTurn1 = Game.confirmTurn(gameAfterMove1Again as BackgammonGameMoving)
+    if (gameAfterMove1Again.stateKind === 'moving') {
+      // Transition to moved state, then confirm
+      const movedState = Game.toMoved(gameAfterMove1Again as BackgammonGameMoving)
+      gameAfterTurn1 = Game.confirmTurn(movedState)
     } else if (gameAfterMove1Again.stateKind === 'moved') {
       gameAfterTurn1 = Game.confirmTurn(gameAfterMove1Again as BackgammonGameMoved)
     } else {

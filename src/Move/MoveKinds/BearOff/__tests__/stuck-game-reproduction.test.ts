@@ -3,7 +3,6 @@ import {
   BackgammonCheckerContainerImport,
   BackgammonColor,
   BackgammonDieValue,
-  BackgammonPlayerRolled,
   BackgammonPlayerMoving,
   BackgammonPlayMoving,
   BackgammonRoll,
@@ -21,7 +20,7 @@ describe('Stuck Game Reproduction - Game ID f9521db8-0e63-4c16-a5ac-86d77a7132e2
   
   const setupStuckGameScenario = (): {
     boardImport: BackgammonCheckerContainerImport[]
-    player: BackgammonPlayerRolled
+    player: BackgammonPlayerMoving
   } => {
     // Setup a more realistic bear-off scenario with a mix of checkers
     // This represents a board state where a player is in bear-off phase
@@ -68,7 +67,7 @@ describe('Stuck Game Reproduction - Game ID f9521db8-0e63-4c16-a5ac-86d77a7132e2
       },
     ]
 
-    const player: BackgammonPlayerRolled = {
+    const player: BackgammonPlayerMoving = {
       id: generateId(),
       userId: generateId(),
       color: 'white',

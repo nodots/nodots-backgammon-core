@@ -3,7 +3,7 @@ import {
   BackgammonCubeDoubled,
   BackgammonCubeInitialized,
   BackgammonPlayerInactive,
-  BackgammonPlayerRolled,
+  BackgammonPlayerMoving,
   BackgammonPlayers,
   BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
@@ -18,16 +18,16 @@ describe('Cube', () => {
     cube = Cube.initialize({})
     const clockwiseColor = randomBackgammonColor()
     const counterclockwiseColor = clockwiseColor === 'white' ? 'black' : 'white'
-    const player: BackgammonPlayerRolled = {
+    const player: BackgammonPlayerMoving = {
       id: generateId(),
       userId: generateId(),
-      stateKind: 'rolled',
+      stateKind: 'moving',
       color: clockwiseColor,
       direction: 'clockwise',
       dice: {
         id: generateId(),
         color: clockwiseColor,
-        stateKind: 'rolled',
+        stateKind: 'moving',
         currentRoll: [1, 2] as BackgammonRoll,
         total: 3,
       },
@@ -66,16 +66,16 @@ describe('Cube', () => {
     const clockwiseColor = randomBackgammonColor()
     const counterclockwiseColor = clockwiseColor === 'white' ? 'black' : 'white'
 
-    const player: BackgammonPlayerRolled = {
+    const player: BackgammonPlayerMoving = {
       id: generateId(),
       userId: generateId(),
-      stateKind: 'rolled',
+      stateKind: 'moving',
       color: clockwiseColor,
       direction: 'clockwise',
       dice: {
         id: generateId(),
         color: clockwiseColor,
-        stateKind: 'rolled',
+        stateKind: 'moving',
         currentRoll: [1, 2] as BackgammonRoll,
         total: 3,
       },
@@ -109,16 +109,16 @@ describe('Cube', () => {
   it('should double the value each time until it reaches 64', () => {
     const clockwiseColor = randomBackgammonColor()
     const counterclockwiseColor = clockwiseColor === 'white' ? 'black' : 'white'
-    const player: BackgammonPlayerRolled = {
+    const player: BackgammonPlayerMoving = {
       id: generateId(),
       userId: generateId(),
-      stateKind: 'rolled',
+      stateKind: 'moving',
       color: clockwiseColor,
       direction: 'clockwise',
       dice: {
         id: generateId(),
         color: clockwiseColor,
-        stateKind: 'rolled',
+        stateKind: 'moving',
         currentRoll: [1, 2] as BackgammonRoll,
         total: 3,
       },

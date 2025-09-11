@@ -4,9 +4,10 @@ import {
   BackgammonCheckerContainerImport,
   BackgammonDiceInactive,
   BackgammonMoveCompletedWithMove,
-  BackgammonPlayerRolled,
+  BackgammonPlayerMoving,
   BackgammonPlayerRolling,
   BackgammonPlayRolled,
+  BackgammonPlayMoving,
   BackgammonPoint,
 } from '@nodots-llc/backgammon-types/dist'
 import { Play } from '..'
@@ -53,7 +54,7 @@ function createRollingPlayer(board: any, diceRoll: [number, number]) {
     'rolling',
     false
   ) as BackgammonPlayerRolling
-  const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
+  const rolledPlayer = Player.roll(player) as BackgammonPlayerMoving
   rolledPlayer.dice.currentRoll = diceRoll as any
   return rolledPlayer
 }
@@ -73,7 +74,6 @@ describe('Play', () => {
       ]
 
       const board = Board.initialize(boardImport)
-      const inactiveDice = Dice.initialize('white') as BackgammonDiceInactive
       const player = Player.initialize(
         'white',
         'clockwise',
@@ -81,11 +81,12 @@ describe('Play', () => {
         false
       ) as BackgammonPlayerRolling
 
-      const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
-      const play = Play.initialize(board, rolledPlayer)
+      const rolledPlayer = Player.roll(player)
+      const movingPlayer = Player.toMoving(rolledPlayer)
+      const play = Play.initialize(board, movingPlayer)
 
       expect(play).toBeDefined()
-      expect(play.stateKind).toBe('rolled')
+      expect(play.stateKind).toBe('moving')
       expect(play.moves).toBeDefined()
       expect(play.moves.size).toBeGreaterThan(0)
 
@@ -105,16 +106,19 @@ describe('Play', () => {
         'rolling',
         false
       ) as BackgammonPlayerRolling
-      const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
-      const play = Play.initialize(board, rolledPlayer)
+      const rolledPlayer = Player.roll(player) as BackgammonPlayerMoving
+      const movingPlayer = Player.toMoving(rolledPlayer)
+      const play = Play.initialize(board, movingPlayer)
       expect(play.moves.size).toBe(4)
       const moveKinds = Array.from(play.moves).map((m: any) => m.moveKind)
-      // ✅ FIXED: With proper bear-off classification, moves from higher points (2,3,4,5,6) 
+      // ✅ FIXED: With proper bear-off classification, moves from higher points (2,3,4,5,6)
       // with die value 1 are correctly classified as 'point-to-point', not 'bear-off'
       // Only moves from point 1 with die value 1 would be true bear-off moves.
-      expect(moveKinds.every((k) => k === 'bear-off' || k === 'no-move' || k === 'point-to-point')).toBe(
-        true
-      )
+      expect(
+        moveKinds.every(
+          (k) => k === 'bear-off' || k === 'no-move' || k === 'point-to-point'
+        )
+      ).toBe(true)
       // Print the ASCII board after a successful test
       // eslint-disable-next-line no-console
       console.log(
@@ -155,7 +159,7 @@ describe('Play', () => {
     //     'rolling'
     //   ) as BackgammonPlayerRolling
 
-    //   const rolledPlayer = Player.roll(player) as BackgammonPlayerRolled
+    //   const rolledPlayer = Player.roll(player) as BackgammonPlayerMoving
     //   const play = Play.initialize(board, rolledPlayer)
 
     //   // For doubles, should have 4 moves (all 'no-move' since all reentry points are blocked)
@@ -171,14 +175,17 @@ describe('Play', () => {
     test('should generate normal board moves when no checkers on bar', () => {
       const board = createTestBoard()
       const rolledPlayer = createRollingPlayer(board, [1, 2])
-      const play = Play.initialize(board, rolledPlayer)
+      const movingPlayer = Player.toMoving(rolledPlayer)
+      const play = Play.initialize(board, movingPlayer)
       expect(play.moves.size).toBe(2)
       const moveKinds = Array.from(play.moves).map((m: any) => m.moveKind)
       // ✅ FIXED: With [1,2] dice on a home board with checkers on points 1-6,
       // the algorithm selects moves that go point-to-point (not exact bear-off matches).
       // True bear-off would only occur for exact die-value-to-point matches.
       // This test should verify that valid moves are generated, not expect bear-off classification.
-      const hasValidMoves = moveKinds.every((k) => k === 'bear-off' || k === 'point-to-point' || k === 'no-move')
+      const hasValidMoves = moveKinds.every(
+        (k) => k === 'bear-off' || k === 'point-to-point' || k === 'no-move'
+      )
       expect(hasValidMoves).toBe(true)
       // Print the ASCII board after a successful test
       // Only print if the assertion passes
@@ -192,14 +199,17 @@ describe('Play', () => {
     test('should handle doubles correctly for normal board positions', () => {
       const board = createTestBoard()
       const rolledPlayer = createRollingPlayer(board, [1, 1])
-      const play = Play.initialize(board, rolledPlayer)
+      const movingPlayer = Player.toMoving(rolledPlayer)
+      const play = Play.initialize(board, movingPlayer)
       expect(play.moves.size).toBe(4)
       const moveKinds = Array.from(play.moves).map((m: any) => m.moveKind)
       // ✅ FIXED: With [1,1] doubles on a home board with checkers on points 1-6,
       // the algorithm distributes moves across available origins. Since there are checkers
-      // on higher points (2,3,4,5,6), moves from these points with die value 1 are 
+      // on higher points (2,3,4,5,6), moves from these points with die value 1 are
       // correctly classified as 'point-to-point', not 'bear-off'.
-      const hasValidMoves = moveKinds.every((k) => k === 'bear-off' || k === 'point-to-point' || k === 'no-move')
+      const hasValidMoves = moveKinds.every(
+        (k) => k === 'bear-off' || k === 'point-to-point' || k === 'no-move'
+      )
       expect(hasValidMoves).toBe(true)
       // Print the ASCII board after a successful test
       // eslint-disable-next-line no-console
@@ -245,9 +255,10 @@ describe('Play', () => {
           currentRoll: [1, 2],
           total: 3,
         },
-      } as BackgammonPlayerRolled
+      } as BackgammonPlayerMoving
 
-      const play = Play.initialize(board, rolledPlayer) as BackgammonPlayRolled
+      const movingPlayer = Player.toMoving(rolledPlayer)
+      const play = Play.initialize(board, movingPlayer) as BackgammonPlayMoving
 
       const origin = board.points.find(
         (p) => p.position.clockwise === 6 && p.position.counterclockwise === 19
@@ -324,12 +335,13 @@ describe('Play', () => {
             currentRoll: [6, 1],
             total: 7,
           },
-        } as BackgammonPlayerRolled
+        } as BackgammonPlayerMoving
 
+        const movingPlayer = Player.toMoving(rolledPlayer)
         const play = Play.initialize(
           board,
-          rolledPlayer
-        ) as BackgammonPlayRolled
+          movingPlayer
+        ) as BackgammonPlayMoving
         const origin = board.bar.clockwise as BackgammonBar
 
         const result = Play.move(board, play, origin)
@@ -390,7 +402,7 @@ describe('Play', () => {
   //     ) as BackgammonPlayerRolling
   //     const rolledPlayerDoubles = Player.roll(
   //       playerDoubles
-  //     ) as BackgammonPlayerRolled
+  //     ) as BackgammonPlayerMoving
   //     const playDoubles = Play.initialize(boardDoubles, rolledPlayerDoubles)
   //     const movesDoubles = Array.from(playDoubles.moves)
   //     console.log(
@@ -435,7 +447,7 @@ describe('Play', () => {
   //     ) as BackgammonPlayerRolling
   //     const rolledPlayerNonDoubles = Player.roll(
   //       playerNonDoubles
-  //     ) as BackgammonPlayerRolled
+  //     ) as BackgammonPlayerMoving
   //     const playNonDoubles = Play.initialize(
   //       boardNonDoubles,
   //       rolledPlayerNonDoubles
@@ -472,10 +484,11 @@ describe('Play.initialize edge cases', () => {
     const board = Board.initialize(bearOffBoardImport)
 
     // Create a player with [3,3] roll
-    const player = createRollingPlayer(board, [3, 3])
+    const rolledPlayer = createRollingPlayer(board, [3, 3])
+    const movingPlayer = Player.toMoving(rolledPlayer)
 
     // Initialize the play
-    const play = Play.initialize(board, player)
+    const play = Play.initialize(board, movingPlayer)
 
     // Should have 4 moves for doubles
     expect(play.moves.size).toBe(4)

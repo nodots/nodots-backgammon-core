@@ -6,7 +6,7 @@ import {
   BackgammonMoveCompleted,
   BackgammonMoveDirection,
   BackgammonMoveReady,
-  BackgammonPlayerRolled,
+  BackgammonPlayerMoving,
   BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
 import { Reenter } from '.'
@@ -16,7 +16,7 @@ import { Board } from '../../../Board'
 describe('Reenter', () => {
   describe('move', () => {
     let board: BackgammonBoard
-    let player: BackgammonPlayerRolled
+    let player: BackgammonPlayerMoving
 
     beforeEach(() => {
       board = Board.initialize()

@@ -6,7 +6,7 @@ import {
   BackgammonDieValue,
   BackgammonMoveDirection,
   BackgammonMoveReady,
-  BackgammonPlayerRolled,
+  BackgammonPlayerMoving,
   BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
 import { PointToPoint } from '..'
@@ -32,7 +32,7 @@ describe('PointToPoint', () => {
       currentRoll,
       total: 2,
     }
-    const player: BackgammonPlayerRolled = {
+    const player: BackgammonPlayerMoving = {
       id: generateId(),
       userId: generateId(),
       color: color,

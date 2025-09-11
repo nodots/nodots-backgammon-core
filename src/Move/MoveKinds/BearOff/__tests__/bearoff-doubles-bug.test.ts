@@ -3,7 +3,6 @@ import {
   BackgammonCheckerContainerImport,
   BackgammonColor,
   BackgammonDieValue,
-  BackgammonPlayerRolled,
   BackgammonPlayerMoving,
   BackgammonPlayMoving,
   BackgammonRoll,
@@ -13,7 +12,7 @@ import { Board, generateId, Play } from '../../../../'
 describe('Bear-off Doubles Bug', () => {
   const setupBearOffBoard = (): {
     boardImport: BackgammonCheckerContainerImport[]
-    player: BackgammonPlayerRolled
+    player: BackgammonPlayerMoving
   } => {
     // Setup a board in bear-off phase with multiple checkers on position 6
     // This should allow for multiple bear-off moves with 6s
@@ -32,14 +31,14 @@ describe('Bear-off Doubles Bug', () => {
       },
     ]
 
-    const player: BackgammonPlayerRolled = {
+    const player: BackgammonPlayerMoving = {
       id: generateId(),
       userId: generateId(),
       color: 'white',
-      stateKind: 'rolled',
+      stateKind: 'moving',
       dice: {
         id: generateId(),
-        stateKind: 'rolled',
+        stateKind: 'moving',
         currentRoll: [6, 6] as BackgammonRoll, // Doubles 6,6 = 4 moves
         total: 24,
         color: 'white' as BackgammonColor,

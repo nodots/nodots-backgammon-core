@@ -5,7 +5,7 @@ import {
   BackgammonDieValue,
   BackgammonMoveDirection,
   BackgammonMoveReady,
-  BackgammonPlayerRolled,
+  BackgammonPlayerMoving,
   BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
 import { BearOff } from '.'
@@ -15,7 +15,7 @@ import { Board } from '../../../Board'
 describe('BearOff', () => {
   describe('move', () => {
     let board: BackgammonBoard
-    let player: BackgammonPlayerRolled
+    let player: BackgammonPlayerMoving
 
     beforeEach(() => {
       board = Board.initialize()

@@ -3,7 +3,7 @@ import {
   BackgammonCheckerContainerImport,
   BackgammonColor,
   BackgammonDieValue,
-  BackgammonPlayerRolled,
+  BackgammonPlayerMoving,
   BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
 import { Board, generateId } from '../../../../'
@@ -23,7 +23,7 @@ describe('Bear-off possibleMoves Recalculation Bug', () => {
       },
     ]
 
-    const player: BackgammonPlayerRolled = {
+    const player: BackgammonPlayerMoving = {
       id: generateId(),
       userId: generateId(),
       color: 'white',
@@ -151,7 +151,7 @@ describe('Bear-off possibleMoves Recalculation Bug', () => {
       },
     ]
     
-    const player: BackgammonPlayerRolled = {
+    const player: BackgammonPlayerMoving = {
       id: generateId(),
       userId: generateId(),
       color: 'white',

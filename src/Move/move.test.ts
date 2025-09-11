@@ -3,7 +3,7 @@ import {
   BackgammonDiceRolled,
   BackgammonMoveDirection,
   BackgammonMoveReady,
-  BackgammonPlayerRolled,
+  BackgammonPlayerMoving,
   BackgammonPoint,
   BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
@@ -14,18 +14,18 @@ import { Board } from '../Board'
 describe('Move', () => {
   describe('initialize', () => {
     it('should initialize a move with default values', () => {
-      const player: BackgammonPlayerRolled = {
+      const player: BackgammonPlayerMoving = {
         id: generateId(),
         userId: generateId(),
         color: 'black' as BackgammonColor,
         direction: 'clockwise' as BackgammonMoveDirection,
-        stateKind: 'rolled',
+        stateKind: 'moving',
         pipCount: 167,
         rollForStartValue: 3,
         dice: {
           id: generateId(),
           color: 'black',
-          stateKind: 'rolled',
+          stateKind: 'moving',
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
@@ -56,18 +56,18 @@ describe('Move', () => {
 
   describe('isPointOpen', () => {
     it('should return true for empty point', () => {
-      const player: BackgammonPlayerRolled = {
+      const player: BackgammonPlayerMoving = {
         id: generateId(),
         userId: generateId(),
         color: 'black',
         direction: 'clockwise',
-        stateKind: 'rolled',
+        stateKind: 'moving',
         pipCount: 167,
         rollForStartValue: 3,
         dice: {
           id: generateId(),
           color: 'black',
-          stateKind: 'rolled',
+          stateKind: 'moving',
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
@@ -88,18 +88,18 @@ describe('Move', () => {
     })
 
     it('should return true for point with one checker of different color', () => {
-      const player: BackgammonPlayerRolled = {
+      const player: BackgammonPlayerMoving = {
         id: generateId(),
         userId: generateId(),
         color: 'black',
         direction: 'clockwise',
-        stateKind: 'rolled',
+        stateKind: 'moving',
         pipCount: 167,
         rollForStartValue: 3,
         dice: {
           id: generateId(),
           color: 'black',
-          stateKind: 'rolled',
+          stateKind: 'moving',
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
@@ -127,18 +127,18 @@ describe('Move', () => {
     })
 
     it('should return true for point with multiple checkers of same color', () => {
-      const player: BackgammonPlayerRolled = {
+      const player: BackgammonPlayerMoving = {
         id: generateId(),
         userId: generateId(),
         color: 'black',
         direction: 'clockwise',
-        stateKind: 'rolled',
+        stateKind: 'moving',
         pipCount: 167,
         rollForStartValue: 3,
         dice: {
           id: generateId(),
           color: 'black',
-          stateKind: 'rolled',
+          stateKind: 'moving',
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
@@ -172,18 +172,18 @@ describe('Move', () => {
     })
 
     it('should return false for point with multiple checkers of different color', () => {
-      const player: BackgammonPlayerRolled = {
+      const player: BackgammonPlayerMoving = {
         id: generateId(),
         userId: generateId(),
         color: 'black',
         direction: 'clockwise',
-        stateKind: 'rolled',
+        stateKind: 'moving',
         pipCount: 167,
         rollForStartValue: 3,
         dice: {
           id: generateId(),
           color: 'black',
-          stateKind: 'rolled',
+          stateKind: 'moving',
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,

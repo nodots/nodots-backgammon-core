@@ -245,18 +245,18 @@ describe('Game.undoLastMove', () => {
         expect(player.pipCount).toBeGreaterThan(0)
       })
 
-      // BACKGAMMON RULES: When all moves are undone, game should transition back to 'rolled' state
+      // BACKGAMMON RULES: When all moves are undone, game should transition back to 'moving' state
       // Player should NOT be able to roll dice again - they must use the same dice values
-      if (result.game.stateKind === 'rolled') {
-        expect(result.game.stateKind).toBe('rolled')
+      if (result.game.stateKind === 'moving') {
+        expect(result.game.stateKind).toBe('moving')
         // CRITICAL: activePlay should be preserved (not null) to enable continued play after undo
         expect(result.game.activePlay).toBeDefined()
-        // Verify dice are in 'rolled' state with preserved values
+        // Verify dice are in 'moving' state with preserved values
         const activePlayer = result.game.players.find(
-          (p) => p.stateKind === 'rolled'
+          (p) => p.stateKind === 'moving'
         )
         expect(activePlayer).toBeDefined()
-        expect(activePlayer!.dice?.stateKind).toBe('rolled')
+        expect(activePlayer!.dice?.stateKind).toBe('moving')
         expect(activePlayer!.dice?.currentRoll).toBeDefined()
         expect(activePlayer!.dice?.currentRoll).toHaveLength(2)
       } else {
@@ -297,7 +297,7 @@ describe('Game.undoLastMove', () => {
     // STEP 2: Transition to moving state and make a move
     console.log('\n📍 STEP 2: Transitioning to moving state...')
 
-    const movingGame = Game.toMoving(currentGame as any)
+    const movingGame = currentGame
     console.log(`   Moving state: ${movingGame.stateKind}`)
 
     // STEP 3: Make an actual move
@@ -405,10 +405,10 @@ describe('Game.undoLastMove', () => {
       // Ensure game is in moving state for the move
       let gameReadyToMove = updatedGame
       if (gameReadyToMove.stateKind !== 'moving') {
-        if (gameReadyToMove.stateKind === 'rolled') {
-          gameReadyToMove = Game.toMoving(gameReadyToMove as any)
+        if (gameReadyToMove.stateKind === 'moving') {
+          // Already in moving state
           console.log(
-            `   Transitioned to moving state: ${gameReadyToMove.stateKind}`
+            `   Already in moving state: ${gameReadyToMove.stateKind}`
           )
         } else {
           throw new Error(
@@ -447,8 +447,8 @@ describe('Game.undoLastMove', () => {
 
     // Assertions to verify the test passes
     expect(undoResult.success).toBe(true)
-    expect(gameAfterUndo.stateKind).toBe('rolled')
-    expect(gameAfterUndo.activePlayer?.dice?.stateKind).toBe('rolled')
+    expect(gameAfterUndo.stateKind).toBe('moving')
+    expect(gameAfterUndo.activePlayer?.dice?.stateKind).toBe('moving')
     expect(gameAfterUndo.activePlayer?.dice?.currentRoll).toHaveLength(2)
     expect(possibleMovesResult.success).toBe(true)
     expect(possibleMovesResult.possibleMoves).toBeDefined()

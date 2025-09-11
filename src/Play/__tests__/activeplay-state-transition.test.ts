@@ -16,7 +16,7 @@ describe('ActivePlay stateKind transition to moved', () => {
       userId: generateId(),
       color: 'white',
       direction: 'clockwise',
-      stateKind: 'moving',
+      stateKind: 'rolled',
       dice: {
         id: generateId(),
         stateKind: 'rolled',
@@ -114,7 +114,7 @@ describe('ActivePlay stateKind transition to moved', () => {
       userId: generateId(),
       color: 'black',
       direction: 'counterclockwise',
-      stateKind: 'moving',
+      stateKind: 'rolled',
       dice: {
         id: generateId(),
         stateKind: 'rolled',

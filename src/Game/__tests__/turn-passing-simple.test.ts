@@ -57,7 +57,7 @@ describe('Game Turn Passing - Core Methods', () => {
         // Copy other required properties
         id: 'test-id',
         players: [
-          { color: 'white', stateKind: 'moving', dice: { stateKind: 'rolled' }, direction: 'clockwise' },
+          { color: 'white', stateKind: 'moving', dice: { stateKind: 'moving' }, direction: 'clockwise' },
           { color: 'black', stateKind: 'inactive', dice: { stateKind: 'inactive' }, direction: 'counterclockwise' },
         ],
         board: {
@@ -134,7 +134,7 @@ describe('Game Turn Passing - Core Methods', () => {
         id: 'test-id',
         activeColor: 'white',
         players: [
-          { color: 'white', stateKind: 'moved', dice: { stateKind: 'rolled' }, direction: 'clockwise' },
+          { color: 'white', stateKind: 'moved', dice: { stateKind: 'moving' }, direction: 'clockwise' },
           { color: 'black', stateKind: 'inactive', dice: { stateKind: 'inactive' }, direction: 'counterclockwise' },
         ],
         board: { 
@@ -171,7 +171,7 @@ describe('Game Turn Passing - Core Methods', () => {
         activeColor: 'black', // Start with black
         players: [
           { color: 'white', stateKind: 'inactive', dice: { stateKind: 'inactive' }, direction: 'clockwise' },
-          { color: 'black', stateKind: 'moved', dice: { stateKind: 'rolled' }, direction: 'counterclockwise' },
+          { color: 'black', stateKind: 'moved', dice: { stateKind: 'moving' }, direction: 'counterclockwise' },
         ],
         board: { 
           points: [],
@@ -205,7 +205,7 @@ describe('Game Turn Passing - Core Methods', () => {
         id: 'test-id',
         activeColor: 'white',
         players: [
-          { color: 'white', stateKind: 'moving', dice: { stateKind: 'rolled' }, direction: 'clockwise' },
+          { color: 'white', stateKind: 'moving', dice: { stateKind: 'moving' }, direction: 'clockwise' },
           { color: 'black', stateKind: 'inactive', dice: { stateKind: 'inactive' }, direction: 'counterclockwise' },
         ],
         board: { 

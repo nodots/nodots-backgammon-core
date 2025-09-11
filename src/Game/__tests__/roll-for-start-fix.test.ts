@@ -23,11 +23,11 @@ describe('Game.roll() for rolled-for-start state', () => {
     // Now call Game.roll() on the rolled-for-start game
     const rolledGame = Game.roll(gameWithRollForStart)
 
-    // Verify the game transitioned to 'rolled' state
-    expect(rolledGame.stateKind).toBe('rolled')
+    // Verify the game transitioned to 'moving' state
+    expect(rolledGame.stateKind).toBe('moving')
     
-    // Verify the active player is in 'rolled' state
-    expect(rolledGame.activePlayer.stateKind).toBe('rolled')
+    // Verify the active player is in 'moving' state
+    expect(rolledGame.activePlayer.stateKind).toBe('moving')
     
     // Verify the active player has dice combining both roll-for-start values
     const expectedDiceTotal = gameWithRollForStart.activePlayer.rollForStartValue + gameWithRollForStart.inactivePlayer.rollForStartValue
@@ -47,6 +47,6 @@ describe('Game.roll() for rolled-for-start state', () => {
     
     // Verify activePlay was created
     expect(rolledGame.activePlay).toBeDefined()
-    expect(rolledGame.activePlay.stateKind).toBe('rolled')
+    expect(rolledGame.activePlay.stateKind).toBe('moving')
   })
 })

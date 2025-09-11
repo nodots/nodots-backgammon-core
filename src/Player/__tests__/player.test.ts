@@ -102,7 +102,7 @@ describe('Player', () => {
       ) as BackgammonPlayerRolling
       const rolledPlayer = Player.roll(rollingPlayer)
 
-      expect(rolledPlayer.stateKind).toBe('rolled')
+      expect(rolledPlayer.stateKind).toBe('moving')
       expect(
         (rolledPlayer.dice as BackgammonDiceRolled).currentRoll
       ).toBeDefined()
@@ -211,7 +211,7 @@ describe('Player', () => {
           player: playerMoving,
           board,
           moves,
-          stateKind: 'moving',
+          stateKind: 'rolled',
         }
       const move = await Player.getBestMove(playMoving)
       expect(move).toBeDefined()
@@ -232,7 +232,7 @@ describe('Player', () => {
           player: playerMoving,
           board,
           moves: new Set<BackgammonMoveReady>(),
-          stateKind: 'moving',
+          stateKind: 'rolled',
         }
       const move = await Player.getBestMove(playMoving)
       expect(move).toBeUndefined()
@@ -284,7 +284,7 @@ describe('Player', () => {
   //       player: playerMoving,
   //       board,
   //       moves,
-  //       stateKind: 'moving',
+  //       stateKind: 'rolled',
   //     }
   //   })
 
