@@ -42,7 +42,6 @@ export * from './History'
 export * from './Move'
 export * from './Play'
 export * from './Player'
-// Engine module removed - use Game class static methods directly
 export * from './Services'
 
 // Export logger utilities for consumers to configure
