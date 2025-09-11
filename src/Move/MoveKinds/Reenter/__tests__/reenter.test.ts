@@ -26,7 +26,7 @@ describe('Reenter', () => {
     const rolledDice = {
       ...dice,
       id: diceId,
-      stateKind: 'moving' as const,
+      stateKind: 'rolled' as const,
       currentRoll: roll,
       total: roll[0] + roll[1],
     }
@@ -34,7 +34,7 @@ describe('Reenter', () => {
       id: generateId(),
       userId: generateId(),
       color,
-      stateKind: 'rolled',
+      stateKind: 'moving',
       dice: rolledDice,
       direction,
       pipCount: 167,

@@ -17,7 +17,7 @@ describe('PointToPoint isHit Flag Bug Investigation', () => {
     id: generateId(),
     userId: generateId(),
     color: color,
-    stateKind: 'rolled',
+    stateKind: 'moving',
     dice: {
       id: generateId(),
       stateKind: 'rolled',

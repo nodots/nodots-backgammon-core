@@ -243,7 +243,7 @@ describe('Player rollForStartValue functionality', () => {
       // Transition to moving
       const movingPlayer = Player.toMoving({
         ...rollingPlayer,
-        stateKind: 'rolled',
+        stateKind: 'moving',
         dice: {
           ...rollingPlayer.dice,
           stateKind: 'rolled',

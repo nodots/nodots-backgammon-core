@@ -61,7 +61,7 @@ describe('BearOff', () => {
       id: generateId(),
       userId: generateId(),
       color: 'white',
-      stateKind: 'rolled',
+      stateKind: 'moving',
       dice: {
         id: generateId(),
         stateKind: 'rolled',

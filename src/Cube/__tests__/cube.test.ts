@@ -27,7 +27,7 @@ describe('Cube', () => {
       dice: {
         id: generateId(),
         color: clockwiseColor,
-        stateKind: 'moving',
+        stateKind: 'rolled',
         currentRoll: [1, 2] as BackgammonRoll,
         total: 3,
       },
@@ -75,7 +75,7 @@ describe('Cube', () => {
       dice: {
         id: generateId(),
         color: clockwiseColor,
-        stateKind: 'moving',
+        stateKind: 'rolled',
         currentRoll: [1, 2] as BackgammonRoll,
         total: 3,
       },
@@ -118,7 +118,7 @@ describe('Cube', () => {
       dice: {
         id: generateId(),
         color: clockwiseColor,
-        stateKind: 'moving',
+        stateKind: 'rolled',
         currentRoll: [1, 2] as BackgammonRoll,
         total: 3,
       },

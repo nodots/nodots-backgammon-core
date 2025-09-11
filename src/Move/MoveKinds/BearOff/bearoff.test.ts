@@ -24,7 +24,7 @@ describe('BearOff', () => {
         userId: generateId(),
         color: 'black' as BackgammonColor,
         direction: 'clockwise' as BackgammonMoveDirection,
-        stateKind: 'rolled',
+        stateKind: 'moving',
         pipCount: 167,
         dice: {
           id: generateId(),

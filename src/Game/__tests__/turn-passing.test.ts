@@ -75,7 +75,7 @@ describe('Game Turn Passing', () => {
     // Create a mock moving game
     const movingGame: BackgammonGameMoving = {
       id: 'test-game-id',
-      stateKind: 'rolled',
+      stateKind: 'moving',
       players,
       board,
       cube,
@@ -86,7 +86,7 @@ describe('Game Turn Passing', () => {
       inactivePlayer,
       activePlay: {
         id: 'test-play-id',
-        stateKind: 'rolled',
+        stateKind: 'moving',
         player: activePlayer,
         board,
         moves: new Set([mockMove1, mockMove2]),
@@ -191,7 +191,7 @@ describe('Game Turn Passing', () => {
       expect(() => {
         Game.confirmTurn(movingGame as any)
       }).toThrow(
-        "Cannot confirm turn from moving state. Must be in 'moved' state."
+        "Cannot confirm turn from non-moving state"
       )
     })
 

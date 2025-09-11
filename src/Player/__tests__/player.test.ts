@@ -211,7 +211,7 @@ describe('Player', () => {
           player: playerMoving,
           board,
           moves,
-          stateKind: 'rolled',
+          stateKind: 'moving',
         }
       const move = await Player.getBestMove(playMoving)
       expect(move).toBeDefined()
@@ -232,7 +232,7 @@ describe('Player', () => {
           player: playerMoving,
           board,
           moves: new Set<BackgammonMoveReady>(),
-          stateKind: 'rolled',
+          stateKind: 'moving',
         }
       const move = await Player.getBestMove(playMoving)
       expect(move).toBeUndefined()

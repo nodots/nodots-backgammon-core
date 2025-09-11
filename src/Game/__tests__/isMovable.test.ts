@@ -1,5 +1,4 @@
 import { Game } from '../index'
-import { BackgammonGameMoving } from '@nodots-llc/backgammon-types/dist'
 
 describe('isMovable attribute', () => {
   it('should set isMovable to true for checkers that can be moved after rolling dice', () => {
@@ -11,22 +10,27 @@ describe('isMovable attribute', () => {
 
     // Game should be in rolling-for-start state
     if (game.stateKind !== 'rolling-for-start') {
-      throw new Error('Game should be in rolling-for-start state, got: ' + game.stateKind)
+      throw new Error(
+        'Game should be in rolling-for-start state, got: ' + game.stateKind
+      )
     }
 
     // Roll for start
     const rolledForStart = Game.rollForStart(game)
-    
+
     // Roll the dice
-    const rolledGame = Game.roll(rolledForStart) as BackgammonGameRolled;
+    const movingGame = Game.roll(rolledForStart)
 
     // Get all movable container IDs from activePlay.moves
     const movableContainerIds: string[] = []
-    const movesArray = Array.from(rolledGame.activePlay.moves)
+    const movesArray = Array.from(movingGame.activePlay.moves)
     for (const move of movesArray) {
       if (move.stateKind === 'ready' && move.possibleMoves) {
         for (const possibleMove of move.possibleMoves) {
-          if (possibleMove.origin && !movableContainerIds.includes(possibleMove.origin.id)) {
+          if (
+            possibleMove.origin &&
+            !movableContainerIds.includes(possibleMove.origin.id)
+          ) {
             movableContainerIds.push(possibleMove.origin.id)
           }
         }
@@ -37,12 +41,18 @@ describe('isMovable attribute', () => {
     let foundMovableChecker = false
     let foundNonMovableChecker = false
 
-    for (const point of rolledGame.board.points) {
+    for (const point of movingGame.board.points) {
       for (const checker of point.checkers) {
-        if (movableContainerIds.includes(point.id) && checker.color === rolledGame.activePlayer.color) {
+        if (
+          movableContainerIds.includes(point.id) &&
+          checker.color === movingGame.activePlayer.color
+        ) {
           expect(checker.isMovable).toBe(true)
           foundMovableChecker = true
-        } else if (!movableContainerIds.includes(point.id) || checker.color !== rolledGame.activePlayer.color) {
+        } else if (
+          !movableContainerIds.includes(point.id) ||
+          checker.color !== movingGame.activePlayer.color
+        ) {
           expect(checker.isMovable).toBe(false)
           foundNonMovableChecker = true
         }
@@ -50,8 +60,11 @@ describe('isMovable attribute', () => {
     }
 
     // Check bar checkers
-    for (const checker of rolledGame.board.bar.clockwise.checkers) {
-      if (movableContainerIds.includes(rolledGame.board.bar.clockwise.id) && checker.color === rolledGame.activePlayer.color) {
+    for (const checker of movingGame.board.bar.clockwise.checkers) {
+      if (
+        movableContainerIds.includes(movingGame.board.bar.clockwise.id) &&
+        checker.color === movingGame.activePlayer.color
+      ) {
         expect(checker.isMovable).toBe(true)
         foundMovableChecker = true
       } else {
@@ -60,8 +73,13 @@ describe('isMovable attribute', () => {
       }
     }
 
-    for (const checker of rolledGame.board.bar.counterclockwise.checkers) {
-      if (movableContainerIds.includes(rolledGame.board.bar.counterclockwise.id) && checker.color === rolledGame.activePlayer.color) {
+    for (const checker of movingGame.board.bar.counterclockwise.checkers) {
+      if (
+        movableContainerIds.includes(
+          movingGame.board.bar.counterclockwise.id
+        ) &&
+        checker.color === movingGame.activePlayer.color
+      ) {
         expect(checker.isMovable).toBe(true)
         foundMovableChecker = true
       } else {
@@ -89,13 +107,13 @@ describe('isMovable attribute', () => {
         expect(checker.isMovable).toBe(false) // Should start as false
       }
     }
-    
+
     // Check bar checkers
     for (const checker of game.board.bar.clockwise.checkers) {
       expect(typeof checker.isMovable).toBe('boolean')
       expect(checker.isMovable).toBe(false)
     }
-    
+
     for (const checker of game.board.bar.counterclockwise.checkers) {
       expect(typeof checker.isMovable).toBe('boolean')
       expect(checker.isMovable).toBe(false)

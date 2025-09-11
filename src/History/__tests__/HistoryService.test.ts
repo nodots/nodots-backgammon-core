@@ -197,7 +197,7 @@ describe('GameHistoryService', () => {
         expect(action.gameStateBefore).toBeDefined()
         expect(action.gameStateAfter).toBeDefined()
         expect(action.gameStateBefore.stateKind).toBe('rolling')
-        expect(action.gameStateAfter.stateKind).toBe('rolled')
+        expect(action.gameStateAfter.stateKind).toBe('moving')
       }
     })
   })
@@ -432,7 +432,7 @@ describe('SnapshotService', () => {
   let mockGame: BackgammonGame
 
   beforeEach(() => {
-    mockGame = createMockGame('rolled')
+    mockGame = createMockGame('moving')
   })
 
   describe('createSnapshot', () => {
@@ -443,7 +443,7 @@ describe('SnapshotService', () => {
       if (result.kind === 'success') {
         const snapshot = result.data
         expect(snapshot).toBeDefined()
-        expect(snapshot.stateKind).toBe('rolled')
+        expect(snapshot.stateKind).toBe('moving')
         expect(snapshot.activeColor).toBe('white')
         expect(snapshot.boardPositions).toBeDefined()
         expect(snapshot.diceState).toBeDefined()
@@ -537,7 +537,7 @@ describe('SnapshotService', () => {
       const result1 = SnapshotService.createSnapshot(mockGame)
       
       // Create a different game state
-      const differentGame = createMockGame('moving')
+      const differentGame = createMockGame('rolling')
       const result2 = SnapshotService.createSnapshot(differentGame)
 
       expect(result1.kind).toBe('success')

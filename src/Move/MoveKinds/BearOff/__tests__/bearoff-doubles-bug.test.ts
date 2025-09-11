@@ -38,7 +38,7 @@ describe('Bear-off Doubles Bug', () => {
       stateKind: 'moving',
       dice: {
         id: generateId(),
-        stateKind: 'moving',
+        stateKind: 'rolled',
         currentRoll: [6, 6] as BackgammonRoll, // Doubles 6,6 = 4 moves
         total: 24,
         color: 'white' as BackgammonColor,

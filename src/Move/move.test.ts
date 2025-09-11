@@ -25,7 +25,7 @@ describe('Move', () => {
         dice: {
           id: generateId(),
           color: 'black',
-          stateKind: 'moving',
+          stateKind: 'rolled',
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
@@ -67,7 +67,7 @@ describe('Move', () => {
         dice: {
           id: generateId(),
           color: 'black',
-          stateKind: 'moving',
+          stateKind: 'rolled',
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
@@ -99,7 +99,7 @@ describe('Move', () => {
         dice: {
           id: generateId(),
           color: 'black',
-          stateKind: 'moving',
+          stateKind: 'rolled',
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
@@ -138,7 +138,7 @@ describe('Move', () => {
         dice: {
           id: generateId(),
           color: 'black',
-          stateKind: 'moving',
+          stateKind: 'rolled',
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,
@@ -183,7 +183,7 @@ describe('Move', () => {
         dice: {
           id: generateId(),
           color: 'black',
-          stateKind: 'moving',
+          stateKind: 'rolled',
           currentRoll: [1, 2] as BackgammonRoll,
           total: 3,
         } as BackgammonDiceRolled,

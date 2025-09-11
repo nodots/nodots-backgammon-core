@@ -36,7 +36,7 @@ describe('PointToPoint', () => {
       id: generateId(),
       userId: generateId(),
       color: color,
-      stateKind: 'rolled',
+      stateKind: 'moving',
       dice: {
         id: generateId(),
         stateKind: 'rolled',

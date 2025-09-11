@@ -44,7 +44,7 @@ describe('Move', () => {
       id: generateId(),
       userId: generateId(),
       color,
-      stateKind: 'rolled',
+      stateKind: 'moving',
       dice: rolledDice,
       direction,
       pipCount: 167,
@@ -412,7 +412,7 @@ describe('Move', () => {
       const { board, player } = setupTest()
       const movingPlayer: BackgammonPlayerMoving = {
         ...player,
-        stateKind: 'rolled',
+        stateKind: 'moving',
       }
       const move: BackgammonMoveInProgress = {
         id: generateId(),
@@ -634,7 +634,7 @@ describe('Move', () => {
         id: 'p1',
         color: 'white',
         direction: 'clockwise',
-        stateKind: 'rolled',
+        stateKind: 'moving',
         dice: { stateKind: 'rolled', currentRoll: [1, 2] },
       }
       const checker = board.points[0].checkers[0]
@@ -643,7 +643,7 @@ describe('Move', () => {
         activePlayer: player,
         board,
         activePlay: undefined,
-        stateKind: 'rolled',
+        stateKind: 'moving',
       }
       const moves = (Move as any).getPossibleMovesForChecker(
         game,
