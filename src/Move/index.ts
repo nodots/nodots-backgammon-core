@@ -19,7 +19,6 @@ import {
   BackgammonPlay,
   BackgammonPlayer,
   BackgammonPlayerMoving,
-  BackgammonPlayerRolled,
   BackgammonPoint,
   MoveProps,
 } from '@nodots-llc/backgammon-types/dist'
@@ -745,7 +744,7 @@ export class Move {
   // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?open_point
   public static isPointOpen = function isPointOpen(
     point: BackgammonPoint,
-    player: BackgammonPlayerMoving | BackgammonPlayerRolled
+    player: BackgammonPlayerMoving
   ) {
     if (point.checkers.length < 2) return true
     if (point.checkers.length >= 2 && point.checkers[0].color === player.color)
@@ -764,7 +763,7 @@ export class Move {
     const { moveKind } = move
     const { player } = move
     if (!player) throw Error('Player not found')
-    if (player.stateKind !== 'rolled' && player.stateKind !== 'moving')
+    if (player.stateKind !== 'moving')
       throw Error('Invalid player state for move')
 
     switch (moveKind) {

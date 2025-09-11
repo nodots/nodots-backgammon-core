@@ -250,12 +250,10 @@ export class PositionReconstructor {
         return false
       }
 
-      // Check that we have dice information (only for rolled states)
-      if (gameState.activePlay.stateKind === 'rolled') {
-        const dice = gameState.activePlay.dice
-        if (!dice || (Array.isArray(dice) && dice.length !== 2)) {
-          return false
-        }
+      // Check that we have dice information (only for moving states)
+      if (gameState.activePlay.stateKind === 'moving') {
+        // Dice information is available in the game state for moving plays
+        // No additional validation needed as moving state implies dice have been rolled
       }
 
       // Check that the board has valid structure

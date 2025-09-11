@@ -961,7 +961,15 @@ export class Game {
       throw new Error('Game.board is undefined - cannot execute move')
     }
 
-    const gameAfterMove = Game.move(game, originId)
+    // Find a checker in the specified origin container to execute the move
+    const checkers = Board.getCheckers(game.board)
+    const checkerInOrigin = checkers.find(c => c.checkercontainerId === originId && c.color === game.activePlayer.color)
+    
+    if (!checkerInOrigin) {
+      throw new Error(`No ${game.activePlayer.color} checker found in container ${originId}`)
+    }
+    
+    const gameAfterMove = Game.move(game, checkerInOrigin.id)
 
     console.log(
       '[DEBUG] Game.executeAndRecalculate: Move executed, game state:',

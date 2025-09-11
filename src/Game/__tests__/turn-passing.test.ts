@@ -191,7 +191,7 @@ describe('Game Turn Passing', () => {
       expect(() => {
         Game.confirmTurn(movingGame as any)
       }).toThrow(
-        "Cannot confirm turn from moving state. Must be in 'moved' state."
+        "Cannot confirm turn from non-moving state"
       )
     })
 

@@ -8,7 +8,7 @@ import {
   BackgammonMoveReady,
   BackgammonMoveSkeleton,
   BackgammonPlayer,
-  BackgammonPlayerRolled,
+  BackgammonPlayerMoving,
   BackgammonPoint,
   BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
@@ -57,11 +57,11 @@ describe('BearOff', () => {
       currentRoll,
       total: 2,
     }
-    const player: BackgammonPlayerRolled = {
+    const player: BackgammonPlayerMoving = {
       id: generateId(),
       userId: generateId(),
       color: 'white',
-      stateKind: 'rolled',
+      stateKind: 'moving',
       dice: {
         id: generateId(),
         stateKind: 'rolled',

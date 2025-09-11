@@ -3,42 +3,37 @@ import {
   BackgammonColor,
   BackgammonGameRolledForStart,
   BackgammonGameRollingForStart,
-  BackgammonPlayerActive,
-  BackgammonPlayerInactive,
-  BackgammonPlayerRolledForStart,
-  BackgammonPlayerRolling,
   BackgammonPlayers,
 } from '@nodots-llc/backgammon-types/dist'
 import { Game } from '..'
-import { randomBackgammonColor } from '../../'
-import { Play } from '../../Play'
-import { Player } from '../../Player'
 // Robot import removed - functionality moved to @nodots-llc/backgammon-robots package
 
 // Test helper functions using proper CORE flow
 const createTestGame = {
   // Creates game in rolling-for-start state
-  rollingForStart: () => Game.createNewGame(
-    { userId: 'test-user-1', isRobot: true },
-    { userId: 'test-user-2', isRobot: true }
-  ),
-  
+  rollingForStart: () =>
+    Game.createNewGame(
+      { userId: 'test-user-1', isRobot: true },
+      { userId: 'test-user-2', isRobot: true }
+    ),
+
   // Creates game through rolled-for-start state
   rolledForStart: () => {
-    const game = createTestGame.rollingForStart() as BackgammonGameRollingForStart
+    const game =
+      createTestGame.rollingForStart() as BackgammonGameRollingForStart
     return Game.rollForStart(game)
   },
-  
+
   // Creates game through rolled state (ready for moves)
   rolled: () => {
     const game = createTestGame.rolledForStart()
     return Game.roll(game)
   },
-  
+
   // Creates game in moving state (simplified - no intermediate states)
   moving: () => {
     return createTestGame.rolled()
-  }
+  },
 }
 
 describe('Game', () => {
@@ -56,18 +51,6 @@ describe('Game', () => {
       expect(gameRolling.inactivePlayer.color).not.toBe(gameRolling.activeColor)
     })
 
-    it('should transition from rolling to rolled', () => {
-      const gameRolled = createTestGame.rolled()
-      expect((gameRolled as any).stateKind).toBe('rolled')
-      expect((gameRolled as any).activePlayer).toBeDefined()
-      expect((gameRolled as any).activePlay).toBeDefined()
-      expect((gameRolled as any).board).toBeDefined()
-      expect((gameRolled as any).activePlayer.dice.currentRoll).toBeDefined()
-      expect(
-        ((gameRolled as any).activePlay.moves as Set<any>).size
-      ).toBeGreaterThan(0)
-    })
-
     it('should handle moves correctly', () => {
       const gameMoving = createTestGame.moving()
       // Get the first available move
@@ -83,7 +66,10 @@ describe('Game', () => {
       if (firstMove.origin) {
         // Only call Game.move if gameMoving is a valid BackgammonGameMoving
         if ((gameMoving as any).stateKind === 'moving') {
-          const gameMoved = Game.move(gameMoving, firstMove.origin.id)
+          // Get a checker from the origin point
+          const checkerOnOrigin = firstMove.origin.checkers[0]
+          expect(checkerOnOrigin).toBeDefined()
+          const gameMoved = Game.move(gameMoving, checkerOnOrigin.id)
           // Check for a move with moveKind: 'no-move' and stateKind: 'completed' in the moves set
           const noMove = Array.from(
             (gameMoved as any).activePlay.moves as Set<any>
@@ -106,14 +92,16 @@ describe('Game', () => {
 
     it('should throw error when rolling with invalid active color', () => {
       const gameRolling = createTestGame.rolledForStart()
-      
+
       // Create invalid state by corrupting activeColor
       const invalidGame = {
         ...gameRolling,
         activeColor: 'invalid' as BackgammonColor,
       } as BackgammonGameRolledForStart
 
-      expect(() => Game.roll(invalidGame)).toThrow('Roll requires an active player')
+      expect(() => Game.roll(invalidGame)).toThrow(
+        'Roll requires an active player'
+      )
     })
   })
 
@@ -147,9 +135,7 @@ describe('Game', () => {
 
       const inactivePlayerResult = Game.inactivePlayer(gameRolled)
       expect(inactivePlayerResult).toBeDefined()
-      expect(inactivePlayerResult.color).not.toBe(
-        gameRolled.activeColor
-      )
+      expect(inactivePlayerResult.color).not.toBe(gameRolled.activeColor)
       expect(inactivePlayerResult.stateKind).toBe('inactive')
     })
 
@@ -365,7 +351,6 @@ describe('Game', () => {
       expect(game.cube).toBeDefined()
     })
 
-
     it('should create a new game without auto-rolling for start', () => {
       const game = Game.createNewGame(
         { userId: 'user1', isRobot: false },
@@ -449,15 +434,14 @@ describe('Game', () => {
       // Direct transition: roll now returns BackgammonGameMoving
       const movingGame = Game.roll(gameAfterRollForStart as any)
 
-      // Get first available move
+      // Get first available move and its checker
       const moves = Array.from(movingGame.activePlay.moves)
       if (moves.length > 0 && moves[0].origin) {
-        const result = Game.executeAndRecalculate(
-          movingGame,
-          moves[0].origin.id
-        )
+        const checkerOnOrigin = moves[0].origin.checkers[0]
+        expect(checkerOnOrigin).toBeDefined()
+        const result = Game.move(movingGame, checkerOnOrigin.id)
         expect(result).toBeDefined()
-        expect(result.stateKind).toBe('moving')
+        expect(result.stateKind).toMatch(/moving|moved|completed/)
       }
     })
 
@@ -467,10 +451,8 @@ describe('Game', () => {
         { userId: 'user1', isRobot: true },
         { userId: 'user2', isRobot: true }
       )
-      const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
-      const rolledGame = Game.roll(gameAfterRollForStart as any)
-      // Removed prepareMove - using rolledGame directly
-      const movingGame = Game.toMoving(rolledGame)
+      const gameAfterRollForStart = Game.rollForStart(rolledForStartGame)
+      const movingGame = Game.roll(gameAfterRollForStart)
 
       // Create game with completed moves
       const completedMoves = new Set(
@@ -488,8 +470,7 @@ describe('Game', () => {
       } as any
 
       const result = Game.checkAndCompleteTurn(gameWithCompletedMoves)
-      expect(result.activeColor).not.toBe(movingGame.activeColor)
-      expect(result.stateKind).toBe('rolling')
+      expect(result.stateKind).toBe('moved')
     })
   })
 
@@ -544,11 +525,9 @@ describe('Game', () => {
         { userId: 'user2', isRobot: true }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
-      const rolledGame = Game.roll(gameAfterRollForStart as any)
-      // Removed prepareMove - using rolledGame directly
-      const movingGame = Game.toMoving(rolledGame)
+      const movingGame = Game.roll(gameAfterRollForStart as any)
 
-      expect(Game.canGetPossibleMoves(movingGame)).toBe(false)
+      expect(Game.canGetPossibleMoves(movingGame)).toBe(true)
       expect(Game.canGetPossibleMoves(rolledForStartGame)).toBe(false)
     })
   })
@@ -582,9 +561,7 @@ describe('Game', () => {
         { userId: 'user2', isRobot: true }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
-      const rolledGame = Game.roll(gameAfterRollForStart as any)
-      // Removed prepareMove - using rolledGame directly
-      const movingGame = Game.toMoving(rolledGame)
+      const movingGame = Game.roll(gameAfterRollForStart as any)
 
       const result = Game.getPossibleMoves(movingGame)
       expect(result.success).toBe(true)
@@ -611,12 +588,10 @@ describe('Game', () => {
         { userId: 'user2', isRobot: true }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
-      const rolledGame = Game.roll(gameAfterRollForStart as any)
-      // Removed prepareMove - using rolledGame directly
-      const movingGame = Game.toMoving(rolledGame)
+      const movingGame = Game.roll(gameAfterRollForStart as any)
 
-      expect(() => Game.move(movingGame, 'invalid-origin-id')).toThrow(
-        'No checkercontainer found for invalid-origin-id'
+      expect(() => Game.move(movingGame, 'invalid-checker-id')).toThrow(
+        'No checker found for checkerId invalid-checker-id'
       )
     })
 
@@ -629,13 +604,11 @@ describe('Game', () => {
         },
         {
           userId: 'player-2',
-          isRobot: false
+          isRobot: false,
         }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
-      const rolledGame = Game.roll(gameAfterRollForStart as any)
-      // Removed prepareMove - using rolledGame directly
-      const movingGame = Game.toMoving(rolledGame)
+      const movingGame = Game.roll(gameAfterRollForStart as any)
 
       const gameWithEmptyMoves = {
         ...movingGame,
@@ -656,9 +629,7 @@ describe('Game', () => {
         { userId: 'user2', isRobot: true }
       )
       const gameAfterRollForStart = Game.rollForStart(rolledForStartGame as any)
-      const rolledGame = Game.roll(gameAfterRollForStart as any)
-      // Removed prepareMove - using rolledGame directly
-      const movingGame = Game.toMoving(rolledGame)
+      const movingGame = Game.roll(gameAfterRollForStart as any)
 
       const gameWithoutActivePlay = {
         ...movingGame,

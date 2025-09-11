@@ -5,7 +5,7 @@ import {
   BackgammonDieValue,
   BackgammonMoveDirection,
   BackgammonMoveReady,
-  BackgammonPlayerRolled,
+  BackgammonPlayerMoving,
   BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
 import { BearOff } from '.'
@@ -15,7 +15,7 @@ import { Board } from '../../../Board'
 describe('BearOff', () => {
   describe('move', () => {
     let board: BackgammonBoard
-    let player: BackgammonPlayerRolled
+    let player: BackgammonPlayerMoving
 
     beforeEach(() => {
       board = Board.initialize()
@@ -24,7 +24,7 @@ describe('BearOff', () => {
         userId: generateId(),
         color: 'black' as BackgammonColor,
         direction: 'clockwise' as BackgammonMoveDirection,
-        stateKind: 'rolled',
+        stateKind: 'moving',
         pipCount: 167,
         dice: {
           id: generateId(),

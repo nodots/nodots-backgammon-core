@@ -11,7 +11,6 @@ import {
   BackgammonMoveSkeleton,
   BackgammonPlayer,
   BackgammonPlayerMoving,
-  BackgammonPlayerRolled,
   BackgammonPoint,
   BackgammonPointValue,
   BackgammonRoll,
@@ -41,11 +40,11 @@ describe('Move', () => {
       currentRoll: roll,
       total: roll[0] + roll[1],
     }
-    const player: BackgammonPlayerRolled = {
+    const player: BackgammonPlayerMoving = {
       id: generateId(),
       userId: generateId(),
       color,
-      stateKind: 'rolled',
+      stateKind: 'moving',
       dice: rolledDice,
       direction,
       pipCount: 167,
@@ -246,7 +245,7 @@ describe('Move', () => {
       }
       const move: BackgammonMoveReady = {
         id: generateId(),
-        player: inactivePlayer as unknown as BackgammonPlayerRolled, // Type assertion for test
+        player: inactivePlayer as unknown as BackgammonPlayerMoving, // Type assertion for test
         stateKind: 'ready',
         moveKind: 'point-to-point',
         origin: board.points[0],
@@ -441,7 +440,7 @@ describe('Move', () => {
         dice: {
           id: 'd1',
           color: 'white' as const,
-          stateKind: 'rolled' as const,
+          stateKind: 'moving' as const,
           currentRoll: [1, 2],
           total: 3,
         },
@@ -635,7 +634,7 @@ describe('Move', () => {
         id: 'p1',
         color: 'white',
         direction: 'clockwise',
-        stateKind: 'rolled',
+        stateKind: 'moving',
         dice: { stateKind: 'rolled', currentRoll: [1, 2] },
       }
       const checker = board.points[0].checkers[0]
@@ -644,7 +643,7 @@ describe('Move', () => {
         activePlayer: player,
         board,
         activePlay: undefined,
-        stateKind: 'rolled',
+        stateKind: 'moving',
       }
       const moves = (Move as any).getPossibleMovesForChecker(
         game,

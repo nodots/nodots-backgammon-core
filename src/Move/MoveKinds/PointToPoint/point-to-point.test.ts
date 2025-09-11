@@ -6,7 +6,7 @@ import {
   BackgammonMoveCompleted,
   BackgammonMoveDirection,
   BackgammonMoveReady,
-  BackgammonPlayerRolled,
+  BackgammonPlayerMoving,
   BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
 import { PointToPoint } from '.'
@@ -16,7 +16,7 @@ import { Board } from '../../../Board'
 describe('PointToPoint', () => {
   describe('move', () => {
     let board: BackgammonBoard
-    let player: BackgammonPlayerRolled
+    let player: BackgammonPlayerMoving
 
     beforeEach(() => {
       board = Board.initialize()
@@ -25,7 +25,7 @@ describe('PointToPoint', () => {
         userId: generateId(),
         color: 'black' as BackgammonColor,
         direction: 'clockwise' as BackgammonMoveDirection,
-        stateKind: 'rolled',
+        stateKind: 'moving',
         pipCount: 167,
         dice: {
           id: generateId(),

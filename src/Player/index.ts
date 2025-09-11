@@ -11,7 +11,6 @@ import {
   BackgammonPlayerDoubled,
   BackgammonPlayerMoved,
   BackgammonPlayerMoving,
-  BackgammonPlayerRolled,
   BackgammonPlayerRolledForStart,
   BackgammonPlayerRolling,
   BackgammonPlayerRollingForStart,
@@ -63,7 +62,6 @@ export class Player {
         case 'rolled-for-start':
           return Dice.initialize(color, 'rolled-for-start')
         case 'rolling':
-        case 'rolled':
         case 'moving':
         case 'moved':
         case 'doubled':
@@ -123,17 +121,6 @@ export class Player {
           pipCount,
           isRobot,
         } as BackgammonPlayerRolling
-      case 'rolled':
-        return {
-          id: playerId,
-          userId: playerUserId,
-          color,
-          direction,
-          stateKind,
-          dice: dice as BackgammonDiceRolled,
-          pipCount,
-          isRobot,
-        } as BackgammonPlayerRolled
       case 'moving':
         return {
           id: playerId,
@@ -198,7 +185,7 @@ export class Player {
 
   public static roll = function roll(
     player: BackgammonPlayerRolling
-  ): BackgammonPlayerRolled {
+  ): BackgammonPlayerMoving {
     const inactiveDice = Dice.initialize(
       player.color,
       'inactive'
@@ -206,7 +193,7 @@ export class Player {
     const rolledDice = Dice.roll(inactiveDice)
     return {
       ...player,
-      stateKind: 'rolled',
+      stateKind: 'moving',
       dice: rolledDice,
     }
   }

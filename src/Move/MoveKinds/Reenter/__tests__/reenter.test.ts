@@ -6,7 +6,7 @@ import {
   BackgammonDieValue,
   BackgammonMoveDirection,
   BackgammonMoveReady,
-  BackgammonPlayerRolled,
+  BackgammonPlayerMoving,
   BackgammonRoll,
 } from '@nodots-llc/backgammon-types/dist'
 import { Reenter } from '..'
@@ -30,11 +30,11 @@ describe('Reenter', () => {
       currentRoll: roll,
       total: roll[0] + roll[1],
     }
-    const player: BackgammonPlayerRolled = {
+    const player: BackgammonPlayerMoving = {
       id: generateId(),
       userId: generateId(),
       color,
-      stateKind: 'rolled',
+      stateKind: 'moving',
       dice: rolledDice,
       direction,
       pipCount: 167,

@@ -59,16 +59,17 @@ describe('ROLLED-FOR-START Dice State', () => {
     // 4. Try to roll dice - this should work
     try {
       const gameAfterRoll = Game.roll(gameAfterRollForStart)
-      expect(gameAfterRoll.stateKind).toBe('rolled')
+      expect(gameAfterRoll.stateKind).toBe('moving')
 
       // Check that the active player now has rolled dice
       const rolledActivePlayer = gameAfterRoll.activePlayer
+      expect(rolledActivePlayer.stateKind).toBe('moving')
       expect(rolledActivePlayer.dice.stateKind).toBe('rolled')
       expect(rolledActivePlayer.dice.currentRoll).toBeDefined()
       expect(rolledActivePlayer.dice.currentRoll).toHaveLength(2)
     } catch (error) {
       console.error('Roll failed:', error)
-      fail(`Rolling dice failed from rolled-for-start state: ${error}`)
+      throw new Error(`Rolling dice failed from rolled-for-start state: ${error}`)
     }
   })
 
@@ -85,7 +86,7 @@ describe('ROLLED-FOR-START Dice State', () => {
     // Verify the game can transition from rolled-for-start to rolled
     expect(() => {
       const gameRolled = Game.roll(gameRolledForStart)
-      expect(gameRolled.stateKind).toBe('rolled')
+      expect(gameRolled.stateKind).toBe('moving')
       expect(gameRolled.activePlayer.dice.stateKind).toBe('rolled')
     }).not.toThrow()
   })
