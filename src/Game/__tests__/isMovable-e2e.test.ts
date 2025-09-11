@@ -1,6 +1,5 @@
 import { describe, expect, it } from '@jest/globals'
 import {
-  BackgammonGameRolled,
   BackgammonGameRolledForStart,
   BackgammonGameRollingForStart,
   BackgammonGameMoving,
@@ -28,19 +27,19 @@ describe('isMovable E2E Tests', () => {
       }
 
       // 3. Roll for start to determine who goes first
-      const rolledForStartGame = Game.rollForStart(initialGame) as BackgammonGameRolledForStart
+      const rolledForStartGame = Game.rollForStart(initialGame)
       expect(rolledForStartGame.stateKind).toBe('rolled-for-start')
       expect(rolledForStartGame.activeColor).toBeDefined()
 
       // 4. Roll dice for the first turn
-      const rolledGame = Game.roll(rolledForStartGame) as BackgammonGameRolled
-      expect(rolledGame.stateKind).toBe('rolled')
-      expect(rolledGame.activePlay).toBeDefined()
-      expect(rolledGame.activePlay.moves.size).toBeGreaterThan(0)
+      const movingGame = Game.roll(rolledForStartGame)
+      expect(movingGame.stateKind).toBe('moving')
+      expect(movingGame.activePlay).toBeDefined()
+      expect(movingGame.activePlay.moves.size).toBeGreaterThan(0)
 
       // 5. Collect all movable container IDs from possible moves
       const expectedMovableContainerIds = new Set<string>()
-      const movesArray = Array.from(rolledGame.activePlay.moves)
+      const movesArray = Array.from(movingGame.activePlay.moves)
       
       for (const move of movesArray) {
         if (move.stateKind === 'ready' && move.possibleMoves && move.possibleMoves.length > 0) {
@@ -53,16 +52,16 @@ describe('isMovable E2E Tests', () => {
       }
 
       console.log(`Expected movable containers: ${Array.from(expectedMovableContainerIds).join(', ')}`)
-      console.log(`Active player color: ${rolledGame.activePlayer.color}`)
+      console.log(`Active player color: ${movingGame.activePlayer.color}`)
 
       // 6. Verify that checkers in movable containers have isMovable = true
       let movableCheckersFound = 0
       let nonMovableCheckersFound = 0
 
       // Check points
-      for (const point of rolledGame.board.points) {
+      for (const point of movingGame.board.points) {
         for (const checker of point.checkers) {
-          if (expectedMovableContainerIds.has(point.id) && checker.color === rolledGame.activePlayer.color) {
+          if (expectedMovableContainerIds.has(point.id) && checker.color === movingGame.activePlayer.color) {
             expect(checker.isMovable).toBe(true)
             movableCheckersFound++
             console.log(`✓ Found movable checker at point ${point.id} (positions: clockwise=${point.position.clockwise}, counterclockwise=${point.position.counterclockwise})`)
@@ -74,10 +73,10 @@ describe('isMovable E2E Tests', () => {
       }
 
       // Check bar checkers
-      const bars = [rolledGame.board.bar.clockwise, rolledGame.board.bar.counterclockwise]
+      const bars = [movingGame.board.bar.clockwise, movingGame.board.bar.counterclockwise]
       for (const bar of bars) {
         for (const checker of bar.checkers) {
-          if (expectedMovableContainerIds.has(bar.id) && checker.color === rolledGame.activePlayer.color) {
+          if (expectedMovableContainerIds.has(bar.id) && checker.color === movingGame.activePlayer.color) {
             expect(checker.isMovable).toBe(true)
             movableCheckersFound++
             console.log(`✓ Found movable checker on bar ${bar.direction}`)
@@ -97,16 +96,15 @@ describe('isMovable E2E Tests', () => {
       console.log(`Total non-movable checkers found: ${nonMovableCheckersFound}`)
 
       // 8. Verify that only active player's checkers can be movable
-      for (const point of rolledGame.board.points) {
+      for (const point of movingGame.board.points) {
         for (const checker of point.checkers) {
           if (checker.isMovable) {
-            expect(checker.color).toBe(rolledGame.activePlayer.color)
+            expect(checker.color).toBe(movingGame.activePlayer.color)
           }
         }
       }
 
-      // 9. Transition to moving state to test isMovable updates after moves
-      const movingGame = Game.toMoving(rolledGame) as BackgammonGameMoving
+      // 9. Game is already in moving state, ready to test isMovable updates after moves
       expect(movingGame.stateKind).toBe('moving')
 
       // Find a valid move to execute
@@ -215,10 +213,10 @@ describe('isMovable E2E Tests', () => {
 
       expect(game.stateKind).toBe('rolling-for-start')
       const rolledForStart = Game.rollForStart(game)
-      const rolledGame = Game.roll(rolledForStart) as BackgammonGameRolled
+      const movingGame = Game.roll(rolledForStart) as BackgammonGameRolled
 
       // Even if no moves are possible, all moves should be marked as 'no-move'
-      const movesArray = Array.from(rolledGame.activePlay.moves)
+      const movesArray = Array.from(movingGame.activePlay.moves)
       let hasReadyMoves = false
       let hasNoMoves = false
 
@@ -236,7 +234,7 @@ describe('isMovable E2E Tests', () => {
       expect(hasReadyMoves || hasNoMoves).toBe(true)
 
       // Verify isMovable attribute exists on all checkers regardless
-      for (const point of rolledGame.board.points) {
+      for (const point of movingGame.board.points) {
         for (const checker of point.checkers) {
           expect(typeof checker.isMovable).toBe('boolean')
         }

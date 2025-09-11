@@ -17,11 +17,10 @@ describe('Game.undoLastMove', () => {
 
     // Roll dice and advance to moving state
     if (game.stateKind === 'rolling-for-start') {
-      const rolledForStartGame = Game.rollForStart(game as any)
+      const rolledForStartGame = Game.rollForStart(game)
       
       if (rolledForStartGame.stateKind === 'rolled-for-start') {
-        const rolledGame = Game.roll(rolledForStartGame as any)
-        testGame = Game.toMoving(rolledGame)
+        testGame = Game.roll(rolledForStartGame)
       } else {
         // If not in expected state, force create a moving game
         testGame = {

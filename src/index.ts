@@ -42,7 +42,6 @@ export * from './History'
 export * from './Move'
 export * from './Play'
 export * from './Player'
-export * from './Engine'
 export * from './Services'
 
 // Export logger utilities for consumers to configure
