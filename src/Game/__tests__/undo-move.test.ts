@@ -20,8 +20,7 @@ describe('Game.undoLastMove', () => {
       const rolledForStartGame = Game.rollForStart(game as any)
       
       if (rolledForStartGame.stateKind === 'rolled-for-start') {
-        const rolledGame = Game.roll(rolledForStartGame as any)
-        testGame = Game.toMoving(rolledGame)
+        testGame = Game.roll(rolledForStartGame as any) as BackgammonGameMoving
       } else {
         // If not in expected state, force create a moving game
         testGame = {

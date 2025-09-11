@@ -1453,8 +1453,8 @@ export class Game {
     }
 
     try {
-      // Create a deep clone of the board to reverse the move
-      let updatedBoard = JSON.parse(JSON.stringify(game.board))
+      // Start with the current board (we'll create an immutable update)
+      let updatedBoard = game.board
 
       // Get the containers involved in the move
       const originContainer = Board.getCheckerContainer(

@@ -1,6 +1,5 @@
 import { describe, expect, it } from '@jest/globals'
 import {
-  BackgammonGameRolled,
   BackgammonGameRolledForStart,
   BackgammonGameRollingForStart,
   BackgammonGameMoving,

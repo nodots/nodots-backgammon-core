@@ -1,5 +1,5 @@
 import { Game } from '../index'
-import { BackgammonGameRolled } from '@nodots-llc/backgammon-types/dist'
+import { BackgammonGameMoving } from '@nodots-llc/backgammon-types/dist'
 
 describe('isMovable attribute', () => {
   it('should set isMovable to true for checkers that can be moved after rolling dice', () => {

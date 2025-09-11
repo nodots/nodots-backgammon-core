@@ -508,7 +508,7 @@ describe('SnapshotService', () => {
       const incompleteSnapshot = {
         stateKind: 'rolled',
         // Missing required fields
-      } as GameStateSnapshot
+      } as unknown as GameStateSnapshot
 
       const validationResult = SnapshotService.validateSnapshot(incompleteSnapshot)
 
