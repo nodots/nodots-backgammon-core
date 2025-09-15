@@ -257,12 +257,7 @@ export class Board implements BackgammonBoard {
 
     // If player has checkers on the bar, they must move those first
     if (bar.checkers.length > 0) {
-      let reentryPoint: number
-      if (playerDirection === 'clockwise') {
-        reentryPoint = 25 - dieValue // Clockwise players re-enter on clockwise positions 19-24 (opponent's home)
-      } else {
-        reentryPoint = 25 - dieValue // Counterclockwise players re-enter on counterclockwise positions 19-24 (opponent's home)
-      }
+      const reentryPoint = 25 - dieValue
       const possibleDestination = Board.getPoints(board).find(
         (p: BackgammonPoint) =>
           // Point must be empty, have only one opponent checker (hit), or have player's own checkers (stacking)
@@ -285,10 +280,6 @@ export class Board implements BackgammonBoard {
 
     // Handle regular point-to-point moves
     playerPoints.forEach(function mapPlayerPoints(point) {
-      // 🔧 CRITICAL BUG FIX: Correct move calculation for both directions
-      // Both players move from higher positions to lower positions
-      // For clockwise: 24→1 (subtract die value)
-      // For counterclockwise: 24→1 (subtract die value)
       const originPosition = point.position[playerDirection]
       const destinationPosition = originPosition - dieValue
 

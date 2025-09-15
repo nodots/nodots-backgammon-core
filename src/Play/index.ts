@@ -1,6 +1,7 @@
 import {
   BackgammonBoard,
   BackgammonChecker,
+  BackgammonCheckerContainer,
   BackgammonCube,
   BackgammonDieValue,
   BackgammonMoveCompletedNoMove,
@@ -8,6 +9,7 @@ import {
   BackgammonMoveOrigin,
   BackgammonMoveReady,
   BackgammonMoves,
+  BackgammonPlay,
   BackgammonPlayerMoving,
   BackgammonPlayerRolling,
   BackgammonPlayMoving,
@@ -87,114 +89,16 @@ export class Play {
     )
 
     if (!matchingMove) {
-      debug('Play.move: No fresh move found for origin', {
+      debug('Play.move: Invalid origin - no valid moves available', {
         originId: origin.id,
         originKind: origin.kind,
-        dieValue: dieValue,
-        freshMovesCount: moveResult.moves.length,
-        freshMoveOriginIds: moveResult.moves.map((pm) => pm.origin.id),
+        requestedDieValue: dieValue,
+        availableMovesCount: moveResult.moves.length,
+        validOrigins: moveResult.moves.map((pm) => pm.origin.id),
       })
 
-      // CRITICAL BUG FIX: If the requested origin has no moves but fresh moves exist,
-      // use the first available fresh move instead of creating a no-move.
-      // This fixes the doubles bear-off bug where stale origin references prevent valid moves.
-      if (moveResult.moves.length > 0) {
-        debug('Play.move: Using first available fresh move as fallback', {
-          fallbackOriginId: moveResult.moves[0].origin.id,
-          fallbackOriginKind: moveResult.moves[0].origin.kind,
-          moveKind: moveResult.moves[0].destination.kind === 'off' ? 'bear-off' : 
-                   moveResult.moves[0].origin.kind === 'bar' ? 'reenter' : 'point-to-point',
-        })
-        // Use the first available fresh move as a fallback
-        const fallbackMove = moveResult.moves[0]
-        
-        // Determine the correct move kind based on the fallback move
-        let moveKind: 'point-to-point' | 'bear-off' | 'reenter' = 'point-to-point'
-        if (fallbackMove.destination.kind === 'off') {
-          moveKind = 'bear-off'
-        } else if (fallbackMove.origin.kind === 'bar') {
-          moveKind = 'reenter'
-        } else {
-          moveKind = 'point-to-point'
-        }
-
-        // Execute the fallback move using the existing bear-off logic
-        if (moveKind === 'bear-off') {
-          const bearOffMove: BackgammonMoveReady = {
-            id: generateId(),
-            player: play.player,
-            dieValue: moveResult.usedDieValue,
-            stateKind: 'ready',
-            moveKind: 'bear-off',
-            possibleMoves: [fallbackMove],
-            origin: fallbackMove.origin,
-          }
-          
-          const moveExecutionResult = BearOff.move(board, bearOffMove)
-          const completedMove = moveExecutionResult.move as BackgammonMoveCompletedWithMove
-
-          // Update the play by marking one move as completed and updating others
-          const updatedMoves: BackgammonMoves = new Set()
-          let moveCompleted = false
-
-          Array.from(play.moves).forEach((move) => {
-            if (move.stateKind === 'ready' && move.dieValue === moveResult.usedDieValue && !moveCompleted) {
-              // Mark the first matching move as completed
-              updatedMoves.add(completedMove)
-              moveCompleted = true
-            } else {
-              updatedMoves.add(move)
-            }
-          })
-
-          return {
-            board: moveExecutionResult.board,
-            play: { ...play, moves: updatedMoves },
-            move: completedMove,
-          } as BackgammonPlayResult
-        } else {
-          // For non-bear-off moves, use regular board move logic
-          const newBoard = Board.moveChecker(
-            board,
-            fallbackMove.origin,
-            fallbackMove.destination,
-            play.player.direction
-          )
-
-          const completedMove: BackgammonMoveCompletedWithMove = {
-            id: generateId(),
-            player: play.player,
-            dieValue: moveResult.usedDieValue,
-            stateKind: 'completed',
-            moveKind,
-            possibleMoves: [fallbackMove],
-            isHit: false,
-            origin: fallbackMove.origin,
-            destination: fallbackMove.destination,
-          }
-
-          // Update the play by marking one move as completed
-          const updatedMoves: BackgammonMoves = new Set()
-          let moveCompleted = false
-
-          Array.from(play.moves).forEach((move) => {
-            if (move.stateKind === 'ready' && move.dieValue === moveResult.usedDieValue && !moveCompleted) {
-              updatedMoves.add(completedMove)
-              moveCompleted = true
-            } else {
-              updatedMoves.add(move)
-            }
-          })
-
-          return {
-            board: newBoard,
-            play: { ...play, moves: updatedMoves },
-            move: completedMove,
-          } as BackgammonPlayResult
-        }
-      }
-
-      // Only create a no-move if no fresh moves are available at all
+      // Return a no-move result to indicate the requested move is invalid
+      // This is defensive programming - CORE should never execute moves from invalid origins
       const noMove: BackgammonMoveCompletedNoMove = {
         id: generateId(),
         player: play.player,
@@ -206,20 +110,42 @@ export class Play {
         origin: undefined,
         destination: undefined,
       }
+
+      // Mark the die as consumed even though no valid move was made
+      // This prevents the same invalid request from being retried
+      const updatedMoves: BackgammonMoves = new Set()
+      let dieConsumed = false
+
+      Array.from(play.moves).forEach((move) => {
+        if (move.stateKind === 'ready' && move.dieValue === moveResult.usedDieValue && !dieConsumed) {
+          // Replace the first ready move with this die value with the no-move
+          updatedMoves.add(noMove)
+          dieConsumed = true
+        } else {
+          updatedMoves.add(move)
+        }
+      })
+
       return {
-        play: { ...play, moves: new Set([noMove]) },
-        board,
+        play: { ...play, moves: updatedMoves },
+        board, // Board remains unchanged
         move: noMove,
       } as BackgammonPlayResult
     }
 
     // Create a synthetic move object with the exact origin and destination
+    // CRITICAL FIX: Find the specific ready move that matches the die value being used
+    // This ensures each move has its unique ID and gets properly filtered when completed
+    const specificReadyMove = movesArray.find(
+      m => m.stateKind === 'ready' && m.dieValue === moveResult.usedDieValue
+    )
+
     const move: BackgammonMoveReady = {
-      id: anyReadyMove.id, // Use the ID from the original ready move
+      id: specificReadyMove?.id || generateId(), // Use specific move's ID or generate new if not found
       player: play.player,
       dieValue: moveResult.usedDieValue, // Use the effective die value (may be switched)
       stateKind: 'ready',
-      moveKind: anyReadyMove.moveKind,
+      moveKind: specificReadyMove?.moveKind || anyReadyMove.moveKind, // Use specific move's kind or fallback
       possibleMoves: [matchingMove], // Use the fresh move
       origin: matchingMove.origin, // Use the exact origin from fresh calculation
     }
@@ -258,11 +184,21 @@ export class Play {
       })
       const finalMoves = new Set([...validOtherMoves, bearOffResult.move])
 
+      // 🔧 CRITICAL BUG FIX: Check if all moves are now completed and update play stateKind
+      // This logic was missing from the bear-off path, causing games to get stuck
+      const allMovesCompleted = Array.from(finalMoves).every(
+        (move) => move.stateKind === 'completed'
+      )
+
+      // Update play stateKind to 'moved' when all moves are completed
+      const playStateKind = allMovesCompleted ? 'moved' : 'moving'
+
       return {
         play: {
           ...play,
           moves: finalMoves, // 🔧 FIX: Keep all moves, not just the completed one
           board: bearOffResult.board,
+          stateKind: playStateKind as 'moving' | 'moved', // 🔧 CRITICAL FIX: Set correct play state
         },
         board: bearOffResult.board,
         move: bearOffResult.move,
@@ -588,6 +524,40 @@ export class Play {
       }
     }
 
+    // Check if all moves are no-moves and auto-complete the play
+    const allMovesAreNoMoves = movesArr.every((move) => move.moveKind === 'no-move')
+
+    if (allMovesAreNoMoves) {
+      debug('Play.initialize: Auto-completing play - no legal moves available for any die value')
+
+      // TODO: Consider calling Game.roll() as part of Play.initialize() to handle
+      // the full game state transition when no moves are available. This would
+      // eliminate the need to handle this edge case in multiple places and
+      // centralize the logic for transitioning between game states.
+
+      // Convert all moves to completed no-moves but keep in 'moving' state
+      // The Game layer will handle transitioning to 'moved' state
+      const completedMoves = movesArr.map((move) => ({
+        ...move,
+        stateKind: 'completed' as const,
+        moveKind: 'no-move' as const,
+        possibleMoves: [],
+        isHit: false,
+        origin: undefined,
+        destination: undefined,
+      }))
+
+      // Return play in 'moving' state with all moves completed
+      // This signals to Game layer that play should transition to 'moved'
+      return {
+        id: generateId(),
+        board,
+        player,
+        moves: new Set(completedMoves),
+        stateKind: 'moving',
+      } as BackgammonPlayMoving
+    }
+
     // Always return the correct number of moves for doubles/regular
     return {
       id: generateId(),
@@ -614,5 +584,90 @@ export class Play {
       player: { ...play.player, stateKind: 'moving' },
       moves: new Set(Array.from(play.moves)),
     } as BackgammonPlayMoving
+  }
+
+  /**
+   * Validates if a move from the specified origin is legal
+   * Returns true if the origin has valid moves, false otherwise
+   * This is a defensive check to prevent invalid move attempts
+   */
+  static canMoveFrom(
+    play: BackgammonPlayMoving,
+    board: BackgammonBoard,
+    origin: BackgammonCheckerContainer
+  ): boolean {
+    // Check if play is active and has moves
+    if (!play || !play.moves || play.moves.size === 0) {
+      debug('Play.canMoveFrom: No active play or moves')
+      return false
+    }
+
+    // Check if any moves are ready
+    const movesArray = Array.from(play.moves)
+    const readyMoves = movesArray.filter((m) => m.stateKind === 'ready')
+    if (readyMoves.length === 0) {
+      debug('Play.canMoveFrom: No ready moves available')
+      return false
+    }
+
+    // Get fresh possible moves with intelligent dice switching
+    const dieValue = readyMoves[0].dieValue
+    const otherReadyMoves = readyMoves.filter((m) => m.dieValue !== dieValue)
+    const otherDieValue = otherReadyMoves.length > 0 ? otherReadyMoves[0].dieValue : dieValue
+
+    const moveResult = Board.getPossibleMovesWithIntelligentDiceSwitching(
+      board,
+      play.player,
+      dieValue,
+      otherDieValue
+    )
+
+    // Check if the origin has any valid moves
+    const hasValidMove = moveResult.moves.some((m) => m.origin.id === origin.id)
+
+    debug('Play.canMoveFrom: Validation result', {
+      originId: origin.id,
+      hasValidMove,
+      validOrigins: moveResult.moves.map((m) => m.origin.id),
+    })
+
+    return hasValidMove
+  }
+
+  /**
+   * Returns the list of valid origin container IDs that have legal moves
+   * This can be used by UI to highlight or enable only valid checkers
+   */
+  static getValidOrigins(
+    play: BackgammonPlayMoving,
+    board: BackgammonBoard
+  ): string[] {
+    // Check if play is active and has moves
+    if (!play || !play.moves || play.moves.size === 0) {
+      return []
+    }
+
+    // Check if any moves are ready
+    const movesArray = Array.from(play.moves)
+    const readyMoves = movesArray.filter((m) => m.stateKind === 'ready')
+    if (readyMoves.length === 0) {
+      return []
+    }
+
+    // Get fresh possible moves with intelligent dice switching
+    const dieValue = readyMoves[0].dieValue
+    const otherReadyMoves = readyMoves.filter((m) => m.dieValue !== dieValue)
+    const otherDieValue = otherReadyMoves.length > 0 ? otherReadyMoves[0].dieValue : dieValue
+
+    const moveResult = Board.getPossibleMovesWithIntelligentDiceSwitching(
+      board,
+      play.player,
+      dieValue,
+      otherDieValue
+    )
+
+    // Return unique origin IDs
+    const uniqueOrigins = new Set(moveResult.moves.map((m) => m.origin.id))
+    return Array.from(uniqueOrigins)
   }
 }

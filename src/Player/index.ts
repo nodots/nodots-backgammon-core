@@ -48,7 +48,7 @@ export class Player {
     id?: string
   ): BackgammonPlayer {
     const playerId = id || generateId()
-    const playerUserId = userId || generateId()
+    const playerUserId = userId // Don't generate random userId - use the provided userId
 
     // Determine appropriate dice state based on player stateKind
     const getDiceForState = (
@@ -320,39 +320,35 @@ export class Player {
    */
   public static getBestMove = async function getBestMove(
     play: BackgammonPlayMoving
-  ): Promise<
-    import('@nodots-llc/backgammon-types/dist').BackgammonMoveReady | undefined
-  > {
+  ) {
     if (!play.moves || play.moves.size === 0) return undefined
-    const readyMoves = Array.from(play.moves).filter(
-      (move) => move.stateKind === 'ready'
-    ) as import('@nodots-llc/backgammon-types/dist').BackgammonMoveReady[]
-    if (readyMoves.length === 0) return undefined
-
-    // Get GNU Position ID from game context (passed via API)
-    const gnuPositionId = (play as any).gameGnuPositionId
-
-    if (gnuPositionId) {
-      console.log(
-        `🤖 [Player.getBestMove] GNU Position ID available: ${gnuPositionId}`
-      )
-      console.log(
-        '🤖 [Player.getBestMove] GNU Backgammon integration will be called from API layer'
-      )
-
-      // AI integration is handled at API layer to avoid cross-package import issues
-      // The API layer will call GNU Backgammon and interpret the results
-
-      // For now, return first move with GNU context logged
-      console.log(
-        '🤖 [Player.getBestMove] Using first move (GNU Backgammon will guide selection at API layer)'
-      )
-    } else {
-      console.warn(
-        '🤖 [Player.getBestMove] No GNU Position ID available, using first move'
-      )
+    
+    // Try to use AI selectBestMove for intelligent move selection
+    logger.info('🤖 [Player.getBestMove] Attempting to load AI package')
+    
+    try {
+      // @ts-ignore - Dynamic import of optional dependency
+      const aiModule = await import('@nodots-llc/backgammon-ai')
+      logger.info('🤖 [Player.getBestMove] AI package loaded, calling selectBestMove')
+      
+      const bestMove = await aiModule.selectBestMove(play)
+      if (bestMove) {
+        logger.info(`🤖 [Player.getBestMove] AI selected move from ${bestMove.origin.id} (${bestMove.stateKind})`)
+        return bestMove
+      } else {
+        logger.warn('🤖 [Player.getBestMove] AI returned no move, falling back to first available')
+      }
+    } catch (error) {
+      logger.warn(`🤖 [Player.getBestMove] AI package unavailable: ${error}, using fallback`)
     }
 
+    // Fallback to first available move
+    const readyMoves = Array.from(play.moves).filter(
+      (move) => move.stateKind === 'ready'
+    )
+    if (readyMoves.length === 0) return undefined
+    
+    logger.info('🤖 [Player.getBestMove] Using first available move as fallback')
     return readyMoves[0]
   }
 }

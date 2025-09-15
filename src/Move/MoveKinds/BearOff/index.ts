@@ -11,6 +11,27 @@ import { Board, Player } from '../../..'
 import { logger } from '../../../utils/logger'
 
 export class BearOff {
+  private static hasCheckersOutsideHomeBoard(
+    board: BackgammonBoard,
+    player: BackgammonPlayerMoving
+  ): boolean {
+    let outsideHomeBoard = false
+    board.points.forEach((point) => {
+      if (point.checkers.length > 0) {
+        point.checkers.forEach((checker) => {
+          if (checker.color === player.color) {
+            const pos = point.position[player.direction]
+            const inHomeBoard = pos >= 1 && pos <= 6
+            if (!inHomeBoard) {
+              outsideHomeBoard = true
+            }
+          }
+        })
+      }
+    })
+    return outsideHomeBoard
+  }
+
   public static isA = function isABearOff(
     board: BackgammonBoard,
     player: BackgammonPlayerMoving
@@ -24,37 +45,7 @@ export class BearOff {
     }
 
     // Check all points for player's checkers outside home board
-    let outsideHomeBoard = false
-    board.points.forEach((point) => {
-      if (point.checkers.length > 0) {
-        point.checkers.forEach((checker) => {
-          if (checker.color === player.color) {
-            const pos = point.position[player.direction]
-            // GOLDEN RULE: Home board is positions 1-6 relative to the player's direction
-            const inHomeBoard = pos >= 1 && pos <= 6
-            if (!inHomeBoard) {
-              outsideHomeBoard = true
-            }
-          }
-        })
-      }
-    })
-    if (outsideHomeBoard) {
-      return false
-    }
-
-    // Must have at least one checker in play (not all borne off)
-    let checkersInPlay = 0
-    board.points.forEach((point) => {
-      if (point.checkers.length > 0) {
-        point.checkers.forEach((checker) => {
-          if (checker.color === player.color) {
-            checkersInPlay++
-          }
-        })
-      }
-    })
-    if (checkersInPlay === 0) {
+    if (BearOff.hasCheckersOutsideHomeBoard(board, player)) {
       return false
     }
 
@@ -129,7 +120,7 @@ export class BearOff {
               originPoint.position[direction] &&
             p.checkers.some((c) => c.color === player.color)
         )
-        
+
         if (hasCheckerOnHigherHomePoints) {
           logger.debug(
             '[BearOff] Cannot use lower die value when checkers exist on higher home board points:',
