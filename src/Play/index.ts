@@ -9,16 +9,15 @@ import {
   BackgammonMoveOrigin,
   BackgammonMoveReady,
   BackgammonMoves,
-  BackgammonPlay,
   BackgammonPlayerMoving,
   BackgammonPlayerRolling,
   BackgammonPlayMoving,
   BackgammonPlayResult,
-  BackgammonPlayStateKind,
+  BackgammonPlayStateKind
 } from '@nodots-llc/backgammon-types/dist'
 import { Board, generateId } from '..'
 import { BearOff } from '../Move/MoveKinds/BearOff'
-import { logger, debug } from '../utils/logger'
+import { debug, logger } from '../utils/logger'
 export * from '../index'
 
 const allowedMoveKinds = ['point-to-point', 'reenter', 'bear-off'] as const
