@@ -843,18 +843,39 @@ export class Game {
     const playerCheckersOff = playerOff.checkers.filter(
       (c) => c.color === movedPlayer.color
     ).length
-    // If the move just made was a bear-off and this brings the total to 15, end the game
+
+    // Count total checkers on board for this player (should be 0 when won)
+    const playerCheckersOnBoard = Board.getCheckers(board).filter(
+      (c) => c.color === movedPlayer.color
+    ).length
+
+    // Get move kind for additional context
     const lastMoveKind = playResult.move && playResult.move.moveKind
-    // Debug output for win condition
-    logger.debug('[Game] Checking win condition:', {
+
+    // Enhanced debug output for win condition
+    logger.info('[Game] 🏆 WIN CONDITION CHECK:', {
       playerCheckersOff,
+      playerCheckersOnBoard,
+      totalCheckersExpected: 15,
       lastMoveKind,
       playerOffCheckers: playerOff.checkers.length,
       movedPlayerColor: movedPlayer.color,
       movedPlayerDirection: movedPlayer.direction,
-      pipCount: movedPlayer.pipCount, // Now shows correct 0 pip count
+      pipCount: movedPlayer.pipCount,
+      hasWon: playerCheckersOff === 15 || playerCheckersOnBoard === 0,
     })
-    if (playerCheckersOff === 15 && lastMoveKind === 'bear-off') {
+
+    // FIXED: More robust win condition - check multiple criteria for victory
+    // A player wins when they have all 15 checkers off OR no checkers remaining on board
+    const hasWon = (
+      (playerCheckersOff === 15) || // Primary condition: all checkers in off area
+      (playerCheckersOnBoard === 0 && playerCheckersOff > 0) || // Backup: no checkers on board + some off
+      (movedPlayer.pipCount === 0 && lastMoveKind === 'bear-off') // Tertiary: pip count zero after bear-off
+    )
+
+    if (hasWon) {
+      logger.info(`🎉 [Game] PLAYER ${movedPlayer.color.toUpperCase()} HAS WON! (${playerCheckersOff} checkers off, ${playerCheckersOnBoard} on board)`)
+
       // Player has borne off all checkers, they win
       const winner = {
         ...movedPlayer,
@@ -867,6 +888,8 @@ export class Game {
         p.id === winner.id ? winner : p
       ) as BackgammonPlayers
 
+      logger.info(`🏁 [Game] Game ${game.id} completed - Winner: ${winner.id}`)
+
       return {
         ...game,
         stateKind: 'completed',
@@ -875,6 +898,7 @@ export class Game {
         activePlayer: winner,
         activePlay: updatedActivePlay,
         players: finalPlayers,
+        endTime: new Date(), // Add end time for completed games
       } as any // TODO: type as BackgammonGameCompleted
     }
     // --- END WIN CONDITION CHECK ---
