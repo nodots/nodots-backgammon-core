@@ -8,6 +8,7 @@ import {
   BackgammonDieValue,
   BackgammonGame,
   BackgammonMoveDirection,
+  BackgammonMoveOrigin,
   BackgammonMoveSkeleton,
   BackgammonOff,
   BackgammonPlayer,
@@ -384,13 +385,23 @@ export class Board implements BackgammonBoard {
       player: BackgammonPlayer,
       dieValue: BackgammonDieValue,
       otherDieValue: BackgammonDieValue
-    ): { moves: BackgammonMoveSkeleton[]; usedDieValue: BackgammonDieValue } {
+    ): {
+      moves: BackgammonMoveSkeleton[];
+      usedDieValue: BackgammonDieValue;
+      autoSwitched: boolean;
+      originalDieValue: BackgammonDieValue;
+    } {
       // First try with the original die value
       const originalMoves = Board.getPossibleMoves(board, player, dieValue)
 
       if (originalMoves.length > 0) {
         // Original die has moves, use it
-        return { moves: originalMoves, usedDieValue: dieValue }
+        return {
+          moves: originalMoves,
+          usedDieValue: dieValue,
+          autoSwitched: false,
+          originalDieValue: dieValue
+        }
       }
 
       // Original die has no moves, try the other die value
@@ -410,11 +421,92 @@ export class Board implements BackgammonBoard {
             movesFound: alternativeMoves.length,
           }
         )
-        return { moves: alternativeMoves, usedDieValue: otherDieValue }
+        return {
+          moves: alternativeMoves,
+          usedDieValue: otherDieValue,
+          autoSwitched: true,
+          originalDieValue: dieValue
+        }
       }
 
       // Neither die value has moves, return empty with original die
-      return { moves: [], usedDieValue: dieValue }
+      return {
+        moves: [],
+        usedDieValue: dieValue,
+        autoSwitched: false,
+        originalDieValue: dieValue
+      }
+    }
+
+  public static getPossibleMovesWithPositionSpecificAutoSwitch =
+    function getPossibleMovesWithPositionSpecificAutoSwitch(
+      board: BackgammonBoard,
+      player: BackgammonPlayer,
+      origin: BackgammonMoveOrigin,
+      dieValue: BackgammonDieValue,
+      otherDieValue: BackgammonDieValue
+    ): {
+      moves: BackgammonMoveSkeleton[];
+      usedDieValue: BackgammonDieValue;
+      autoSwitched: boolean;
+      originalDieValue: BackgammonDieValue;
+    } {
+      // Get all possible moves for the original die value
+      const originalMoves = Board.getPossibleMoves(board, player, dieValue)
+
+      // Check if the specific origin can move with the original die
+      const originCanMoveWithOriginalDie = originalMoves.some(
+        move => move.origin.id === origin.id
+      )
+
+      if (originCanMoveWithOriginalDie) {
+        // Original die can move from this position, use it
+        return {
+          moves: originalMoves,
+          usedDieValue: dieValue,
+          autoSwitched: false,
+          originalDieValue: dieValue
+        }
+      }
+
+      // Original die cannot move from this position, try the other die
+      const alternativeMoves = Board.getPossibleMoves(
+        board,
+        player,
+        otherDieValue
+      )
+
+      // Check if the specific origin can move with the alternative die
+      const originCanMoveWithAlternativeDie = alternativeMoves.some(
+        move => move.origin.id === origin.id
+      )
+
+      if (originCanMoveWithAlternativeDie) {
+        // Alternative die can move from this position, auto-switch
+        debug(
+          'Board.getPossibleMovesWithPositionSpecificAutoSwitch: Auto-switching dice for position',
+          {
+            originId: origin.id,
+            originalDie: dieValue,
+            switchedToDie: otherDieValue,
+            movesFound: alternativeMoves.length,
+          }
+        )
+        return {
+          moves: alternativeMoves,
+          usedDieValue: otherDieValue,
+          autoSwitched: true,
+          originalDieValue: dieValue
+        }
+      }
+
+      // Neither die can move from this position, return original die with no moves
+      return {
+        moves: originalMoves,
+        usedDieValue: dieValue,
+        autoSwitched: false,
+        originalDieValue: dieValue
+      }
     }
 
   public static getPipCounts = function getPipCounts(game: BackgammonGame) {
