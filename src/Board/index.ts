@@ -358,15 +358,12 @@ export class Board implements BackgammonBoard {
 
         if (checkersOnHigherPoints.length === 0) {
           // No checkers on higher points - can use higher die rule
-          const lowerPositions = occupiedPositions.filter(
-            (op) => op.position < dieValue
-          )
-          if (lowerPositions.length > 0) {
-            // Bear off from the highest occupied position that's lower than the die
-            const highestLowerPosition = lowerPositions[0] // Already sorted desc, so first is highest
+          // Bear off from the highest occupied point (regardless of die value)
+          if (occupiedPositions.length > 0) {
+            const highestOccupiedPosition = occupiedPositions[0] // Already sorted desc, so first is highest
             const off = board.off[playerDirection]
             possibleMoves.push({
-              origin: highestLowerPosition.point,
+              origin: highestOccupiedPosition.point,
               destination: off,
               dieValue,
               direction: playerDirection,
