@@ -112,27 +112,46 @@ export class Play {
       m => m.stateKind === 'ready' && m.dieValue === moveResult.usedDieValue
     )
 
+    if (!specificReadyMove) {
+      throw new Error(`No ready move found for die value ${moveResult.usedDieValue}. This indicates a bug in move tracking.`)
+    }
+
     const move: BackgammonMoveReady = {
-      id: specificReadyMove?.id || generateId(), // Use specific move's ID or generate new if not found
+      id: specificReadyMove.id, // Use specific move's ID - should always exist
       player: play.player,
       dieValue: moveResult.usedDieValue, // Use the effective die value (may be switched)
       stateKind: 'ready',
-      moveKind: specificReadyMove?.moveKind || anyReadyMove.moveKind, // Use specific move's kind or fallback
+      moveKind: specificReadyMove.moveKind, // Use specific move's kind
       possibleMoves: [matchingMove], // Use the fresh move
       origin: matchingMove.origin, // Use the exact origin from fresh calculation
     }
     
-    // If dice were auto-switched, update the player's current roll to reflect the new order
+    // If dice were auto-switched, update the player's current roll AND move dieValues to reflect the new order
     if (moveResult.autoSwitched) {
       const currentRoll = [...play.player.dice.currentRoll]
       if (currentRoll[0] !== currentRoll[1]) { // Only swap if not doubles
         play.player.dice.currentRoll = [currentRoll[1], currentRoll[0]]
-        debug('Play.move: Auto-switched dice - reordered dice to reflect move order', {
+
+        // CRITICAL FIX: Update move dieValues to match the new dice order
+        // This ensures that consuming moves matches the actual dice usage
+        const movesArray = Array.from(play.moves)
+        movesArray.forEach(moveToUpdate => {
+          if (moveToUpdate.stateKind === 'ready') {
+            if (moveToUpdate.dieValue === moveResult.originalDieValue) {
+              moveToUpdate.dieValue = moveResult.usedDieValue
+            } else if (moveToUpdate.dieValue === moveResult.usedDieValue) {
+              moveToUpdate.dieValue = moveResult.originalDieValue
+            }
+          }
+        })
+
+        debug('Play.move: Auto-switched dice - reordered dice and updated move dieValues', {
           originalRoll: currentRoll,
           newRoll: play.player.dice.currentRoll,
           originalDieValue: moveResult.originalDieValue,
           usedDieValue: moveResult.usedDieValue,
-          autoSwitched: moveResult.autoSwitched
+          autoSwitched: moveResult.autoSwitched,
+          updatedMoves: movesArray.filter(m => m.stateKind === 'ready').map(m => ({ id: m.id, dieValue: m.dieValue }))
         })
       }
     }
