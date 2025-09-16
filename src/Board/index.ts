@@ -384,13 +384,23 @@ export class Board implements BackgammonBoard {
       player: BackgammonPlayer,
       dieValue: BackgammonDieValue,
       otherDieValue: BackgammonDieValue
-    ): { moves: BackgammonMoveSkeleton[]; usedDieValue: BackgammonDieValue } {
+    ): {
+      moves: BackgammonMoveSkeleton[];
+      usedDieValue: BackgammonDieValue;
+      autoSwitched: boolean;
+      originalDieValue: BackgammonDieValue;
+    } {
       // First try with the original die value
       const originalMoves = Board.getPossibleMoves(board, player, dieValue)
 
       if (originalMoves.length > 0) {
         // Original die has moves, use it
-        return { moves: originalMoves, usedDieValue: dieValue }
+        return {
+          moves: originalMoves,
+          usedDieValue: dieValue,
+          autoSwitched: false,
+          originalDieValue: dieValue
+        }
       }
 
       // Original die has no moves, try the other die value
@@ -410,11 +420,21 @@ export class Board implements BackgammonBoard {
             movesFound: alternativeMoves.length,
           }
         )
-        return { moves: alternativeMoves, usedDieValue: otherDieValue }
+        return {
+          moves: alternativeMoves,
+          usedDieValue: otherDieValue,
+          autoSwitched: true,
+          originalDieValue: dieValue
+        }
       }
 
       // Neither die value has moves, return empty with original die
-      return { moves: [], usedDieValue: dieValue }
+      return {
+        moves: [],
+        usedDieValue: dieValue,
+        autoSwitched: false,
+        originalDieValue: dieValue
+      }
     }
 
   public static getPipCounts = function getPipCounts(game: BackgammonGame) {

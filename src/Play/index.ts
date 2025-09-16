@@ -121,15 +121,17 @@ export class Play {
       origin: matchingMove.origin, // Use the exact origin from fresh calculation
     }
     
-    // If dice were switched, update the player's current roll to reflect the new order
-    if (moveResult.usedDieValue !== dieValue && otherDieValue !== dieValue) {
+    // If dice were auto-switched, update the player's current roll to reflect the new order
+    if (moveResult.autoSwitched) {
       const currentRoll = [...play.player.dice.currentRoll]
       if (currentRoll[0] !== currentRoll[1]) { // Only swap if not doubles
         play.player.dice.currentRoll = [currentRoll[1], currentRoll[0]]
-        debug('Play.move: Swapped dice for checker move', {
+        debug('Play.move: Auto-switched dice - reordered dice to reflect move order', {
           originalRoll: currentRoll,
           newRoll: play.player.dice.currentRoll,
-          usedDieValue: moveResult.usedDieValue
+          originalDieValue: moveResult.originalDieValue,
+          usedDieValue: moveResult.usedDieValue,
+          autoSwitched: moveResult.autoSwitched
         })
       }
     }
@@ -202,6 +204,9 @@ export class Play {
         },
         board: bearOffResult.board,
         move: bearOffResult.move,
+        autoSwitched: moveResult.autoSwitched,
+        originalDieValue: moveResult.originalDieValue,
+        usedDieValue: moveResult.usedDieValue
       } as BackgammonPlayResult
     }
     // --- END PATCH ---
@@ -364,6 +369,9 @@ export class Play {
       },
       board,
       move: completedMove,
+      autoSwitched: moveResult.autoSwitched,
+      originalDieValue: moveResult.originalDieValue,
+      usedDieValue: moveResult.usedDieValue
     } as BackgammonPlayResult
   }
 
