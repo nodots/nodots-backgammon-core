@@ -75,10 +75,11 @@ export class Play {
     const otherReadyMoves = movesArray.filter((m) => m.stateKind === 'ready' && m.dieValue !== dieValue)
     const otherDieValue = otherReadyMoves.length > 0 ? otherReadyMoves[0].dieValue : dieValue
 
-    // Calculate fresh possible moves with intelligent dice switching
-    const moveResult = Board.getPossibleMovesWithIntelligentDiceSwitching(
+    // Calculate fresh possible moves with position-specific auto-switch
+    const moveResult = Board.getPossibleMovesWithPositionSpecificAutoSwitch(
       board,
       play.player,
+      origin,
       dieValue,
       otherDieValue
     )
