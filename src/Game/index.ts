@@ -1267,67 +1267,61 @@ export class Game {
 
         // Execute moves until no more ready moves or max moves reached
         while (currentGame.stateKind === 'moving' && moveCount < maxMoves) {
-          switch (currentGame.stateKind) {
-            case 'moving': {
-              const gameMoving = currentGame as BackgammonGameMoving
+          const gameMoving = currentGame as BackgammonGameMoving
 
-              if (!gameMoving.activePlay) {
-                return currentGame // No active play, turn complete
-              }
+          if (!gameMoving.activePlay) {
+            return currentGame // No active play, turn complete
+          }
 
-              // Get all moves from activePlay
-              const movesArray = Array.from(gameMoving.activePlay.moves)
-              const readyMoves = movesArray.filter(
-                (move) => move.stateKind === 'ready'
-              )
+          // Get all moves from activePlay
+          const movesArray = Array.from(gameMoving.activePlay.moves)
+          const readyMoves = movesArray.filter(
+            (move) => move.stateKind === 'ready'
+          )
 
-              // Check for turn completion conditions
-              const allMovesCompleted = movesArray.every(
-                (move) => move.stateKind === 'completed'
-              )
+          // Check for turn completion conditions
+          const allMovesCompleted = movesArray.every(
+            (move) => move.stateKind === 'completed'
+          )
 
-              if (readyMoves.length === 0 || allMovesCompleted) {
-                // No ready moves available OR all moves are completed (including no-moves)
-                // Transition to 'moved' state and auto-confirm turn
-                const movedGame = Game.toMoved(gameMoving)
-                return Game.confirmTurn(movedGame)
-              }
+          if (readyMoves.length === 0 || allMovesCompleted) {
+            // No ready moves available OR all moves are completed (including no-moves)
+            // Transition to 'moved' state and auto-confirm turn
+            const movedGame = Game.toMoved(gameMoving)
+            return Game.confirmTurn(movedGame)
+          }
 
-              // Use Player.getBestMove to select the optimal move
-              const selectedMove = await Player.getBestMove(
-                gameMoving.activePlay
-              )
+          // Use Player.getBestMove to select the optimal move
+          // CRITICAL FIX: Use currentGame.activePlay to get fresh move state after auto-switching
+          const selectedMove = await Player.getBestMove(
+            currentGame.activePlay
+          )
 
-              if (!selectedMove) {
-                logger.warn('Robot could not select a move, skipping')
-                return currentGame
-              }
+          if (!selectedMove) {
+            logger.warn('Robot could not select a move, skipping')
+            return currentGame
+          }
 
-              // Extract checker ID from the selected move's first possible move
-              const checkerId =
-                selectedMove.possibleMoves?.[0]?.origin?.checkers?.[0]?.id
+          // Extract checker ID from the selected move's first possible move
+          const checkerId =
+            selectedMove.possibleMoves?.[0]?.origin?.checkers?.[0]?.id
 
-              if (!checkerId) {
-                logger.warn('Unable to extract checker ID from selected move')
-                return currentGame
-              }
+          if (!checkerId) {
+            logger.warn('Unable to extract checker ID from selected move')
+            return currentGame
+          }
 
-              // Execute the move
-              try {
-                currentGame = Game.move(gameMoving, checkerId)
-                moveCount++
+          // Execute the move
+          try {
+            currentGame = Game.move(currentGame, checkerId)
+            moveCount++
 
-                logger.info(
-                  `Robot executed move ${moveCount} with checker ${checkerId}`
-                )
-              } catch (error) {
-                logger.error('Error executing robot move:', error)
-                return currentGame
-              }
-              break
-            }
-            default:
-              return currentGame
+            logger.info(
+              `Robot executed move ${moveCount} with checker ${checkerId}`
+            )
+          } catch (error) {
+            logger.error('Error executing robot move:', error)
+            return currentGame
           }
         }
 
