@@ -106,6 +106,16 @@ export class Play {
     }
 
     // Create a synthetic move object with the exact origin and destination
+    // CRITICAL VALIDATION: Prevent duplicate die usage in non-doubles situations
+    const currentRoll = play.player.dice.currentRoll
+    const isDoubles = currentRoll[0] === currentRoll[1]
+    const completedMoves = movesArray.filter(m => m.stateKind === 'completed')
+    const alreadyUsedDieValue = completedMoves.some(m => m.dieValue === moveResult.usedDieValue)
+
+    if (!isDoubles && alreadyUsedDieValue) {
+      throw new Error(`Die value ${moveResult.usedDieValue} has already been used in this turn. Available dice: [${currentRoll.join(', ')}]. This prevents invalid duplicate die usage.`)
+    }
+
     // CRITICAL FIX: Find the specific ready move that matches the die value being used
     // This ensures each move has its unique ID and gets properly filtered when completed
     const specificReadyMove = movesArray.find(
@@ -135,13 +145,25 @@ export class Play {
         // CRITICAL FIX: Update move dieValues to match the new dice order
         // This ensures that consuming moves matches the actual dice usage
         const movesArray = Array.from(play.moves)
+
+        // FIX: Capture original state before any updates to prevent cascade changes
+        const originalDieUpdates: { moveId: string; newDieValue: BackgammonDieValue }[] = []
+
         movesArray.forEach(moveToUpdate => {
           if (moveToUpdate.stateKind === 'ready') {
             if (moveToUpdate.dieValue === moveResult.originalDieValue) {
-              moveToUpdate.dieValue = moveResult.usedDieValue
+              originalDieUpdates.push({ moveId: moveToUpdate.id, newDieValue: moveResult.usedDieValue })
             } else if (moveToUpdate.dieValue === moveResult.usedDieValue) {
-              moveToUpdate.dieValue = moveResult.originalDieValue
+              originalDieUpdates.push({ moveId: moveToUpdate.id, newDieValue: moveResult.originalDieValue })
             }
+          }
+        })
+
+        // Apply all updates atomically to prevent double-updates
+        originalDieUpdates.forEach(update => {
+          const moveToUpdate = movesArray.find(m => m.id === update.moveId)
+          if (moveToUpdate) {
+            moveToUpdate.dieValue = update.newDieValue
           }
         })
 
