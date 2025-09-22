@@ -13,7 +13,7 @@ describe('Position 24 Fix Tests', () => {
     )
 
     // Test Board.getPossibleMoves for position 24
-    const possibleMoves = Board.getPossibleMoves(board, clockwisePlayer, 1)
+    const possibleMoves = Board.getPossibleMoves(board, clockwisePlayer, 1) as any[]
 
     // Filter for moves from position 24
     const movesFromPosition24 = possibleMoves.filter(
@@ -48,7 +48,7 @@ describe('Position 24 Fix Tests', () => {
       board,
       counterclockwisePlayer,
       1
-    )
+    ) as any[]
 
     // Filter for moves from position 8 (counterclockwise) - this is their 17-point
     const movesFromPosition8 = possibleMoves.filter(
@@ -87,7 +87,7 @@ describe('Position 24 Fix Tests', () => {
     ]
 
     testCases.forEach(({ from, to }) => {
-      const possibleMoves = Board.getPossibleMoves(board, clockwisePlayer, 1)
+      const possibleMoves = Board.getPossibleMoves(board, clockwisePlayer, 1) as any[]
       const movesFromPosition = possibleMoves.filter(
         (move) =>
           move.origin.kind === 'point' &&
@@ -126,7 +126,7 @@ describe('Position 24 Fix Tests', () => {
         board,
         counterclockwisePlayer,
         1
-      )
+      ) as any[]
       const movesFromPosition = possibleMoves.filter(
         (move) =>
           move.origin.kind === 'point' &&
