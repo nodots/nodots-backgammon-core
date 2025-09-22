@@ -13,7 +13,6 @@ import {
   BackgammonGameRolling,
   BackgammonGameRollingForStart,
   BackgammonGameStateKind,
-  BackgammonMoveOrigin,
   BackgammonMoveSkeleton,
   BackgammonPlay,
   BackgammonPlayer,
@@ -23,6 +22,7 @@ import {
   BackgammonPlayerMoving,
   BackgammonPlayerRolling,
   BackgammonPlayerRollingForStart,
+  BackgammonPlayerRolledForStart,
   BackgammonPlayers,
   BackgammonPlayerWinner,
   BackgammonPlayMoving,
@@ -41,6 +41,13 @@ import { debug, logger } from '../utils/logger'
 const MAX_PIP_COUNT = 167
 
 export * from '../index'
+// Import tuple aliases from types package
+import type {
+  BackgammonPlayersRollingForStartTuple,
+  BackgammonPlayersRolledForStartTuple,
+  BackgammonPlayersRollingTuple,
+  BackgammonPlayersMovingTuple,
+} from '@nodots-llc/backgammon-types/dist'
 
 export class Game {
   id: string = generateId()
@@ -117,7 +124,7 @@ export class Game {
     const playersWithCorrectPipCounts = Player.recalculatePipCounts(game)
     game = {
       ...game,
-      players: playersWithCorrectPipCounts,
+      players: playersWithCorrectPipCounts as BackgammonPlayersRollingForStartTuple,
     }
 
     return game
@@ -143,7 +150,86 @@ export class Game {
    * @internal - Low-level constructor for scripts and internal use only.
    * Use Game.createNewGame() for normal game creation.
    */
-  public static initialize = function initializeGame(
+  // Overloads by stateKind for typed returns
+  public static initialize(
+    players: BackgammonPlayers,
+    id?: string,
+    stateKind?: 'rolling-for-start',
+    board?: BackgammonBoard,
+    cube?: BackgammonCube,
+    activePlay?: BackgammonPlay,
+    activeColor?: BackgammonColor,
+    activePlayer?: BackgammonPlayer,
+    inactivePlayer?: BackgammonPlayer
+  ): BackgammonGameRollingForStart
+  public static initialize(
+    players: BackgammonPlayersRolledForStartTuple,
+    id: string | undefined,
+    stateKind: 'rolled-for-start',
+    board: BackgammonBoard,
+    cube: BackgammonCube,
+    activePlay: undefined,
+    activeColor: BackgammonColor,
+    activePlayer: BackgammonPlayerRolledForStart,
+    inactivePlayer: BackgammonPlayerRolledForStart
+  ): BackgammonGameRolledForStart
+  public static initialize(
+    players: BackgammonPlayers,
+    id: string | undefined,
+    stateKind: 'rolling',
+    board: BackgammonBoard,
+    cube: BackgammonCube,
+    activePlay: undefined,
+    activeColor: BackgammonColor,
+    activePlayer: BackgammonPlayerRolling,
+    inactivePlayer: BackgammonPlayerInactive
+  ): BackgammonGameRolling
+  public static initialize(
+    players: BackgammonPlayers,
+    id: string | undefined,
+    stateKind: 'rolling',
+    board: BackgammonBoard | undefined,
+    cube: BackgammonCube | undefined,
+    activePlay: undefined,
+    activeColor: BackgammonColor,
+    activePlayer: BackgammonPlayerRolling,
+    inactivePlayer: BackgammonPlayerInactive
+  ): BackgammonGameRolling
+  public static initialize(
+    players: BackgammonPlayers,
+    id: string | undefined,
+    stateKind: 'moving',
+    board: BackgammonBoard,
+    cube: BackgammonCube,
+    activePlay: BackgammonPlayMoving,
+    activeColor: BackgammonColor,
+    activePlayer: BackgammonPlayerMoving,
+    inactivePlayer: BackgammonPlayerInactive
+  ): BackgammonGameMoving
+  // Broad overload to accommodate test helpers using defaults
+  public static initialize(
+    players: BackgammonPlayers,
+    id?: string,
+    stateKind?: BackgammonGameStateKind,
+    board?: BackgammonBoard,
+    cube?: BackgammonCube,
+    activePlay?: BackgammonPlay,
+    activeColor?: BackgammonColor,
+    activePlayer?: BackgammonPlayer,
+    inactivePlayer?: BackgammonPlayer
+  ): BackgammonGame
+  public static initialize(
+    players: BackgammonPlayers,
+    id: string | undefined,
+    stateKind: 'moving',
+    board: BackgammonBoard | undefined,
+    cube: BackgammonCube | undefined,
+    activePlay: BackgammonPlayMoving,
+    activeColor: BackgammonColor,
+    activePlayer: BackgammonPlayerMoving,
+    inactivePlayer: BackgammonPlayerInactive
+  ): BackgammonGameMoving
+  public static initialize(
     players: BackgammonPlayers,
     id: string = generateId(),
     stateKind: BackgammonGameStateKind = 'rolling-for-start',
@@ -152,8 +238,7 @@ export class Game {
     activePlay?: BackgammonPlay,
     activeColor?: BackgammonColor,
     activePlayer?: BackgammonPlayer,
-    inactivePlayer?: BackgammonPlayer,
-    origin?: BackgammonMoveOrigin
+    inactivePlayer?: BackgammonPlayer
   ): BackgammonGame {
     switch (stateKind) {
       case 'rolling-for-start':
@@ -281,7 +366,8 @@ export class Game {
       ...game,
       stateKind: 'rolled-for-start',
       activeColor,
-      players: rollingForStartPlayers,
+      // Ensure tuple order is [active, inactive] for stricter typing
+      players: [activePlayer, inactivePlayer] as BackgammonPlayersRolledForStartTuple,
       activePlayer,
       inactivePlayer,
     } as BackgammonGameRolledForStart
@@ -366,7 +452,16 @@ export class Game {
           // BUG DETECTED: Moves are completed but count doesn't match expected dice
           debug(
             'Game.roll: BUG - Move count mismatch detected, staying in moving state to allow proper move generation',
-            { expectedMoveCount, actualMoveCount, currentRoll, moveStates: Array.from(activePlay.moves).map(m => ({ id: m.id.slice(0,8), stateKind: m.stateKind, dieValue: m.dieValue })) }
+            {
+              expectedMoveCount,
+              actualMoveCount,
+              currentRoll,
+              moveStates: Array.from(activePlay.moves).map((m) => ({
+                id: m.id.slice(0, 8),
+                stateKind: m.stateKind,
+                dieValue: m.dieValue,
+              })),
+            }
           )
           // Force stay in moving state - this prevents stuck games
         }
@@ -376,7 +471,7 @@ export class Game {
         const movesArray = Array.from(activePlay.moves)
         for (const move of movesArray) {
           switch (move.stateKind) {
-            case 'ready':
+            case 'ready': {
               if (move.possibleMoves) {
                 for (const possibleMove of move.possibleMoves) {
                   if (
@@ -388,6 +483,7 @@ export class Game {
                 }
               }
               break
+            }
             case 'completed':
             case 'confirmed':
             case 'in-progress':
@@ -403,7 +499,7 @@ export class Game {
         return {
           ...game,
           stateKind: 'moving',
-          players: [movingPlayer, unrolledPlayer],
+          players: [movingPlayer, unrolledPlayer] as BackgammonPlayersMovingTuple,
           activeColor: movingPlayer.color,
           activePlayer: movingPlayer,
           inactivePlayer: unrolledPlayer,
@@ -416,8 +512,8 @@ export class Game {
         // Handle rolling from doubled state (after accepting a double)
         const { players, board, activeColor } = game
         if (!activeColor) throw new Error('Active color must be provided')
-        let [activePlayerForColor, inactivePlayerForColor] =
-          Game.getPlayersForColor(players, activeColor!)
+    const [activePlayerForColor, inactivePlayerForColor] =
+      Game.getPlayersForColor(players, activeColor!)
         if (activePlayerForColor.stateKind !== 'doubled') {
           throw new Error('Active player must be in doubled state')
         }
@@ -488,9 +584,10 @@ export class Game {
         )
 
         // Update the players array to include the rolled player
-        const updatedPlayers = players.map((p) =>
-          p.id === playerRolled.id ? playerRolled : p
-        ) as BackgammonPlayers
+        const updatedPlayers = [
+          playerRolled,
+          inactivePlayer,
+        ] as BackgammonPlayersMovingTuple
 
         const movingGame = {
           ...game,
@@ -780,7 +877,7 @@ export class Game {
       const movesArray = Array.from(updatedActivePlay.moves) as any[]
       for (const move of movesArray) {
         switch (move.stateKind) {
-          case 'ready':
+          case 'ready': {
             // Recalculate fresh possible moves for this die value on the current board state
             const freshPossibleMoves = Board.getPossibleMoves(
               board,
@@ -821,6 +918,7 @@ export class Game {
               }
             }
             break
+          }
           case 'completed':
           case 'confirmed':
           case 'in-progress':
@@ -1078,7 +1176,10 @@ export class Game {
     const gameAfterTurnCheck = Game.checkAndCompleteTurn(movingGame)
 
     // For robot players, auto-confirm the turn if it transitioned to 'moved'
-    if (movingGame.activePlayer.isRobot && gameAfterTurnCheck.stateKind === 'moved') {
+    if (
+      movingGame.activePlayer.isRobot &&
+      gameAfterTurnCheck.stateKind === 'moved'
+    ) {
       console.log('[DEBUG] 🤖 Robot turn completed, auto-confirming turn')
       return Game.confirmTurn(gameAfterTurnCheck as BackgammonGameMoved)
     }
@@ -1115,7 +1216,15 @@ export class Game {
       | { type: 'invalid-game' }
       | { type: 'no-active-play' }
       | { type: 'moves-incomplete'; completedCount: number; totalCount: number }
-      | { type: 'all-moves-completed'; moves: Array<{ id: string; dieValue: number; stateKind: string; moveKind: string }> }
+      | {
+          type: 'all-moves-completed'
+          moves: Array<{
+            id: string
+            dieValue: number
+            stateKind: string
+            moveKind: string
+          }>
+        }
 
     // Determine current turn completion state
     const getTurnCompletionState = (): TurnCompletionState => {
@@ -1130,24 +1239,26 @@ export class Game {
       }
 
       const movesArray = Array.from(activePlay.moves)
-      const completedMoves = movesArray.filter(move => move.stateKind === 'completed')
+      const completedMoves = movesArray.filter(
+        (move) => move.stateKind === 'completed'
+      )
 
       if (completedMoves.length === movesArray.length) {
         return {
           type: 'all-moves-completed',
-          moves: movesArray.map(m => ({
+          moves: movesArray.map((m) => ({
             id: m.id,
             dieValue: m.dieValue,
             stateKind: m.stateKind,
-            moveKind: m.moveKind
-          }))
+            moveKind: m.moveKind,
+          })),
         }
       }
 
       return {
         type: 'moves-incomplete',
         completedCount: completedMoves.length,
-        totalCount: movesArray.length
+        totalCount: movesArray.length,
       }
     }
 
@@ -1155,26 +1266,38 @@ export class Game {
 
     // Log debug info only after validation
     if (turnState.type !== 'invalid-game') {
-      logger.info('🔍 checkAndCompleteTurn called for player:', game.activePlayer.color, game.activePlayer.isRobot ? '(robot)' : '(human)')
+      logger.info(
+        '🔍 checkAndCompleteTurn called for player:',
+        game.activePlayer.color,
+        game.activePlayer.isRobot ? '(robot)' : '(human)'
+      )
     }
 
     // State machine using switch on discriminated union
     switch (turnState.type) {
-      case 'invalid-game':
+      case 'invalid-game': {
         logger.warn('❌ Invalid game structure, returning original game')
         return game
-
-      case 'no-active-play':
+      }
+      case 'no-active-play': {
         logger.info('❌ No active play or moves, returning original game')
         return game
-
-      case 'moves-incomplete':
-        logger.info(`⏳ Turn incomplete: ${turnState.completedCount}/${turnState.totalCount} moves completed`)
+      }
+      case 'moves-incomplete': {
+        logger.info(
+          `⏳ Turn incomplete: ${turnState.completedCount}/${turnState.totalCount} moves completed`
+        )
         return game
+      }
 
       case 'all-moves-completed':
-        logger.info('✅ All moves completed, attempting transition to moved state')
-        logger.info('📋 Move details:', turnState.moves.map(m => `${m.dieValue}:${m.stateKind}`))
+        logger.info(
+          '✅ All moves completed, attempting transition to moved state'
+        )
+        logger.info(
+          '📋 Move details:',
+          turnState.moves.map((m) => `${m.dieValue}:${m.stateKind}`)
+        )
 
         try {
           const movedGame = Game.toMoved(game)
@@ -1272,7 +1395,10 @@ export class Game {
     return {
       ...game,
       stateKind: 'rolling',
-      players: playersWithUpdatedPips,
+      players: [
+        newActivePlayerWithPips as BackgammonPlayerRolling,
+        newInactivePlayerWithPips,
+      ] as BackgammonPlayersRollingTuple,
       board: boardWithResetMovable,
       activeColor: nextColor,
       activePlayer: newActivePlayerWithPips,
@@ -1364,12 +1490,14 @@ export class Game {
           logger.info('🤖 Robot turn - moves state:', {
             totalMoves: movesArray.length,
             readyMoves: readyMoves.length,
-            completedMoves: movesArray.filter(m => m.stateKind === 'completed').length,
-            moveDetails: movesArray.map(m => ({
+            completedMoves: movesArray.filter(
+              (m) => m.stateKind === 'completed'
+            ).length,
+            moveDetails: movesArray.map((m) => ({
               dieValue: m.dieValue,
               stateKind: m.stateKind,
-              moveKind: m.moveKind
-            }))
+              moveKind: m.moveKind,
+            })),
           })
 
           // Check for turn completion conditions
@@ -1387,7 +1515,11 @@ export class Game {
 
           // Use Player.getBestMove to select the optimal move
           // CRITICAL FIX: Use gameMoving.activePlay to ensure we have the correct activePlay
-          logger.info('🤖 Calling Player.getBestMove with', readyMoves.length, 'ready moves')
+          logger.info(
+            '🤖 Calling Player.getBestMove with',
+            readyMoves.length,
+            'ready moves'
+          )
           const selectedMove = await Player.getBestMove(
             gameMoving.activePlay,
             gameMoving.activePlayer.userId
@@ -1395,18 +1527,23 @@ export class Game {
 
           if (!selectedMove) {
             logger.warn('🤖 Player.getBestMove failed to select a move')
-            logger.info('🤖 Ready moves available but getBestMove returned null:', {
-              readyMovesCount: readyMoves.length,
-              readyMoveDetails: readyMoves.map(m => ({
-                dieValue: m.dieValue,
-                moveKind: m.moveKind,
-                possibleMovesCount: m.possibleMoves?.length || 0
-              }))
-            })
+            logger.info(
+              '🤖 Ready moves available but getBestMove returned null:',
+              {
+                readyMovesCount: readyMoves.length,
+                readyMoveDetails: readyMoves.map((m) => ({
+                  dieValue: m.dieValue,
+                  moveKind: m.moveKind,
+                  possibleMovesCount: m.possibleMoves?.length || 0,
+                })),
+              }
+            )
 
             // CRITICAL FIX: When Player.getBestMove fails, complete the turn instead of leaving stuck
             // This handles edge cases where AI cannot select a move but moves are available
-            logger.warn('🤖 Completing turn due to move selection failure to prevent stuck game')
+            logger.warn(
+              '🤖 Completing turn due to move selection failure to prevent stuck game'
+            )
             const movedGame = Game.toMoved(gameMoving)
             return Game.confirmTurn(movedGame)
           }
@@ -1421,11 +1558,14 @@ export class Game {
               selectedMoveId: selectedMove.id,
               possibleMovesCount: selectedMove.possibleMoves?.length || 0,
               hasOrigin: !!selectedMove.possibleMoves?.[0]?.origin,
-              originCheckersCount: selectedMove.possibleMoves?.[0]?.origin?.checkers?.length || 0
+              originCheckersCount:
+                selectedMove.possibleMoves?.[0]?.origin?.checkers?.length || 0,
             })
 
             // CRITICAL FIX: When checker ID extraction fails, complete the turn instead of leaving stuck
-            logger.warn('🤖 Completing turn due to checker ID extraction failure to prevent stuck game')
+            logger.warn(
+              '🤖 Completing turn due to checker ID extraction failure to prevent stuck game'
+            )
             const movedGame = Game.toMoved(gameMoving)
             return Game.confirmTurn(movedGame)
           }
@@ -1440,7 +1580,9 @@ export class Game {
             )
           } catch (error) {
             logger.error('🤖 Error executing robot move:', error)
-            logger.warn('🤖 Completing turn due to move execution error to prevent stuck game')
+            logger.warn(
+              '🤖 Completing turn due to move execution error to prevent stuck game'
+            )
 
             // CRITICAL FIX: When move execution fails, complete the turn instead of leaving stuck
             const movedGame = Game.toMoved(gameMoving)

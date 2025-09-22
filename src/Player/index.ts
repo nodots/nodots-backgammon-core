@@ -38,7 +38,80 @@ export class Player {
   dice!: BackgammonDice
   pipCount = MAX_PIP_COUNT
 
-  public static initialize = function initializePlayer(
+  // Overloads for typed returns based on stateKind
+  public static initialize(
+    color: BackgammonColor,
+    direction: BackgammonMoveDirection,
+    stateKind: BackgammonPlayerStateKind,
+    isRobot: boolean,
+    userId?: string,
+    pipCount?: number,
+    id?: string
+  ): BackgammonPlayer
+  public static initialize(
+    color: BackgammonColor,
+    direction: BackgammonMoveDirection,
+    stateKind: 'inactive',
+    isRobot: boolean,
+    userId?: string,
+    pipCount?: number,
+    id?: string
+  ): BackgammonPlayer
+  public static initialize(
+    color: BackgammonColor,
+    direction: BackgammonMoveDirection,
+    stateKind: 'rolling-for-start',
+    isRobot: boolean,
+    userId?: string,
+    pipCount?: number,
+    id?: string
+  ): BackgammonPlayerRollingForStart
+  public static initialize(
+    color: BackgammonColor,
+    direction: BackgammonMoveDirection,
+    stateKind: 'rolled-for-start',
+    isRobot: boolean,
+    userId?: string,
+    pipCount?: number,
+    id?: string
+  ): BackgammonPlayerRolledForStart
+  public static initialize(
+    color: BackgammonColor,
+    direction: BackgammonMoveDirection,
+    stateKind: 'rolling',
+    isRobot: boolean,
+    userId?: string,
+    pipCount?: number,
+    id?: string
+  ): BackgammonPlayerRolling
+  public static initialize(
+    color: BackgammonColor,
+    direction: BackgammonMoveDirection,
+    stateKind: 'moving',
+    isRobot: boolean,
+    userId?: string,
+    pipCount?: number,
+    id?: string
+  ): BackgammonPlayerMoving
+  public static initialize(
+    color: BackgammonColor,
+    direction: BackgammonMoveDirection,
+    stateKind: 'winner',
+    isRobot: boolean,
+    userId?: string,
+    pipCount?: number,
+    id?: string
+  ): BackgammonPlayerWinner
+  public static initialize(
+    color: BackgammonColor,
+    direction: BackgammonMoveDirection,
+    stateKind?: BackgammonPlayerStateKind,
+    isRobot?: boolean,
+    userId?: string,
+    pipCount?: number,
+    id?: string
+  ): BackgammonPlayer
+  public static initialize(
     color: BackgammonColor,
     direction: BackgammonMoveDirection,
     stateKind: BackgammonPlayerStateKind = 'inactive',
@@ -206,14 +279,16 @@ export class Player {
     let moveResults: BackgammonMoveResult | undefined = undefined
     const origin = Board.getCheckerContainer(board, originId)
     switch (origin.kind) {
-      case 'bar':
+      case 'bar': {
         const bar = origin as BackgammonBar
         moveResults = Play.move(board, play, bar)
         break
-      case 'point':
+      }
+      case 'point': {
         const point = origin as BackgammonPoint
         moveResults = Play.move(board, play, point)
         break
+      }
       case 'off':
         throw Error('Cannot move from the Off position')
     }
@@ -325,7 +400,7 @@ export class Player {
     logger.info('🤖 [Player.getBestMove] Called with:', {
       hasPlay: !!play,
       hasMove: !!play?.moves,
-      movesSize: play?.moves?.size || 0,
+      movesSize: play?.moves?.size ?? 0,
       playerUserId
     })
 
@@ -343,7 +418,7 @@ export class Player {
         stateKind: m.stateKind,
         moveKind: m.moveKind,
         hasOrigin: !!m.origin,
-        possibleMovesCount: m.possibleMoves?.length || 0
+        possibleMovesCount: m.possibleMoves?.length ?? 0
       }))
     })
 
@@ -363,7 +438,9 @@ export class Player {
         logger.warn('🤖 [Player.getBestMove] AI returned no move, falling back to first available')
       }
     } catch (error) {
-      logger.warn(`🤖 [Player.getBestMove] AI package unavailable: ${error}, using fallback`)
+      logger.warn(
+        `🤖 [Player.getBestMove] AI package unavailable: ${String(error)}, using fallback`
+      )
     }
 
     // Fallback to first available move

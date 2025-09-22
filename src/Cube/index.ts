@@ -19,19 +19,14 @@ export class Cube {
   value: BackgammonCubeValue = undefined
   owner: BackgammonPlayer | undefined = undefined
 
-  public static initialize = function initializeCube(
-    cube?: CubeProps
-  ): BackgammonCube {
-    if (!cube) {
-      cube = {}
-    }
-    let { id, stateKind, value, owner } = cube
-    if (!id) {
-      id = generateId()
-    }
-    if (!stateKind) {
-      stateKind = 'initialized'
-    }
+  // Overload returns initialized cube type
+  public static initialize(cube?: CubeProps): BackgammonCubeInitialized
+  public static initialize(cube?: CubeProps): BackgammonCubeInitialized {
+    const cfg = cube ?? {}
+    let { id, stateKind } = cfg
+    const { value, owner } = cfg
+    id ??= generateId()
+    stateKind ??= 'initialized'
     return {
       id,
       stateKind,

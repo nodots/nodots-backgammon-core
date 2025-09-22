@@ -1,5 +1,6 @@
-import { BackgammonGame } from '@nodots-llc/backgammon-types/dist'
-import { Game } from './index'
+import { BackgammonGame, BackgammonGameStateKind } from '@nodots-llc/backgammon-types/dist'
+import { Board, Cube, Game, Player } from '..'
+// Note: Adapter operates on the data shape, not class instances.
 
 /**
  * Default game rules following standard backgammon conventions
@@ -34,7 +35,7 @@ export const CURRENT_GAME_VERSION = '3.7.0'
  * This bridges the gap between runtime game logic and persistence/API requirements
  */
 export function gameToGameData(
-  game: Game,
+  game: BackgammonGame | Game,
   overrides?: {
     createdAt?: Date
     version?: string
@@ -48,40 +49,19 @@ export function gameToGameData(
 ): BackgammonGame {
   const now = new Date()
 
-  const gameData: BackgammonGame = {
-    // Core game properties (from Game class)
-    id: game.id,
-    stateKind: game.stateKind,
-    players: game.players,
-    board: game.board,
-    cube: game.cube,
-    activeColor: game.activeColor,
-    activePlay: game.activePlay,
-    activePlayer: game.activePlayer,
-    inactivePlayer: game.inactivePlayer,
-
-    // Additional required properties
-    createdAt: overrides?.createdAt || now,
-    version: overrides?.version || CURRENT_GAME_VERSION,
-    rules: {
-      ...DEFAULT_GAME_RULES,
-      ...overrides?.rules,
-    },
-    settings: {
-      ...DEFAULT_GAME_SETTINGS,
-      ...overrides?.settings,
-    },
-
-    // Optional timing properties
-    startTime: overrides?.startTime,
-    lastUpdate: overrides?.lastUpdate || now,
-    endTime: overrides?.endTime,
-
-    // Dynamic properties (computed lazily to avoid circular dependency)
-    gnuPositionId: overrides?.gnuPositionId || '',
+  return {
+    ...game,
+    createdAt: overrides?.createdAt ?? (game as any).createdAt ?? now,
+    // Prefer adapter version unless explicitly overridden
+    version: overrides?.version ?? CURRENT_GAME_VERSION,
+    // Start from defaults, then merge game-provided and explicit overrides
+    rules: { ...DEFAULT_GAME_RULES, ...(game as any).rules, ...overrides?.rules },
+    settings: { ...(game as any).settings, ...DEFAULT_GAME_SETTINGS, ...overrides?.settings },
+    startTime: overrides?.startTime ?? (game as any).startTime,
+    lastUpdate: overrides?.lastUpdate ?? (game as any).lastUpdate ?? now,
+    endTime: overrides?.endTime ?? (game as any).endTime,
+    gnuPositionId: overrides?.gnuPositionId ?? (game as any).gnuPositionId ?? '',
   } as BackgammonGame
-
-  return gameData
 }
 
 /**
@@ -118,24 +98,21 @@ export function gameDataToGameCore(
 /**
  * Create a minimal BackgammonGame for testing or development
  */
-export function createMinimalGameData(
-  coreGame: Partial<
-    Pick<BackgammonGame, 'id' | 'stateKind' | 'players' | 'board' | 'cube'>
-  >
-): BackgammonGame {
-  const now = new Date()
+export function createMinimalGameData(options?: {
+  id?: string
+  stateKind?: BackgammonGameStateKind
+}): BackgammonGame {
+  const id = options?.id ?? 'game-' + Math.random().toString(36).slice(2)
+  const stateKind: BackgammonGameStateKind = 'rolling-for-start'
 
-  return {
-    id: coreGame.id || 'test-game',
-    stateKind: coreGame.stateKind || 'rolling-for-start',
-    players: coreGame.players || [],
-    board: coreGame.board || ({} as any),
-    cube: coreGame.cube || ({} as any),
-    createdAt: now,
-    version: CURRENT_GAME_VERSION,
-    rules: DEFAULT_GAME_RULES,
-    settings: DEFAULT_GAME_SETTINGS,
-    lastUpdate: now,
-    gnuPositionId: '',
-  } as BackgammonGame
+  // Domain factories to ensure valid structures
+  const players = [
+    Player.initialize('white', 'clockwise', 'inactive', false, 'user-white'),
+    Player.initialize('black', 'counterclockwise', 'inactive', false, 'user-black'),
+  ] as any
+  const board = Board.initialize()
+  const cube = Cube.initialize()
+
+  const baseGame = Game.initialize(players, id, 'rolling-for-start', board, cube)
+  return gameToGameData(baseGame)
 }

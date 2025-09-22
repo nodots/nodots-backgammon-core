@@ -14,15 +14,57 @@ import {
 import { generateId } from '..'
 
 export class Dice {
-  public static initialize = function initializeDice(
+  // Overloads for precise return types based on state
+  public static initialize(
+    color: BackgammonColor
+  ): BackgammonDiceInactive
+  public static initialize(
+    color: BackgammonColor,
+    stateKind: 'inactive',
+    id?: string,
+    currentRoll?: undefined
+  ): BackgammonDiceInactive
+  public static initialize(
+    color: BackgammonColor,
+    stateKind: 'rolling',
+    id?: string,
+    currentRoll?: BackgammonRoll
+  ): BackgammonDiceRolling
+  public static initialize(
+    color: BackgammonColor,
+    stateKind: 'rolling-for-start',
+    id?: string,
+    currentRoll?: BackgammonRollForStart
+  ): BackgammonDiceRollingForStart
+  public static initialize(
+    color: BackgammonColor,
+    stateKind: 'rolled-for-start',
+    id?: string,
+    currentRoll?: BackgammonRollForStart
+  ): BackgammonDiceRolledForStart
+  public static initialize(
+    color: BackgammonColor,
+    stateKind: 'rolled',
+    id?: string,
+    currentRoll?: BackgammonRoll
+  ): BackgammonDiceRolled
+  public static initialize(
+    color: BackgammonColor,
+    stateKind?: BackgammonDiceStateKind,
+    id?: string,
+    currentRoll?: BackgammonRoll | BackgammonRollForStart
+  ): BackgammonDice
+  public static initialize(
     color: BackgammonColor,
     stateKind: BackgammonDiceStateKind = 'inactive',
     id: string = generateId(),
     currentRoll: BackgammonRoll | BackgammonRollForStart | undefined = undefined
   ): BackgammonDice {
-    const total = currentRoll && currentRoll[1] !== undefined 
-      ? currentRoll[0] + currentRoll[1] 
-      : currentRoll ? currentRoll[0] : undefined
+    const total = currentRoll
+      ? currentRoll[1] !== undefined
+        ? currentRoll[0] + (currentRoll[1] as number)
+        : currentRoll[0]
+      : undefined
 
     switch (stateKind) {
       case 'inactive':
@@ -59,7 +101,7 @@ export class Dice {
           color,
           currentRoll: currentRoll as BackgammonRollForStart,
           total: currentRoll[0], // For start rolls, only first die counts
-        } as any
+        } as BackgammonDiceRolledForStart
       case 'rolled':
         if (!currentRoll) {
           throw new Error('currentRoll is required for rolled dice')
@@ -72,17 +114,14 @@ export class Dice {
           total: total!,
         } as BackgammonDiceRolled
       default:
-        throw new Error(`Unknown dice state: ${stateKind}`)
+        throw new Error('Unknown dice state: ' + String(stateKind))
     }
   }
 
   public static roll = function rollDice(
     dice: BackgammonDiceInactive | BackgammonDiceRolling
   ): BackgammonDiceRolled {
-    const currentRoll: BackgammonRoll = [
-      Dice.rollDie() as BackgammonDieValue,
-      Dice.rollDie() as BackgammonDieValue,
-    ]
+    const currentRoll: BackgammonRoll = [Dice.rollDie(), Dice.rollDie()]
     return {
       ...dice,
       stateKind: 'rolled',
@@ -96,17 +135,14 @@ export class Dice {
   ): BackgammonDiceRolled {
     return {
       ...dice,
-      currentRoll: [
-        dice.currentRoll![1],
-        dice.currentRoll![0],
-      ] as BackgammonRoll,
+      currentRoll: [dice.currentRoll[1], dice.currentRoll[0]] as BackgammonRoll,
     }
   }
 
   public static isDouble = function isDouble(
     dice: BackgammonDiceRolled
   ): boolean {
-    return dice.currentRoll![0] === dice.currentRoll![1]
+    return dice.currentRoll[0] === dice.currentRoll[1]
   }
 
   public static rollForStart = function rollForStart(
@@ -118,7 +154,7 @@ export class Dice {
       stateKind: 'rolled-for-start',
       currentRoll,
       total: currentRoll[0], // For start rolls, only first die counts
-    } as any
+    } as BackgammonDiceRolledForStart
   }
 
   static rollDie = function rollDie(): BackgammonDieValue {

@@ -5,11 +5,8 @@ import {
   BackgammonCheckerContainer,
   BackgammonCheckerContainerImport,
   BackgammonColor,
-  BackgammonDieValue,
   BackgammonGame,
   BackgammonMoveDirection,
-  BackgammonMoveOrigin,
-  BackgammonMoveSkeleton,
   BackgammonOff,
   BackgammonPlayer,
   BackgammonPlayers,
@@ -52,9 +49,9 @@ export class Board implements BackgammonBoard {
   public static initialize(
     boardImport?: BackgammonCheckerContainerImport[]
   ): BackgammonBoard {
-    const board = Board.buildBoard(boardImport || BOARD_IMPORT_DEFAULT)
-    const bar = Board.buildBar(boardImport || BOARD_IMPORT_DEFAULT)
-    const off = Board.buildOff(boardImport || BOARD_IMPORT_DEFAULT)
+    const board = Board.buildBoard(boardImport ?? BOARD_IMPORT_DEFAULT)
+    const bar = Board.buildBar(boardImport ?? BOARD_IMPORT_DEFAULT)
+    const off = Board.buildOff(boardImport ?? BOARD_IMPORT_DEFAULT)
 
     return {
       id: generateId(),
@@ -72,11 +69,11 @@ export class Board implements BackgammonBoard {
   ): BackgammonBoard {
     if (!board) throw Error('No board found')
 
-    const opponentDirection =
-      direction === 'clockwise' ? 'counterclockwise' : 'clockwise'
+    // const opponentDirection =
+    //   direction === 'clockwise' ? 'counterclockwise' : 'clockwise'
 
-    // Create a deep clone of the board
-    const boardClone = JSON.parse(JSON.stringify(board))
+    // Create a typed deep clone of the board to preserve types
+    const boardClone = Board.cloneBoard(board)
 
     // Get references to the cloned containers
     const originClone = this.getCheckerContainer(boardClone, origin.id)
@@ -84,7 +81,7 @@ export class Board implements BackgammonBoard {
       boardClone,
       destination.id
     )
-    const opponentBarClone = boardClone.bar[opponentDirection]
+    // const opponentBarClone = boardClone.bar[opponentDirection]
 
     // CRITICAL FIX: Validate that the move is still valid at execution time
     // This prevents the "No checker found" error from stale move references
@@ -120,7 +117,7 @@ export class Board implements BackgammonBoard {
         checker: checker,
         checkerColor: movingCheckerColor,
       })
-      throw Error(`Invalid checker color: ${movingCheckerColor}`)
+      throw Error(`Invalid checker color: ${String(movingCheckerColor)}`)
     }
 
     debug('Board.moveChecker: Moving checker', {
@@ -154,6 +151,7 @@ export class Board implements BackgammonBoard {
           id: hitChecker.id,
           color: hitCheckerColor,
           checkercontainerId: hitCheckerBar.id,
+          isMovable: false,
         })
         // Place the moving checker with its original color
         destinationClone.checkers = [
@@ -190,9 +188,9 @@ export class Board implements BackgammonBoard {
     const checkercontainers = Board.getCheckerContainers(board)
     const checkers: BackgammonChecker[] = []
 
-    checkercontainers.map(function pushCheckers(checkercontainer) {
+    for (const checkercontainer of checkercontainers) {
       checkers.push(...checkercontainer.checkers)
-    })
+    }
     return checkers
   }
 
@@ -225,7 +223,85 @@ export class Board implements BackgammonBoard {
     const points = Board.getPoints(board) as BackgammonCheckerContainer[]
     const bar = Board.getBars(board) as BackgammonCheckerContainer[]
     const off = Board.getOffs(board) as BackgammonCheckerContainer[]
-    return points.concat(...bar).concat(...off)
+    return [...points, ...bar, ...off]
+  }
+
+  private static cloneBoard = function cloneBoard(
+    board: BackgammonBoard
+  ): BackgammonBoard {
+    const cloneCheckerWithContainer = (
+      c: BackgammonChecker,
+      containerId: string
+    ): BackgammonChecker => {
+      const checkercontainerId = (c as { checkercontainerId?: string })
+        .checkercontainerId
+      const isMovable = (c as { isMovable?: boolean }).isMovable
+      return {
+        id: c.id,
+        color: c.color,
+        checkercontainerId: checkercontainerId ?? containerId,
+        isMovable: isMovable ?? false,
+      }
+    }
+
+    const points: BackgammonPoints = board.points.map((p) => ({
+      id: p.id,
+      kind: 'point',
+      position: {
+        clockwise: p.position.clockwise,
+        counterclockwise: p.position.counterclockwise,
+      },
+      checkers: p.checkers.map((c) => cloneCheckerWithContainer(c, p.id)),
+    })) as BackgammonPoints
+
+    const bar: { clockwise: BackgammonBar; counterclockwise: BackgammonBar } = {
+      clockwise: {
+        id: board.bar.clockwise.id,
+        kind: 'bar',
+        position: 'bar',
+        direction: 'clockwise',
+        checkers: board.bar.clockwise.checkers.map((c) =>
+          cloneCheckerWithContainer(c, board.bar.clockwise.id)
+        ),
+      },
+      counterclockwise: {
+        id: board.bar.counterclockwise.id,
+        kind: 'bar',
+        position: 'bar',
+        direction: 'counterclockwise',
+        checkers: board.bar.counterclockwise.checkers.map((c) =>
+          cloneCheckerWithContainer(c, board.bar.counterclockwise.id)
+        ),
+      },
+    }
+
+    const off: { clockwise: BackgammonOff; counterclockwise: BackgammonOff } = {
+      clockwise: {
+        id: board.off.clockwise.id,
+        kind: 'off',
+        position: 'off',
+        direction: 'clockwise',
+        checkers: board.off.clockwise.checkers.map((c) =>
+          cloneCheckerWithContainer(c, board.off.clockwise.id)
+        ),
+      },
+      counterclockwise: {
+        id: board.off.counterclockwise.id,
+        kind: 'off',
+        position: 'off',
+        direction: 'counterclockwise',
+        checkers: board.off.counterclockwise.checkers.map((c) =>
+          cloneCheckerWithContainer(c, board.off.counterclockwise.id)
+        ),
+      },
+    }
+
+    return {
+      id: board.id,
+      points,
+      bar,
+      off,
+    }
   }
 
   static getCheckerContainer = function getCheckerContainer(
@@ -319,7 +395,7 @@ export class Board implements BackgammonBoard {
 
     const points: BackgammonPoints = tempPoints as BackgammonPoints
 
-    points.map(function mapPoints(point: BackgammonPoint) {
+    points.forEach(function mapPoints(point: BackgammonPoint) {
       const pointSpecs = boardImport.filter(function findPointSpec(cc) {
         if (typeof cc.position === 'object' && 'clockwise' in cc.position) {
           return (
@@ -544,7 +620,7 @@ export class Board implements BackgammonBoard {
     }
 
     const generateRandomPositions = (count: number): number[] => {
-      const positions: Set<number> = new Set()
+      const positions = new Set<number>()
       while (positions.size < count) {
         const position = Math.floor(Math.random() * 24) + 1
         positions.add(position)
@@ -614,7 +690,6 @@ export class Board implements BackgammonBoard {
 
     // Generate random colors and directions for players
     const activeColor = randomBackgammonColor()
-    const inactiveColor = activeColor === 'black' ? 'white' : 'black'
 
     // Randomly assign directions
     const clockwiseColor = randomBackgammonColor()
@@ -648,7 +723,7 @@ export class Board implements BackgammonBoard {
     players?: BackgammonPlayers,
     activePlayer?: BackgammonPlayer,
     moveNotation?: string,
-    playerModels?: { [playerId: string]: string }
+    playerModels?: Record<string, string>
   ): string => {
     try {
       return ascii(board, players, activePlayer, moveNotation, playerModels)
@@ -664,7 +739,7 @@ export class Board implements BackgammonBoard {
     activeColor?: BackgammonColor,
     gameStateKind?: string,
     moveNotation?: string,
-    playerModels?: { [playerId: string]: string }
+    playerModels?: Record<string, string>
   ): string => {
     try {
       // Find the active player based on activeColor
@@ -672,7 +747,7 @@ export class Board implements BackgammonBoard {
 
       // Create enhanced move notation that includes game state
       const enhancedMoveNotation = gameStateKind
-        ? `${moveNotation || ''} (${gameStateKind})`
+        ? `${moveNotation ?? ''} (${gameStateKind})`
         : moveNotation
 
       return ascii(
