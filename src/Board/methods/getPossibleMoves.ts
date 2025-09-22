@@ -51,98 +51,79 @@ const getBasicPossibleMoves = function getBasicPossibleMoves(
     return possibleMoves
   }
 
-  // Handle regular point-to-point moves
-  playerPoints.forEach(function mapPlayerPoints(point) {
-    const originPosition = point.position[playerDirection]
-    const destinationPosition = originPosition - dieValue
-
-    // Skip moves that would go off the board - these are handled by bear-off logic
-    if (destinationPosition < 1 || destinationPosition > 24) {
-      return
-    }
-
-    const possibleDestination = Board.getPoints(board).find(
-      (p: BackgammonPoint) =>
-        // Point must be empty, have only one opponent checker (hit), or have player's own checkers (stacking)
-        (p.checkers.length === 0 ||
-          (p.checkers.length === 1 && p.checkers[0].color !== player.color) ||
-          (p.checkers.length > 0 && p.checkers[0].color === player.color)) &&
-        // Point must match the destination position using the player's direction
-        p.position[playerDirection] === destinationPosition
-    )
-
-    if (possibleDestination) {
-      possibleMoves.push({
-        origin: point,
-        destination: possibleDestination,
-        dieValue,
-        direction: playerDirection,
-      })
-    }
-  })
-
-  // Bear-off logic: allow bearing off if all checkers are in the home board
+  // Calculate allCheckersInHome before the loop
   const homeBoardPoints = Board.getPoints(board).filter((p) => {
     const pos = p.position[playerDirection]
     return pos >= 1 && pos <= 6
   })
-
   const homeBoardPointIds = new Set(homeBoardPoints.map((p) => p.id))
   const allCheckersInHome = playerPoints.every((p) =>
     homeBoardPointIds.has(p.id)
   )
 
-  if (allCheckersInHome) {
-    // CRITICAL FIX: Proper implementation of bear-off higher die rule
+  // Handle both regular point-to-point moves and bearing-off moves
+  playerPoints.forEach(function mapPlayerPoints(point) {
+    const originPosition = point.position[playerDirection]
+    const destinationPosition = originPosition - dieValue
 
-    // Step 1: Find all occupied positions in home board for this player
-    const occupiedPositions = homeBoardPoints
-      .filter(
-        (point) =>
-          point.checkers.length > 0 && point.checkers[0].color === player.color
-      )
-      .map((point) => ({
-        point,
-        position: point.position[playerDirection],
-      }))
-      .sort((a, b) => b.position - a.position) // Sort by position desc (highest first)
-
-    // Step 2: Check for exact match first
-    const exactMatch = occupiedPositions.find((op) => op.position === dieValue)
-    if (exactMatch) {
-      // Direct bear-off: die matches distance exactly
-      const off = board.off[playerDirection]
-      possibleMoves.push({
-        origin: exactMatch.point,
-        destination: off,
-        dieValue,
-        direction: playerDirection,
-      })
-    } else {
-      // Step 3: FIXED Higher die rule - only bear off if NO checkers exist on higher points
-      // Find checkers on points higher than the die value
-      const checkersOnHigherPoints = occupiedPositions.filter(
-        (op) => op.position > dieValue
+    // Handle regular point-to-point moves
+    if (destinationPosition >= 1 && destinationPosition <= 24) {
+      const possibleDestination = Board.getPoints(board).find(
+        (p: BackgammonPoint) =>
+          // Point must be empty, have only one opponent checker (hit), or have player's own checkers (stacking)
+          (p.checkers.length === 0 ||
+            (p.checkers.length === 1 && p.checkers[0].color !== player.color) ||
+            (p.checkers.length > 0 && p.checkers[0].color === player.color)) &&
+          // Point must match the destination position using the player's direction
+          p.position[playerDirection] === destinationPosition
       )
 
-      if (checkersOnHigherPoints.length === 0) {
-        // No checkers on higher points - can use higher die rule
-        // Bear off from the highest occupied point (regardless of die value)
-        if (occupiedPositions.length > 0) {
-          const highestOccupiedPosition = occupiedPositions[0] // Already sorted desc, so first is highest
-          const off = board.off[playerDirection]
-          possibleMoves.push({
-            origin: highestOccupiedPosition.point,
-            destination: off,
-            dieValue,
-            direction: playerDirection,
-          })
+      if (possibleDestination) {
+        possibleMoves.push({
+          origin: point,
+          destination: possibleDestination,
+          dieValue,
+          direction: playerDirection,
+        })
+      }
+    }
+
+    // Handle bearing-off moves when all checkers are in home board
+    if (allCheckersInHome && destinationPosition < 1) {
+      // Check for exact bear-off match
+      if (originPosition === dieValue) {
+        const off = board.off[playerDirection]
+        possibleMoves.push({
+          origin: point,
+          destination: off,
+          dieValue,
+          direction: playerDirection,
+        })
+      } else {
+        // Higher die rule: check if no checkers exist on higher points
+        const checkersOnHigherPoints = playerPoints.some(
+          (p) => p.position[playerDirection] > dieValue
+        )
+        if (!checkersOnHigherPoints) {
+          // No checkers on higher points - can bear off from highest point
+          const highestPoint = playerPoints.reduce((highest, current) =>
+            current.position[playerDirection] > highest.position[playerDirection] ? current : highest
+          )
+          if (point.id === highestPoint.id) {
+            const off = board.off[playerDirection]
+            possibleMoves.push({
+              origin: point,
+              destination: off,
+              dieValue,
+              direction: playerDirection,
+            })
+          }
         }
       }
-      // If checkers exist on higher points, no bear-off moves are added
-      // The regular point-to-point move logic above will handle moves within home board
     }
-  }
+  })
+
+  // Bearing-off logic has been moved into the main loop above
 
   return possibleMoves
 }
