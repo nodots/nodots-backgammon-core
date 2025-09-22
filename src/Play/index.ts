@@ -557,11 +557,31 @@ export class Play {
           // Continue to regular move generation (fall through to else block)
         }
       } else {
-        // No checkers on the bar - generate moves for normal board positions
-        // CRITICAL FIX: Do NOT use auto-switching during Play.initialize
-        // Each die value should create exactly one move with that specific die value
-        // Auto-switching should only happen during move execution, not initialization
-        const possibleMoves = Board.getPossibleMoves(board, player, dieValue) as BackgammonMoveSkeleton[]
+        // No checkers on the bar OR all bar checkers have been planned for reentry
+        // CRITICAL FIX: Use simulated board state that accounts for planned reentries
+
+        // Create a simulated board state that includes the effects of any planned reentry moves
+        let simulatedBoard = board
+        const plannedReentryMoves = movesArr.filter(m => m.moveKind === 'reenter')
+
+        if (plannedReentryMoves.length > 0) {
+          // Simulate the board state after planned reentries
+          for (const reentryMove of plannedReentryMoves) {
+            if (reentryMove.possibleMoves.length > 0) {
+              const firstPossibleMove = reentryMove.possibleMoves[0]
+              // Simulate moving a checker from bar to the landing point
+              simulatedBoard = Board.moveChecker(
+                simulatedBoard,
+                firstPossibleMove.origin,
+                firstPossibleMove.destination,
+                player.direction
+              )
+            }
+          }
+        }
+
+        // Calculate possible moves using the simulated board state
+        const possibleMoves = Board.getPossibleMoves(simulatedBoard, player, dieValue) as BackgammonMoveSkeleton[]
         
         // CRITICAL FIX: Do NOT mutate player.dice.currentRoll during initialization loop
         // This was causing duplicate die values when reentry + normal moves were mixed
