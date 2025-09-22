@@ -186,7 +186,7 @@ export async function runSimulation(maxTurns: number = 100) {
               gameMoved.board,
               m.player,
               m.dieValue
-            )
+            ) as any[]
             return possibleMoves.length > 0
           }
           return false
@@ -202,7 +202,7 @@ export async function runSimulation(maxTurns: number = 100) {
                 gameMoved.board,
                 m.player,
                 m.dieValue
-              )
+              ) as any[]
               return possibleMoves.length > 0
             }
             return false
@@ -218,7 +218,7 @@ export async function runSimulation(maxTurns: number = 100) {
           gameMoved.board,
           nextMove.player,
           nextMove.dieValue
-        )
+        ) as any[]
 
         // Display all possible moves for this die value
         console.log(`\nPossible moves for die value ${nextMove.dieValue}:`)

@@ -157,7 +157,7 @@ export async function logSingleGame() {
               gameMoved.board,
               m.player,
               m.dieValue
-            )
+            ) as any[]
             return possibleMoves.length > 0
           }
           return false
@@ -173,7 +173,7 @@ export async function logSingleGame() {
                 gameMoved.board,
                 m.player,
                 m.dieValue
-              )
+              ) as any[]
               return possibleMoves.length > 0
             }
             return false
@@ -190,7 +190,7 @@ export async function logSingleGame() {
           gameMoved.board,
           nextMove.player,
           nextMove.dieValue
-        )
+        ) as any[]
 
         // Take the first valid move that has checkers
         let validMove = null
@@ -325,7 +325,7 @@ export async function logSingleGame() {
           gameMoved.board,
           m.player,
           m.dieValue
-        )
+        ) as any[]
         logContent += `    Possible moves for die ${m.dieValue}: ${possibleMoves.length}\n`
       }
     })
@@ -374,7 +374,7 @@ export async function logSingleGame() {
         m.stateKind !== 'completed' &&
         (m.stateKind === 'ready' ||
           (m.stateKind === 'in-progress' && !m.origin)) &&
-        Board.getPossibleMoves(gameMoved.board, m.player, m.dieValue).length ===
+        (Board.getPossibleMoves(gameMoved.board, m.player, m.dieValue) as any[]).length ===
           0
     )
     if (stuckMoves.length > 0) {

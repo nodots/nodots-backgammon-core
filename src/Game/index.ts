@@ -1110,24 +1110,88 @@ export class Game {
   public static checkAndCompleteTurn = function checkAndCompleteTurn(
     game: BackgammonGameMoving
   ): BackgammonGame {
-    // Check if all moves in the current turn are completed
-    const activePlay = game.activePlay
-    if (!activePlay || !activePlay.moves) {
-      return game // No active play, return current game
+    // Use discriminated union pattern for turn completion states
+    type TurnCompletionState =
+      | { type: 'invalid-game' }
+      | { type: 'no-active-play' }
+      | { type: 'moves-incomplete'; completedCount: number; totalCount: number }
+      | { type: 'all-moves-completed'; moves: Array<{ id: string; dieValue: number; stateKind: string; moveKind: string }> }
+
+    // Determine current turn completion state
+    const getTurnCompletionState = (): TurnCompletionState => {
+      // Validate game structure first
+      if (!game?.activePlayer?.color) {
+        return { type: 'invalid-game' }
+      }
+
+      const activePlay = game.activePlay
+      if (!activePlay?.moves) {
+        return { type: 'no-active-play' }
+      }
+
+      const movesArray = Array.from(activePlay.moves)
+      const completedMoves = movesArray.filter(move => move.stateKind === 'completed')
+
+      if (completedMoves.length === movesArray.length) {
+        return {
+          type: 'all-moves-completed',
+          moves: movesArray.map(m => ({
+            id: m.id,
+            dieValue: m.dieValue,
+            stateKind: m.stateKind,
+            moveKind: m.moveKind
+          }))
+        }
+      }
+
+      return {
+        type: 'moves-incomplete',
+        completedCount: completedMoves.length,
+        totalCount: movesArray.length
+      }
     }
 
-    const movesArray = Array.from(activePlay.moves)
-    const allMovesCompleted = movesArray.every(
-      (move) => move.stateKind === 'completed'
-    )
+    const turnState = getTurnCompletionState()
 
-    if (!allMovesCompleted) {
-      return game // Turn not complete, return current game
+    // Log debug info only after validation
+    if (turnState.type !== 'invalid-game') {
+      logger.info('🔍 checkAndCompleteTurn called for player:', game.activePlayer.color, game.activePlayer.isRobot ? '(robot)' : '(human)')
     }
 
-    // FIXED: Use the same state transition as human players
-    // All moves are completed, transition to 'moved' state
-    return Game.toMoved(game)
+    // State machine using switch on discriminated union
+    switch (turnState.type) {
+      case 'invalid-game':
+        logger.warn('❌ Invalid game structure, returning original game')
+        return game
+
+      case 'no-active-play':
+        logger.info('❌ No active play or moves, returning original game')
+        return game
+
+      case 'moves-incomplete':
+        logger.info(`⏳ Turn incomplete: ${turnState.completedCount}/${turnState.totalCount} moves completed`)
+        return game
+
+      case 'all-moves-completed':
+        logger.info('✅ All moves completed, attempting transition to moved state')
+        logger.info('📋 Move details:', turnState.moves.map(m => `${m.dieValue}:${m.stateKind}`))
+
+        try {
+          const movedGame = Game.toMoved(game)
+          logger.info('🎯 Successfully transitioned to moved state')
+          return movedGame
+        } catch (error) {
+          logger.error('💥 Error in toMoved transition:', error)
+          logger.error('📊 Game state:', game.stateKind)
+          logger.error('📊 Moves details:', turnState.moves)
+          return game
+        }
+
+      default:
+        // TypeScript exhaustiveness check ensures we handle all cases
+        const _exhaustive: never = turnState
+        return game
+    }
   }
 
   /**

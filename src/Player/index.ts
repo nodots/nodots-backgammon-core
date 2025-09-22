@@ -319,21 +319,45 @@ export class Player {
    * @returns A selected BackgammonMoveReady, or undefined if no moves
    */
   public static getBestMove = async function getBestMove(
-    play: BackgammonPlayMoving
+    play: BackgammonPlayMoving,
+    playerUserId?: string
   ) {
-    if (!play.moves || play.moves.size === 0) return undefined
-    
+    logger.info('🤖 [Player.getBestMove] Called with:', {
+      hasPlay: !!play,
+      hasMove: !!play?.moves,
+      movesSize: play?.moves?.size || 0,
+      playerUserId
+    })
+
+    if (!play.moves || play.moves.size === 0) {
+      logger.warn('🤖 [Player.getBestMove] No moves available, returning undefined')
+      return undefined
+    }
+
+    // Log available moves for debugging
+    const movesArray = Array.from(play.moves)
+    logger.info('🤖 [Player.getBestMove] Available moves:', {
+      totalMoves: movesArray.length,
+      moveDetails: movesArray.map(m => ({
+        dieValue: m.dieValue,
+        stateKind: m.stateKind,
+        moveKind: m.moveKind,
+        hasOrigin: !!m.origin,
+        possibleMovesCount: m.possibleMoves?.length || 0
+      }))
+    })
+
     // Try to use AI selectBestMove for intelligent move selection
     logger.info('🤖 [Player.getBestMove] Attempting to load AI package')
-    
+
     try {
       // @ts-ignore - Dynamic import of optional dependency
       const aiModule = await import('@nodots-llc/backgammon-ai')
       logger.info('🤖 [Player.getBestMove] AI package loaded, calling selectBestMove')
-      
-      const bestMove = await aiModule.selectBestMove(play)
+
+      const bestMove = await aiModule.selectBestMove(play, playerUserId)
       if (bestMove) {
-        logger.info(`🤖 [Player.getBestMove] AI selected move from ${bestMove.origin.id} (${bestMove.stateKind})`)
+        logger.info(`🤖 [Player.getBestMove] AI selected move from ${bestMove.origin?.id} (${bestMove.stateKind})`)
         return bestMove
       } else {
         logger.warn('🤖 [Player.getBestMove] AI returned no move, falling back to first available')
@@ -346,8 +370,23 @@ export class Player {
     const readyMoves = Array.from(play.moves).filter(
       (move) => move.stateKind === 'ready'
     )
-    if (readyMoves.length === 0) return undefined
-    
+
+    logger.info('🤖 [Player.getBestMove] Fallback logic:', {
+      totalMoves: movesArray.length,
+      readyMoves: readyMoves.length,
+      readyMoveDetails: readyMoves.map(m => ({
+        dieValue: m.dieValue,
+        moveKind: m.moveKind,
+        hasOrigin: !!m.origin,
+        hasCheckers: !!m.possibleMoves?.[0]?.origin?.checkers?.length
+      }))
+    })
+
+    if (readyMoves.length === 0) {
+      logger.warn('🤖 [Player.getBestMove] No ready moves found, returning undefined')
+      return undefined
+    }
+
     logger.info('🤖 [Player.getBestMove] Using first available move as fallback')
     return readyMoves[0]
   }
