@@ -103,7 +103,7 @@ describe('Board', () => {
   it('should generate a random board', () => {
     expect(randomBoard.id).toBeDefined()
     expect(randomBoard.points.length).toBe(24)
-    let totalCheckers = randomBoard.points.reduce(
+    const totalCheckers = randomBoard.points.reduce(
       (acc, point) => {
         acc.black += point.checkers.filter(
           (checker) => checker.color === 'black'

@@ -19,11 +19,7 @@ import { Checker, generateId, Player, randomBackgammonColor } from '..'
 import { debug, logger } from '../utils/logger'
 import { ascii } from './ascii'
 import { BOARD_IMPORT_DEFAULT } from './imports'
-import {
-  getPossibleMoves,
-  getPossibleMovesWithIntelligentDiceSwitching,
-  getPossibleMovesWithPositionSpecificAutoSwitch,
-} from './methods/getPossibleMoves'
+import { getPossibleMoves } from './methods/getPossibleMoves'
 export { exportToGnuPositionId } from './gnuPositionId'
 
 export const BOARD_POINT_COUNT = 24
@@ -320,14 +316,6 @@ export class Board implements BackgammonBoard {
   }
 
   public static getPossibleMoves = getPossibleMoves
-
-  /** @deprecated Use getPossibleMoves with otherDieValue parameter instead */
-  public static getPossibleMovesWithIntelligentDiceSwitching =
-    getPossibleMovesWithIntelligentDiceSwitching
-
-  /** @deprecated Use getPossibleMoves with otherDieValue and origin parameters instead */
-  public static getPossibleMovesWithPositionSpecificAutoSwitch =
-    getPossibleMovesWithPositionSpecificAutoSwitch
 
   public static getPipCounts = function getPipCounts(game: BackgammonGame) {
     const { board, players } = game

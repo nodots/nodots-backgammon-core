@@ -901,10 +901,15 @@ export class Game {
       for (const move of movesArray) {
         switch (move.stateKind) {
           case 'ready': {
+            // Build a canonical moving player reference for recalculation to avoid stale references
+            const recalcPlayer = {
+              ...(game.activePlayer as any),
+              stateKind: 'moving' as const,
+            }
             // Recalculate fresh possible moves for this die value on the current board state
             const freshPossibleMoves = Board.getPossibleMoves(
               board,
-              updatedActivePlay.player,
+              recalcPlayer,
               move.dieValue
             ) as BackgammonMoveSkeleton[]
 
@@ -927,8 +932,9 @@ export class Game {
                 }
               )
             } else {
-              // Update the move with fresh possible moves
+              // Update the move with fresh possible moves and refreshed player ref
               move.possibleMoves = freshPossibleMoves
+              move.player = recalcPlayer
 
               // Add origins to movable containers
               for (const possibleMove of freshPossibleMoves) {

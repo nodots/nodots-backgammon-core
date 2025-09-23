@@ -74,12 +74,12 @@ export class Checker {
     }
     
     // Set bar checkers to not movable
-    if (updatedBoard.bar && updatedBoard.bar.clockwise) {
+    if (updatedBoard.bar?.clockwise) {
       for (const checker of updatedBoard.bar.clockwise.checkers) {
         checker.isMovable = false
       }
     }
-    if (updatedBoard.bar && updatedBoard.bar.counterclockwise) {
+    if (updatedBoard.bar?.counterclockwise) {
       for (const checker of updatedBoard.bar.counterclockwise.checkers) {
         checker.isMovable = false
       }
@@ -96,12 +96,12 @@ export class Checker {
       }
       
       // Check bars
-      if (updatedBoard.bar && updatedBoard.bar.clockwise && updatedBoard.bar.clockwise.id === containerId) {
+      if (updatedBoard.bar?.clockwise && updatedBoard.bar.clockwise.id === containerId) {
         for (const checker of updatedBoard.bar.clockwise.checkers) {
           checker.isMovable = true
         }
       }
-      if (updatedBoard.bar && updatedBoard.bar.counterclockwise && updatedBoard.bar.counterclockwise.id === containerId) {
+      if (updatedBoard.bar?.counterclockwise && updatedBoard.bar.counterclockwise.id === containerId) {
         for (const checker of updatedBoard.bar.counterclockwise.checkers) {
           checker.isMovable = true
         }

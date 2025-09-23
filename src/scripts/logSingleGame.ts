@@ -90,10 +90,10 @@ export async function logSingleGame() {
   ]
 
   // Initialize game
-  let game = Game.initialize(players) as BackgammonGameRollingForStart
+  const game = Game.initialize(players) as BackgammonGameRollingForStart
   let turnCount = 0
   let totalMoves = 0
-  let lastBoard = game.board
+  const lastBoard = game.board
 
   // Roll for start
   let gameRolling = Game.rollForStart(game)

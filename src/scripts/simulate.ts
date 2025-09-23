@@ -2,7 +2,6 @@ import {
   BackgammonGameMoving,
   BackgammonGameRollingForStart,
   BackgammonMove,
-  BackgammonMoveOrigin,
 } from '@nodots-llc/backgammon-types/dist'
 import { Board, Game, Player } from '..'
 import { logger } from '../utils/logger'
@@ -32,24 +31,7 @@ function displayTurnInfo(
   })
 }
 
-function displayMoveInfo(
-  moveNumber: number,
-  origin: BackgammonMoveOrigin,
-  destination: any
-) {
-  const originStr = origin.kind === 'point' ? origin.position.clockwise : 'bar'
-  const destStr =
-    destination.kind === 'point' ? destination.position.clockwise : 'off'
-  const message = `Move ${moveNumber}: from ${originStr} to ${destStr}\n`
-  console.log(message)
-  logger.info('[Simulation] Move info:', {
-    moveNumber,
-    origin: originStr,
-    destination: destStr,
-    originKind: origin.kind,
-    destinationKind: destination.kind,
-  })
-}
+// displayMoveInfo helper removed (unused)
 
 function getStats(board: any): SimulationStats {
   const whiteBar =
@@ -137,10 +119,10 @@ export async function runSimulation(maxTurns: number = 100) {
   ]
 
   // Initialize game
-  let game = Game.initialize(players) as BackgammonGameRollingForStart
+  const game = Game.initialize(players) as BackgammonGameRollingForStart
   let turnCount = 0
-  let totalMoves = 0
-  let lastBoard = game.board
+  const totalMoves = 0
+  const lastBoard = game.board
 
   // Roll for start
   let gameRolling = Game.rollForStart(game)

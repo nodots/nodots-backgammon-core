@@ -2,7 +2,6 @@ import {
   BackgammonBoard,
   BackgammonColor,
   BackgammonGame,
-  BackgammonGameMoving,
   BackgammonPlayer,
 } from '@nodots-llc/backgammon-types/dist'
 import { logger } from '../utils/logger'
@@ -19,10 +18,10 @@ function getPlayerAndOpponent(game: BackgammonGame): {
 
   // EXHAUSTIVE switch on BackgammonGameStateKind for player determination
   switch (game.stateKind) {
-    case 'moving':
-      playerOnRoll = (game as BackgammonGameMoving)
-        .activePlayer
+    case 'moving': {
+      playerOnRoll = game.activePlayer
       break
+    }
 
     case 'rolled-for-start':
       // In rolled-for-start, activePlayer indicates who won the roll and will be the first player on roll.
@@ -55,7 +54,7 @@ function getPlayerAndOpponent(game: BackgammonGame): {
       playerOnRoll = game.activePlayer
       break
 
-    case 'completed':
+    case 'completed': {
       // Game is completed - use the last active player (from winner's perspective)
       // If we have a winner, use them; otherwise just use the first player
       const completedGame = game as BackgammonGame & { winner?: BackgammonPlayer }
@@ -64,6 +63,7 @@ function getPlayerAndOpponent(game: BackgammonGame): {
       }
       playerOnRoll ??= game.players[0]
       break
+    }
   }
 
   if (!playerOnRoll) {
@@ -163,8 +163,8 @@ export function exportToGnuPositionId(game: BackgammonGame): string {
   let numBuffer = 0
   let numBits = 0
 
-  for (let i = 0; i < bytes.length; ++i) {
-    numBuffer = (numBuffer << 8) | bytes[i]
+  for (const b of bytes) {
+    numBuffer = (numBuffer << 8) | b
     numBits += 8
     while (numBits >= 6) {
       numBits -= 6
@@ -179,4 +179,110 @@ export function exportToGnuPositionId(game: BackgammonGame): string {
   }
 
   return base64Chars.substring(0, 14)
+}
+
+/**
+ * Imports a BackgammonBoard (and optional simple players) from a GNU Position ID.
+ * NOTE: This assumes the position ID encodes checkers for the player on roll first,
+ * then opponent, aligned with exportToGnuPositionId(). We reconstruct with a
+ * canonical mapping: playerOnRoll = white (clockwise), opponent = black (counterclockwise).
+ */
+export function importFromGnuPositionId(
+  gpid: string
+): {
+  board: BackgammonBoard
+  players: { white: { color: BackgammonColor; direction: 'clockwise' }; black: { color: BackgammonColor; direction: 'counterclockwise' } }
+} {
+  // Decode base64 (GNU alphabet) to 10 bytes
+  const decodeBase64 = (s: string): number[] => {
+    let numBuffer = 0
+    let numBits = 0
+    const bytes: number[] = []
+    for (const ch of s) {
+      const idx = GNU_BASE64.indexOf(ch)
+      if (idx < 0) break
+      numBuffer = (numBuffer << 6) | idx
+      numBits += 6
+      while (numBits >= 8 && bytes.length < 10) {
+        numBits -= 8
+        const byte = (numBuffer >> numBits) & 0xff
+        bytes.push(byte)
+      }
+    }
+    return bytes
+  }
+
+  const bytes = decodeBase64(gpid)
+  // Build bit string from bytes (little-endian as constructed)
+  let bitString = ''
+  for (let i = 0; i < 10; i++) {
+    const b = bytes[i] ?? 0
+    let byteBits = ''
+    for (let j = 0; j < 8; j++) {
+      byteBits += ((b >> j) & 1) ? '1' : '0'
+    }
+    bitString += byteBits
+  }
+  bitString = bitString.substring(0, 80)
+
+  // Helper to read count of 1s terminated by 0
+  let idx = 0
+  const readRun = (): number => {
+    let count = 0
+    while (idx < bitString.length && bitString[idx] === '1') {
+      count++
+      idx++
+    }
+    // skip the terminating '0' if present
+    if (idx < bitString.length && bitString[idx] === '0') idx++
+    return count
+  }
+
+  const playerPoints: number[] = [] // 24 counts
+  for (let i = 0; i < 24; i++) playerPoints.push(readRun())
+  const playerBar = readRun()
+  const oppPoints: number[] = []
+  for (let i = 0; i < 24; i++) oppPoints.push(readRun())
+  const oppBar = readRun()
+
+  // Build a board import spec mapping playerOnRoll as white clockwise
+  const importSpec: any[] = []
+  // Player (white clockwise): points 1..24 (i=0 => 1)
+  for (let i = 0; i < 24; i++) {
+    const qty = playerPoints[i]
+    if (qty > 0) {
+      importSpec.push({
+        position: { clockwise: (i + 1) as any, counterclockwise: (24 - i) as any },
+        checkers: { color: 'white', qty },
+      })
+    }
+  }
+  if (playerBar > 0) {
+    importSpec.push({ position: 'bar', direction: 'clockwise', checkers: { color: 'white', qty: playerBar } })
+  }
+
+  // Opponent (black counterclockwise): points 1..24 from their perspective means clockwise 24..1
+  for (let i = 0; i < 24; i++) {
+    const qty = oppPoints[i]
+    if (qty > 0) {
+      importSpec.push({
+        position: { clockwise: (24 - i) as any, counterclockwise: (i + 1) as any },
+        checkers: { color: 'black', qty },
+      })
+    }
+  }
+  if (oppBar > 0) {
+    importSpec.push({ position: 'bar', direction: 'counterclockwise', checkers: { color: 'black', qty: oppBar } })
+  }
+
+  // Initialize the board
+  const { Board } = require('./index') as { Board: any }
+  const board: BackgammonBoard = Board.initialize(importSpec)
+  return {
+    board,
+    players: {
+      white: { color: 'white', direction: 'clockwise' },
+      black: { color: 'black', direction: 'counterclockwise' },
+    },
+  }
 }

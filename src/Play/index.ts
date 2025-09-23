@@ -15,12 +15,15 @@ import {
   BackgammonPlayerRolling,
   BackgammonPlayMoving,
   BackgammonPlayResult,
-  BackgammonPlayStateKind
+  BackgammonPlayStateKind,
 } from '@nodots-llc/backgammon-types/dist'
 import { Board, generateId } from '..'
-import { BearOff } from '../Move/MoveKinds/BearOff'
 import { debug, logger } from '../utils/logger'
-import { MustUseBothDiceError, MustUseLargerDieError, InvalidMoveSequenceError } from './errors'
+import {
+  InvalidMoveSequenceError,
+  MustUseBothDiceError,
+  MustUseLargerDieError,
+} from './errors'
 export * from '../index'
 
 const allowedMoveKinds = ['point-to-point', 'reenter', 'bear-off'] as const
@@ -55,9 +58,7 @@ export class Play {
   stateKind?: BackgammonPlayStateKind
   moves?: BackgammonMoves = new Set()
   board!: BackgammonBoard
-  player!:
-    | BackgammonPlayerRolling
-    | BackgammonPlayerMoving
+  player!: BackgammonPlayerRolling | BackgammonPlayerMoving
 
   // Pure function: Plan the move execution without mutations
   private static planMoveExecution(
@@ -66,7 +67,7 @@ export class Play {
     origin: BackgammonMoveOrigin
   ): MoveExecutionPlan {
     const movesArray = Array.from(play.moves)
-    const readyMoves = movesArray.filter(m => m.stateKind === 'ready')
+    const readyMoves = movesArray.filter((m) => m.stateKind === 'ready')
 
     if (readyMoves.length === 0) {
       throw new Error('No ready moves available')
@@ -74,8 +75,9 @@ export class Play {
 
     // Get initial die values (no mutation)
     const firstDieValue = readyMoves[0].dieValue
-    const otherMoves = readyMoves.filter(m => m.dieValue !== firstDieValue)
-    const secondDieValue = otherMoves.length > 0 ? otherMoves[0].dieValue : firstDieValue
+    const otherMoves = readyMoves.filter((m) => m.dieValue !== firstDieValue)
+    const secondDieValue =
+      otherMoves.length > 0 ? otherMoves[0].dieValue : firstDieValue
 
     // Check for auto-switch opportunity
     const moveResult = Board.getPossibleMoves(
@@ -91,80 +93,106 @@ export class Play {
       originalDieValue: BackgammonDieValue
     }
 
-    const matchingMove = moveResult.moves.find(pm => pm.origin.id === origin.id)
+    const matchingMove = moveResult.moves.find(
+      (pm) => pm.origin.id === origin.id
+    )
     if (!matchingMove) {
-      throw new Error(`Invalid move: No legal moves available from origin ${origin.id}`)
+      throw new Error(
+        `Invalid move: No legal moves available from origin ${origin.id}`
+      )
     }
 
     // Prevent duplicate die usage validation (pure check)
     const currentRoll = play.player.dice.currentRoll
     const isDoubles = currentRoll[0] === currentRoll[1]
-    const completedMoves = movesArray.filter(m => m.stateKind === 'completed')
-    const alreadyUsedDieValue = completedMoves.some(m => m.dieValue === moveResult.usedDieValue)
+    const completedMoves = movesArray.filter((m) => m.stateKind === 'completed')
+    const alreadyUsedDieValue = completedMoves.some(
+      (m) => m.dieValue === moveResult.usedDieValue
+    )
 
     if (!isDoubles && alreadyUsedDieValue) {
-      throw new Error(`Die value ${moveResult.usedDieValue} has already been used in this turn. Available dice: [${currentRoll.join(', ')}]. This prevents invalid duplicate die usage.`)
+      throw new Error(
+        `Die value ${moveResult.usedDieValue} has already been used in this turn. Available dice: [${currentRoll.join(', ')}]. This prevents invalid duplicate die usage.`
+      )
     }
 
     // Plan new dice order (pure calculation)
-    const newDiceOrder: [BackgammonDieValue, BackgammonDieValue] = moveResult.autoSwitched && currentRoll[0] !== currentRoll[1]
-      ? [currentRoll[1], currentRoll[0]]
-      : [currentRoll[0], currentRoll[1]]
+    const newDiceOrder: [BackgammonDieValue, BackgammonDieValue] =
+      moveResult.autoSwitched && currentRoll[0] !== currentRoll[1]
+        ? [currentRoll[1], currentRoll[0]]
+        : [currentRoll[0], currentRoll[1]]
 
     // Find target move using ORIGINAL die values (before any reordering)
-    const targetMove = readyMoves.find(m =>
-      m.dieValue === (moveResult.autoSwitched ? moveResult.originalDieValue : moveResult.usedDieValue)
+    const targetMove = readyMoves.find(
+      (m) =>
+        m.dieValue ===
+        (moveResult.autoSwitched
+          ? moveResult.originalDieValue
+          : moveResult.usedDieValue)
     )
 
     if (!targetMove) {
-      throw new Error(`No ready move found for die value ${moveResult.usedDieValue}`)
+      throw new Error(
+        `No ready move found for die value ${moveResult.usedDieValue}`
+      )
     }
 
     // Plan updated moves with new die values (pure calculation)
     // CRITICAL FIX: Use filter instead of map + filter to prevent move loss
-    const updatedMoves = readyMoves.filter(move => {
-      // Exclude the move that will be executed
-      return move.id !== targetMove.id
-    }).map(move => {
-      if (moveResult.autoSwitched && currentRoll[0] !== currentRoll[1]) {
-        // Calculate new die value for remaining moves
-        const newDieValue = move.dieValue === moveResult.originalDieValue
-          ? moveResult.usedDieValue
-          : move.dieValue === moveResult.usedDieValue
-          ? moveResult.originalDieValue
-          : move.dieValue
+    const updatedMoves = readyMoves
+      .filter((move) => {
+        // Exclude the move that will be executed
+        return move.id !== targetMove.id
+      })
+      .map((move) => {
+        if (moveResult.autoSwitched && currentRoll[0] !== currentRoll[1]) {
+          // Calculate new die value for remaining moves
+          const newDieValue =
+            move.dieValue === moveResult.originalDieValue
+              ? moveResult.usedDieValue
+              : move.dieValue === moveResult.usedDieValue
+                ? moveResult.originalDieValue
+                : move.dieValue
 
-        // CRITICAL FIX: Recalculate possibleMoves for the new die value
-        // Don't just update dieValue - the possibleMoves and origin may be completely different
-        const freshPossibleMoves = Board.getPossibleMoves(board, play.player, newDieValue) as BackgammonMoveSkeleton[]
+          // CRITICAL FIX: Recalculate possibleMoves for the new die value
+          // Don't just update dieValue - the possibleMoves and origin may be completely different
+          const freshPossibleMoves = Board.getPossibleMoves(
+            board,
+            play.player,
+            newDieValue
+          ) as BackgammonMoveSkeleton[]
 
-        if (freshPossibleMoves.length === 0) {
-          // No moves possible with new die value - convert to no-move
-          // Keep original origin for type safety, but mark as no-move
+          if (freshPossibleMoves.length === 0) {
+            // No moves possible with new die value - convert to no-move
+            // Keep original origin for type safety, but mark as no-move
+            return {
+              ...move,
+              dieValue: newDieValue,
+              stateKind: 'ready' as const,
+              moveKind: 'no-move' as const,
+              possibleMoves: [],
+            }
+          }
+
+          // Use first available move as the new move definition
+          const firstPossibleMove = freshPossibleMoves[0]
+          const moveKind: BackgammonMoveKind =
+            firstPossibleMove.destination.kind === 'off'
+              ? 'bear-off'
+              : firstPossibleMove.origin.kind === 'bar'
+                ? 'reenter'
+                : 'point-to-point'
           return {
             ...move,
             dieValue: newDieValue,
-            stateKind: 'ready' as const,
-            moveKind: 'no-move' as const,
-            possibleMoves: []
+            possibleMoves: freshPossibleMoves,
+            origin: firstPossibleMove.origin,
+            moveKind, // Explicit casting as comment requires
           }
         }
 
-        // Use first available move as the new move definition
-        const firstPossibleMove = freshPossibleMoves[0]
-        const moveKind = firstPossibleMove.destination.kind === 'off' ? 'bear-off' :
-                        firstPossibleMove.origin.kind === 'bar' ? 'reenter' : 'point-to-point'
-        return {
-          ...move,
-          dieValue: newDieValue,
-          possibleMoves: freshPossibleMoves,
-          origin: firstPossibleMove.origin,
-          moveKind: moveKind as BackgammonMoveKind // Explicit casting as comment requires
-        }
-      }
-
-      return move
-    })
+        return move
+      })
 
     debug('Play.planMoveExecution: Planning completed', {
       targetMoveId: targetMove.id,
@@ -172,7 +200,7 @@ export class Play {
       autoSwitched: moveResult.autoSwitched,
       originalDieValue: moveResult.originalDieValue,
       newDiceOrder,
-      updatedMovesCount: updatedMoves.length
+      updatedMovesCount: updatedMoves.length,
     })
 
     return {
@@ -182,7 +210,7 @@ export class Play {
       originalDieValue: moveResult.originalDieValue,
       newDiceOrder,
       updatedMoves,
-      matchingMove
+      matchingMove,
     }
   }
 
@@ -195,10 +223,15 @@ export class Play {
     // Detect if a hit will occur before executing the move (pure check)
     let isHit = false
     if (plan.matchingMove.destination.kind === 'point') {
-      const destination = Board.getCheckerContainer(board, plan.matchingMove.destination.id)
-      if (destination.kind === 'point' &&
-          destination.checkers.length === 1 &&
-          destination.checkers[0].color !== play.player.color) {
+      const destination = Board.getCheckerContainer(
+        board,
+        plan.matchingMove.destination.id
+      )
+      if (
+        destination.kind === 'point' &&
+        destination.checkers.length === 1 &&
+        destination.checkers[0].color !== play.player.color
+      ) {
         isHit = true
         debug('Play.executePlannedMove: Hit detected', {
           destinationId: plan.matchingMove.destination.id,
@@ -222,7 +255,9 @@ export class Play {
       player: play.player,
       dieValue: plan.effectiveDieValue,
       stateKind: 'completed',
-      moveKind: isAllowedMoveKind(plan.matchingMove.moveKind || 'point-to-point')
+      moveKind: isAllowedMoveKind(
+        plan.matchingMove.moveKind || 'point-to-point'
+      )
         ? plan.matchingMove.moveKind || 'point-to-point'
         : 'point-to-point',
       possibleMoves: [],
@@ -234,81 +269,99 @@ export class Play {
     // Calculate remaining available dice after move completion
     // We need to look at ALL moves in the play to see what has been used so far
     const existingMoves = Array.from(play.moves)
-    const allMovesAfterExecution = [...existingMoves.filter(m => m.id !== plan.targetMoveId), completedMove]
-    const completedMoves = allMovesAfterExecution.filter(m => m.stateKind === 'completed')
-    const usedDiceValues = completedMoves.map(m => m.dieValue)
+    const allMovesAfterExecution = [
+      ...existingMoves.filter((m) => m.id !== plan.targetMoveId),
+      completedMove,
+    ]
+    const completedMoves = allMovesAfterExecution.filter(
+      (m) => m.stateKind === 'completed'
+    )
+    const usedDiceValues = completedMoves.map((m) => m.dieValue)
     const originalRoll = play.player.dice.currentRoll
     const isDoubles = originalRoll[0] === originalRoll[1]
 
     // Calculate remaining available dice values
     const availableDiceValues: BackgammonDieValue[] = isDoubles
       ? Array(4 - usedDiceValues.length).fill(originalRoll[0])
-      : originalRoll.filter(die => !usedDiceValues.includes(die))
+      : originalRoll.filter((die) => !usedDiceValues.includes(die))
 
     // Update remaining moves with correct die values and fresh possible moves
-    const updatedMovesWithCorrectDiceAndMoves = plan.updatedMoves.map((move, index) => {
-      // Assign correct die value from available dice
-      const correctDieValue = index < availableDiceValues.length ? availableDiceValues[index] : undefined
+    const updatedMovesWithCorrectDiceAndMoves = plan.updatedMoves.map(
+      (move, index) => {
+        // Assign correct die value from available dice
+        const correctDieValue =
+          index < availableDiceValues.length
+            ? availableDiceValues[index]
+            : undefined
 
-      if (!correctDieValue) {
-        // No more dice available - convert to completed no-move
-        const noMove: BackgammonMoveCompletedNoMove = {
-          id: move.id,
-          player: move.player,
-          dieValue: move.dieValue, // Keep original die value for tracking
-          stateKind: 'completed',
-          moveKind: 'no-move',
-          possibleMoves: [],
-          isHit: false,
-          origin: undefined,
-          destination: undefined,
+        if (!correctDieValue) {
+          // No more dice available - convert to completed no-move
+          const noMove: BackgammonMoveCompletedNoMove = {
+            id: move.id,
+            player: move.player,
+            dieValue: move.dieValue, // Keep original die value for tracking
+            stateKind: 'completed',
+            moveKind: 'no-move',
+            possibleMoves: [],
+            isHit: false,
+            origin: undefined,
+            destination: undefined,
+          }
+          return noMove
         }
-        return noMove
-      }
 
-      // Recalculate possible moves with correct die value
-      const freshPossibleMoves = Board.getPossibleMoves(
-        newBoard,
-        play.player,
-        correctDieValue
-      ) as BackgammonMoveSkeleton[]
+        // Recalculate possible moves with correct die value
+        const freshPossibleMoves = Board.getPossibleMoves(
+          newBoard,
+          play.player,
+          correctDieValue
+        ) as BackgammonMoveSkeleton[]
 
-      if (freshPossibleMoves.length === 0) {
-        // No moves possible - convert to completed no-move
-        const noMove: BackgammonMoveCompletedNoMove = {
-          id: move.id,
-          player: move.player,
+        if (freshPossibleMoves.length === 0) {
+          // No moves possible - convert to completed no-move
+          const noMove: BackgammonMoveCompletedNoMove = {
+            id: move.id,
+            player: move.player,
+            dieValue: correctDieValue,
+            stateKind: 'completed',
+            moveKind: 'no-move',
+            possibleMoves: [],
+            isHit: false,
+            origin: undefined,
+            destination: undefined,
+          }
+          return noMove
+        }
+
+        // Update move with correct die value and fresh possible moves
+        const firstPossibleMove = freshPossibleMoves[0]
+        const updatedMove: BackgammonMoveReady = {
+          ...move,
           dieValue: correctDieValue,
-          stateKind: 'completed',
-          moveKind: 'no-move',
-          possibleMoves: [],
-          isHit: false,
-          origin: undefined,
-          destination: undefined,
+          possibleMoves: freshPossibleMoves,
+          origin: firstPossibleMove.origin,
+          moveKind:
+            firstPossibleMove.destination.kind === 'off'
+              ? 'bear-off'
+              : firstPossibleMove.origin.kind === 'bar'
+                ? 'reenter'
+                : 'point-to-point',
         }
-        return noMove
+        return updatedMove
       }
-
-      // Update move with correct die value and fresh possible moves
-      const firstPossibleMove = freshPossibleMoves[0]
-      const updatedMove: BackgammonMoveReady = {
-        ...move,
-        dieValue: correctDieValue,
-        possibleMoves: freshPossibleMoves,
-        origin: firstPossibleMove.origin,
-        moveKind: firstPossibleMove.destination.kind === 'off' ? 'bear-off' :
-                 firstPossibleMove.origin.kind === 'bar' ? 'reenter' : 'point-to-point'
-      }
-      return updatedMove
-    })
+    )
 
     // Validation: Ensure no duplicate die usage in remaining ready moves
-    const finalReadyMoves = updatedMovesWithCorrectDiceAndMoves.filter(m => m.stateKind === 'ready')
-    const readyDiceValues = finalReadyMoves.map(m => m.dieValue)
+    const finalReadyMoves = updatedMovesWithCorrectDiceAndMoves.filter(
+      (m) => m.stateKind === 'ready'
+    )
+    const readyDiceValues = finalReadyMoves.map((m) => m.dieValue)
     const uniqueReadyDice = new Set(readyDiceValues)
 
     if (!isDoubles && readyDiceValues.length !== uniqueReadyDice.size) {
-      throw new Error(`Duplicate die values in remaining moves: ${readyDiceValues.join(', ')}`)
+      throw new Error(
+        `Duplicate die values in remaining moves: ${readyDiceValues.join(', ')}`
+      )
     }
 
     debug('Play.executePlannedMove: Updated remaining moves', {
@@ -316,16 +369,22 @@ export class Play {
       usedDiceValues: usedDiceValues,
       availableDiceValues: availableDiceValues,
       finalReadyMovesCount: finalReadyMoves.length,
-      finalReadyDiceValues: readyDiceValues
+      finalReadyDiceValues: readyDiceValues,
     })
 
     // Create new play state (pure)
     // CRITICAL FIX: Include ALL existing completed moves (including no-moves from initialization)
     const existingCompletedMoves = Array.from(play.moves).filter(
-      m => m.stateKind === 'completed' && m.id !== plan.targetMoveId
+      (m) => m.stateKind === 'completed' && m.id !== plan.targetMoveId
     )
-    const finalMoves = new Set([...existingCompletedMoves, ...updatedMovesWithCorrectDiceAndMoves, completedMove])
-    const allMovesCompleted = Array.from(finalMoves).every(m => m.stateKind === 'completed')
+    const finalMoves = new Set([
+      ...existingCompletedMoves,
+      ...updatedMovesWithCorrectDiceAndMoves,
+      completedMove,
+    ])
+    const allMovesCompleted = Array.from(finalMoves).every(
+      (m) => m.stateKind === 'completed'
+    )
 
     // Properly construct the new play object
     const newPlay: BackgammonPlayMoving = {
@@ -337,23 +396,26 @@ export class Play {
         ...play.player,
         dice: {
           ...play.player.dice,
-          currentRoll: [...plan.newDiceOrder] as [BackgammonDieValue, BackgammonDieValue]
-        }
-      }
+          currentRoll: [...plan.newDiceOrder] as [
+            BackgammonDieValue,
+            BackgammonDieValue,
+          ],
+        },
+      },
     }
 
     debug('Play.executePlannedMove: Execution completed', {
       targetMoveId: plan.targetMoveId,
       newBoardState: 'updated',
       allMovesCompleted,
-      finalMovesCount: finalMoves.size
+      finalMovesCount: finalMoves.size,
     })
 
     return {
       newPlay,
       newBoard,
       completedMove,
-      executionPlan: plan
+      executionPlan: plan,
     }
   }
 
@@ -395,15 +457,22 @@ export class Play {
     // Step 3: Validate the result if sequence is complete (pure)
     // FIX: Never validate during individual move execution when play has pre-completed no-moves
     // Only validate when all dice have been rolled and used, not when executing partial sequences
-    const originalHadNoMoves = Array.from(play.moves).some(m => m.moveKind === 'no-move')
-    const resultHasReadyMoves = Array.from(result.newPlay.moves).some(m => m.stateKind === 'ready')
+    const originalHadNoMoves = Array.from(play.moves).some(
+      (m) => m.moveKind === 'no-move'
+    )
+    const resultHasReadyMoves = Array.from(result.newPlay.moves).some(
+      (m) => m.stateKind === 'ready'
+    )
 
     // Only validate if:
     // 1. No ready moves remain in result AND
     // 2. No pre-completed no-moves existed (meaning this is a fresh complete sequence)
 
     if (!resultHasReadyMoves && !originalHadNoMoves) {
-      const validation = Play.validateMoveSequence(result.newBoard, result.newPlay)
+      const validation = Play.validateMoveSequence(
+        result.newBoard,
+        result.newPlay
+      )
       if (!validation.isValid) {
         // Sequence violates backgammon rules - throw appropriate error
         if (validation.error?.includes('both dice')) {
@@ -425,7 +494,7 @@ export class Play {
       // This preserves all moves including no-moves
       const finalPlay: BackgammonPlayMoving = {
         ...result.newPlay,
-        stateKind: 'moved' as any // Need to cast since 'moved' isn't in BackgammonPlayMoving type
+        stateKind: 'moved' as any, // Need to cast since 'moved' isn't in BackgammonPlayMoving type
       }
 
       return {
@@ -434,7 +503,7 @@ export class Play {
         move: result.completedMove,
         autoSwitched: plan.autoSwitched,
         originalDieValue: plan.originalDieValue,
-        usedDieValue: plan.effectiveDieValue
+        usedDieValue: plan.effectiveDieValue,
       } as BackgammonPlayResult
     }
 
@@ -445,7 +514,7 @@ export class Play {
       move: result.completedMove,
       autoSwitched: plan.autoSwitched,
       originalDieValue: plan.originalDieValue,
-      usedDieValue: plan.effectiveDieValue
+      usedDieValue: plan.effectiveDieValue,
     } as BackgammonPlayResult
   }
 
@@ -480,7 +549,7 @@ export class Play {
 
     // For doubles, we need to track which origins we've used to distribute moves properly
     const usedOrigins = new Map<string, number>() // originId -> count
-    
+
     // 🔧 CRITICAL BUG FIX: Track which die values have been used for bar reentry
     // This prevents both checkers from reentering using the same effective die value
     const usedBarReentryDice = new Set<number>()
@@ -490,7 +559,9 @@ export class Play {
 
     // CRITICAL BUG FIX: Ensure each die value is used exactly once for mixed rolls
     // For mixed rolls, we create exactly one move per unique die value
-    const diceToProcess = isDoubles ? [roll[0], roll[0], roll[0], roll[0]] : [roll[0], roll[1]]
+    const diceToProcess = isDoubles
+      ? [roll[0], roll[0], roll[0], roll[0]]
+      : [roll[0], roll[1]]
 
     for (let i = 0; i < moveCount; i++) {
       let dieValue = diceToProcess[i]
@@ -500,21 +571,29 @@ export class Play {
       // The dice tracking logic handles this correctly below
 
       // Check if there are checkers on bar that need this die value
-      const playerCheckersOnBarCount = bar.checkers.filter(c => c.color === player.color).length
-      const barReentryMovesAlreadyPlanned = movesArr.filter(m => m.moveKind === 'reenter').length
+      const playerCheckersOnBarCount = bar.checkers.filter(
+        (c) => c.color === player.color
+      ).length
+      const barReentryMovesAlreadyPlanned = movesArr.filter(
+        (m) => m.moveKind === 'reenter'
+      ).length
 
       // CRITICAL FIX: For mixed rolls, only plan ONE bar reentry move per checker on bar
       // After the first bar reentry move is executed, remaining dice should be used for normal moves
-      const checkerNeedsReentry = playerCheckersOnBarCount > 0 && barReentryMovesAlreadyPlanned < playerCheckersOnBarCount
-
-
+      const checkerNeedsReentry =
+        playerCheckersOnBarCount > 0 &&
+        barReentryMovesAlreadyPlanned < playerCheckersOnBarCount
 
       if (checkerNeedsReentry) {
         // Check if this specific die value can be used for reentry
         // For mixed rolls: only if die value hasn't been used for bar reentry yet
         // For doubles: allow multiple uses, but respect checker count limit (handled above)
         if (!usedBarReentryDice.has(dieValue) || isDoubles) {
-          const possibleMoves = Board.getPossibleMoves(board, player, dieValue) as BackgammonMoveSkeleton[]
+          const possibleMoves = Board.getPossibleMoves(
+            board,
+            player,
+            dieValue
+          ) as BackgammonMoveSkeleton[]
 
           if (possibleMoves.length > 0) {
             // Reentry is possible with this die value
@@ -562,7 +641,9 @@ export class Play {
 
         // Create a simulated board state that includes the effects of any planned reentry moves
         let simulatedBoard = board
-        const plannedReentryMoves = movesArr.filter(m => m.moveKind === 'reenter')
+        const plannedReentryMoves = movesArr.filter(
+          (m) => m.moveKind === 'reenter'
+        )
 
         if (plannedReentryMoves.length > 0) {
           // Simulate the board state after planned reentries
@@ -581,8 +662,12 @@ export class Play {
         }
 
         // Calculate possible moves using the simulated board state
-        const possibleMoves = Board.getPossibleMoves(simulatedBoard, player, dieValue) as BackgammonMoveSkeleton[]
-        
+        const possibleMoves = Board.getPossibleMoves(
+          simulatedBoard,
+          player,
+          dieValue
+        ) as BackgammonMoveSkeleton[]
+
         // CRITICAL FIX: Do NOT mutate player.dice.currentRoll during initialization loop
         // This was causing duplicate die values when reentry + normal moves were mixed
         // The dice swapping should happen after all moves are created, not during the loop
@@ -630,8 +715,9 @@ export class Play {
 
           // 🐛 BUG FIX: Determine moveKind based on the specific selectedMove, not all possible moves
           // This prevents point-to-point moves from being incorrectly classified as bear-off
-          let moveKind: 'point-to-point' | 'bear-off' | 'reenter' = 'point-to-point'
-          
+          let moveKind: 'point-to-point' | 'bear-off' | 'reenter' =
+            'point-to-point'
+
           if (selectedMove.destination.kind === 'off') {
             moveKind = 'bear-off'
           } else if (selectedMove.origin.kind === 'bar') {
@@ -677,10 +763,14 @@ export class Play {
     }
 
     // Check if all moves are no-moves and auto-complete the play
-    const allMovesAreNoMoves = movesArr.every((move) => move.moveKind === 'no-move')
+    const allMovesAreNoMoves = movesArr.every(
+      (move) => move.moveKind === 'no-move'
+    )
 
     if (allMovesAreNoMoves) {
-      debug('Play.initialize: Auto-completing play - no legal moves available for any die value')
+      debug(
+        'Play.initialize: Auto-completing play - no legal moves available for any die value'
+      )
 
       // TODO: Consider calling Game.roll() as part of Play.initialize() to handle
       // the full game state transition when no moves are available. This would
@@ -765,7 +855,8 @@ export class Play {
     // Get fresh possible moves with intelligent dice switching
     const dieValue = readyMoves[0].dieValue
     const otherReadyMoves = readyMoves.filter((m) => m.dieValue !== dieValue)
-    const otherDieValue = otherReadyMoves.length > 0 ? otherReadyMoves[0].dieValue : dieValue
+    const otherDieValue =
+      otherReadyMoves.length > 0 ? otherReadyMoves[0].dieValue : dieValue
 
     const moveResult = Board.getPossibleMoves(
       board,
@@ -814,7 +905,8 @@ export class Play {
     // Get fresh possible moves with intelligent dice switching
     const dieValue = readyMoves[0].dieValue
     const otherReadyMoves = readyMoves.filter((m) => m.dieValue !== dieValue)
-    const otherDieValue = otherReadyMoves.length > 0 ? otherReadyMoves[0].dieValue : dieValue
+    const otherDieValue =
+      otherReadyMoves.length > 0 ? otherReadyMoves[0].dieValue : dieValue
 
     const moveResult = Board.getPossibleMoves(
       board,
@@ -874,30 +966,32 @@ export class Play {
     const currentDiceUsed = nonNoMoves.length
     const maxPossibleDiceUsed = Math.max(
       currentDiceUsed,
-      ...alternativeSequences.map(seq => seq.diceUsed)
+      ...alternativeSequences.map((seq) => seq.diceUsed)
     )
 
     // Rule violation: alternative sequence could use more dice
     if (maxPossibleDiceUsed > currentDiceUsed) {
-      const betterSequence = alternativeSequences.find(seq => seq.diceUsed === maxPossibleDiceUsed)
+      const betterSequence = alternativeSequences.find(
+        (seq) => seq.diceUsed === maxPossibleDiceUsed
+      )
 
       if (maxPossibleDiceUsed === 2 && currentDiceUsed === 1) {
         return {
           isValid: false,
           error: 'Must use both dice when legally possible',
-          alternativeSequences: [betterSequence]
+          alternativeSequences: [betterSequence],
         }
       } else if (currentDiceUsed === 1) {
         // Check if larger die could have been used
         const completedMove = nonNoMoves[0]
-        const availableDice = movesArray.map(m => m.dieValue)
+        const availableDice = movesArray.map((m) => m.dieValue)
         const largerDie = Math.max(...availableDice)
 
         if (completedMove.dieValue < largerDie) {
           return {
             isValid: false,
             error: 'Must use larger die when only one die can be used',
-            alternativeSequences: [betterSequence]
+            alternativeSequences: [betterSequence],
           }
         }
       }
@@ -927,18 +1021,23 @@ export class Play {
     }
 
     // Get unique die values from ready moves
-    const dieValues = [...new Set(readyMoves.map(m => m.dieValue))]
+    const dieValues = [...new Set(readyMoves.map((m) => m.dieValue))]
 
     // For doubles, we might have 4 moves with same die value
     if (dieValues.length === 1) {
       // Check if at least 2 moves have possibleMoves
-      return readyMoves.filter(m => m.possibleMoves && m.possibleMoves.length > 0).length >= 2
+      return (
+        readyMoves.filter((m) => m.possibleMoves && m.possibleMoves.length > 0)
+          .length >= 2
+      )
     }
 
     // For mixed rolls, check if moves exist for both die values
-    return dieValues.every(dieValue => {
-      const movesForDie = readyMoves.filter(m => m.dieValue === dieValue)
-      return movesForDie.some(m => m.possibleMoves && m.possibleMoves.length > 0)
+    return dieValues.every((dieValue) => {
+      const movesForDie = readyMoves.filter((m) => m.dieValue === dieValue)
+      return movesForDie.some(
+        (m) => m.possibleMoves && m.possibleMoves.length > 0
+      )
     })
   }
 
@@ -961,12 +1060,20 @@ export class Play {
     // This replaces the incomplete stub implementation that caused the validation bug
 
     // Get all unique dice values from the moves
-    const diceValues = movesArray.map(m => m.dieValue).filter((v, i, arr) => arr.indexOf(v) === i)
+    const diceValues = movesArray
+      .map((m) => m.dieValue)
+      .filter((v, i, arr) => arr.indexOf(v) === i)
 
     if (diceValues.length >= 2) {
       // Test both possible orders: first die then second die, and second die then first die
-      const maxUsable1 = this.testSequenceDiceUsage(board, play.player, [diceValues[0], diceValues[1]])
-      const maxUsable2 = this.testSequenceDiceUsage(board, play.player, [diceValues[1], diceValues[0]])
+      const maxUsable1 = this.testSequenceDiceUsage(board, play.player, [
+        diceValues[0],
+        diceValues[1],
+      ])
+      const maxUsable2 = this.testSequenceDiceUsage(board, play.player, [
+        diceValues[1],
+        diceValues[0],
+      ])
 
       if (maxUsable1 > 0) {
         allSequences.push({ sequence: [], diceUsed: maxUsable1 })
@@ -976,7 +1083,12 @@ export class Play {
       }
     } else if (diceValues.length === 1) {
       // Doubles case - test how many of the same die can be used
-      const doublesUsable = this.testSequenceDiceUsage(board, play.player, [diceValues[0], diceValues[0], diceValues[0], diceValues[0]])
+      const doublesUsable = this.testSequenceDiceUsage(board, play.player, [
+        diceValues[0],
+        diceValues[0],
+        diceValues[0],
+        diceValues[0],
+      ])
       if (doublesUsable > 0) {
         allSequences.push({ sequence: [], diceUsed: doublesUsable })
       }
@@ -1043,7 +1155,9 @@ export class Play {
   ): { isMandatory: boolean; sequence?: any[]; reason?: string } {
     // FIX: Only validate when sequence is complete (no ready moves)
     // This prevents validation of incomplete sequences, matching pureMove() behavior
-    const hasReadyMoves = Array.from(play.moves).some(m => m.stateKind === 'ready')
+    const hasReadyMoves = Array.from(play.moves).some(
+      (m) => m.stateKind === 'ready'
+    )
     if (hasReadyMoves) {
       return { isMandatory: false } // Don't validate incomplete sequences
     }
@@ -1055,11 +1169,14 @@ export class Play {
     }
 
     // Return the alternative sequence that uses more dice
-    if (validation.alternativeSequences && validation.alternativeSequences.length > 0) {
+    if (
+      validation.alternativeSequences &&
+      validation.alternativeSequences.length > 0
+    ) {
       return {
         isMandatory: true,
         sequence: validation.alternativeSequences[0].sequence,
-        reason: validation.error
+        reason: validation.error,
       }
     }
 

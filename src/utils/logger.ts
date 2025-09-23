@@ -25,7 +25,7 @@ class Logger {
   private readonly prefix = '[Core]'
 
   constructor(options: LoggerOptions = {}) {
-    this.level = options.level || 'info'
+    this.level = options.level ?? 'info'
     this.enableConsole = options.enableConsole !== false
     this.includeCallerInfo = options.includeCallerInfo !== false
   }
@@ -52,8 +52,7 @@ class Logger {
 
       // Find the first line that's not from the logger itself
       let callerLine = ''
-      for (let i = 0; i < stackLines.length; i++) {
-        const line = stackLines[i]
+      for (const line of stackLines) {
         if (line.includes('Logger.') || line.includes('logger.ts')) {
           continue
         }
@@ -66,11 +65,12 @@ class Logger {
       if (!callerLine) return null
 
       // Parse the caller line
-      const match = callerLine.match(/at\s+(.+?)\s+\((.+?):(\d+):(\d+)\)/)
+      const detailedRe = /at\s+(.+?)\s+\((.+?):(\d+):(\d+)\)/
+      const match = detailedRe.exec(callerLine)
       if (match) {
         return {
           functionName: match[1],
-          fileName: match[2].split('/').pop() || match[2],
+          fileName: match[2].split('/').pop() ?? match[2],
           lineNumber: parseInt(match[3]),
           columnNumber: parseInt(match[4]),
           stack: stack,
@@ -78,11 +78,12 @@ class Logger {
       }
 
       // Fallback for different stack formats
-      const fallbackMatch = callerLine.match(/at\s+(.+?):(\d+):(\d+)/)
+      const fallbackRe = /at\s+(.+?):(\d+):(\d+)/
+      const fallbackMatch = fallbackRe.exec(callerLine)
       if (fallbackMatch) {
         return {
           functionName: 'anonymous',
-          fileName: fallbackMatch[1].split('/').pop() || fallbackMatch[1],
+          fileName: fallbackMatch[1].split('/').pop() ?? fallbackMatch[1],
           lineNumber: parseInt(fallbackMatch[2]),
           columnNumber: parseInt(fallbackMatch[3]),
           stack: stack,
@@ -90,7 +91,7 @@ class Logger {
       }
 
       return null
-    } catch (error) {
+    } catch {
       return null
     }
   }
@@ -98,7 +99,6 @@ class Logger {
   private formatMessage(
     level: LogLevel,
     message: string,
-    ...args: any[]
   ): string {
     const timestamp = new Date().toISOString()
     const callerInfo = this.getCallerInfo()
@@ -114,25 +114,25 @@ class Logger {
     return formattedMessage
   }
 
-  debug(message: string, ...args: any[]): void {
+  debug(message: string, ...args: unknown[]): void {
     if (this.shouldLog('debug') && this.enableConsole) {
       console.debug(this.formatMessage('debug', message), ...args)
     }
   }
 
-  info(message: string, ...args: any[]): void {
+  info(message: string, ...args: unknown[]): void {
     if (this.shouldLog('info') && this.enableConsole) {
       console.info(this.formatMessage('info', message), ...args)
     }
   }
 
-  warn(message: string, ...args: any[]): void {
+  warn(message: string, ...args: unknown[]): void {
     if (this.shouldLog('warn') && this.enableConsole) {
       console.warn(this.formatMessage('warn', message), ...args)
     }
   }
 
-  error(message: string, ...args: any[]): void {
+  error(message: string, ...args: unknown[]): void {
     if (this.shouldLog('error') && this.enableConsole) {
       console.error(this.formatMessage('error', message), ...args)
     }
@@ -165,13 +165,13 @@ export const logger = defaultLogger
 export { Logger }
 
 // Export convenience functions
-export const debug = (message: string, ...args: any[]) =>
+export const debug = (message: string, ...args: unknown[]) =>
   defaultLogger.debug(message, ...args)
-export const info = (message: string, ...args: any[]) =>
+export const info = (message: string, ...args: unknown[]) =>
   defaultLogger.info(message, ...args)
-export const warn = (message: string, ...args: any[]) =>
+export const warn = (message: string, ...args: unknown[]) =>
   defaultLogger.warn(message, ...args)
-export const error = (message: string, ...args: any[]) =>
+export const error = (message: string, ...args: unknown[]) =>
   defaultLogger.error(message, ...args)
 
 // Export utility functions

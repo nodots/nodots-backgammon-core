@@ -1,4 +1,7 @@
-import { BackgammonGame, BackgammonGameStateKind } from '@nodots-llc/backgammon-types/dist'
+import {
+  BackgammonGame,
+  BackgammonGameStateKind,
+} from '@nodots-llc/backgammon-types/dist'
 import { Board, Cube, Game, Player } from '..'
 // Note: Adapter operates on the data shape, not class instances.
 
@@ -51,16 +54,20 @@ export function gameToGameData(
 
   return {
     ...game,
-    createdAt: overrides?.createdAt ?? (game as any).createdAt ?? now,
+    createdAt: overrides?.createdAt ?? game.createdAt ?? now,
     // Prefer adapter version unless explicitly overridden
     version: overrides?.version ?? CURRENT_GAME_VERSION,
     // Start from defaults, then merge game-provided and explicit overrides
-    rules: { ...DEFAULT_GAME_RULES, ...(game as any).rules, ...overrides?.rules },
-    settings: { ...(game as any).settings, ...DEFAULT_GAME_SETTINGS, ...overrides?.settings },
-    startTime: overrides?.startTime ?? (game as any).startTime,
-    lastUpdate: overrides?.lastUpdate ?? (game as any).lastUpdate ?? now,
-    endTime: overrides?.endTime ?? (game as any).endTime,
-    gnuPositionId: overrides?.gnuPositionId ?? (game as any).gnuPositionId ?? '',
+    rules: { ...DEFAULT_GAME_RULES, ...game.rules, ...overrides?.rules },
+    settings: {
+      ...game.settings,
+      ...DEFAULT_GAME_SETTINGS,
+      ...overrides?.settings,
+    },
+    startTime: overrides?.startTime ?? game.startTime,
+    lastUpdate: overrides?.lastUpdate ?? game.lastUpdate ?? now,
+    endTime: overrides?.endTime ?? game.endTime,
+    gnuPositionId: overrides?.gnuPositionId ?? game.gnuPositionId ?? '',
   } as BackgammonGame
 }
 
@@ -103,16 +110,27 @@ export function createMinimalGameData(options?: {
   stateKind?: BackgammonGameStateKind
 }): BackgammonGame {
   const id = options?.id ?? 'game-' + Math.random().toString(36).slice(2)
-  const stateKind: BackgammonGameStateKind = 'rolling-for-start'
 
   // Domain factories to ensure valid structures
   const players = [
     Player.initialize('white', 'clockwise', 'inactive', false, 'user-white'),
-    Player.initialize('black', 'counterclockwise', 'inactive', false, 'user-black'),
+    Player.initialize(
+      'black',
+      'counterclockwise',
+      'inactive',
+      false,
+      'user-black'
+    ),
   ] as any
   const board = Board.initialize()
   const cube = Cube.initialize()
 
-  const baseGame = Game.initialize(players, id, 'rolling-for-start', board, cube)
+  const baseGame = Game.initialize(
+    players,
+    id,
+    'rolling-for-start',
+    board,
+    cube
+  )
   return gameToGameData(baseGame)
 }

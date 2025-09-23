@@ -68,4 +68,5 @@ export {
 // Re-export all types from @nodots-llc/backgammon-types for convenience
 export * from '@nodots-llc/backgammon-types'
 export { GameEventEmitter } from './events/GameEventEmitter'
+export { importFromGnuPositionId } from './Board/gnuPositionId'
 // export * from './XG' // Temporarily disabled for Issue #7 - comprehensive history system

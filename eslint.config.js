@@ -12,7 +12,7 @@ export default tseslint.config(
   {
     languageOptions: {
       parserOptions: {
-        project: true,
+        project: ['./tsconfig.eslint.json'],
         tsconfigRootDir: import.meta.dirname,
       },
       globals: {
@@ -31,6 +31,35 @@ export default tseslint.config(
     },
     rules: {
       'golden/no-direction-distance': 'error',
+    },
+  },
+  {
+    files: ['src/**/__tests__/**/*.ts', 'src/**/*.test.ts', 'src/scripts/**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.eslint.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      globals: {
+        ...globals.jest,
+        ...globals.node,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/array-type': 'off',
+      '@typescript-eslint/restrict-template-expressions': 'off',
+      '@typescript-eslint/prefer-optional-chain': 'off',
+      '@typescript-eslint/consistent-indexed-object-style': 'off',
+      '@typescript-eslint/no-inferrable-types': 'off',
+      'no-case-declarations': 'off',
     },
   }
 )

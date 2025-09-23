@@ -51,10 +51,11 @@ export const ascii = (
     const symbol = player?.color === 'black' ? 'X' : 'O'
     const model = (player?.id && playerModels?.[player.id]) ?? fallback
     const direction = player?.direction ?? 'unknown'
+    const role = player && (player as any).isRobot ? 'robot' : 'human'
     const activeIndicator =
       activePlayer?.id === player?.id ? ' *ACTIVE*' : ''
 
-    return `${symbol} | ${model} | ${direction} >${activeIndicator} - ${
+    return `${symbol} | ${model} | ${role} | ${direction} >${activeIndicator} - ${
       player?.id ?? 'unknown'
     }`
   }

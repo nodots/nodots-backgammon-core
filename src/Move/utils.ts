@@ -15,9 +15,9 @@ export function getDestination(
 ): BackgammonPoint | BackgammonOff | undefined {
   const direction = player.direction
   switch (origin.kind) {
-    case 'point':
+    case 'point': {
       const point = origin as BackgammonPoint
-      let destinationPosition = point.position[direction] - dieValue
+      const destinationPosition = point.position[direction] - dieValue
       if (direction === 'clockwise') {
         if (destinationPosition < 1) return undefined
       } else {
@@ -27,11 +27,8 @@ export function getDestination(
         (p) =>
           p.position[direction] === destinationPosition && p.checkers.length < 2
       )
-      if (destination) {
-        return destination
-      } else {
-        return undefined
-      }
+      return destination
+    }
     case 'bar':
       // return this.getBarDestination(origin, player, dieValue)
       return undefined
