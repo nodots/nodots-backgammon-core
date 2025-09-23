@@ -20,9 +20,9 @@ import {
   BackgammonPlayerDoubled,
   BackgammonPlayerInactive,
   BackgammonPlayerMoving,
+  BackgammonPlayerRolledForStart,
   BackgammonPlayerRolling,
   BackgammonPlayerRollingForStart,
-  BackgammonPlayerRolledForStart,
   BackgammonPlayers,
   BackgammonPlayerWinner,
   BackgammonPlayMoving,
@@ -43,10 +43,11 @@ const MAX_PIP_COUNT = 167
 export * from '../index'
 // Import tuple aliases from types package
 import type {
-  BackgammonPlayersRollingForStartTuple,
-  BackgammonPlayersRolledForStartTuple,
-  BackgammonPlayersRollingTuple,
+  BackgammonGameCompleted,
   BackgammonPlayersMovingTuple,
+  BackgammonPlayersRolledForStartTuple,
+  BackgammonPlayersRollingForStartTuple,
+  BackgammonPlayersRollingTuple,
 } from '@nodots-llc/backgammon-types/dist'
 
 export class Game {
@@ -59,6 +60,25 @@ export class Game {
   activePlay!: BackgammonPlay
   activePlayer!: BackgammonPlayerActive
   inactivePlayer!: BackgammonPlayerInactive
+  startTime?: Date
+  endTime?: Date
+  createdAt?: Date
+  lastUpdate?: Date
+  rules?: {
+    useCrawfordRule?: boolean
+    useJacobyRule?: boolean
+    useBeaverRule?: boolean
+    useRaccoonRule?: boolean
+    useMurphyRule?: boolean
+    useHollandRule?: boolean
+  }
+  settings?: {
+    allowUndo?: boolean
+    allowResign?: boolean
+    autoPlay?: boolean
+    showHints?: boolean
+    showProbabilities?: boolean
+  }
 
   /**
    * Gets the GNU Position ID for the current board state
@@ -124,7 +144,8 @@ export class Game {
     const playersWithCorrectPipCounts = Player.recalculatePipCounts(game)
     game = {
       ...game,
-      players: playersWithCorrectPipCounts as BackgammonPlayersRollingForStartTuple,
+      players:
+        playersWithCorrectPipCounts as BackgammonPlayersRollingForStartTuple,
     }
 
     return game
@@ -146,10 +167,6 @@ export class Game {
     }
   }
 
-  /**
-   * @internal - Low-level constructor for scripts and internal use only.
-   * Use Game.createNewGame() for normal game creation.
-   */
   // Overloads by stateKind for typed returns
   public static initialize(
     players: BackgammonPlayers,
@@ -367,7 +384,10 @@ export class Game {
       stateKind: 'rolled-for-start',
       activeColor,
       // Ensure tuple order is [active, inactive] for stricter typing
-      players: [activePlayer, inactivePlayer] as BackgammonPlayersRolledForStartTuple,
+      players: [
+        activePlayer,
+        inactivePlayer,
+      ] as BackgammonPlayersRolledForStartTuple,
       activePlayer,
       inactivePlayer,
     } as BackgammonGameRolledForStart
@@ -499,7 +519,10 @@ export class Game {
         return {
           ...game,
           stateKind: 'moving',
-          players: [movingPlayer, unrolledPlayer] as BackgammonPlayersMovingTuple,
+          players: [
+            movingPlayer,
+            unrolledPlayer,
+          ] as BackgammonPlayersMovingTuple,
           activeColor: movingPlayer.color,
           activePlayer: movingPlayer,
           inactivePlayer: unrolledPlayer,
@@ -512,8 +535,8 @@ export class Game {
         // Handle rolling from doubled state (after accepting a double)
         const { players, board, activeColor } = game
         if (!activeColor) throw new Error('Active color must be provided')
-    const [activePlayerForColor, inactivePlayerForColor] =
-      Game.getPlayersForColor(players, activeColor!)
+        const [activePlayerForColor, inactivePlayerForColor] =
+          Game.getPlayersForColor(players, activeColor!)
         if (activePlayerForColor.stateKind !== 'doubled') {
           throw new Error('Active player must be in doubled state')
         }
@@ -817,7 +840,7 @@ export class Game {
   public static move = function move(
     game: BackgammonGameMoving,
     checkerId: string
-  ): BackgammonGameMoving | BackgammonGame {
+  ): BackgammonGameMoving | BackgammonGameMoved | BackgammonGameCompleted {
     const checker = Board.getCheckers(game.board).find(
       (c) => c.id === checkerId
     )
@@ -1048,7 +1071,8 @@ export class Game {
       stateKind: updatedActivePlay.stateKind === 'moved' ? 'moved' : 'moving',
     }
 
-    return {
+    // Build provisional game state
+    const provisionalGame = {
       ...game,
       stateKind: gameStateKind,
       board,
@@ -1058,6 +1082,18 @@ export class Game {
       activePlayer: finalActivePlayerWithState,
       activePlay: updatedActivePlay,
     } as BackgammonGameMoving | BackgammonGameMoved
+
+    // CRITICAL FIX: When no ready moves remain (including scenarios with pre-completed no-moves),
+    // auto-transition the game to 'moved' so the player can confirm the turn.
+    // This prevents the dead-end 'moving' state with zero ready moves.
+    if (provisionalGame.stateKind === 'moving') {
+      const maybeMoved = Game.checkAndCompleteTurn(
+        provisionalGame as BackgammonGameMoving
+      )
+      return maybeMoved as BackgammonGameMoving | BackgammonGameMoved
+    }
+
+    return provisionalGame
   }
 
   /**
@@ -1109,43 +1145,34 @@ export class Game {
   public static executeAndRecalculate = function executeAndRecalculate(
     game: BackgammonGameMoving,
     originId: string
-  ): BackgammonGameMoving | BackgammonGame {
-    // First, execute the move using the existing move method
+  ):
+    | BackgammonGameMoving
+    | BackgammonGameMoved
+    | BackgammonGameRolling
+    | BackgammonGameCompleted {
     console.log(
       '[DEBUG] Game.executeAndRecalculate: About to execute move from origin:',
       originId
     )
 
-    // DEBUG: Check if game is defined and has required properties
-    if (!game) {
-      console.error('[DEBUG] CRITICAL: game parameter is undefined/null!')
-      throw new Error('Game parameter is undefined - cannot execute move')
-    }
-
-    if (!game.board) {
-      console.error('[DEBUG] CRITICAL: game.board is undefined!', {
-        gameStateKind: game.stateKind,
-        gameKeys: Object.keys(game),
-        hasActivePlay: !!game.activePlay,
-        hasActivePlayer: !!game.activePlayer,
-      })
-      throw new Error('Game.board is undefined - cannot execute move')
-    }
-
-    // Find a checker in the specified origin container to execute the move
+    // Find checker at origin location
     const checkers = Board.getCheckers(game.board)
     const checkerInOrigin = checkers.find(
       (c) =>
         c.checkercontainerId === originId && c.color === game.activePlayer.color
     )
 
-    if (!checkerInOrigin) {
-      throw new Error(
-        `No ${game.activePlayer.color} checker found in container ${originId}`
-      )
-    }
+    // Throw error if no valid checker found
+    const checkerId =
+      checkerInOrigin?.id ??
+      (() => {
+        const errorMessage = `No ${game.activePlayer.color} checker found in container ${originId}`
+        console.error(`[DEBUG] CRITICAL: ${errorMessage}`)
+        throw new Error(errorMessage)
+      })()
 
-    const gameAfterMove = Game.move(game, checkerInOrigin.id)
+    // Execute the move
+    const gameAfterMove = Game.move(game, checkerId)
 
     console.log(
       '[DEBUG] Game.executeAndRecalculate: Move executed, game state:',
@@ -1158,48 +1185,69 @@ export class Game {
       }
     )
 
-    // Check if the game ended (win condition)
-    if (gameAfterMove.stateKind === 'completed') {
-      return gameAfterMove
+    // Define post-move state handling using pattern matching approach
+    type PostMoveAction =
+      | { type: 'completed'; game: BackgammonGameCompleted }
+      | { type: 'moved'; game: BackgammonGameMoved }
+      | { type: 'continue-moving'; game: BackgammonGameMoving }
+
+    // Determine post-move action based on game state
+    const determinePostMoveAction = (): PostMoveAction => {
+      switch (gameAfterMove.stateKind) {
+        case 'completed':
+          return { type: 'completed', game: gameAfterMove }
+        case 'moved':
+          console.log(
+            '[DEBUG] 🎯 Game is already in moved state, returning as-is'
+          )
+          return { type: 'moved', game: gameAfterMove }
+        default:
+          return {
+            type: 'continue-moving',
+            game: gameAfterMove as BackgammonGameMoving,
+          }
+      }
     }
 
-    // Check if the game is already in 'moved' state after the move
-    if (gameAfterMove.stateKind === 'moved') {
-      console.log('[DEBUG] 🎯 Game is already in moved state, returning as-is')
-      return gameAfterMove
-    }
+    const postMoveAction = determinePostMoveAction()
 
-    // Game continues in moving state
-    const movingGame = gameAfterMove as BackgammonGameMoving
+    // Early return for terminal states
+    const isTerminalState =
+      postMoveAction.type === 'completed' || postMoveAction.type === 'moved'
 
-    // Check if turn should be completed (for both human and robot players)
-    const gameAfterTurnCheck = Game.checkAndCompleteTurn(movingGame)
+    return isTerminalState
+      ? postMoveAction.game
+      : (() => {
+          // Continue with moving state processing
+          const movingGame = postMoveAction.game
+          const gameAfterTurnCheck = Game.checkAndCompleteTurn(movingGame)
 
-    // For robot players, auto-confirm the turn if it transitioned to 'moved'
-    if (
-      movingGame.activePlayer.isRobot &&
-      gameAfterTurnCheck.stateKind === 'moved'
-    ) {
-      console.log('[DEBUG] 🤖 Robot turn completed, auto-confirming turn')
-      return Game.confirmTurn(gameAfterTurnCheck as BackgammonGameMoved)
-    }
+          // Define robot turn completion logic
+          const shouldAutoConfirmRobotTurn =
+            movingGame.activePlayer.isRobot &&
+            gameAfterTurnCheck.stateKind === 'moved'
 
-    // Return the game (either still 'moving' or transitioned to 'moved')
-    if (gameAfterTurnCheck.stateKind === 'moved') {
-      console.log('[DEBUG] Turn completed, transitioned to moved state')
-      return gameAfterTurnCheck
-    }
+          // Process robot auto-confirmation or return checked game
+          const finalGame = shouldAutoConfirmRobotTurn
+            ? (() => {
+                console.log(
+                  '[DEBUG] 🤖 Robot turn completed, auto-confirming turn'
+                )
+                return Game.confirmTurn(
+                  gameAfterTurnCheck as BackgammonGameMoved
+                )
+              })()
+            : gameAfterTurnCheck
 
-    // CRITICAL FIX: After executing a move, the activePlay.moves now contains fresh possibleMoves
-    // for all remaining ready moves thanks to the fix in Play.move()
-    // The movingGame already has the updated board state and refreshed activePlay
+          // Log state transition
+          finalGame.stateKind === 'moved'
+            ? console.log('[DEBUG] Turn completed, transitioned to moved state')
+            : console.log(
+                '[DEBUG] Game.executeAndRecalculate: Move executed successfully, returning updated game with fresh activePlay'
+              )
 
-    console.log(
-      '[DEBUG] Game.executeAndRecalculate: Move executed successfully, returning updated game with fresh activePlay'
-    )
-
-    // Turn continues, return the game with fresh board state and updated activePlay
-    return gameAfterTurnCheck
+          return finalGame
+        })()
   }
 
   /**
@@ -1210,7 +1258,7 @@ export class Game {
    */
   public static checkAndCompleteTurn = function checkAndCompleteTurn(
     game: BackgammonGameMoving
-  ): BackgammonGame {
+  ): BackgammonGameMoving | BackgammonGameMoved {
     // Use discriminated union pattern for turn completion states
     type TurnCompletionState =
       | { type: 'invalid-game' }
