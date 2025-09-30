@@ -5,7 +5,7 @@ import {
   BackgammonBoard,
   BackgammonPlayerMoving,
   BackgammonPlay,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { Play } from '..'
 import { Board, Player, Dice } from '../..'
 import { ascii } from '../../Board/ascii'

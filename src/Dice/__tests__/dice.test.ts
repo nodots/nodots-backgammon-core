@@ -4,7 +4,7 @@ import {
   BackgammonDiceRolled,
   BackgammonDiceRollingForStart,
   BackgammonRoll,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { Dice } from '..'
 import { randomBackgammonColor } from '../..'
 import { logger } from '../../utils/logger'

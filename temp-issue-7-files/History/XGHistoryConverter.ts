@@ -17,7 +17,7 @@ import {
   XGMatchHeader,
   XGMove,
   XGMoveRecord,
-} from '@nodots-llc/backgammon-types/dist'
+} from '-llc/backgammon-types'
 import { XGConverter, XGParser, XGSerializer } from '../XG'
 import { GameHistoryService, HistoryState } from './GameHistoryService'
 

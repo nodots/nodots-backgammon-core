@@ -6,7 +6,7 @@ import {
   BackgammonPlayerInactive,
   BackgammonPlayerMoving,
   BackgammonPlayers,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { Game } from '..'
 import { Board } from '../../Board'
 import { Cube } from '../../Cube'

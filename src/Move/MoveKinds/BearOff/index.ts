@@ -6,7 +6,7 @@ import {
   BackgammonMoveResult,
   BackgammonPlayerMoving,
   BackgammonPoint,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { Board, Player } from '../../..'
 import { logger } from '../../../utils/logger'
 

@@ -11,7 +11,7 @@ import {
   PlayerMove,
   Result,
   success,
-} from '@nodots-llc/backgammon-types/dist'
+} from '-llc/backgammon-types'
 import { GameHistoryService, HistoryState } from './GameHistoryService'
 
 // Pure data structures for analysis

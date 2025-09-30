@@ -6,7 +6,7 @@ import {
   BackgammonPlayerMoving,
   BackgammonPlayers,
   BackgammonRoll,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { Cube } from '..'
 import { generateId, randomBackgammonColor } from '../..'
 

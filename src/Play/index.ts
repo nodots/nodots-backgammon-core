@@ -16,7 +16,7 @@ import {
   BackgammonPlayMoving,
   BackgammonPlayResult,
   BackgammonPlayStateKind
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { Board, generateId } from '..'
 import { BearOff } from '../Move/MoveKinds/BearOff'
 import { debug, logger } from '../utils/logger'

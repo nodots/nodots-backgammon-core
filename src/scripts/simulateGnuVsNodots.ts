@@ -1,4 +1,4 @@
-import { BackgammonGameRollingForStart } from '@nodots-llc/backgammon-types/dist'
+import { BackgammonGameRollingForStart } from '@nodots-llc/backgammon-types'
 import * as fs from 'fs'
 import * as path from 'path'
 import { Board, Game, Player } from '..'

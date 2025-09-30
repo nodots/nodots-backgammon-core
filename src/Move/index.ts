@@ -21,7 +21,7 @@ import {
   BackgammonPlayerMoving,
   BackgammonPoint,
   MoveProps,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { generateId } from '..'
 import { debug } from '../utils/logger'
 import { BearOff } from './MoveKinds/BearOff'

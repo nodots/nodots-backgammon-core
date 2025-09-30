@@ -8,7 +8,7 @@ import {
   BackgammonDieValue,
   BackgammonPlayResult,
   BackgammonCheckerContainerImport
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 
 // Helper to create a player with specific dice roll
 function createPlayerWithDice(diceRoll: [BackgammonDieValue, BackgammonDieValue]): BackgammonPlayerMoving {

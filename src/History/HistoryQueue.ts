@@ -1,9 +1,9 @@
+import type { BackgammonGame } from '@nodots-llc/backgammon-types'
 import {
   GameActionType,
   GameActionData,
   GameActionMetadata,
-  BackgammonGame
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { logger } from '../utils/logger'
 
 export interface HistoryQueueInterface {

@@ -3,7 +3,7 @@ import {
   BackgammonGameRollingForStart,
   BackgammonPlayerRollingForStart,
   BackgammonPlayers,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { Dice } from '../../Dice'
 import { Game } from '../../Game'
 import { Player } from '../index'

@@ -1,4 +1,4 @@
-import { BackgammonBoard, BackgammonPlayerMoving, BackgammonPointValue, BackgammonDieValue } from '@nodots-llc/backgammon-types/dist'
+import { BackgammonBoard, BackgammonPlayerMoving, BackgammonPointValue, BackgammonDieValue } from '@nodots-llc/backgammon-types'
 import { Board, Play, Player, Dice } from '../..'
 
 describe('Play - Mandatory Dice Usage Rules (Issue #132)', () => {

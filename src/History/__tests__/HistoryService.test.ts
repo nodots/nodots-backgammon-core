@@ -1,12 +1,11 @@
 import * as HistoryService from '../HistoryService'
 import * as SnapshotService from '../SnapshotService'
+import type { BackgammonGame, BackgammonDieValue } from '@nodots-llc/backgammon-types'
 import {
-  BackgammonGame,
-  BackgammonDieValue,
   GameActionType,
   GameActionData,
   GameStateSnapshot,
-} from '@nodots-llc/backgammon-types/dist'
+} from '../historyTypes'
 
 // Mock game object for testing following CLAUDE.md patterns
 const createMockGame = (stateKind: string = 'rolling'): BackgammonGame => {

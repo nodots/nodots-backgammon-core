@@ -11,7 +11,7 @@ import {
   BackgammonPlayerMoving,
   BackgammonPoint,
   BackgammonRoll,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { BearOff } from '..'
 import { Dice, generateId } from '../../../../'
 import { Board } from '../../../../Board'

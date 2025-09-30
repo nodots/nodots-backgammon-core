@@ -9,7 +9,7 @@ import {
   failure,
   safeExecute,
   success,
-} from '@nodots-llc/backgammon-types/dist'
+} from '-llc/backgammon-types'
 
 // Pure function to create a complete snapshot of game state
 export const createSnapshot = (

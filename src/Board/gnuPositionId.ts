@@ -4,7 +4,7 @@ import {
   BackgammonGame,
   BackgammonGameMoving,
   BackgammonPlayer,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { logger } from '../utils/logger'
 
 // GNU BG base64 alphabet

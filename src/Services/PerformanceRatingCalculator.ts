@@ -1,4 +1,10 @@
 import { BackgammonGame } from '@nodots-llc/backgammon-types'
+import type { MoveHint, MoveStep } from '@nodots-llc/gnubg-hints'
+import {
+  buildHintContextFromGame,
+  GnubgColorNormalization,
+  gnubgHints,
+} from '@nodots-llc/backgammon-ai'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
 import { logger } from '../utils/logger'
 
@@ -34,12 +40,10 @@ export interface PRCalculationResult {
   error?: string
 }
 
-export class PerformanceRatingCalculator {
-  private gnubgIntegration: any
+interface ExecutedMoveStep extends MoveStep {}
 
-  constructor(gnubgIntegration: any) {
-    this.gnubgIntegration = gnubgIntegration
-  }
+export class PerformanceRatingCalculator {
+  constructor() {}
 
   /**
    * Calculate Performance Rating for all players in a game
@@ -52,26 +56,24 @@ export class PerformanceRatingCalculator {
     try {
       logger.info(`Starting PR calculation for game ${gameId}`)
 
-      // Check if GNU BG is available
-      const isAvailable = await this.gnubgIntegration.isAvailable()
+      const isAvailable = await gnubgHints.isAvailable()
       if (!isAvailable) {
-        throw new Error('GNU Backgammon is not available for position analysis')
+        throw new Error(
+          `${gnubgHints.getBuildInstructions()}\n\nGNU Backgammon hints are required for performance rating analysis.`
+        )
       }
 
-      // Initialize player stats
       const playerStats: Record<string, PlayerPR> = {}
-      
-      // Process each move action
+
       for (let i = 0; i < moveActions.length; i++) {
         const action = moveActions[i]
         const gameState = gameStates[i]
-        
+
         if (!gameState) {
           logger.warn(`No game state available for move ${i}`)
           continue
         }
 
-        // Initialize player if not exists
         if (!playerStats[action.player]) {
           playerStats[action.player] = {
             player: action.player,
@@ -80,34 +82,32 @@ export class PerformanceRatingCalculator {
             totalEquityLoss: 0,
             errors: { doubtful: 0, error: 0, blunder: 0, veryBad: 0 },
             averageEquityLoss: 0,
-            performanceRating: 0
+            performanceRating: 0,
           }
         }
 
         playerStats[action.player].totalMoves++
 
         try {
-          // Generate position ID for analysis
-          const positionId = exportToGnuPositionId(gameState)
-          const dice = action.dice || [1, 1]
+          const diceTuple: [number, number] = [
+            action.dice?.[0] ?? 0,
+            action.dice?.[1] ?? 0,
+          ]
 
-          logger.info(`Analyzing move ${i + 1} by ${action.player}, position: ${positionId}`)
+          logger.info(`Analyzing move ${i + 1} by ${action.player}`)
 
-          // Get GNU BG analysis
           const moveAnalysis = await this.analyzeMoveWithGnuBG(
-            positionId,
-            dice,
+            gameState,
+            diceTuple,
             action.move,
             action.player,
-            i + 1
+            i + 1,
           )
 
-          // Update player stats
           if (moveAnalysis) {
             playerStats[action.player].analyzedMoves++
             playerStats[action.player].totalEquityLoss += moveAnalysis.equityLoss
 
-            // Count error types
             switch (moveAnalysis.errorType) {
               case 'doubtful':
                 playerStats[action.player].errors.doubtful++
@@ -128,20 +128,20 @@ export class PerformanceRatingCalculator {
         }
       }
 
-      // Calculate final PR for each player
       for (const player of Object.values(playerStats)) {
         if (player.analyzedMoves > 0) {
-          player.averageEquityLoss = player.totalEquityLoss / player.analyzedMoves
+          player.averageEquityLoss =
+            player.totalEquityLoss / player.analyzedMoves
           player.performanceRating = player.averageEquityLoss * 500
         }
       }
 
       logger.info(`PR calculation complete for game ${gameId}`)
-      
+
       return {
         gameId,
         playerResults: playerStats,
-        analysisComplete: true
+        analysisComplete: true,
       }
     } catch (error) {
       logger.error(`PR calculation failed for game ${gameId}:`, error)
@@ -149,118 +149,157 @@ export class PerformanceRatingCalculator {
         gameId,
         playerResults: {},
         analysisComplete: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       }
     }
   }
 
-  /**
-   * Analyze a single move using GNU Backgammon
-   */
   private async analyzeMoveWithGnuBG(
-    positionId: string,
-    dice: number[],
+    gameState: BackgammonGame,
+    dice: [number, number],
     moveExecuted: any,
-    player: string,
-    moveNumber: number
+    playerId: string,
+    moveNumber: number,
   ): Promise<PRMoveAnalysis | null> {
     try {
-      // Execute GNU BG analysis
-      const commands = [
-        'new game',
-        `set board ${positionId}`,
-        `set dice ${dice[0]} ${dice[1]}`,
-        'hint'
-      ]
+      const { request, normalization } = buildHintContextFromGame(gameState, {
+        dice,
+      })
 
-      const hintOutput = await this.gnubgIntegration.executeCommand(commands)
-      const { moves, bestEquity, actualEquity } = this.parseHintOutput(hintOutput, moveExecuted)
-
-      if (bestEquity !== null && actualEquity !== null) {
-        const equityLoss = Math.max(0, bestEquity - actualEquity)
-        const errorType = this.classifyError(equityLoss)
-
-        return {
-          player,
-          moveNumber,
-          positionId,
-          moveExecuted: String(moveExecuted),
-          bestMove: moves.length > 0 ? moves[0].move : 'unknown',
-          equityLoss,
-          errorType
-        }
+      const hints = await gnubgHints.getMoveHints(request, 12)
+      if (!Array.isArray(hints) || hints.length === 0) {
+        logger.warn('No hints returned for PR analysis')
+        return null
       }
 
-      return null
+      const bestHint = hints[0]
+      const actualStep = this.extractActualMoveStep(
+        moveExecuted,
+        playerId,
+        gameState,
+        normalization,
+      )
+      const actualHint = actualStep
+        ? this.findHintForStep(hints, actualStep)
+        : undefined
+
+      const bestEquity = bestHint?.equity ?? null
+      const actualEquity = actualHint?.equity ?? null
+
+      if (bestEquity === null || actualEquity === null) {
+        logger.warn(
+          `Unable to determine equities for move ${moveNumber}: best=${bestEquity}, actual=${actualEquity}`,
+        )
+        return null
+      }
+
+      const equityLoss = Math.max(0, bestEquity - actualEquity)
+      const errorType = this.classifyError(equityLoss)
+
+      return {
+        player: playerId,
+        moveNumber,
+        positionId: exportToGnuPositionId(gameState),
+        moveExecuted: actualStep ? this.formatMoveStep(actualStep) : 'unknown',
+        bestMove: this.formatHint(bestHint),
+        equityLoss,
+        errorType,
+      }
     } catch (error) {
       logger.warn(`GNU BG analysis failed for move ${moveNumber}: ${error}`)
       return null
     }
   }
 
-  /**
-   * Parse GNU Backgammon hint output
-   */
-  private parseHintOutput(output: string, actualMove: any): {
-    moves: Array<{ move: string, equity: number }>,
-    bestEquity: number | null,
-    actualEquity: number | null
-  } {
-    const lines = output.split('\n')
-    const moves: Array<{ move: string, equity: number }> = []
-    let bestEquity: number | null = null
-    let actualEquity: number | null = null
+  private extractActualMoveStep(
+    move: any,
+    playerId: string,
+    gameState: BackgammonGame,
+    normalization: GnubgColorNormalization,
+  ): ExecutedMoveStep | null {
+    const payload = move?.makeMove ?? move
 
-    // Parse the hint table
-    let inTable = false
-    for (const line of lines) {
-      // Look for table header
-      if (line.includes('Rank') && line.includes('Move') && line.includes('Equity')) {
-        inTable = true
-        continue
-      }
-
-      if (inTable) {
-        // Parse move lines (format: "1. Type Equity Move")
-        const match = line.match(/^\s*(\d+)\.\s+(\S+)\s+([-\d.]+)\s+(.+)/)
-        if (match) {
-          const [, rank, type, equity, move] = match
-          const moveData = {
-            move: move.trim(),
-            equity: parseFloat(equity)
-          }
-          moves.push(moveData)
-
-          // First move is best
-          if (parseInt(rank) === 1) {
-            bestEquity = moveData.equity
-          }
-
-          // Try to match actual move (simplified matching)
-          if (this.moveMatches(moveData.move, actualMove)) {
-            actualEquity = moveData.equity
-          }
-        } else if (line.trim() === '') {
-          break // End of table
-        }
-      }
+    if (!payload) {
+      return null
     }
 
-    // If we couldn't find the actual move, default to best
-    if (actualEquity === null && bestEquity !== null) {
-      actualEquity = bestEquity
+    const executingPlayer = gameState.players.find((p) => p.id === playerId)
+    if (!executingPlayer) {
+      return null
     }
 
-    return { moves, bestEquity, actualEquity }
+    const normalizedColor = normalization.toGnu[executingPlayer.color]
+    if (!normalizedColor) {
+      return null
+    }
+
+    const moveKind = (payload.moveKind || 'point-to-point') as MoveStep['moveKind']
+    const originPosition = typeof payload.originPosition === 'number'
+      ? payload.originPosition
+      : moveKind === 'reenter'
+        ? 0
+        : null
+    const destinationPosition = typeof payload.destinationPosition === 'number'
+      ? payload.destinationPosition
+      : moveKind === 'bear-off'
+        ? 0
+        : null
+
+    if (originPosition === null || destinationPosition === null) {
+      return null
+    }
+
+    const fromContainer: MoveStep['fromContainer'] = moveKind === 'reenter' ? 'bar' : 'point'
+    const toContainer: MoveStep['toContainer'] = moveKind === 'bear-off' ? 'off' : 'point'
+
+    return {
+      player: normalizedColor,
+      moveKind,
+      isHit: Boolean(payload.isHit),
+      from: originPosition,
+      to: destinationPosition,
+      fromContainer,
+      toContainer,
+    }
   }
 
-  /**
-   * Simple move matching logic (can be improved)
-   */
-  private moveMatches(gnuMove: string, actualMove: any): boolean {
-    // Very basic matching - this could be improved significantly
-    const actualMoveStr = String(actualMove)
-    return gnuMove.includes(actualMoveStr) || actualMoveStr.includes(gnuMove)
+  private findHintForStep(
+    hints: MoveHint[],
+    target: MoveStep,
+  ): MoveHint | undefined {
+    return hints.find((hint) =>
+      hint.moves.some((step) => this.stepsEqual(step, target)),
+    )
+  }
+
+  private stepsEqual(a: MoveStep, b: MoveStep): boolean {
+    return (
+      a.from === b.from &&
+      a.to === b.to &&
+      a.fromContainer === b.fromContainer &&
+      a.toContainer === b.toContainer &&
+      a.moveKind === b.moveKind
+    )
+  }
+
+  private formatHint(hint: MoveHint): string {
+    if (!hint.moves || hint.moves.length === 0) {
+      return 'unknown'
+    }
+
+    return hint.moves
+      .map((step) => this.formatMoveStep(step))
+      .join(' ')
+  }
+
+  private formatMoveStep(step: MoveStep): string {
+    if (step.fromContainer === 'bar') {
+      return `bar/${step.to}`
+    }
+    if (step.toContainer === 'off') {
+      return `${step.from}/off`
+    }
+    return `${step.from}/${step.to}`
   }
 
   /**

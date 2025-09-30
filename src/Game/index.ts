@@ -27,7 +27,7 @@ import {
   BackgammonPlayerWinner,
   BackgammonPlayMoving,
   BackgammonRoll,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { generateId, Player } from '..'
 import { Board } from '../Board'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
@@ -47,7 +47,7 @@ import type {
   BackgammonPlayersRolledForStartTuple,
   BackgammonPlayersRollingTuple,
   BackgammonPlayersMovingTuple,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 
 export class Game {
   id: string = generateId()
@@ -937,7 +937,7 @@ export class Game {
       board,
       players: game.players.map((p) =>
         p.id === movedPlayer.id ? movedPlayer : p
-      ) as import('@nodots-llc/backgammon-types/dist').BackgammonPlayers,
+      ) as import('@nodots-llc/backgammon-types').BackgammonPlayers,
     }
     const updatedPlayers = Player.recalculatePipCounts(gameWithUpdatedBoard)
 

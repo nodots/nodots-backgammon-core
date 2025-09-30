@@ -6,7 +6,7 @@ import {
   ReconstructionResult,
   Result,
   success,
-} from '@nodots-llc/backgammon-types/dist'
+} from '-llc/backgammon-types'
 import { SnapshotService } from './SnapshotService'
 
 // Pure function to reconstruct game state at a specific sequence number

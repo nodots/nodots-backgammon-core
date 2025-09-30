@@ -5,7 +5,7 @@ import {
   BackgammonMoveReady,
   BackgammonMoveResult,
   BackgammonPoint,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { Board } from '../../../Board'
 
 export class PointToPoint {

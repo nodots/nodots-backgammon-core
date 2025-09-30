@@ -17,7 +17,7 @@ import {
   Result,
   some,
   success,
-} from '@nodots-llc/backgammon-types/dist'
+} from '-llc/backgammon-types'
 import { generateId } from '../'
 import { ReconstructionService } from './ReconstructionService'
 import { SnapshotService } from './SnapshotService'

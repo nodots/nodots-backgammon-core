@@ -1,4 +1,4 @@
-import { BackgammonMove } from '@nodots-llc/backgammon-types/dist'
+import { BackgammonMove } from '@nodots-llc/backgammon-types'
 
 /**
  * Custom JSON serializer that properly handles Set objects

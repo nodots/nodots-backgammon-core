@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals'
 import {
   BackgammonPlayerMoving,
   BackgammonMoveReady,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { Board, generateId, Play } from '../../'
 import { BOARD_IMPORT_DEFAULT } from '../../Board/imports'
 

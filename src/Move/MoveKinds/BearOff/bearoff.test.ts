@@ -7,7 +7,7 @@ import {
   BackgammonMoveReady,
   BackgammonPlayerMoving,
   BackgammonRoll,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { BearOff } from '.'
 import { generateId } from '../../..'
 import { Board } from '../../../Board'

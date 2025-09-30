@@ -2,7 +2,7 @@ import {
   BackgammonGameMoving,
   BackgammonGameRollingForStart,
   BackgammonMove,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import * as fs from 'fs'
 import * as path from 'path'
 import { Board, Game, Player } from '..'

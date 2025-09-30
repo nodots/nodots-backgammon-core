@@ -8,7 +8,7 @@ import {
   BackgammonPlayer,
   BackgammonPlayers,
   CubeProps,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { generateId } from '..'
 
 // CubeProps is now imported from @nodots-llc/backgammon-types

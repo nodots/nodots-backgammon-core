@@ -3,6 +3,8 @@ import {
   BackgammonDieValue,
   BackgammonGame,
   BackgammonPlayer,
+} from '@nodots-llc/backgammon-types'
+import {
   BoardPositionSnapshot,
   CubeStateSnapshot,
   DiceStateSnapshot,
@@ -15,7 +17,7 @@ import {
   GameReconstructionOptions,
   GameStateSnapshot,
   PlayerStatesSnapshot,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { generateId } from '../'
 import { logger } from '../utils/logger'
 
@@ -252,7 +254,7 @@ export async function getActionRange(
   }
 
   const actions = history.actions.filter(
-    (action) =>
+    (action: GameHistoryAction) =>
       action.sequenceNumber >= startSequence &&
       action.sequenceNumber <= endSequence
   )
@@ -302,7 +304,7 @@ export async function truncateHistoryAfter(
     const history = historyResult.data
     const originalLength = history.actions.length
     const filteredActions = history.actions.filter(
-      (action) => action.sequenceNumber <= sequenceNumber
+      (action: GameHistoryAction) => action.sequenceNumber <= sequenceNumber
     )
 
     const removedCount = originalLength - filteredActions.length

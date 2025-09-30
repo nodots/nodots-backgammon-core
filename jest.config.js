@@ -13,7 +13,13 @@ module.exports = {
       'ts-jest',
       {
         tsconfig: 'tsconfig.json',
+        useESM: true,
       },
     ],
+  },
+  extensionsToTreatAsEsm: ['.ts'],
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+    '^@nodots-llc/backgammon-ai$': '<rootDir>/__mocks__/backgammonAiMock.ts',
   },
 }

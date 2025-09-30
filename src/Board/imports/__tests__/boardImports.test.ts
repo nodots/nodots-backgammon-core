@@ -5,7 +5,7 @@ import {
   BackgammonCheckerContainerImport,
   BackgammonCheckerContainerPosition,
   BackgammonPoint,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 
 describe('Board Imports', () => {
   const validateBoardImport = (

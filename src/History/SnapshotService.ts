@@ -1,16 +1,18 @@
 import {
   BackgammonGame,
   BackgammonColor,
+  BackgammonPlayer,
+  BackgammonDieValue,
+  BackgammonGameStateKind,
+} from '@nodots-llc/backgammon-types'
+import {
   GameStateSnapshot,
   BoardPositionSnapshot,
   CheckerSnapshot,
   DiceStateSnapshot,
   CubeStateSnapshot,
   PlayerStatesSnapshot,
-  BackgammonPlayer,
-  BackgammonDieValue,
-  BackgammonGameStateKind,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { logger } from '../utils/logger'
 
 /**
@@ -310,9 +312,9 @@ function createBoardPositionSnapshot(game: BackgammonGame): SnapshotResult<Board
     }
 
     // Capture all point positions
-    game.board.points.forEach(point => {
+    game.board.points.forEach((point) => {
       const position = point.position.clockwise.toString()
-      snapshot.points[position] = point.checkers.map(checker => ({
+      snapshot.points[position] = point.checkers.map((checker): CheckerSnapshot => ({
         id: checker.id,
         color: checker.color,
         position: point.position.clockwise
@@ -331,26 +333,26 @@ function createBoardPositionSnapshot(game: BackgammonGame): SnapshotResult<Board
     }
 
     // Bar checkers - use player.direction for correct access
-    snapshot.bar.black = game.board.bar[blackPlayer.direction].checkers.map(checker => ({
+    snapshot.bar.black = game.board.bar[blackPlayer.direction].checkers.map((checker): CheckerSnapshot => ({
       id: checker.id,
       color: checker.color,
       position: 'bar' as const
     }))
 
-    snapshot.bar.white = game.board.bar[whitePlayer.direction].checkers.map(checker => ({
+    snapshot.bar.white = game.board.bar[whitePlayer.direction].checkers.map((checker): CheckerSnapshot => ({
       id: checker.id,
       color: checker.color,
       position: 'bar' as const
     }))
 
     // Off checkers - use player.direction for correct access
-    snapshot.off.black = game.board.off[blackPlayer.direction].checkers.map(checker => ({
+    snapshot.off.black = game.board.off[blackPlayer.direction].checkers.map((checker): CheckerSnapshot => ({
       id: checker.id,
       color: checker.color,
       position: 'off' as const
     }))
 
-    snapshot.off.white = game.board.off[whitePlayer.direction].checkers.map(checker => ({
+    snapshot.off.white = game.board.off[whitePlayer.direction].checkers.map((checker): CheckerSnapshot => ({
       id: checker.id,
       color: checker.color,
       position: 'off' as const
@@ -577,8 +579,9 @@ function validateBoardPositions(boardSnapshot: BoardPositionSnapshot): Validatio
     let whiteCheckers = 0
 
     // Count checkers on points
-    Object.values(boardSnapshot.points).forEach(checkers => {
-      checkers.forEach(checker => {
+    const pointCheckers = Object.values(boardSnapshot.points) as CheckerSnapshot[][]
+    pointCheckers.forEach((checkers: CheckerSnapshot[]) => {
+      checkers.forEach((checker: CheckerSnapshot) => {
         if (checker.color === 'black') blackCheckers++
         else if (checker.color === 'white') whiteCheckers++
       })
@@ -737,9 +740,10 @@ function validatePipCounts(snapshot: GameStateSnapshot): ValidationResult {
     let calculatedWhitePips = 0
 
     // Count pips from points
-    Object.entries(snapshot.boardPositions.points).forEach(([position, checkers]) => {
+    const pointEntries = Object.entries(snapshot.boardPositions.points) as [string, CheckerSnapshot[]][]
+    pointEntries.forEach(([position, checkers]: [string, CheckerSnapshot[]]) => {
       const pointValue = parseInt(position)
-      checkers.forEach(checker => {
+      checkers.forEach((checker: CheckerSnapshot) => {
         if (checker.color === 'black') {
           // Black moves counterclockwise, so pip count is 25 - position
           calculatedBlackPips += (25 - pointValue)
@@ -817,16 +821,16 @@ function compareBoardPositions(board1: BoardPositionSnapshot, board2: BoardPosit
     ...Object.keys(board2.points)
   ])
 
-  allPositions.forEach(position => {
-    const checkers1 = board1.points[position] || []
-    const checkers2 = board2.points[position] || []
+  allPositions.forEach((position) => {
+    const checkers1: CheckerSnapshot[] = board1.points[position] || []
+    const checkers2: CheckerSnapshot[] = board2.points[position] || []
     
     if (checkers1.length !== checkers2.length) {
       differences.push(`point ${position}: ${checkers1.length} vs ${checkers2.length} checkers`)
     } else {
       // Compare checker colors at this position
-      const colors1 = checkers1.map(c => c.color).sort()
-      const colors2 = checkers2.map(c => c.color).sort()
+      const colors1 = checkers1.map((c: CheckerSnapshot) => c.color).sort()
+      const colors2 = checkers2.map((c: CheckerSnapshot) => c.color).sort()
       if (JSON.stringify(colors1) !== JSON.stringify(colors2)) {
         differences.push(`point ${position}: checker colors differ`)
       }

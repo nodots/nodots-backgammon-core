@@ -13,7 +13,7 @@ import {
   BackgammonPoint,
   BackgammonPoints,
   BackgammonPointValue,
-} from '@nodots-llc/backgammon-types/dist'
+} from '@nodots-llc/backgammon-types'
 import { Checker, generateId, Player, randomBackgammonColor } from '..'
 // PositionAnalyzer moved to @nodots-llc/backgammon-robots package
 import { debug, logger } from '../utils/logger'

@@ -34,6 +34,7 @@ export const isValidUuid = (uuid: string): boolean =>
   )
 
 export * from './Board'
+export { ascii } from './Board/ascii'
 export * from './Checker'
 export * from './Cube'
 export * from './Dice'
@@ -66,6 +67,6 @@ export {
 } from './utils/serialization'
 
 // Re-export all types from @nodots-llc/backgammon-types for convenience
-export * from '@nodots-llc/backgammon-types'
+export type * from '@nodots-llc/backgammon-types'
 export { GameEventEmitter } from './events/GameEventEmitter'
 // export * from './XG' // Temporarily disabled for Issue #7 - comprehensive history system

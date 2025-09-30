@@ -1,4 +1,4 @@
-import { BackgammonGame, BackgammonGameStateKind } from '@nodots-llc/backgammon-types/dist'
+import { BackgammonGame, BackgammonGameStateKind } from '@nodots-llc/backgammon-types'
 import { Board, Cube, Game, Player } from '..'
 // Note: Adapter operates on the data shape, not class instances.
 

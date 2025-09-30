@@ -10,7 +10,7 @@ import {
   ReconstructionOptions,
   Result,
   success,
-} from '@nodots-llc/backgammon-types/dist'
+} from '-llc/backgammon-types'
 import {
   GameHistoryService,
   HistoryState,
