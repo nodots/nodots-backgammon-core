@@ -139,7 +139,6 @@ describe('Game Turn Passing', () => {
       moves[0] = {
         ...moves[0],
         stateKind: 'ready',
-        origin: movingGame.board.points[23],
       }
 
       const gameWithIncompleteMove = {

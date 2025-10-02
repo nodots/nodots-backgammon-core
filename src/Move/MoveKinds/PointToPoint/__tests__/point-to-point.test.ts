@@ -61,14 +61,13 @@ describe('PointToPoint', () => {
       const move = {
         id: '1',
         player,
-        origin: emptyPoint,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
 
-      expect(PointToPoint.isA(move)).toBe(false)
+      expect(PointToPoint.isA(move, emptyPoint)).toBe(false)
     })
 
     it('should return false for move with wrong color checker', () => {
@@ -77,19 +76,18 @@ describe('PointToPoint', () => {
       const originWithBlackChecker = board.points.find(
         (point) =>
           point.checkers.length > 0 && point.checkers[0].color === 'black'
-      )
+      )!
 
       const move = {
         id: '1',
         player,
-        origin: originWithBlackChecker,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
 
-      expect(PointToPoint.isA(move)).toBe(false)
+      expect(PointToPoint.isA(move, originWithBlackChecker)).toBe(false)
     })
 
     it('should return false for move without dieValue', () => {
@@ -99,13 +97,12 @@ describe('PointToPoint', () => {
       const move = {
         id: '1',
         player,
-        origin,
         stateKind: 'ready',
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
 
-      expect(PointToPoint.isA(move)).toBe(false)
+      expect(PointToPoint.isA(move, origin)).toBe(false)
     })
 
     it('should return valid move for correct point-to-point setup', () => {
@@ -116,34 +113,28 @@ describe('PointToPoint', () => {
       const move: BackgammonMoveReady = {
         id: '1',
         player,
-        origin,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
 
-      const result = PointToPoint.isA(move)
-      expect(result).toBeTruthy()
-      if (result) {
-        expect(result.stateKind).toBe('in-progress')
-        expect(result.moveKind).toBe('point-to-point')
-      }
+      const result = PointToPoint.isA(move, origin)
+      expect(result).toBe(true)
     })
 
     it('should return false for move with origin.kind not equal to "point"', () => {
       const { board, player } = setupTestData()
-      const origin = { ...board.points[5], kind: 'bar' }
+      const origin = { ...board.points[5], kind: 'bar' } as any
       const move = {
         id: '1',
         player,
-        origin,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
-      expect(PointToPoint.isA(move)).toBe(false)
+      expect(PointToPoint.isA(move, origin)).toBe(false)
     })
   })
 
@@ -155,14 +146,13 @@ describe('PointToPoint', () => {
       const move: BackgammonMoveReady = {
         id: '1',
         player,
-        origin,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
 
-      const destination = PointToPoint.getDestination(board, move)
+      const destination = PointToPoint.getDestination(board, move, origin)
       expect(destination.position.clockwise).toBe(origin.position.clockwise - 1)
     })
 
@@ -173,14 +163,13 @@ describe('PointToPoint', () => {
       const move: BackgammonMoveReady = {
         id: '1',
         player,
-        origin,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
 
-      const destination = PointToPoint.getDestination(board, move)
+      const destination = PointToPoint.getDestination(board, move, origin)
       expect(destination.position.counterclockwise).toBe(
         origin.position.counterclockwise - 1
       )
@@ -194,13 +183,12 @@ describe('PointToPoint', () => {
       const move: BackgammonMoveReady = {
         id: '1',
         player,
-        origin,
         stateKind: 'ready',
         dieValue: 2,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
-      expect(() => PointToPoint.getDestination(board, move)).toThrow(
+      expect(() => PointToPoint.getDestination(board, move, origin)).toThrow(
         'Invalid destination point'
       )
     })
@@ -215,18 +203,17 @@ describe('PointToPoint', () => {
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
-        origin: board.points[0],
         possibleMoves: [],
       }
 
-      expect(() => PointToPoint.move(null as any, move)).toThrow(
+      expect(() => PointToPoint.move(null as any, move, board.points[0])).toThrow(
         'Invalid board'
       )
     })
 
     it('should throw error for invalid move', () => {
       const { board } = setupTestData()
-      expect(() => PointToPoint.move(board, null as any)).toThrow(
+      expect(() => PointToPoint.move(board, null as any, board.points[0])).toThrow(
         'Invalid move'
       )
     })
@@ -239,14 +226,13 @@ describe('PointToPoint', () => {
       const move: BackgammonMoveReady = {
         id: '1',
         player,
-        origin,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
 
-      const result = PointToPoint.move(board, move)
+      const result = PointToPoint.move(board, move, origin)
       expect(result.board).toBeTruthy()
       expect(result.move.stateKind).toBe('completed')
       expect(result.board.points[5].checkers.length).toBe(
@@ -276,13 +262,12 @@ describe('PointToPoint', () => {
       const move: BackgammonMoveReady = {
         id: '1',
         player,
-        origin,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
-      const result = PointToPoint.move(board, move)
+      const result = PointToPoint.move(board, move, origin)
       expect(result.move.moveKind).toBe('no-move')
       expect(result.move.stateKind).toBe('completed')
       expect(result.move.origin).toBeUndefined()
@@ -296,7 +281,6 @@ describe('PointToPoint', () => {
       const move: BackgammonMoveReady = {
         id: '1',
         player,
-        origin,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
@@ -318,7 +302,7 @@ describe('PointToPoint', () => {
         )
         return { ...b, points: updatedPoints } as typeof b
       }
-      expect(() => PointToPoint.move(board, move)).toThrow(
+      expect(() => PointToPoint.move(board, move, origin)).toThrow(
         'Could not find destination point after move'
       )
       // Restore original moveChecker
@@ -382,13 +366,12 @@ describe('PointToPoint', () => {
       const move: BackgammonMoveReady = {
         id: '1',
         player,
-        origin,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
-      const result = PointToPoint.move(board, move)
+      const result = PointToPoint.move(board, move, origin)
       expect(result.move.isHit).toBe(true)
       // Restore original moveChecker
       Board.moveChecker = originalMoveChecker
@@ -402,14 +385,13 @@ describe('PointToPoint', () => {
       const move: BackgammonMoveReady = {
         id: '1',
         player,
-        origin: emptyPoint!,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
       // Should throw via isA or move
-      expect(() => PointToPoint.move(board, move)).toThrow()
+      expect(() => PointToPoint.move(board, move, emptyPoint!)).toThrow()
     })
 
     it('should allow moving to a point occupied by own checkers', () => {
@@ -453,13 +435,12 @@ describe('PointToPoint', () => {
       const move: BackgammonMoveReady = {
         id: '1',
         player,
-        origin,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
-      const result = PointToPoint.move(board, move)
+      const result = PointToPoint.move(board, move, origin)
       expect(result.move.stateKind).toBe('completed')
       expect(result.move.destination?.checkers[0].color).toBe('white')
       expect(result.board.points[5].checkers.length).toBe(
@@ -507,13 +488,12 @@ describe('PointToPoint', () => {
       const move: BackgammonMoveReady = {
         id: '1',
         player,
-        origin,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
-      const result = PointToPoint.move(board, move)
+      const result = PointToPoint.move(board, move, origin)
       expect(result.move.moveKind).toBe('no-move')
       expect(result.move.stateKind).toBe('completed')
       expect(result.move.origin).toBeUndefined()
@@ -548,14 +528,13 @@ describe('PointToPoint', () => {
       const move: BackgammonMoveReady = {
         id: '1',
         player,
-        origin,
         stateKind: 'ready',
         dieValue: 1, // Move from position 6 to position 5
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
 
-      const result = PointToPoint.move(board, move)
+      const result = PointToPoint.move(board, move, origin)
       expect(result.move.stateKind).toBe('completed')
       expect(result.move.destination?.id).toBe(destination.id)
       expect(result.move.destination?.checkers[0].color).toBe('white')
@@ -568,23 +547,21 @@ describe('PointToPoint', () => {
       const moveZero: any = {
         id: '1',
         player,
-        origin,
         stateKind: 'ready',
         dieValue: 0,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
-      expect(() => PointToPoint.move(board, moveZero)).toThrow()
+      expect(() => PointToPoint.move(board, moveZero, origin)).toThrow()
       // dieValue undefined
       const moveUndef: any = {
         id: '1',
         player,
-        origin,
         stateKind: 'ready',
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
-      expect(() => PointToPoint.move(board, moveUndef)).toThrow()
+      expect(() => PointToPoint.move(board, moveUndef, origin)).toThrow()
     })
 
     it('should not allow moving from a point with an opponent checker', () => {
@@ -596,13 +573,12 @@ describe('PointToPoint', () => {
       const move: BackgammonMoveReady = {
         id: '1',
         player,
-        origin,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
-      expect(() => PointToPoint.move(board, move)).toThrow()
+      expect(() => PointToPoint.move(board, move, origin)).toThrow()
     })
 
     it('should not allow moving from a non-point origin (bar or off)', () => {
@@ -612,25 +588,23 @@ describe('PointToPoint', () => {
       const moveBar: any = {
         id: '1',
         player,
-        origin: barOrigin,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
-      expect(() => PointToPoint.move(board, moveBar)).toThrow()
+      expect(() => PointToPoint.move(board, moveBar, barOrigin)).toThrow()
       // Use the off as origin
       const offOrigin: any = board.off.clockwise
       const moveOff: any = {
         id: '1',
         player,
-        origin: offOrigin,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
-      expect(() => PointToPoint.move(board, moveOff)).toThrow()
+      expect(() => PointToPoint.move(board, moveOff, offOrigin)).toThrow()
     })
   })
 })

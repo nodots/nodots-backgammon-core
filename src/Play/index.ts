@@ -190,7 +190,6 @@ export class Play {
             ...move,
             dieValue: newDieValue,
             possibleMoves: freshPossibleMoves,
-            origin: firstPossibleMove.origin,
             moveKind: moveKind as BackgammonMoveKind, // Explicit casting as comment requires
           }
         }
@@ -343,7 +342,6 @@ export class Play {
           ...move,
           dieValue: correctDieValue,
           possibleMoves: freshPossibleMoves,
-          origin: firstPossibleMove.origin,
           moveKind:
             firstPossibleMove.destination.kind === 'off'
               ? 'bear-off'
@@ -608,7 +606,6 @@ export class Play {
               stateKind: 'ready',
               moveKind: 'reenter',
               possibleMoves: possibleMoves,
-              origin: bar,
             })
 
             // Mark this die value as used for bar reentry (only for mixed rolls)
@@ -737,7 +734,6 @@ export class Play {
             stateKind: 'ready',
             moveKind,
             possibleMoves: possibleMoves, // Store all possible moves
-            origin: selectedMove.origin, // Use the selected move's origin
           })
 
           // Track that this die value has been used

@@ -2,33 +2,30 @@ import {
   BackgammonBar,
   BackgammonBoard,
   BackgammonMoveDirection,
-  BackgammonMoveInProgress,
+  BackgammonMoveOrigin,
   BackgammonMoveReady,
   BackgammonMoveResult,
-  BackgammonMoveStateKind,
   BackgammonPoint,
 } from '@nodots-llc/backgammon-types'
 import { Board } from '../../..'
 
 export class Reenter {
   public static isA = function isAReenterMove(
-    move: any
-  ): BackgammonMoveInProgress | false {
-    const { player, origin } = move
+    move: any,
+    origin: BackgammonMoveOrigin
+  ): boolean {
+    const { player } = move
     if (!origin || origin.kind !== 'bar') return false
     if (origin.checkers.length === 0) return false
     if (origin.checkers[0].color !== player.color) return false
 
-    return {
-      ...move,
-      stateKind: 'in-progress' as BackgammonMoveStateKind,
-      moveKind: 'reenter',
-    } as BackgammonMoveInProgress
+    return true
   }
 
   public static getDestination = (
     board: BackgammonBoard,
-    move: BackgammonMoveReady
+    move: BackgammonMoveReady,
+    origin: BackgammonMoveOrigin
   ): BackgammonPoint => {
     const { player, dieValue } = move
     const direction = player.direction as BackgammonMoveDirection
@@ -61,7 +58,8 @@ export class Reenter {
 
   public static move = function move(
     board: BackgammonBoard,
-    move: BackgammonMoveReady
+    move: BackgammonMoveReady,
+    origin: BackgammonMoveOrigin
   ): BackgammonMoveResult {
     if (!board) {
       throw new Error('Invalid board')
@@ -71,16 +69,16 @@ export class Reenter {
     }
 
     // Validate the move
-    if (!Reenter.isA(move)) {
+    if (!Reenter.isA(move, origin)) {
       throw new Error('Invalid reenter move')
     }
 
     const { player } = move
-    const origin = move.origin as BackgammonBar
+    const bar = origin as BackgammonBar
     const direction = player.direction as BackgammonMoveDirection
 
     // Get the destination point
-    const destination = Reenter.getDestination(board, move)
+    const destination = Reenter.getDestination(board, move, origin)
 
     // Check if there's an opponent checker to be hit
     const isHit =
@@ -88,12 +86,12 @@ export class Reenter {
       destination.checkers[0].color !== player.color
 
     // Get the checker to move
-    const checker = origin.checkers[origin.checkers.length - 1]
+    const checker = bar.checkers[bar.checkers.length - 1]
 
     // Move the checker
     const updatedBoard = Board.moveChecker(
       board,
-      origin,
+      bar,
       destination,
       direction
     )
@@ -113,7 +111,7 @@ export class Reenter {
         ...move,
         stateKind: 'completed',
         moveKind: 'reenter',
-        origin: origin,
+        origin: bar,
         destination: updatedDestination,
         isHit,
       },
