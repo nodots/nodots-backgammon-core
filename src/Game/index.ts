@@ -20,9 +20,9 @@ import {
   BackgammonPlayerDoubled,
   BackgammonPlayerInactive,
   BackgammonPlayerMoving,
+  BackgammonPlayerRolledForStart,
   BackgammonPlayerRolling,
   BackgammonPlayerRollingForStart,
-  BackgammonPlayerRolledForStart,
   BackgammonPlayers,
   BackgammonPlayerWinner,
   BackgammonPlayMoving,
@@ -43,10 +43,11 @@ const MAX_PIP_COUNT = 167
 export * from '../index'
 // Import tuple aliases from types package
 import type {
-  BackgammonPlayersRollingForStartTuple,
-  BackgammonPlayersRolledForStartTuple,
-  BackgammonPlayersRollingTuple,
+  BackgammonGameCompleted,
   BackgammonPlayersMovingTuple,
+  BackgammonPlayersRolledForStartTuple,
+  BackgammonPlayersRollingForStartTuple,
+  BackgammonPlayersRollingTuple,
 } from '@nodots-llc/backgammon-types'
 
 export class Game {
@@ -124,7 +125,8 @@ export class Game {
     const playersWithCorrectPipCounts = Player.recalculatePipCounts(game)
     game = {
       ...game,
-      players: playersWithCorrectPipCounts as BackgammonPlayersRollingForStartTuple,
+      players:
+        playersWithCorrectPipCounts as BackgammonPlayersRollingForStartTuple,
     }
 
     return game
@@ -367,7 +369,10 @@ export class Game {
       stateKind: 'rolled-for-start',
       activeColor,
       // Ensure tuple order is [active, inactive] for stricter typing
-      players: [activePlayer, inactivePlayer] as BackgammonPlayersRolledForStartTuple,
+      players: [
+        activePlayer,
+        inactivePlayer,
+      ] as BackgammonPlayersRolledForStartTuple,
       activePlayer,
       inactivePlayer,
     } as BackgammonGameRolledForStart
@@ -498,7 +503,10 @@ export class Game {
         return {
           ...game,
           stateKind: 'moving',
-          players: [movingPlayer, unrolledPlayer] as BackgammonPlayersMovingTuple,
+          players: [
+            movingPlayer,
+            unrolledPlayer,
+          ] as BackgammonPlayersMovingTuple,
           activeColor: movingPlayer.color,
           activePlayer: movingPlayer,
           inactivePlayer: unrolledPlayer,
@@ -511,8 +519,8 @@ export class Game {
         // Handle rolling from doubled state (after accepting a double)
         const { players, board, activeColor } = game
         if (!activeColor) throw new Error('Active color must be provided')
-    const [activePlayerForColor, inactivePlayerForColor] =
-      Game.getPlayersForColor(players, activeColor!)
+        const [activePlayerForColor, inactivePlayerForColor] =
+          Game.getPlayersForColor(players, activeColor!)
         if (activePlayerForColor.stateKind !== 'doubled') {
           throw new Error('Active player must be in doubled state')
         }
@@ -814,7 +822,7 @@ export class Game {
   public static move = function move(
     game: BackgammonGameMoving,
     checkerId: string
-  ): BackgammonGameMoving | BackgammonGame {
+  ): BackgammonGameMoving | BackgammonGameMoved | BackgammonGameCompleted {
     const checker = Board.getCheckers(game.board).find(
       (c) => c.id === checkerId
     )
@@ -1869,17 +1877,44 @@ export class Game {
 
   /**
    * Undo the last confirmed move within the current turn
-   * This method finds the most recent confirmed move in activePlay.moves and reverses it
-   * @param game - Current game state in 'moving' state with confirmed moves
+   *
+   * This method supports two approaches:
+   * 1. History-based (RELIABLE): If previousGameState provided, restore exact snapshot
+   * 2. Manual reconstruction (FALLBACK): Reverse board changes manually (buggy with dice switching)
+   *
+   * @param game - Current game state in 'moving' or 'moved' state with completed moves
+   * @param previousGameState - Optional exact game state from history system (gameStateBefore)
    * @returns Result object with success/error and updated game state
    */
-  public static undoLastMove = function undoLastMove(game: BackgammonGame): {
+  public static undoLastMove = function undoLastMove(
+    game: BackgammonGame,
+    previousGameState?: BackgammonGame
+  ): {
     success: boolean
     error?: string
     game?: BackgammonGame
     undoneMove?: any // BackgammonMove adapted for the interface
     remainingMoveHistory?: any[] // For compatibility with API interface
   } {
+    // HISTORY-BASED UNDO (preferred, reliable approach)
+    // If previousGameState provided from history system, use it directly
+    if (previousGameState) {
+      logger.info(
+        '🔄 Using history-based undo - restoring exact gameStateBefore snapshot'
+      )
+      return {
+        success: true,
+        game: previousGameState,
+        undoneMove: undefined,
+        remainingMoveHistory: [],
+      }
+    }
+
+    // MANUAL RECONSTRUCTION FALLBACK (legacy, has bugs with dice switching)
+    logger.warn(
+      '⚠️  Using manual undo reconstruction - this has known bugs with dice switching and complex scenarios'
+    )
+
     // Validate game state - must be in 'moving' or 'moved' state for undo
     if (game.stateKind !== 'moving' && game.stateKind !== 'moved') {
       return {
