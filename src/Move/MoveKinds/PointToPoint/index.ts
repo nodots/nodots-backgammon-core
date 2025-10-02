@@ -1,7 +1,6 @@
 import {
   BackgammonBoard,
   BackgammonMoveDirection,
-  BackgammonMoveInProgress,
   BackgammonMoveReady,
   BackgammonMoveResult,
   BackgammonPoint,
@@ -11,7 +10,7 @@ import { Board } from '../../../Board'
 export class PointToPoint {
   public static isA = function isAPointToPoint(
     move: any
-  ): BackgammonMoveInProgress | false {
+  ): boolean {
     const { player, origin } = move
     if (!origin || !origin.checkers || origin.checkers.length === 0) {
       return false
@@ -25,11 +24,7 @@ export class PointToPoint {
     if (!move.dieValue) {
       return false
     }
-    return {
-      ...move,
-      stateKind: 'in-progress',
-      moveKind: 'point-to-point',
-    } as BackgammonMoveInProgress
+    return true
   }
 
   public static getDestination = (

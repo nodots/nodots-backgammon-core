@@ -124,11 +124,7 @@ describe('PointToPoint', () => {
       }
 
       const result = PointToPoint.isA(move)
-      expect(result).toBeTruthy()
-      if (result) {
-        expect(result.stateKind).toBe('in-progress')
-        expect(result.moveKind).toBe('point-to-point')
-      }
+      expect(result).toBe(true)
     })
 
     it('should return false for move with origin.kind not equal to "point"', () => {

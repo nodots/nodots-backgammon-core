@@ -1,7 +1,6 @@
 import {
   BackgammonBoard,
   BackgammonMoveCompleted,
-  BackgammonMoveInProgress,
   BackgammonMoveReady,
   BackgammonMoveResult,
   BackgammonPlayerMoving,
@@ -35,7 +34,7 @@ export class BearOff {
   public static isA = function isABearOff(
     board: BackgammonBoard,
     player: BackgammonPlayerMoving
-  ): BackgammonMoveInProgress | false {
+  ): boolean {
     // If there are checkers on the bar, cannot bear off
     const barCheckers = board.bar[player.direction].checkers.filter(
       (c) => c.color === player.color
@@ -49,10 +48,7 @@ export class BearOff {
       return false
     }
 
-    return {
-      player,
-      moveKind: 'bear-off',
-    } as BackgammonMoveInProgress
+    return true
   }
 
   public static move = function bearOff(

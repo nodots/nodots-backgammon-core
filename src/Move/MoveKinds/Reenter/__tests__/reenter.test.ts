@@ -57,11 +57,7 @@ describe('Reenter', () => {
         possibleMoves: [],
       }
       const result = Reenter.isA(move)
-      expect(result).toBeTruthy()
-      if (result) {
-        expect(result.stateKind).toBe('in-progress')
-        expect(result.moveKind).toBe('reenter')
-      }
+      expect(result).toBe(true)
     })
 
     it('should reject moves from non-bar origins', () => {

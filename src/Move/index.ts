@@ -10,7 +10,6 @@ import {
   BackgammonMoveConfirmed,
   BackgammonMoveConfirmedNoMove,
   BackgammonMoveConfirmedWithMove,
-  BackgammonMoveInProgress,
   BackgammonMoveKind,
   BackgammonMoveOrigin,
   BackgammonMoveReady,
@@ -149,15 +148,10 @@ export class Move {
           (move) =>
             move.stateKind === 'completed' || move.stateKind === 'confirmed'
         )
-        const inProgressMoves = movesArray.filter(
-          (move) => move.stateKind === 'in-progress'
-        )
-
         console.log('[DEBUG] ActivePlay.moves state assessment:', {
           totalMoves: movesArray.length,
           readyMoves: readyMoves.length,
           completedMoves: completedMoves.length,
-          inProgressMoves: inProgressMoves.length,
           moveStates: movesArray.map((m) => ({
             id: m.id,
             state: m.stateKind,
@@ -174,14 +168,6 @@ export class Move {
             success: false,
             error:
               'All moves in activePlay are completed - turn should be completed',
-          }
-        }
-
-        // If there are in-progress moves, this might be a race condition
-        if (inProgressMoves.length > 0) {
-          return {
-            success: false,
-            error: 'Move already in progress - wait for completion',
           }
         }
 
@@ -789,26 +775,4 @@ export class Move {
     }
   }
 
-  public static confirmMove = function confirmMove(
-    move: BackgammonMoveInProgress
-  ): BackgammonMoveConfirmed {
-    if (move.moveKind === 'no-move') {
-      return {
-        ...move,
-        stateKind: 'confirmed',
-        origin: undefined,
-        destination: undefined,
-        isHit: false,
-      } as BackgammonMoveConfirmedNoMove
-    }
-
-    return {
-      ...move,
-      stateKind: 'confirmed',
-      isHit:
-        move.moveKind === 'point-to-point' &&
-        move.destination?.checkers.length === 1 &&
-        move.destination.checkers[0].color !== move.player.color,
-    } as BackgammonMoveConfirmedWithMove
-  }
 }

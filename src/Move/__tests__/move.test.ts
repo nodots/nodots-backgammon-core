@@ -5,7 +5,6 @@ import {
   BackgammonColor,
   BackgammonDiceStateKind,
   BackgammonMoveDirection,
-  BackgammonMoveInProgress,
   BackgammonMoveKind,
   BackgammonMoveReady,
   BackgammonMoveSkeleton,
@@ -407,70 +406,6 @@ describe('Move', () => {
     })
   })
 
-  describe('confirmMove', () => {
-    it('should confirm a move', () => {
-      const { board, player } = setupTest()
-      const movingPlayer: BackgammonPlayerMoving = {
-        ...player,
-        stateKind: 'moving',
-      }
-      const move: BackgammonMoveInProgress = {
-        id: generateId(),
-        player: movingPlayer,
-        stateKind: 'in-progress',
-        moveKind: 'point-to-point',
-        origin: board.points[23], // Point 24
-        destination: board.points[22], // Point 23
-        dieValue: 1,
-        possibleMoves: [],
-      }
-
-      const result = Move.confirmMove(move)
-      expect(result.stateKind).toBe('confirmed')
-    })
-
-    it('confirmMove sets isHit for point-to-point with opponent checker', () => {
-      const board = Board.initialize(BOARD_IMPORT_DEFAULT)
-      const player = {
-        id: 'p1',
-        userId: 'u1',
-        color: 'white' as const,
-        direction: 'clockwise' as const,
-        stateKind: 'moving' as const,
-        dice: {
-          id: 'd1',
-          color: 'white' as const,
-          stateKind: 'moving' as const,
-          currentRoll: [1, 2],
-          total: 3,
-        },
-        pipCount: 167,
-        isRobot: false,
-      }
-      const move = {
-        id: generateId(),
-        player: player,
-        stateKind: 'in-progress' as const,
-        moveKind: 'point-to-point',
-        origin: board.points[0],
-        destination: {
-          ...board.points[1],
-          checkers: [
-            {
-              id: 'opp',
-              color: 'black' as const,
-              checkercontainerId: 'x',
-              isMovable: false,
-            },
-          ],
-        },
-        dieValue: 1,
-        possibleMoves: [],
-      } as unknown as BackgammonMoveInProgress
-      const result = Move.confirmMove(move)
-      expect(result.isHit).toBe(true)
-    })
-  })
 
   describe('Move static helpers', () => {
     it('findCheckerInBoard finds checker in point, bar, and off', () => {

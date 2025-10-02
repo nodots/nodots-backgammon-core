@@ -2,10 +2,8 @@ import {
   BackgammonBar,
   BackgammonBoard,
   BackgammonMoveDirection,
-  BackgammonMoveInProgress,
   BackgammonMoveReady,
   BackgammonMoveResult,
-  BackgammonMoveStateKind,
   BackgammonPoint,
 } from '@nodots-llc/backgammon-types'
 import { Board } from '../../..'
@@ -13,17 +11,13 @@ import { Board } from '../../..'
 export class Reenter {
   public static isA = function isAReenterMove(
     move: any
-  ): BackgammonMoveInProgress | false {
+  ): boolean {
     const { player, origin } = move
     if (!origin || origin.kind !== 'bar') return false
     if (origin.checkers.length === 0) return false
     if (origin.checkers[0].color !== player.color) return false
 
-    return {
-      ...move,
-      stateKind: 'in-progress' as BackgammonMoveStateKind,
-      moveKind: 'reenter',
-    } as BackgammonMoveInProgress
+    return true
   }
 
   public static getDestination = (
