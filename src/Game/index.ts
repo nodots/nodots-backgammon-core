@@ -486,7 +486,6 @@ export class Game {
             }
             case 'completed':
             case 'confirmed':
-            case 'in-progress':
               // These moves don't have movable checkers
               break
           }
@@ -573,7 +572,6 @@ export class Game {
               break
             case 'completed':
             case 'confirmed':
-            case 'in-progress':
               // These moves don't have movable checkers
               break
           }
@@ -662,7 +660,6 @@ export class Game {
               break
             case 'completed':
             case 'confirmed':
-            case 'in-progress':
               // These moves don't have movable checkers
               break
           }

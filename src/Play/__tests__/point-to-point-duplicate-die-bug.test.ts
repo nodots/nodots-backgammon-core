@@ -103,7 +103,8 @@ describe('Point-to-Point Duplicate Die Bug', () => {
     console.log('\nMove analysis:')
     moves.forEach((move, i) => {
       console.log(`  Move ${i}: dieValue=${move.dieValue}, moveKind=${move.moveKind}, stateKind=${move.stateKind}`)
-      console.log(`    Origin: ${move.origin?.kind} at position ${JSON.stringify(move.origin?.position)}`)
+      const firstPossibleMove = move.possibleMoves?.[0]
+      console.log(`    Origin: ${firstPossibleMove?.origin?.kind} at position ${JSON.stringify(firstPossibleMove?.origin?.position)}`)
       console.log(`    Possible moves: ${move.possibleMoves.length}`)
     })
 

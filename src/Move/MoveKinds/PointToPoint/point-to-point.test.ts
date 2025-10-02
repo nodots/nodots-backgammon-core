@@ -58,11 +58,10 @@ describe('PointToPoint', () => {
         player,
         dieValue: 1 as BackgammonDieValue,
         moveKind: 'point-to-point',
-        origin,
         possibleMoves: [],
       }
 
-      const result = PointToPoint.move(board, move)
+      const result = PointToPoint.move(board, move, origin)
       const completedMove = result.move as BackgammonMoveCompleted
       expect(result.board).toBeDefined()
       expect(completedMove.stateKind).toBe('completed')
@@ -91,11 +90,10 @@ describe('PointToPoint', () => {
         player,
         dieValue: 1 as BackgammonDieValue,
         moveKind: 'point-to-point',
-        origin,
         possibleMoves: [],
       }
 
-      const result = PointToPoint.move(board, move)
+      const result = PointToPoint.move(board, move, origin)
       const completedMove = result.move as BackgammonMoveCompleted
       expect(result.board).toBeDefined()
       expect(completedMove.stateKind).toBe('completed')
@@ -132,11 +130,10 @@ describe('PointToPoint', () => {
         player,
         dieValue: 1 as BackgammonDieValue,
         moveKind: 'point-to-point',
-        origin,
         possibleMoves: [],
       }
 
-      const result = PointToPoint.move(board, move)
+      const result = PointToPoint.move(board, move, origin)
       const completedMove = result.move as BackgammonMoveCompleted
       expect(completedMove.moveKind).toBe('no-move')
       expect(completedMove.stateKind).toBe('completed')

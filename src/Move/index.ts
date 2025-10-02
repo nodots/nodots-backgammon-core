@@ -524,14 +524,11 @@ export class Move {
         )
 
         if (moveKind !== 'no-move') {
-          // Cast container to appropriate move origin type
-          const moveOrigin = origin as BackgammonMoveOrigin
           possibleMoves.push({
             id: generateId(),
             player: activePlayer,
             stateKind: 'ready',
             moveKind,
-            origin: moveOrigin,
             dieValue,
             possibleMoves: [], // Will be populated if needed
           })
@@ -719,12 +716,24 @@ export class Move {
   }: MoveProps): BackgammonMove {
     const id = move.id ? move.id : generateId()
     const stateKind = move.stateKind ? move.stateKind : 'ready'
+
+    // If move is ready state, don't include origin (origin is in possibleMoves)
+    // Origin gets added when move transitions to completed
+    if (stateKind === 'ready') {
+      return {
+        ...move,
+        id,
+        stateKind,
+      } as BackgammonMoveReady
+    }
+
+    // For other states (completed, confirmed), include origin
     return {
       ...move,
       id,
       stateKind,
       origin,
-    } as BackgammonMoveReady
+    } as BackgammonMove
   }
 
   // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?open_point
@@ -744,7 +753,8 @@ export class Move {
 
   public static move = function move(
     board: BackgammonBoard,
-    move: BackgammonMoveReady
+    move: BackgammonMoveReady,
+    origin: BackgammonMoveOrigin
   ): BackgammonMoveResult {
     const { moveKind } = move
     const { player } = move
@@ -754,11 +764,11 @@ export class Move {
 
     switch (moveKind) {
       case 'point-to-point':
-        return PointToPoint.move(board, move)
+        return PointToPoint.move(board, move, origin)
       case 'reenter':
-        return Reenter.move(board, move)
+        return Reenter.move(board, move, origin)
       case 'bear-off':
-        return BearOff.move(board, move)
+        return BearOff.move(board, move, origin)
       case 'no-move':
       case undefined:
         return {

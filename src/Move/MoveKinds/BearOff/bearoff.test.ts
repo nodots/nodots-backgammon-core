@@ -92,12 +92,11 @@ describe('BearOff', () => {
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
-        origin: nonHomePoint,
         dieValue: 1 as BackgammonDieValue,
         possibleMoves: [],
       }
 
-      expect(() => BearOff.move(board, move)).toThrow()
+      expect(() => BearOff.move(board, move, nonHomePoint)).toThrow()
     })
 
     it('should not allow bearing off when checkers are on the bar', () => {
@@ -127,12 +126,11 @@ describe('BearOff', () => {
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
-        origin: homePoint,
         dieValue: 1 as BackgammonDieValue,
         possibleMoves: [],
       }
 
-      expect(() => BearOff.move(board, move)).toThrow()
+      expect(() => BearOff.move(board, move, homePoint)).toThrow()
     })
   })
 })

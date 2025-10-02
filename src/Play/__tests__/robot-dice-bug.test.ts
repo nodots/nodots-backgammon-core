@@ -44,7 +44,8 @@ describe('Robot Dice Bug - [6,2] Roll', () => {
 
     // Execute one move (the 2) - get the move that uses die value 2
     const moveWith2 = initialMoves.find(m => m.dieValue === 2)!
-    const origin = moveWith2.origin
+    const origin = moveWith2.possibleMoves?.[0]?.origin
+    if (!origin) throw new Error('No origin in possibleMoves')
 
     // Execute the move
     const result: BackgammonPlayResult = Play.move(play.board, play, origin)

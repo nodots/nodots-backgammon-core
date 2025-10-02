@@ -296,11 +296,11 @@ describe('Play.initialize edge cases', () => {
     // Should have 4 moves for doubles
     expect(play.moves.size).toBe(4)
 
-    // All moves should have proper origins (not null)
+    // All moves should have possibleMoves (ready moves have origin in possibleMoves, not on move itself)
     const movesArray = Array.from(play.moves)
     movesArray.forEach((move) => {
-      expect(move.origin).toBeDefined()
-      expect(move.origin).not.toBeNull()
+      expect(move.possibleMoves).toBeDefined()
+      expect(move.possibleMoves.length).toBeGreaterThan(0)
       expect(move.dieValue).toBe(3)
       expect(move.stateKind).toBe('ready')
 

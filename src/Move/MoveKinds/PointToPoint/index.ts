@@ -1,6 +1,7 @@
 import {
   BackgammonBoard,
   BackgammonMoveDirection,
+  BackgammonMoveOrigin,
   BackgammonMoveReady,
   BackgammonMoveResult,
   BackgammonPoint,
@@ -9,9 +10,10 @@ import { Board } from '../../../Board'
 
 export class PointToPoint {
   public static isA = function isAPointToPoint(
-    move: any
+    move: any,
+    origin: BackgammonMoveOrigin
   ): boolean {
-    const { player, origin } = move
+    const { player } = move
     if (!origin || !origin.checkers || origin.checkers.length === 0) {
       return false
     }
@@ -29,11 +31,12 @@ export class PointToPoint {
 
   public static getDestination = (
     board: BackgammonBoard,
-    move: BackgammonMoveReady
+    move: BackgammonMoveReady,
+    origin: BackgammonMoveOrigin
   ): BackgammonPoint => {
     const { player, dieValue } = move
     const direction = player.direction as BackgammonMoveDirection
-    const originPoint = move.origin as BackgammonPoint
+    const originPoint = origin as BackgammonPoint
     const originPosition = originPoint.position[direction]
     // BOTH players move from their higher-numbered points to lower-numbered points (24→1)
     // This is ALWAYS subtract die value regardless of direction
@@ -49,7 +52,8 @@ export class PointToPoint {
 
   public static move = function pointToPoint(
     board: BackgammonBoard,
-    move: BackgammonMoveReady
+    move: BackgammonMoveReady,
+    origin: BackgammonMoveOrigin
   ): BackgammonMoveResult {
     if (!board) {
       throw new Error('Invalid board')
@@ -59,10 +63,10 @@ export class PointToPoint {
     }
 
     // Get the destination point
-    const destination = PointToPoint.getDestination(board, move)
+    const destination = PointToPoint.getDestination(board, move, origin)
 
     // Validate the move
-    const validMove = PointToPoint.isA(move)
+    const validMove = PointToPoint.isA(move, origin)
     if (!validMove) {
       throw new Error('Invalid point-to-point move')
     }
@@ -91,8 +95,6 @@ export class PointToPoint {
       destination.checkers.length === 1 &&
       destination.checkers[0].color !== move.player.color
 
-    const origin = move.origin
-
     // Move the checker
     const updatedBoard = Board.moveChecker(
       board,
@@ -116,6 +118,7 @@ export class PointToPoint {
         ...move,
         moveKind: 'point-to-point' as const,
         stateKind: 'completed' as const,
+        origin,
         destination: updatedDestination,
         isHit,
       },

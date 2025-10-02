@@ -59,11 +59,10 @@ describe('Reenter', () => {
         player,
         dieValue: 1 as BackgammonDieValue,
         moveKind: 'reenter',
-        origin: board.bar.clockwise,
         possibleMoves: [],
       }
 
-      const result = Reenter.move(board, move)
+      const result = Reenter.move(board, move, board.bar.clockwise)
       const completedMove = result.move as BackgammonMoveCompleted
       expect(result.board).toBeDefined()
       expect(completedMove.stateKind).toBe('completed')
@@ -101,11 +100,10 @@ describe('Reenter', () => {
         player,
         dieValue: 1 as BackgammonDieValue,
         moveKind: 'reenter',
-        origin: board.bar.clockwise,
         possibleMoves: [],
       }
 
-      const result = Reenter.move(board, move)
+      const result = Reenter.move(board, move, board.bar.clockwise)
       const completedMove = result.move as BackgammonMoveCompleted
       expect(result.board).toBeDefined()
       expect(completedMove.stateKind).toBe('completed')
@@ -151,11 +149,10 @@ describe('Reenter', () => {
         player,
         dieValue: 1 as BackgammonDieValue,
         moveKind: 'reenter',
-        origin: board.bar.clockwise,
         possibleMoves: [],
       }
 
-      expect(() => Reenter.move(board, move)).toThrow(
+      expect(() => Reenter.move(board, move, board.bar.clockwise)).toThrow(
         'Invalid reenter move: no valid destination found'
       )
     })
