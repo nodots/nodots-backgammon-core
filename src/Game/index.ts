@@ -2122,65 +2122,12 @@ export class Game {
             }
 
           case 'moving':
-            if (allMovesUndone) {
-              // BACKGAMMON RULES FIX: All moves undone - reset to 'rolled' state with preserved dice
-              // Player should NOT be able to roll dice again - they must use the same dice values
-              console.log(
-                '🔄 Game.undoLastMove: All moves undone from moving state, resetting to rolled (not rolling!)'
-              )
-              const resetPlayers = updatedPlayers.map((player) => {
-                if (player.id === game.activePlayer.id) {
-                  // DICE SWITCHING FIX: Preserve dice state from moves, not from stale player dice
-                  // When dice have been switched, the moves reflect the correct switched dice values
-                  // This fixes the bug where undo incorrectly reverts switched dice
-                  const movesArray = updatedActivePlay.moves
-                  const preservedCurrentRoll =
-                    movesArray.length >= 2
-                      ? ([movesArray[0].dieValue, movesArray[1].dieValue] as [
-                          BackgammonDieValue,
-                          BackgammonDieValue,
-                        ])
-                      : game.activePlayer.dice?.currentRoll
-
-                  console.log(
-                    '🎲 Game.undoLastMove: Preserving ORIGINAL dice state (supports dice switching):',
-                    preservedCurrentRoll
-                  )
-                  return {
-                    ...player,
-                    dice: Dice.initialize(
-                      player.color,
-                      'rolled',
-                      player.dice?.id,
-                      preservedCurrentRoll
-                    ),
-                    stateKind: 'rolled' as const,
-                  }
-                } else {
-                  return {
-                    ...player,
-                    dice: Dice.initialize(
-                      player.color,
-                      'inactive',
-                      player.dice?.id
-                    ),
-                    stateKind: 'inactive' as const,
-                  }
-                }
-              }) as BackgammonPlayers
-
-              return {
-                newGameState: 'rolled' as const,
-                finalPlayers: resetPlayers,
-                clearActivePlay: false, // CRITICAL FIX: Preserve activePlay with restored moves
-              }
-            } else {
-              // Still have moves remaining - stay in 'moving'
-              return {
-                newGameState: 'moving' as const,
-                finalPlayers: updatedPlayers,
-                clearActivePlay: false,
-              }
+            // Always stay in 'moving' state after undo
+            // This allows player to immediately make moves without additional state transitions
+            return {
+              newGameState: 'moving' as const,
+              finalPlayers: updatedPlayers,
+              clearActivePlay: false,
             }
         }
       })()
