@@ -84,7 +84,7 @@ describe('Play', () => {
       expect(play).toBeDefined()
       expect(play.stateKind).toBe('moving')
       expect(play.moves).toBeDefined()
-      expect(play.moves.size).toBeGreaterThan(0)
+      expect(play.moves.length).toBeGreaterThan(0)
 
       // Check that each move has the required moveKind
       for (const move of play.moves) {
@@ -105,7 +105,7 @@ describe('Play', () => {
       const rolledPlayer = Player.roll(player)
       const movingPlayer = Player.toMoving(rolledPlayer)
       const play = Play.initialize(board, movingPlayer)
-      expect(play.moves.size).toBe(4)
+      expect(play.moves.length).toBe(4)
       const moveKinds = Array.from(play.moves).map((m: any) => m.moveKind)
       // ✅ FIXED: With proper bear-off classification, moves from higher points (2,3,4,5,6)
       // with die value 1 are correctly classified as 'point-to-point', not 'bear-off'
@@ -173,7 +173,7 @@ describe('Play', () => {
       const rolledPlayer = createRollingPlayer(board, [1, 2])
       const movingPlayer = Player.toMoving(rolledPlayer)
       const play = Play.initialize(board, movingPlayer)
-      expect(play.moves.size).toBe(2)
+      expect(play.moves.length).toBe(2)
       const moveKinds = Array.from(play.moves).map((m: any) => m.moveKind)
       // ✅ FIXED: With [1,2] dice on a home board with checkers on points 1-6,
       // the algorithm selects moves that go point-to-point (not exact bear-off matches).
@@ -197,7 +197,7 @@ describe('Play', () => {
       const rolledPlayer = createRollingPlayer(board, [1, 1])
       const movingPlayer = Player.toMoving(rolledPlayer)
       const play = Play.initialize(board, movingPlayer)
-      expect(play.moves.size).toBe(4)
+      expect(play.moves.length).toBe(4)
       const moveKinds = Array.from(play.moves).map((m: any) => m.moveKind)
       // ✅ FIXED: With [1,1] doubles on a home board with checkers on points 1-6,
       // the algorithm distributes moves across available origins. Since there are checkers
@@ -294,7 +294,7 @@ describe('Play.initialize edge cases', () => {
     const play = Play.initialize(board, movingPlayer)
 
     // Should have 4 moves for doubles
-    expect(play.moves.size).toBe(4)
+    expect(play.moves.length).toBe(4)
 
     // All moves should have possibleMoves (ready moves have origin in possibleMoves, not on move itself)
     const movesArray = Array.from(play.moves)

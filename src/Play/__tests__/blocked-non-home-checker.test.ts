@@ -115,7 +115,7 @@ describe('Blocked Non-Home Checker Scenarios', () => {
       console.log(`  • This is a "blocked" situation - no progress possible`)
 
       expect(play.stateKind).toBe('moving')
-      expect(play.moves.size).toBe(2)
+      expect(play.moves.length).toBe(2)
     })
   })
 

@@ -82,7 +82,7 @@ describe('Bear-off Bug: White player stuck with 6 roll', () => {
       console.log(`  Player Direction: ${player.direction}`)
       console.log(`  Dice Roll: [${player.dice.currentRoll?.join(', ')}]`)
       console.log(`  Play State: ${play.stateKind}`)
-      console.log(`  Total Moves: ${play.moves.size}`)
+      console.log(`  Total Moves: ${play.moves.length}`)
 
       // Check if all white checkers are in home board (bear-off eligible)
       const whiteCheckersInHomeBoard = board.points
@@ -151,7 +151,7 @@ describe('Bear-off Bug: White player stuck with 6 roll', () => {
 
       // Assertions
       expect(play.stateKind).toBe('moving')
-      expect(play.moves.size).toBe(2) // Two dice values
+      expect(play.moves.length).toBe(2) // Two dice values
 
       // Critical test: If all checkers are in home board and we have a 6,
       // there should always be at least one possible move (bear-off from highest point)

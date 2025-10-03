@@ -423,9 +423,9 @@ describe('Move', () => {
       expect(all).toEqual([3, 3, 3, 3])
       // Simulate consumed dice
       const activePlay = {
-        moves: new Set([
+        moves: [
           { stateKind: 'completed', dieValue: 3, moveKind: 'point-to-point' },
-        ]),
+        ]
       }
       const left = (Move as any).getAvailableDice(dice, activePlay)
       expect(left).toEqual([3, 3, 3])

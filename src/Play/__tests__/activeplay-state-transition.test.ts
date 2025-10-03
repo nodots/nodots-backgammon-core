@@ -32,7 +32,7 @@ describe('ActivePlay stateKind transition to moved', () => {
     // Initialize play - should create 2 moves for [3,4] roll
     const play = Play.initialize(board, player)
     expect(play.stateKind).toBe('moving')
-    expect(play.moves.size).toBe(2)
+    expect(play.moves.length).toBe(2)
 
     // Get the moves and find one with possible moves
     const movesArray = Array.from(play.moves)

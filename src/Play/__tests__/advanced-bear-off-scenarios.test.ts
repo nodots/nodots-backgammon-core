@@ -65,7 +65,7 @@ describe('Advanced Bear-off Scenarios', () => {
       console.log(ascii(board))
       console.log(`\n📊 Game Stats:`)
       console.log(`  Dice Roll: [${player.dice.currentRoll?.join(', ')}]`)
-      console.log(`  Total Moves Available: ${play.moves.size}`)
+      console.log(`  Total Moves Available: ${play.moves.length}`)
 
       const movesArray = Array.from(play.moves)
       movesArray.forEach((move, index) => {
@@ -99,7 +99,7 @@ describe('Advanced Bear-off Scenarios', () => {
       })
 
       expect(play.stateKind).toBe('moving')
-      expect(play.moves.size).toBe(2)
+      expect(play.moves.length).toBe(2)
     })
   })
 

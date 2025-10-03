@@ -140,7 +140,7 @@ describe('Play - Mandatory Dice Usage Rules (Issue #132)', () => {
       const play = Play.initialize(board, player)
 
       // Test that validation functions are called during normal play
-      expect(play.moves.size).toBeGreaterThan(0)
+      expect(play.moves.length).toBeGreaterThan(0)
 
       const movesArray = Array.from(play.moves)
       const readyMoves = movesArray.filter(m => m.stateKind === 'ready')
@@ -170,7 +170,7 @@ describe('Play - Mandatory Dice Usage Rules (Issue #132)', () => {
 
       // Test with empty/malformed play
       const basePlay = Play.initialize(board, player)
-      const emptyPlay = { ...basePlay, moves: new Set() } as any
+      const emptyPlay = { ...basePlay, moves: [] } as any
 
       expect(() => {
         Play.validateMoveSequence(board, emptyPlay)
