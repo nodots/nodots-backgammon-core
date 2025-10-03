@@ -2069,29 +2069,28 @@ export class Game {
         undoneMove,
       ]
 
-      // When all moves are undone, recalculate possible moves for all ready moves
-      let finalUpdatedMoves = updatedMoves
+      // CRITICAL FIX: Always recalculate possible moves for ALL ready moves after ANY undo
+      // This ensures all moves reference valid checkers and containers from the current board state
+      // Previously only recalculated when all moves were undone, leaving partial undos with stale references
+      const finalUpdatedMoves = updatedMoves.map((move) => {
+        if (move.stateKind === 'ready' && move.dieValue) {
+          const freshPossibleMoves = Board.getPossibleMoves(
+            updatedBoard,
+            game.activePlayer,
+            move.dieValue
+          ) as BackgammonMoveSkeleton[]
+          return {
+            ...move,
+            possibleMoves: freshPossibleMoves,
+          }
+        }
+        return move
+      })
+
+      // Track if all moves are undone for state transition logic
       const allMovesUndoneCheck = updatedMoves.every(
         (move) => move.stateKind === 'ready'
       )
-
-      if (allMovesUndoneCheck) {
-        // Recalculate possible moves for all ready moves with the restored board state
-        finalUpdatedMoves = updatedMoves.map((move) => {
-            if (move.stateKind === 'ready' && move.dieValue) {
-              const freshPossibleMoves = Board.getPossibleMoves(
-                updatedBoard,
-                game.activePlayer,
-                move.dieValue
-              ) as BackgammonMoveSkeleton[]
-              return {
-                ...move,
-                possibleMoves: freshPossibleMoves,
-              }
-            }
-            return move
-          })
-      }
 
       // Update active play
       const updatedActivePlay = {
