@@ -2,27 +2,22 @@ import {
   BackgammonBoard,
   BackgammonChecker,
   BackgammonCheckerContainer,
-  BackgammonDice,
   BackgammonDieValue,
   BackgammonGame,
   BackgammonGameMoving,
   BackgammonMove,
-  BackgammonMoveConfirmed,
-  BackgammonMoveConfirmedNoMove,
-  BackgammonMoveConfirmedWithMove,
   BackgammonMoveKind,
   BackgammonMoveOrigin,
   BackgammonMoveReady,
   BackgammonMoveResult,
   BackgammonMoveStateKind,
-  BackgammonPlay,
   BackgammonPlayer,
   BackgammonPlayerMoving,
   BackgammonPoint,
   MoveProps,
 } from '@nodots-llc/backgammon-types'
 import { generateId } from '..'
-import { debug } from '../utils/logger'
+import { debug, logger } from '../utils/logger'
 import { BearOff } from './MoveKinds/BearOff'
 import { PointToPoint } from './MoveKinds/PointToPoint'
 import { Reenter } from './MoveKinds/Reenter'
@@ -130,7 +125,7 @@ export class Move {
         }
       }
 
-      console.log('[DEBUG] Active play found:', {
+      logger.info('[DEBUG] Active play found:', {
         activePlayId: activePlay.id,
         movesCount: activePlay.moves?.length || 0,
       })
@@ -148,7 +143,7 @@ export class Move {
           (move) =>
             move.stateKind === 'completed' || move.stateKind === 'confirmed'
         )
-        console.log('[DEBUG] ActivePlay.moves state assessment:', {
+        logger.info('[DEBUG] ActivePlay.moves state assessment:', {
           totalMoves: movesArray.length,
           readyMoves: readyMoves.length,
           completedMoves: completedMoves.length,
@@ -189,7 +184,7 @@ export class Move {
       const checkerContainer = checkerInfo.container
 
       // Enhanced debug logging to understand the mismatch
-      console.log('[DEBUG] Container comparison details:', {
+      logger.info('[DEBUG] Container comparison details:', {
         checkerContainerId: checkerContainer.id,
         checkerContainerKind: checkerContainer.kind,
         checkerContainerPosition:
@@ -210,7 +205,7 @@ export class Move {
         (pm) => pm.origin.id === checkerContainer.id
       )
 
-      console.log('[DEBUG] Moves from this container:', {
+      logger.info('[DEBUG] Moves from this container:', {
         checkerId,
         containerID: checkerContainer.id,
         containerKind: checkerContainer.kind,
@@ -230,7 +225,7 @@ export class Move {
       // Multiple checkers from the same point can make the same move
       const moveToExecute = movesFromThisContainer[0]
 
-      console.log(
+      logger.info(
         `[DEBUG] Executing move: die ${moveToExecute.dieValue}, origin ${
           moveToExecute.origin.kind === 'point'
             ? 'point-' + moveToExecute.origin.position.clockwise
@@ -261,20 +256,26 @@ export class Move {
         }
 
         // Execute the move using executeAndRecalculate to handle automatic state transitions
-        console.log('🚨 MOVE CHECKER: About to call Game.executeAndRecalculate with dice:', workingGame.activePlayer.dice?.currentRoll)
+        logger.info(
+          '🚨 MOVE CHECKER: About to call Game.executeAndRecalculate with dice:',
+          workingGame.activePlayer.dice?.currentRoll
+        )
         const finalGame = Game.executeAndRecalculate(
           workingGame as any,
           moveToExecute.origin.id
         )
-        console.log('🚨 MOVE CHECKER: Game.executeAndRecalculate returned with dice:', (finalGame as any).activePlayer?.dice?.currentRoll)
+        logger.info(
+          '🚨 MOVE CHECKER: Game.executeAndRecalculate returned with dice:',
+          (finalGame as any).activePlayer?.dice?.currentRoll
+        )
 
-        console.log('[DEBUG] Human move completed successfully')
+        logger.info('[DEBUG] Human move completed successfully')
         return {
           success: true,
           game: finalGame as any,
         }
       } catch (moveError: unknown) {
-        console.log(
+        logger.info(
           '[DEBUG] Human move failed:',
           moveError instanceof Error ? moveError.message : 'Unknown error'
         )
@@ -302,7 +303,7 @@ export class Move {
       // Import Game class to use proper game state management
       const { Game } = await import('..')
 
-      console.log('[DEBUG] Robot executing move:', {
+      logger.info('[DEBUG] Robot executing move:', {
         gameState: game.stateKind,
         activePlayState: game.activePlay?.stateKind,
         originId,
@@ -310,7 +311,7 @@ export class Move {
 
       // Ensure we have a valid game state
       if (!game.activePlay) {
-        console.log('[DEBUG] Robot move failed: No active play found')
+        logger.info('[DEBUG] Robot move failed: No active play found')
         throw new Error('No active play found for robot move')
       }
 
@@ -322,7 +323,7 @@ export class Move {
       ): BackgammonGameMoving => {
         switch (game.stateKind) {
           case 'moving': {
-            console.log(
+            logger.info(
               '[DEBUG] Robot: Game already in moving state, no transition needed'
             )
             // Already in moving state for subsequent moves in the same turn
@@ -330,7 +331,7 @@ export class Move {
           }
 
           default: {
-            console.log(
+            logger.info(
               '[DEBUG] Robot move failed: Invalid initial game state:',
               (game as any).stateKind
             )
@@ -347,7 +348,7 @@ export class Move {
 
       // Validate we're now in moving state
       if (workingGame.stateKind !== 'moving') {
-        console.log(
+        logger.info(
           '[DEBUG] Robot move failed: Invalid game state after transition:',
           JSON.stringify(workingGame)
         )
@@ -355,7 +356,7 @@ export class Move {
       }
 
       // Execute the move (now requires moving state)
-      console.log('[DEBUG] Robot calling Game.move with:', {
+      logger.info('[DEBUG] Robot calling Game.move with:', {
         gameState: workingGame.stateKind,
         originId,
       })
@@ -374,7 +375,7 @@ export class Move {
           )
 
           if (!doubleCheckHasValidChecker) {
-            console.log(
+            logger.info(
               '[DEBUG] Move double validation failed: Board state changed between validation and execution:',
               {
                 originId: originId,
@@ -394,7 +395,7 @@ export class Move {
             }
           }
         } catch (doubleValidationError) {
-          console.log(
+          logger.info(
             '[DEBUG] Move double validation error:',
             doubleValidationError
           )
@@ -407,15 +408,15 @@ export class Move {
         }
 
         const finalGame = Game.move(workingGame as any, originId)
-        console.log('[DEBUG] Robot move completed successfully')
+        logger.info('[DEBUG] Robot move completed successfully')
 
-        console.log('[DEBUG] Robot move SUCCESS - returning game result')
+        logger.info('[DEBUG] Robot move SUCCESS - returning game result')
         return {
           success: true,
           game: finalGame as any,
         }
       } catch (gameError: unknown) {
-        console.log(
+        logger.info(
           '[DEBUG] Robot Game.move failed:',
           gameError instanceof Error ? gameError.message : 'Unknown error'
         )
@@ -427,7 +428,7 @@ export class Move {
       }
     } catch (moveError: unknown) {
       // Core should barf on illegal input - throw the error up
-      console.log(
+      logger.info(
         '[DEBUG] Robot move EXCEPTION caught:',
         moveError instanceof Error ? moveError.message : 'Unknown error'
       )
@@ -494,220 +495,6 @@ export class Move {
     }
 
     return null
-  }
-
-  /**
-   * Helper method to determine possible moves for a checker
-   */
-  private static getPossibleMovesForChecker =
-    function getPossibleMovesForChecker(
-      game: BackgammonGameMoving,
-      checker: BackgammonChecker,
-      origin: BackgammonCheckerContainer
-    ): BackgammonMoveReady[] {
-      const { activePlayer, board } = game
-      const possibleMoves: BackgammonMoveReady[] = []
-
-      // Get available dice values (pass activePlay to track consumed dice)
-      const availableDice = Move.getAvailableDice(
-        activePlayer.dice,
-        game.activePlay
-      )
-
-      // For each die value, check if a move is possible
-      for (const dieValue of availableDice) {
-        const moveKind = Move.determineMoveKind(
-          origin,
-          activePlayer,
-          board,
-          dieValue
-        )
-
-        if (moveKind !== 'no-move') {
-          possibleMoves.push({
-            id: generateId(),
-            player: activePlayer,
-            stateKind: 'ready',
-            moveKind,
-            dieValue,
-            possibleMoves: [], // Will be populated if needed
-          })
-        }
-      }
-
-      return possibleMoves
-    }
-
-  /**
-   * Helper method to get available dice values
-   */
-  private static getAvailableDice = function getAvailableDice(
-    dice: BackgammonDice,
-    activePlay?: BackgammonPlay
-  ): BackgammonDieValue[] {
-    if (dice.stateKind !== 'rolled' || !dice.currentRoll) {
-      return []
-    }
-
-    // Get original dice values
-    const originalValues: BackgammonDieValue[] = []
-    const [die1, die2] = dice.currentRoll
-
-    // Handle doubles (same value on both dice)
-    if (die1 === die2) {
-      // Doubles: player gets 4 moves of the same value
-      originalValues.push(die1, die1, die1, die1)
-    } else {
-      // Regular roll: player gets 2 moves
-      originalValues.push(die1, die2)
-    }
-
-    // If no activePlay, return all original values
-    if (!activePlay) {
-      return originalValues
-    }
-
-    // Check if activePlay has moves property (it's a play with moves, not a move itself)
-    if (!('moves' in activePlay) || !activePlay.moves) {
-      return originalValues
-    }
-
-    // Track consumed dice by examining moves in activePlay
-    const consumedDice: BackgammonDieValue[] = []
-    const movesArray = Array.from(activePlay.moves)
-
-    for (const move of movesArray) {
-      // Type guard: ensure move has the properties we need
-      if (
-        move &&
-        typeof move === 'object' &&
-        'stateKind' in move &&
-        'dieValue' in move
-      ) {
-        const moveKind = 'moveKind' in move ? move.moveKind : 'unknown'
-        const isNoMove = moveKind === 'no-move'
-        const isCompleted =
-          move.stateKind === 'completed' || move.stateKind === 'confirmed'
-
-        // Count moves that have been executed:
-        // Only moves that actually moved a checker should consume dice
-        // 'no-move' moves should NEVER consume dice regardless of their state
-        if (!isNoMove && isCompleted) {
-          consumedDice.push(move.dieValue as BackgammonDieValue)
-        }
-      }
-    }
-
-    // Remove consumed dice from available dice
-    let availableDice = [...originalValues]
-    for (const consumedDie of consumedDice) {
-      const index = availableDice.indexOf(consumedDie)
-      if (index !== -1) {
-        availableDice.splice(index, 1)
-      }
-    }
-    return availableDice
-  }
-
-  /**
-   * Helper method to determine move kind based on origin and destination
-   */
-  private static determineMoveKind = function determineMoveKind(
-    origin: BackgammonCheckerContainer,
-    player: BackgammonPlayer,
-    board: BackgammonBoard,
-    dieValue: BackgammonDieValue
-  ): BackgammonMoveKind {
-    // If checker is on the bar, it must re-enter
-    if (origin.kind === 'bar') {
-      return 'reenter'
-    }
-
-    // If checker is in home board and can bear off
-    if (
-      origin.kind === 'point' &&
-      Move.canBearOff(origin as BackgammonPoint, player, board, dieValue)
-    ) {
-      return 'bear-off'
-    }
-
-    // Otherwise it's a point-to-point move
-    if (origin.kind === 'point') {
-      return 'point-to-point'
-    }
-
-    return 'no-move'
-  }
-
-  /**
-   * Helper method to check if a checker can bear off
-   */
-  private static canBearOff = function canBearOff(
-    point: BackgammonPoint,
-    player: BackgammonPlayer,
-    board: BackgammonBoard,
-    dieValue: BackgammonDieValue
-  ): boolean {
-    // Check if all player's checkers are in home board
-    // GOLDEN RULE: Use point.position[playerDirection] - no conditional logic
-    const pointPosition = point.position[player.direction]
-
-    // Home board is positions 1-6 (bear-off distance 1-6)
-    if (pointPosition > 6) {
-      return false
-    }
-
-    // Check if ALL player's checkers are in home board
-    for (const boardPoint of board.points) {
-      const boardPointPosition = boardPoint.position[player.direction]
-
-      // If there are player's checkers outside home board, can't bear off
-      if (boardPointPosition > 6) {
-        for (const checker of boardPoint.checkers) {
-          if (checker.color === player.color) {
-            return false
-          }
-        }
-      }
-    }
-
-    // Check bar - if player has checkers on bar, can't bear off
-    const barCheckers = board.bar[player.direction].checkers
-    for (const checker of barCheckers) {
-      if (checker.color === player.color) {
-        return false
-      }
-    }
-
-    // CRITICAL FIX: Validate die value against position
-    // Rule: Can only bear off from position N using die value N (exact match)
-    // OR die value > N when no checkers exist on positions > N
-    if (dieValue === pointPosition) {
-      // Exact match - always allowed
-      return true
-    }
-    
-    if (dieValue > pointPosition) {
-      // Higher die value - only allowed if no checkers on higher positions
-      for (const boardPoint of board.points) {
-        const boardPointPosition = boardPoint.position[player.direction]
-        
-        // Check if there are player's checkers on any position higher than current
-        if (boardPointPosition > pointPosition && boardPointPosition <= 6) {
-          for (const checker of boardPoint.checkers) {
-            if (checker.color === player.color) {
-              // Found checker on higher position - cannot use higher die value
-              return false
-            }
-          }
-        }
-      }
-      // No checkers on higher positions - can use higher die value
-      return true
-    }
-    
-    // Die value < pointPosition - NEVER allowed
-    return false
   }
 
   public static initialize = function initializeMove({
@@ -784,5 +571,4 @@ export class Move {
         }
     }
   }
-
 }
