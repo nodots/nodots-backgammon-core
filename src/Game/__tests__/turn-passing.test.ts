@@ -89,7 +89,7 @@ describe('Game Turn Passing', () => {
         stateKind: 'moving',
         player: activePlayer,
         board,
-        moves: new Set([mockMove1, mockMove2]),
+        moves: [mockMove1, mockMove2]
       },
       createdAt: new Date(),
       gnuPositionId: 'test-position',
@@ -145,7 +145,7 @@ describe('Game Turn Passing', () => {
         ...movingGame,
         activePlay: {
           ...movingGame.activePlay!,
-          moves: new Set(moves),
+          moves: moves,
         },
       }
 

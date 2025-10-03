@@ -431,13 +431,13 @@ export class Game {
         const activePlay = Play.initialize(game.board, movingPlayer)
 
         // Check if all moves were auto-completed (no legal moves available)
-        const allMovesCompleted = Array.from(activePlay.moves).every(
+        const allMovesCompleted = activePlay.moves.every(
           (m) => m.stateKind === 'completed'
         )
 
         // CRITICAL FIX: Validate that the correct number of moves exist before auto-completing
         const expectedMoveCount = currentRoll[0] === currentRoll[1] ? 4 : 2 // doubles vs regular roll
-        const actualMoveCount = Array.from(activePlay.moves).length
+        const actualMoveCount = activePlay.moves.length
 
         if (allMovesCompleted && actualMoveCount === expectedMoveCount) {
           debug(
@@ -461,7 +461,7 @@ export class Game {
               expectedMoveCount,
               actualMoveCount,
               currentRoll,
-              moveStates: Array.from(activePlay.moves).map((m) => ({
+              moveStates: activePlay.moves.map((m) => ({
                 id: m.id.slice(0, 8),
                 stateKind: m.stateKind,
                 dieValue: m.dieValue,
@@ -473,7 +473,7 @@ export class Game {
 
         // Update the board with movable checkers
         const movableContainerIds: string[] = []
-        const movesArray = Array.from(activePlay.moves)
+        const movesArray = activePlay.moves
         for (const move of movesArray) {
           switch (move.stateKind) {
             case 'ready': {
@@ -538,7 +538,7 @@ export class Game {
         const activePlay = Play.initialize(board, playerMoving)
 
         // Check if all moves were auto-completed (no legal moves available)
-        const allMovesCompleted = Array.from(activePlay.moves).every(
+        const allMovesCompleted = activePlay.moves.every(
           (m) => m.stateKind === 'completed'
         )
         if (allMovesCompleted) {
@@ -563,7 +563,7 @@ export class Game {
 
         // Update the board with movable checkers
         const movableContainerIds: string[] = []
-        const movesArray = Array.from(activePlay.moves)
+        const movesArray = activePlay.moves
         for (const move of movesArray) {
           switch (move.stateKind) {
             case 'ready':
@@ -626,7 +626,7 @@ export class Game {
         const activePlay = Play.initialize(board, playerMoving)
 
         // Check if all moves were auto-completed (no legal moves available)
-        const allMovesCompleted = Array.from(activePlay.moves).every(
+        const allMovesCompleted = activePlay.moves.every(
           (m) => m.stateKind === 'completed'
         )
         if (allMovesCompleted) {
@@ -651,7 +651,7 @@ export class Game {
 
         // Update the board with movable checkers
         const movableContainerIds: string[] = []
-        const movesArray = Array.from(activePlay.moves)
+        const movesArray = activePlay.moves
         for (const move of movesArray) {
           switch (move.stateKind) {
             case 'ready':
@@ -713,7 +713,7 @@ export class Game {
       case 'moving': {
         // Only allowed in moving state if all moves are undone (all moves in 'ready' state)
         const allMovesUndone = game.activePlay?.moves
-          ? Array.from(game.activePlay.moves).every(
+          ? game.activePlay.moves.every(
               (move: any) => move.stateKind === 'ready'
             )
           : false
@@ -754,7 +754,7 @@ export class Game {
           ...activePlay,
           moves: activePlay.moves
             ? (() => {
-                const movesArray = Array.from(activePlay.moves)
+                const movesArray = activePlay.moves
                 if (movesArray.length >= 2) {
                   // Swap the first two moves to match the new dice order
                   const swappedMoves = [...movesArray]
@@ -797,7 +797,7 @@ export class Game {
                     }
                   })
 
-                  return new Set(regeneratedMoves)
+                  return regeneratedMoves
                 }
                 return activePlay.moves
               })()
@@ -879,7 +879,7 @@ export class Game {
     // IMPORTANT: After a move, we need to recalculate possible moves for remaining ready moves
     const movableContainerIds: string[] = []
     if (updatedActivePlay.moves) {
-      const movesArray = Array.from(updatedActivePlay.moves) as any[]
+      const movesArray = updatedActivePlay.moves as any[]
       for (const move of movesArray) {
         switch (move.stateKind) {
           case 'ready': {
@@ -1086,7 +1086,7 @@ export class Game {
       throw new Error('No active play found')
     }
 
-    const movesArray = Array.from(activePlay.moves)
+    const movesArray = activePlay.moves
     const allMovesCompleted = movesArray.every(
       (move) => move.stateKind === 'completed'
     )
@@ -1243,7 +1243,7 @@ export class Game {
         return { type: 'no-active-play' }
       }
 
-      const movesArray = Array.from(activePlay.moves)
+      const movesArray = activePlay.moves
       const completedMoves = movesArray.filter(
         (move) => move.stateKind === 'completed'
       )
@@ -1459,7 +1459,7 @@ export class Game {
         // CRITICAL FIX: Check if all moves are already completed (no-move scenario)
         // When Play.initialize detects all moves are no-moves, it creates them as 'completed'
         // In this case, we should immediately complete the turn without trying to execute moves
-        const movesArray = Array.from(movingGame.activePlay.moves)
+        const movesArray = movingGame.activePlay.moves
         const allMovesCompleted = movesArray.every(
           (move) => move.stateKind === 'completed'
         )
@@ -1486,7 +1486,7 @@ export class Game {
           }
 
           // Get all moves from activePlay
-          const movesArray = Array.from(gameMoving.activePlay.moves)
+          const movesArray = gameMoving.activePlay.moves
           const readyMoves = movesArray.filter(
             (move) => move.stateKind === 'ready'
           )
@@ -1601,7 +1601,7 @@ export class Game {
             const gameMoving = currentGame as BackgammonGameMoving
             if (!gameMoving.activePlay) return currentGame
 
-            const movesArray = Array.from(gameMoving.activePlay.moves)
+            const movesArray = gameMoving.activePlay.moves
             const allCompleted = movesArray.every(
               (move) => move.stateKind === 'completed'
             )
@@ -1932,7 +1932,7 @@ export class Game {
     }
 
     // Find completed moves in chronological order (array order IS execution order)
-    const movesArray = Array.from(activePlay.moves)
+    const movesArray = activePlay.moves
     const completedMoves = movesArray.filter(
       (move) => move.stateKind === 'completed'
     )
@@ -2063,22 +2063,21 @@ export class Game {
         possibleMoves: freshPossibleMoves, // Use freshly calculated possible moves
       }
 
-      // Update the moves set: replace the confirmed move with the ready move
-      const updatedMoves = new Set([
+      // Update the moves array: replace the confirmed move with the ready move
+      const updatedMoves = [
         ...movesArray.filter((m) => m.id !== moveToUndo.id),
         undoneMove,
-      ])
+      ]
 
       // When all moves are undone, recalculate possible moves for all ready moves
       let finalUpdatedMoves = updatedMoves
-      const allMovesUndoneCheck = Array.from(updatedMoves).every(
+      const allMovesUndoneCheck = updatedMoves.every(
         (move) => move.stateKind === 'ready'
       )
 
       if (allMovesUndoneCheck) {
         // Recalculate possible moves for all ready moves with the restored board state
-        finalUpdatedMoves = new Set(
-          Array.from(updatedMoves).map((move) => {
+        finalUpdatedMoves = updatedMoves.map((move) => {
             if (move.stateKind === 'ready' && move.dieValue) {
               const freshPossibleMoves = Board.getPossibleMoves(
                 updatedBoard,
@@ -2092,7 +2091,6 @@ export class Game {
             }
             return move
           })
-        )
       }
 
       // Update active play
@@ -2135,7 +2133,7 @@ export class Game {
                   // DICE SWITCHING FIX: Preserve dice state from moves, not from stale player dice
                   // When dice have been switched, the moves reflect the correct switched dice values
                   // This fixes the bug where undo incorrectly reverts switched dice
-                  const movesArray = Array.from(updatedActivePlay.moves)
+                  const movesArray = updatedActivePlay.moves
                   const preservedCurrentRoll =
                     movesArray.length >= 2
                       ? ([movesArray[0].dieValue, movesArray[1].dieValue] as [

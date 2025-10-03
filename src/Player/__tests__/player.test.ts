@@ -185,9 +185,7 @@ describe('Player', () => {
       // Use a valid BackgammonPoint from the board as origin
       const origin1 = board.points[0]
       const origin2 = board.points[1]
-      const moves = new Set<
-        import('@nodots-llc/backgammon-types').BackgammonMoveReady
-      >([
+      const moves: import('@nodots-llc/backgammon-types').BackgammonMoveReady[] = [
         {
           id: 'move1',
           player: playerMoving,
@@ -204,7 +202,7 @@ describe('Player', () => {
           moveKind: 'point-to-point',
           origin: origin2,
         } as unknown as import('@nodots-llc/backgammon-types').BackgammonMoveReady,
-      ])
+      ]
       const playMoving: import('@nodots-llc/backgammon-types').BackgammonPlayMoving =
         {
           id: 'play1',
@@ -231,7 +229,7 @@ describe('Player', () => {
           id: 'play2',
           player: playerMoving,
           board,
-          moves: new Set<BackgammonMoveReady>(),
+          moves: [],
           stateKind: 'moving',
         }
       const move = await Player.getBestMove(playMoving)

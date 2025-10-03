@@ -20,10 +20,6 @@ import {
 import { Board, generateId } from '..'
 import { debug, logger } from '../utils/logger'
 import {
-  deserializeGameState,
-  serializeGameState,
-} from '../utils/serialization'
-import {
   InvalidMoveSequenceError,
   MustUseBothDiceError,
   MustUseLargerDieError,
@@ -60,7 +56,7 @@ export class Play {
   id?: string = generateId()
   cube?: BackgammonCube
   stateKind?: BackgammonPlayStateKind
-  moves?: BackgammonMoves = new Set()
+  moves?: BackgammonMoves = []
   board!: BackgammonBoard
   player!: BackgammonPlayerRolling | BackgammonPlayerMoving
 
@@ -70,7 +66,7 @@ export class Play {
     play: BackgammonPlayMoving,
     origin: BackgammonMoveOrigin
   ): MoveExecutionPlan {
-    const movesArray = Array.from(play.moves)
+    const movesArray = play.moves
     const readyMoves = movesArray.filter((m) => m.stateKind === 'ready')
 
     if (readyMoves.length === 0) {
@@ -271,7 +267,7 @@ export class Play {
 
     // Calculate remaining available dice after move completion
     // We need to look at ALL moves in the play to see what has been used so far
-    const existingMoves = Array.from(play.moves)
+    const existingMoves = play.moves
     const allMovesAfterExecution = [
       ...existingMoves.filter((m) => m.id !== plan.targetMoveId),
       completedMove,
@@ -376,15 +372,15 @@ export class Play {
 
     // Create new play state (pure)
     // CRITICAL FIX: Include ALL existing completed moves (including no-moves from initialization)
-    const existingCompletedMoves = Array.from(play.moves).filter(
+    const existingCompletedMoves = play.moves.filter(
       (m) => m.stateKind === 'completed' && m.id !== plan.targetMoveId
     )
-    const finalMoves = new Set([
+    const finalMoves = [
       ...existingCompletedMoves,
       ...updatedMovesWithCorrectDiceAndMoves,
       completedMove,
-    ])
-    const allMovesCompleted = Array.from(finalMoves).every(
+    ]
+    const allMovesCompleted = finalMoves.every(
       (m) => m.stateKind === 'completed'
     )
 
@@ -410,7 +406,7 @@ export class Play {
       targetMoveId: plan.targetMoveId,
       newBoardState: 'updated',
       allMovesCompleted,
-      finalMovesCount: finalMoves.size,
+      finalMovesCount: finalMoves.length,
     })
 
     return {
@@ -428,7 +424,7 @@ export class Play {
     origin: BackgammonMoveOrigin
   ): BackgammonPlayResult {
     // Handle no-move case (pure)
-    const movesArray = Array.from(play.moves)
+    const movesArray = play.moves
     const anyReadyMove = movesArray.find((m) => m.stateKind === 'ready')
     if (!anyReadyMove) {
       debug('Play.pureMove: No ready moves found in activePlay.moves')
@@ -444,7 +440,7 @@ export class Play {
         destination: undefined,
       }
       return {
-        play: { ...play, moves: new Set([noMove]) },
+        play: { ...play, moves: [noMove] },
         board,
         move: noMove,
       } as BackgammonPlayResult
@@ -459,10 +455,10 @@ export class Play {
     // Step 3: Validate the result if sequence is complete (pure)
     // FIX: Never validate during individual move execution when play has pre-completed no-moves
     // Only validate when all dice have been rolled and used, not when executing partial sequences
-    const originalHadNoMoves = Array.from(play.moves).some(
+    const originalHadNoMoves = play.moves.some(
       (m) => m.moveKind === 'no-move'
     )
-    const resultHasReadyMoves = Array.from(result.newPlay.moves).some(
+    const resultHasReadyMoves = result.newPlay.moves.some(
       (m) => m.stateKind === 'ready'
     )
 
@@ -795,7 +791,7 @@ export class Play {
         id: generateId(),
         board,
         player,
-        moves: new Set(completedMoves),
+        moves: completedMoves,
         stateKind: 'moving',
       } as BackgammonPlayMoving
     }
@@ -805,7 +801,7 @@ export class Play {
       id: generateId(),
       board,
       player,
-      moves: new Set(movesArr),
+      moves: movesArr,
       stateKind: 'moving',
     } as BackgammonPlayMoving
   }
@@ -817,14 +813,14 @@ export class Play {
       playId: play.id,
       playerColor: play.player.color,
       playerState: play.player.stateKind,
-      movesCount: play.moves.size,
+      movesCount: play.moves.length,
       stateKind: play.stateKind,
     })
     return {
       ...play,
       stateKind: 'moving',
       player: { ...play.player, stateKind: 'moving' },
-      moves: new Set(Array.from(play.moves)),
+      moves: [...play.moves],
     } as BackgammonPlayMoving
   }
 
@@ -839,13 +835,13 @@ export class Play {
     origin: BackgammonCheckerContainer
   ): boolean {
     // Check if play is active and has moves
-    if (!play || !play.moves || play.moves.size === 0) {
+    if (!play || !play.moves || play.moves.length === 0) {
       debug('Play.canMoveFrom: No active play or moves')
       return false
     }
 
     // Check if any moves are ready
-    const movesArray = Array.from(play.moves)
+    const movesArray = play.moves
     const readyMoves = movesArray.filter((m) => m.stateKind === 'ready')
     if (readyMoves.length === 0) {
       debug('Play.canMoveFrom: No ready moves available')
@@ -891,12 +887,12 @@ export class Play {
     board: BackgammonBoard
   ): string[] {
     // Check if play is active and has moves
-    if (!play || !play.moves || play.moves.size === 0) {
+    if (!play || !play.moves || play.moves.length === 0) {
       return []
     }
 
     // Check if any moves are ready
-    const movesArray = Array.from(play.moves)
+    const movesArray = play.moves
     const readyMoves = movesArray.filter((m) => m.stateKind === 'ready')
     if (readyMoves.length === 0) {
       return []
@@ -936,11 +932,11 @@ export class Play {
     board: BackgammonBoard,
     play: BackgammonPlayMoving
   ): { isValid: boolean; error?: string; alternativeSequences?: any[] } {
-    if (!play.moves || play.moves.size === 0) {
+    if (!play.moves || play.moves.length === 0) {
       return { isValid: true }
     }
 
-    const movesArray = Array.from(play.moves)
+    const movesArray = play.moves
 
     // Get completed and ready moves from the current sequence
     const completedMoves = movesArray.filter((m) => m.stateKind === 'completed')
@@ -1008,11 +1004,11 @@ export class Play {
     board: BackgammonBoard,
     play: BackgammonPlayMoving
   ): boolean {
-    if (!play.moves || play.moves.size === 0) {
+    if (!play.moves || play.moves.length === 0) {
       return false
     }
 
-    const movesArray = Array.from(play.moves)
+    const movesArray = play.moves
     const readyMoves = movesArray.filter((m) => m.stateKind === 'ready')
 
     // Need at least 2 ready moves to use both dice
@@ -1049,11 +1045,11 @@ export class Play {
     board: BackgammonBoard,
     play: BackgammonPlayMoving
   ): Array<{ sequence: any[]; diceUsed: number }> {
-    if (!play.moves || play.moves.size === 0) {
+    if (!play.moves || play.moves.length === 0) {
       return []
     }
 
-    const movesArray = Array.from(play.moves)
+    const movesArray = play.moves
     const allSequences: Array<{ sequence: any[]; diceUsed: number }> = []
 
     // CRITICAL FIX: Actually test both dice usage by trying all possible move sequences
@@ -1109,13 +1105,11 @@ export class Play {
     const clonePlay = (
       sourcePlay: BackgammonPlayMoving
     ): BackgammonPlayMoving => {
-      const serialized = serializeGameState(sourcePlay)
-      return deserializeGameState(serialized) as BackgammonPlayMoving
+      return JSON.parse(JSON.stringify(sourcePlay))
     }
 
     const cloneBoard = (sourceBoard: BackgammonBoard): BackgammonBoard => {
-      const serialized = serializeGameState(sourceBoard)
-      return deserializeGameState(serialized) as BackgammonBoard
+      return JSON.parse(JSON.stringify(sourceBoard))
     }
 
     const exploreSequence = (
@@ -1130,7 +1124,7 @@ export class Play {
       let maxDiceUsed = 0
       const [currentDie, ...restDice] = remainingDice
 
-      const movesArray = Array.from(currentPlay.moves)
+      const movesArray = currentPlay.moves
       const readyMoves = movesArray.filter(
         (m) =>
           m.stateKind === 'ready' &&
@@ -1214,7 +1208,7 @@ export class Play {
   ): { isMandatory: boolean; sequence?: any[]; reason?: string } {
     // FIX: Only validate when sequence is complete (no ready moves)
     // This prevents validation of incomplete sequences, matching pureMove() behavior
-    const hasReadyMoves = Array.from(play.moves).some(
+    const hasReadyMoves = play.moves.some(
       (m) => m.stateKind === 'ready'
     )
     if (hasReadyMoves) {

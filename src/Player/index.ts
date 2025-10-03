@@ -400,11 +400,11 @@ export class Player {
     logger.info('🤖 [Player.getBestMove] Called with:', {
       hasPlay: !!play,
       hasMove: !!play?.moves,
-      movesSize: play?.moves?.size ?? 0,
+      movesSize: play?.moves?.length ?? 0,
       playerUserId
     })
 
-    if (!play.moves || play.moves.size === 0) {
+    if (!play.moves || play.moves.length === 0) {
       logger.warn('🤖 [Player.getBestMove] No moves available, returning undefined')
       return undefined
     }

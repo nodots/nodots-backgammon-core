@@ -70,7 +70,7 @@ describe('Bear-off Play Details', () => {
       console.log(`Player Color: ${player.color}`)
       console.log(`Player Direction: ${player.direction}`)
       console.log(`Dice Roll: [${player.dice.currentRoll?.join(', ')}]`)
-      console.log(`Total Moves: ${play.moves.size}`)
+      console.log(`Total Moves: ${play.moves.length}`)
 
       // Examine each move in detail
       const movesArray = Array.from(play.moves)
@@ -95,7 +95,7 @@ describe('Bear-off Play Details', () => {
 
       // Assertions
       expect(play.stateKind).toBe('moving')
-      expect(play.moves.size).toBe(2) // Two dice, two moves
+      expect(play.moves.length).toBe(2) // Two dice, two moves
 
       // Check that bear-off moves are available
       const hasBearOffMoves = movesArray.some(move =>
@@ -157,7 +157,7 @@ describe('Bear-off Play Details', () => {
       console.log(`Player Color: ${player.color}`)
       console.log(`Player Direction: ${player.direction}`)
       console.log(`Dice Roll: [${player.dice.currentRoll?.join(', ')}]`)
-      console.log(`Total Moves: ${play.moves.size}`)
+      console.log(`Total Moves: ${play.moves.length}`)
 
       // Examine each move in detail
       const movesArray = Array.from(play.moves)
@@ -182,7 +182,7 @@ describe('Bear-off Play Details', () => {
 
       // Assertions for doubles
       expect(play.stateKind).toBe('moving')
-      expect(play.moves.size).toBe(4) // Doubles create 4 moves
+      expect(play.moves.length).toBe(4) // Doubles create 4 moves
 
       // All moves should have same die value for doubles
       const dieValues = movesArray.map(m => m.dieValue)
@@ -250,7 +250,7 @@ describe('Bear-off Play Details', () => {
       console.log(`Player Color: ${player.color}`)
       console.log(`Player Direction: ${player.direction}`)
       console.log(`Dice Roll: [${player.dice.currentRoll?.join(', ')}]`)
-      console.log(`Total Moves: ${play.moves.size}`)
+      console.log(`Total Moves: ${play.moves.length}`)
 
       // Examine each move in detail
       const movesArray = Array.from(play.moves)
@@ -297,7 +297,7 @@ describe('Bear-off Play Details', () => {
 
       // Assertions
       expect(play.stateKind).toBe('moving')
-      expect(play.moves.size).toBe(2)
+      expect(play.moves.length).toBe(2)
 
       // Check move types available
       const hasBearOff = movesArray.some(move =>
@@ -351,7 +351,7 @@ describe('Bear-off Play Details', () => {
       console.log(ascii(board))
       console.log(`\nPlay State: ${play.stateKind}`)
       console.log(`Dice Roll: [${player.dice.currentRoll?.join(', ')}]`)
-      console.log(`Total Moves: ${play.moves.size}`)
+      console.log(`Total Moves: ${play.moves.length}`)
 
       // Examine each move
       const movesArray = Array.from(play.moves)
@@ -458,7 +458,7 @@ describe('Bear-off Play Details', () => {
       console.log(ascii(board))
       console.log(`\nPlay State: ${play.stateKind}`)
       console.log(`Dice Roll: [${player.dice.currentRoll?.join(', ')}]`)
-      console.log(`Total Moves: ${play.moves.size}`)
+      console.log(`Total Moves: ${play.moves.length}`)
 
       // Examine each move
       const movesArray = Array.from(play.moves)
@@ -503,7 +503,7 @@ describe('Bear-off Play Details', () => {
 
       // Assertions
       expect(play.stateKind).toBe('moving')
-      expect(play.moves.size).toBe(2)
+      expect(play.moves.length).toBe(2)
 
       // Both moves should be able to bear off
       const allHaveBearOff = movesArray.every(move =>

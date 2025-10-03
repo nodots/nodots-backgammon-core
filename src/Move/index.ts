@@ -132,7 +132,7 @@ export class Move {
 
       console.log('[DEBUG] Active play found:', {
         activePlayId: activePlay.id,
-        movesCount: activePlay.moves?.size || 0,
+        movesCount: activePlay.moves?.length || 0,
       })
 
       // Get the current move (first ready move) from the sequence

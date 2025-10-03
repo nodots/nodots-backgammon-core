@@ -33,10 +33,10 @@ describe('Game Turn Passing - Core Methods', () => {
       const fakeMovingGame = {
         stateKind: 'moving',
         activePlay: {
-          moves: new Set([
+          moves: [
             { stateKind: 'ready' }, // Not completed
             { stateKind: 'completed' },
-          ]),
+          ]
         },
       } as unknown as BackgammonGameMoving
 
@@ -51,10 +51,10 @@ describe('Game Turn Passing - Core Methods', () => {
       const fakeMovingGame = {
         stateKind: 'moving',
         activePlay: {
-          moves: new Set([
+          moves: [
             { stateKind: 'completed' },
             { stateKind: 'completed' },
-          ]),
+          ]
         },
         // Copy other required properties
         id: 'test-id',
@@ -132,10 +132,10 @@ describe('Game Turn Passing - Core Methods', () => {
       const fakeMovedGame = {
         stateKind: 'moved',
         activePlay: {
-          moves: new Set([
+          moves: [
             { stateKind: 'ready' }, // Not completed
             { stateKind: 'completed' },
-          ]),
+          ]
         },
         board: Board.initialize(), // Provide proper board structure
         players: [], // Provide empty players array
@@ -150,10 +150,10 @@ describe('Game Turn Passing - Core Methods', () => {
       const fakeMovedGame = {
         stateKind: 'moved',
         activePlay: {
-          moves: new Set([
+          moves: [
             { stateKind: 'completed' },
             { stateKind: 'completed' },
-          ]),
+          ]
         },
         id: 'test-id',
         activeColor: 'white',
@@ -197,7 +197,7 @@ describe('Game Turn Passing - Core Methods', () => {
       const fakeMovedGame = {
         stateKind: 'moved',
         activePlay: {
-          moves: new Set([{ stateKind: 'completed' }]),
+          moves: [{ stateKind: 'completed' }]
         },
         id: 'test-id',
         activeColor: 'black', // Start with black
@@ -242,7 +242,7 @@ describe('Game Turn Passing - Core Methods', () => {
       const movingGame = {
         stateKind: 'moving',
         activePlay: {
-          moves: new Set([{ stateKind: 'completed' }]),
+          moves: [{ stateKind: 'completed' }]
         },
         id: 'test-id',
         activeColor: 'white',

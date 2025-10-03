@@ -23,7 +23,7 @@ describe('Robot Turn Integration', () => {
     
     const gameMoving = movingGame as BackgammonGameMoving
     expect(gameMoving.activePlay).toBeDefined()
-    expect(gameMoving.activePlay.moves.size).toBeGreaterThan(0)
+    expect(gameMoving.activePlay.moves.length).toBeGreaterThan(0)
     
     // Skip this test if human player got first turn
     if (!gameMoving.activePlayer.isRobot) {
@@ -38,7 +38,7 @@ describe('Robot Turn Integration', () => {
       stateKind: robotMovingGame.stateKind,
       activeColor: robotMovingGame.activeColor,
       isRobot: robotMovingGame.activePlayer.isRobot,
-      movesCount: robotMovingGame.activePlay.moves.size
+      movesCount: robotMovingGame.activePlay.moves.length
     })
 
     // Execute complete robot turn

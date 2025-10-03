@@ -10,7 +10,7 @@ describe('Issue #141: Debug turn completion bug', () => {
         isRobot: false
       },
       activePlay: {
-        moves: new Set([
+        moves: [
           {
             id: 'move1',
             dieValue: 4,
@@ -25,13 +25,13 @@ describe('Issue #141: Debug turn completion bug', () => {
             stateKind: 'completed',
             possibleMoves: []
           }
-        ])
+        ]
       }
     }
 
     console.log('🧪 Testing checkAndCompleteTurn with mock stuck game...')
     console.log('📊 Input game state:', mockStuckGame.stateKind)
-    console.log('📊 Active play moves:', Array.from(mockStuckGame.activePlay.moves).map(m => ({
+    console.log('📊 Active play moves:', mockStuckGame.activePlay.moves.map(m => ({
       dieValue: m.dieValue,
       moveKind: m.moveKind,
       stateKind: m.stateKind
@@ -54,7 +54,7 @@ describe('Issue #141: Debug turn completion bug', () => {
         isRobot: false
       },
       activePlay: {
-        moves: new Set([
+        moves: [
           {
             id: 'move1',
             dieValue: 4,
@@ -69,7 +69,7 @@ describe('Issue #141: Debug turn completion bug', () => {
             stateKind: 'completed',
             possibleMoves: []
           }
-        ])
+        ]
       }
     }
 
@@ -100,7 +100,7 @@ describe('Issue #141: Debug turn completion bug', () => {
       },
       activePlay: {
         id: 'test-play',
-        moves: new Set([
+        moves: [
           {
             id: 'move1',
             dieValue: 4,
@@ -115,7 +115,7 @@ describe('Issue #141: Debug turn completion bug', () => {
             stateKind: 'completed',
             possibleMoves: []
           }
-        ])
+        ]
       }
     }
 

@@ -58,14 +58,6 @@ export {
   type LogLevel,
 } from './utils/logger'
 
-// Export serialization utilities for proper Set handling
-export {
-  deserializeGameState,
-  ensureMovesAreArray,
-  ensureMovesAreSet,
-  serializeGameState,
-} from './utils/serialization'
-
 // Re-export all types from @nodots-llc/backgammon-types for convenience
 export type * from '@nodots-llc/backgammon-types'
 export { GameEventEmitter } from './events/GameEventEmitter'
