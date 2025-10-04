@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals'
-import { BackgammonGame, BackgammonPlayer } from '@nodots-llc/backgammon-types'
-import { Board, Cube, Game, Player } from '../../index'
+import { BackgammonPlayer } from '@nodots-llc/backgammon-types'
+import { Board, Game, Player } from '../../index'
 import { Move, type GameLookupFunction } from '../index'
 
 describe('Move.moveChecker', () => {
@@ -19,7 +19,12 @@ describe('Move.moveChecker', () => {
 
   it('should return error when game is not in correct state', async () => {
     const player1 = Player.initialize('white', 'clockwise', 'rolling', false)
-    const player2 = Player.initialize('black', 'counterclockwise', 'inactive', false)
+    const player2 = Player.initialize(
+      'black',
+      'counterclockwise',
+      'inactive',
+      false
+    )
     const mockGame = Game.initialize(
       [player1, player2],
       'game-123',
@@ -48,12 +53,7 @@ describe('Move.moveChecker', () => {
 
   it('should return error when checker not found', async () => {
     // Use rolling state which doesn't require activePlay
-    const player1 = Player.initialize(
-      'white',
-      'clockwise',
-      'rolling',
-      false
-    )
+    const player1 = Player.initialize('white', 'clockwise', 'rolling', false)
     const player2 = Player.initialize(
       'black',
       'counterclockwise',
@@ -82,17 +82,14 @@ describe('Move.moveChecker', () => {
     )
 
     expect(result.success).toBe(false)
-    expect(result.error).toBe('Game is not in a state where moving is allowed. Current state: rolling')
+    expect(result.error).toBe(
+      'Game is not in a state where moving is allowed. Current state: rolling'
+    )
   })
 
   it('should return error when trying to move opponent checker', async () => {
     // Use rolling state which doesn't require activePlay
-    const player1 = Player.initialize(
-      'white',
-      'clockwise',
-      'rolling',
-      false
-    )
+    const player1 = Player.initialize('white', 'clockwise', 'rolling', false)
     const player2 = Player.initialize(
       'black',
       'counterclockwise',
@@ -129,7 +126,9 @@ describe('Move.moveChecker', () => {
     )
 
     expect(result.success).toBe(false)
-    expect(result.error).toBe('Game is not in a state where moving is allowed. Current state: rolling')
+    expect(result.error).toBe(
+      'Game is not in a state where moving is allowed. Current state: rolling'
+    )
   })
 
   // TODO: Add more comprehensive tests once the full implementation is complete
@@ -141,12 +140,7 @@ describe('Move.moveChecker', () => {
 describe('Minimal black move sequence with debug', () => {
   it('should handle dice [4,2] where both dice have legal moves available', async () => {
     // Setup: standard board, black moves counterclockwise
-    const player1 = Player.initialize(
-      'white',
-      'clockwise',
-      'inactive',
-      false
-    )
+    const player1 = Player.initialize('white', 'clockwise', 'inactive', false)
     const player2 = Player.initialize(
       'black',
       'counterclockwise',
@@ -168,7 +162,7 @@ describe('Minimal black move sequence with debug', () => {
         total: 6,
         color: 'black',
       },
-      rollForStartValue: 4
+      rollForStartValue: 4,
     }
 
     // 🔧 BUG FIX: Create proper activePlay using Play.initialize

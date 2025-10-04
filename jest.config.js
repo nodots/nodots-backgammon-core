@@ -21,5 +21,6 @@ module.exports = {
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
     '^@nodots-llc/backgammon-ai$': '<rootDir>/__mocks__/backgammonAiMock.ts',
+    '^@nodots-llc/backgammon-types$': '<rootDir>/../../types/src/index.ts',
   },
 }
