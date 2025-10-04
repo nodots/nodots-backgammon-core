@@ -1017,7 +1017,7 @@ export class Game {
         activePlay: updatedActivePlay,
         players: finalPlayers,
         endTime: new Date(), // Add end time for completed games
-      } as any // TODO: type as BackgammonGameCompleted
+      } as BackgammonGameCompleted
     }
     // --- END WIN CONDITION CHECK ---
 
@@ -1915,7 +1915,7 @@ export class Game {
       stateKind: 'completed',
       winner: winner.id,
       players: updatedPlayers,
-    } as any // TODO: type as BackgammonGameCompleted
+    } as BackgammonGameCompleted
   }
 
   /**
