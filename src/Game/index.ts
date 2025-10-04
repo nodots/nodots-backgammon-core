@@ -1668,6 +1668,58 @@ export class Game {
     ]
   }
 
+  /**
+   * Restores a game to a previous state
+   * This is the new architecture for state restoration - CORE validates but doesn't manage history
+   * @param state Complete game state to restore to
+   * @returns Validated game state
+   */
+  public static restoreState = function restoreState(
+    state: BackgammonGame
+  ): BackgammonGame {
+    // Validate that this is a valid game state
+    if (!state) {
+      throw new Error('Cannot restore: state is null or undefined')
+    }
+
+    if (!state.stateKind) {
+      throw new Error('Cannot restore: invalid state - missing stateKind')
+    }
+
+    if (!state.players || state.players.length !== 2) {
+      throw new Error('Cannot restore: invalid state - must have exactly 2 players')
+    }
+
+    if (!state.board) {
+      throw new Error('Cannot restore: invalid state - missing board')
+    }
+
+    if (!state.cube) {
+      throw new Error('Cannot restore: invalid state - missing cube')
+    }
+
+    // Validate state kind is one of the known states
+    const validStates = [
+      'rolling-for-start',
+      'rolled-for-start',
+      'rolling',
+      'moving',
+      'moved',
+      'doubled',
+      'completed'
+    ]
+
+    if (!validStates.includes(state.stateKind)) {
+      throw new Error(`Cannot restore: invalid stateKind '${state.stateKind}'`)
+    }
+
+    // State is valid - return it
+    // Note: We return the state as-is because it's already a complete, valid game state
+    // The API layer is responsible for persisting this state
+    logger.info(`State restored successfully to ${state.stateKind}`)
+    return state
+  }
+
   public static startMove = function startMove(
     game: BackgammonGameDoubled,
     movingPlay: BackgammonPlayMoving
@@ -1876,342 +1928,6 @@ export class Game {
   }
 
   /**
-   * Undo the last confirmed move within the current turn
-   *
-   * This method supports two approaches:
-   * 1. History-based (RELIABLE): If previousGameState provided, restore exact snapshot
-   * 2. Manual reconstruction (FALLBACK): Reverse board changes manually (buggy with dice switching)
-   *
-   * @param game - Current game state in 'moving' or 'moved' state with completed moves
-   * @param previousGameState - Optional exact game state from history system (gameStateBefore)
-   * @returns Result object with success/error and updated game state
-   */
-  public static undoLastMove = function undoLastMove(
-    game: BackgammonGame,
-    previousGameState?: BackgammonGame
-  ): {
-    success: boolean
-    error?: string
-    game?: BackgammonGame
-    undoneMove?: any // BackgammonMove adapted for the interface
-    remainingMoveHistory?: any[] // For compatibility with API interface
-  } {
-    // HISTORY-BASED UNDO (preferred, reliable approach)
-    // If previousGameState provided from history system, use it directly
-    if (previousGameState) {
-      logger.info(
-        '🔄 Using history-based undo - restoring exact gameStateBefore snapshot'
-      )
-      return {
-        success: true,
-        game: previousGameState,
-        undoneMove: undefined,
-        remainingMoveHistory: [],
-      }
-    }
-
-    // MANUAL RECONSTRUCTION FALLBACK (legacy, has bugs with dice switching)
-    logger.warn(
-      '⚠️  Using manual undo reconstruction - this has known bugs with dice switching and complex scenarios'
-    )
-
-    // Validate game state - must be in 'moving' or 'moved' state for undo
-    if (game.stateKind !== 'moving' && game.stateKind !== 'moved') {
-      return {
-        success: false,
-        error: `Cannot undo move from ${game.stateKind} state. Must be in 'moving' or 'moved' state.`,
-      }
-    }
-
-    const activePlay = game.activePlay
-    if (!activePlay || !activePlay.moves) {
-      return {
-        success: false,
-        error: 'No active play found',
-      }
-    }
-
-    // Find completed moves in chronological order (array order IS execution order)
-    const movesArray = activePlay.moves
-    const completedMoves = movesArray.filter(
-      (move) => move.stateKind === 'completed'
-    )
-
-    if (completedMoves.length === 0) {
-      return {
-        success: false,
-        error: 'No completed moves available to undo',
-      }
-    }
-
-    // Get the most recent completed move (last in array = most recently executed)
-    const moveToUndo = completedMoves[completedMoves.length - 1]
-
-    // Validate that the move actually moved a checker (not a 'no-move')
-    if (
-      moveToUndo.moveKind === 'no-move' ||
-      !moveToUndo.origin ||
-      !moveToUndo.destination
-    ) {
-      return {
-        success: false,
-        error: 'Cannot undo a no-move or invalid move',
-      }
-    }
-
-    try {
-      // Start with the current board (we'll create an immutable update)
-      let updatedBoard = game.board
-
-      // Get the containers involved in the move
-      const originContainer = Board.getCheckerContainer(
-        updatedBoard,
-        moveToUndo.origin.id
-      )
-      const destinationContainer = Board.getCheckerContainer(
-        updatedBoard,
-        moveToUndo.destination.id
-      )
-
-      // Find the checker that was moved (should be the top checker at destination)
-      const destinationCheckers = destinationContainer.checkers
-      if (destinationCheckers.length === 0) {
-        return {
-          success: false,
-          error: 'No checker found at destination to undo',
-        }
-      }
-
-      // Get the moved checker (should be the last one added to destination)
-      const movedChecker = destinationCheckers[destinationCheckers.length - 1]
-
-      // Validate this is the player's checker
-      if (movedChecker.color !== game.activePlayer.color) {
-        return {
-          success: false,
-          error: 'Cannot undo - checker at destination is not yours',
-        }
-      }
-
-      // Remove the checker from destination
-      destinationContainer.checkers.pop()
-
-      // Handle hit restoration if this was a hitting move
-      // TODO: Future improvement - if moveToUndo.isHit is false but there are opponent checkers
-      // on the bar, we could infer this was a hitting move and restore them. However, this
-      // requires careful logic to avoid incorrect restorations in complex scenarios.
-      if (moveToUndo.isHit && moveToUndo.destination.kind === 'point') {
-        // Find the hit checker on the opponent's bar
-        const opponentDirection =
-          game.activePlayer.direction === 'clockwise'
-            ? 'counterclockwise'
-            : 'clockwise'
-        const opponentBar = updatedBoard.bar[opponentDirection]
-
-        // Find the most recently hit checker (should be last in bar)
-        const hitCheckers = opponentBar.checkers.filter(
-          (c: BackgammonChecker) => c.color !== game.activePlayer.color
-        )
-        if (hitCheckers.length > 0) {
-          const hitChecker = hitCheckers[hitCheckers.length - 1]
-
-          console.log(
-            `🔄 Game.undoLastMove: Restoring hit checker ${hitChecker.id.slice(0, 8)} from ${opponentDirection} bar to ${moveToUndo.destination.kind}:${moveToUndo.destination.id}`
-          )
-
-          // Remove from bar
-          const hitCheckerIndex = opponentBar.checkers.findIndex(
-            (c: BackgammonChecker) => c.id === hitChecker.id
-          )
-          if (hitCheckerIndex !== -1) {
-            opponentBar.checkers.splice(hitCheckerIndex, 1)
-
-            // Restore to destination point
-            destinationContainer.checkers.push({
-              id: hitChecker.id,
-              color: hitChecker.color,
-              checkercontainerId: destinationContainer.id,
-              isMovable: false,
-            })
-          }
-        }
-      }
-
-      // Move the player's checker back to origin
-      originContainer.checkers.push({
-        id: movedChecker.id,
-        color: movedChecker.color,
-        checkercontainerId: originContainer.id,
-        isMovable: false,
-      })
-
-      // Recalculate possible moves for the undone move based on restored board state
-      const freshPossibleMoves = Board.getPossibleMoves(
-        updatedBoard,
-        game.activePlayer,
-        moveToUndo.dieValue
-      ) as BackgammonMoveSkeleton[]
-
-      // Update the move state back to 'ready' with recalculated possible moves
-      const undoneMove = {
-        ...moveToUndo,
-        stateKind: 'ready' as const,
-        moveKind: moveToUndo.moveKind, // Keep the original move kind for re-calculation
-        origin: moveToUndo.origin, // Keep original origin for move generation
-        destination: undefined, // Clear destination since move is undone
-        isHit: false, // Reset hit flag
-        possibleMoves: freshPossibleMoves, // Use freshly calculated possible moves
-      }
-
-      // Update the moves array: replace the confirmed move with the ready move
-      const updatedMoves = [
-        ...movesArray.filter((m) => m.id !== moveToUndo.id),
-        undoneMove,
-      ]
-
-      // When all moves are undone, recalculate possible moves for all ready moves
-      let finalUpdatedMoves = updatedMoves
-      const allMovesUndoneCheck = updatedMoves.every(
-        (move) => move.stateKind === 'ready'
-      )
-
-      if (allMovesUndoneCheck) {
-        // Recalculate possible moves for all ready moves with the restored board state
-        finalUpdatedMoves = updatedMoves.map((move) => {
-            if (move.stateKind === 'ready' && move.dieValue) {
-              const freshPossibleMoves = Board.getPossibleMoves(
-                updatedBoard,
-                game.activePlayer,
-                move.dieValue
-              ) as BackgammonMoveSkeleton[]
-              return {
-                ...move,
-                possibleMoves: freshPossibleMoves,
-              }
-            }
-            return move
-          })
-      }
-
-      // Update active play
-      const updatedActivePlay = {
-        ...activePlay,
-        moves: finalUpdatedMoves,
-      }
-
-      // Recalculate pip counts after the undo
-      console.log('🧮 Game.undoLastMove: Recalculating pip counts after undo')
-      const updatedPlayers = Player.recalculatePipCounts({
-        ...game,
-        board: updatedBoard,
-      })
-
-      // Check if all moves have been undone (all moves are back to 'ready' state)
-      const allMovesUndone = allMovesUndoneCheck
-
-      // Use switch statement to handle state transitions after undo
-      // Note: Undo is only allowed in 'moving' or 'moved' states per API validation
-      const { newGameState, finalPlayers, clearActivePlay } = (() => {
-        switch (game.stateKind) {
-          case 'moved':
-            // From 'moved', always go back to 'moving' to allow more moves
-            return {
-              newGameState: 'moving' as const,
-              finalPlayers: updatedPlayers,
-              clearActivePlay: false,
-            }
-
-          case 'moving':
-            if (allMovesUndone) {
-              // BACKGAMMON RULES FIX: All moves undone - reset to 'rolled' state with preserved dice
-              // Player should NOT be able to roll dice again - they must use the same dice values
-              console.log(
-                '🔄 Game.undoLastMove: All moves undone from moving state, resetting to rolled (not rolling!)'
-              )
-              const resetPlayers = updatedPlayers.map((player) => {
-                if (player.id === game.activePlayer.id) {
-                  // DICE SWITCHING FIX: Preserve dice state from moves, not from stale player dice
-                  // When dice have been switched, the moves reflect the correct switched dice values
-                  // This fixes the bug where undo incorrectly reverts switched dice
-                  const movesArray = updatedActivePlay.moves
-                  const preservedCurrentRoll =
-                    movesArray.length >= 2
-                      ? ([movesArray[0].dieValue, movesArray[1].dieValue] as [
-                          BackgammonDieValue,
-                          BackgammonDieValue,
-                        ])
-                      : game.activePlayer.dice?.currentRoll
-
-                  console.log(
-                    '🎲 Game.undoLastMove: Preserving ORIGINAL dice state (supports dice switching):',
-                    preservedCurrentRoll
-                  )
-                  return {
-                    ...player,
-                    dice: Dice.initialize(
-                      player.color,
-                      'rolled',
-                      player.dice?.id,
-                      preservedCurrentRoll
-                    ),
-                    stateKind: 'rolled' as const,
-                  }
-                } else {
-                  return {
-                    ...player,
-                    dice: Dice.initialize(
-                      player.color,
-                      'inactive',
-                      player.dice?.id
-                    ),
-                    stateKind: 'inactive' as const,
-                  }
-                }
-              }) as BackgammonPlayers
-
-              return {
-                newGameState: 'rolled' as const,
-                finalPlayers: resetPlayers,
-                clearActivePlay: false, // CRITICAL FIX: Preserve activePlay with restored moves
-              }
-            } else {
-              // Still have moves remaining - stay in 'moving'
-              return {
-                newGameState: 'moving' as const,
-                finalPlayers: updatedPlayers,
-                clearActivePlay: false,
-              }
-            }
-        }
-      })()
-
-      // Return the updated game state
-      const updatedGame = {
-        ...game,
-        stateKind: newGameState,
-        board: updatedBoard,
-        players: finalPlayers,
-        activePlayer: finalPlayers.find(
-          (p) => p.id === game.activePlayer.id
-        ) as any,
-        activePlay: clearActivePlay ? null : updatedActivePlay,
-      } as BackgammonGame
-
-      return {
-        success: true,
-        game: updatedGame,
-        undoneMove: moveToUndo, // Return the move that was undone
-        remainingMoveHistory: completedMoves.slice(0, -1), // All completed moves except the undone one
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: `Failed to undo move: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      }
-    }
-  }
-
-  /**
    * Async wrapper for confirmTurn that handles robot automation
    * @param game - Game in 'moving' state
    * @returns Promise<BackgammonGame> - Updated game state with robot automation if needed
@@ -2246,6 +1962,8 @@ export class Game {
     }
 
   // processRobotTurn method removed - now handled by @nodots-llc/backgammon-robots package
+
+  // undoLastMove removed - use database-driven state restoration via API endpoints instead
 
   /**
    * Execute doubling action from rolling state (before rolling dice)
