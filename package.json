@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@nodots-llc/backgammon-ai": "^4.0.1",
-    "@nodots-llc/backgammon-types": "../types",
+    "@nodots-llc/backgammon-types": "^4.1.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

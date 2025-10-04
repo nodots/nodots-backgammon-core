@@ -1688,7 +1688,9 @@ export class Game {
     }
 
     if (!state.players || state.players.length !== 2) {
-      throw new Error('Cannot restore: invalid state - must have exactly 2 players')
+      throw new Error(
+        'Cannot restore: invalid state - must have exactly 2 players'
+      )
     }
 
     if (!state.board) {
