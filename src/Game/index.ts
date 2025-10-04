@@ -49,6 +49,7 @@ import type {
   BackgammonPlayersRollingForStartTuple,
   BackgammonPlayersRollingTuple,
 } from '@nodots-llc/backgammon-types'
+import { RESTORABLE_GAME_STATE_KINDS } from '@nodots-llc/backgammon-types'
 
 export class Game {
   id: string = generateId()
@@ -1698,18 +1699,8 @@ export class Game {
       throw new Error('Cannot restore: invalid state - missing cube')
     }
 
-    // Validate state kind is one of the known states
-    const validStates = [
-      'rolling-for-start',
-      'rolled-for-start',
-      'rolling',
-      'moving',
-      'moved',
-      'doubled',
-      'completed'
-    ]
-
-    if (!validStates.includes(state.stateKind)) {
+    // Validate state kind is one of the known restorable states from TYPES
+    if (!RESTORABLE_GAME_STATE_KINDS.includes(state.stateKind)) {
       throw new Error(`Cannot restore: invalid stateKind '${state.stateKind}'`)
     }
 
