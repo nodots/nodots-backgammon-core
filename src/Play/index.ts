@@ -39,7 +39,7 @@ interface MoveExecutionPlan {
   readonly autoSwitched: boolean
   readonly originalDieValue: BackgammonDieValue
   readonly newDiceOrder: readonly [BackgammonDieValue, BackgammonDieValue]
-  readonly updatedMoves: ReadonlyArray<BackgammonMoveReady>
+  readonly updatedMoves: ReadonlyArray<BackgammonMoveReady | BackgammonMoveCompletedNoMove>
   readonly matchingMove: any // The fresh move calculation result
 }
 
@@ -138,12 +138,23 @@ export class Play {
     }
 
     // Plan updated moves (pure calculation)
-    // CRITICAL FIX: Do NOT change die values in moves
-    // Moves keep their original die values from initialization
-    // Only the dice order in player.dice.currentRoll changes
-    const updatedMoves = readyMoves.filter((move) => {
-      // Exclude the move that will be executed
-      return move.id !== targetMove.id
+    // CRITICAL FIX: Include moves that need re-evaluation after board state changes
+    // This includes:
+    // - Ready moves (not being executed)
+    // - Completed no-moves (might now have legal moves after board changes)
+    // Exclude: Completed with-move (already executed in prior turns)
+    const allNonExecutedMoves = play.moves.filter((move): move is BackgammonMoveReady | BackgammonMoveCompletedNoMove => {
+      // Exclude the move being executed
+      if (move.id === targetMove.id) return false
+
+      // Include ready moves
+      if (move.stateKind === 'ready') return true
+
+      // Include completed no-moves for re-evaluation
+      if (move.stateKind === 'completed' && move.moveKind === 'no-move') return true
+
+      // Exclude completed with-move (already executed)
+      return false
     })
 
     debug('Play.planMoveExecution: Planning completed', {
@@ -152,7 +163,7 @@ export class Play {
       autoSwitched: moveResult.autoSwitched,
       originalDieValue: moveResult.originalDieValue,
       newDiceOrder,
-      updatedMovesCount: updatedMoves.length,
+      updatedMovesCount: allNonExecutedMoves.length,
     })
 
     return {
@@ -161,7 +172,7 @@ export class Play {
       autoSwitched: moveResult.autoSwitched,
       originalDieValue: moveResult.originalDieValue,
       newDiceOrder,
-      updatedMoves,
+      updatedMoves: allNonExecutedMoves,
       matchingMove,
     }
   }
@@ -219,8 +230,8 @@ export class Play {
     }
 
     // Update remaining moves with fresh possible moves based on new board state
-    // CRITICAL: Preserve each move's original die value - don't reassign by index
-    // The moves already know what die value they represent from initialization
+    // CRITICAL: Re-evaluate ALL moves including previously completed no-moves
+    // because the board state change might make them legal now
     const updatedMovesWithCorrectDiceAndMoves = plan.updatedMoves.map(
       (move) => {
         // Use the move's existing die value (already correct from initialization)
@@ -234,7 +245,7 @@ export class Play {
         ) as BackgammonMoveSkeleton[]
 
         if (freshPossibleMoves.length === 0) {
-          // No moves possible - convert to completed no-move
+          // No moves possible - mark as completed no-move
           const noMove: BackgammonMoveCompletedNoMove = {
             id: move.id,
             player: move.player,
@@ -249,11 +260,13 @@ export class Play {
           return noMove
         }
 
-        // Update move with fresh possible moves (keep original die value)
+        // Moves now available - convert to ready with fresh possible moves
         const firstPossibleMove = freshPossibleMoves[0]
         const updatedMove: BackgammonMoveReady = {
-          ...move,
+          id: move.id,
+          player: move.player,
           dieValue: dieValue, // Keep original die value
+          stateKind: 'ready', // Critical: set to ready even if was previously completed no-move
           possibleMoves: freshPossibleMoves,
           moveKind:
             firstPossibleMove.destination.kind === 'off'
@@ -276,12 +289,10 @@ export class Play {
     })
 
     // Create new play state (pure)
-    // CRITICAL FIX: Include ALL existing completed moves (including no-moves from initialization)
-    const existingCompletedMoves = play.moves.filter(
-      (m) => m.stateKind === 'completed' && m.id !== plan.targetMoveId
-    )
+    // CRITICAL FIX: updatedMovesWithCorrectDiceAndMoves already includes all non-executed moves
+    // (both ready moves and previously completed no-moves that were re-evaluated)
+    // So we just combine those with the newly completed move
     const finalMoves = [
-      ...existingCompletedMoves,
       ...updatedMovesWithCorrectDiceAndMoves,
       completedMove,
     ]
