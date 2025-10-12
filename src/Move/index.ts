@@ -10,7 +10,6 @@ import {
   BackgammonMoveConfirmed,
   BackgammonMoveConfirmedNoMove,
   BackgammonMoveConfirmedWithMove,
-  BackgammonMoveInProgress,
   BackgammonMoveKind,
   BackgammonMoveOrigin,
   BackgammonMoveReady,
@@ -133,7 +132,7 @@ export class Move {
 
       console.log('[DEBUG] Active play found:', {
         activePlayId: activePlay.id,
-        movesCount: activePlay.moves?.size || 0,
+        movesCount: activePlay.moves?.length || 0,
       })
 
       // Get the current move (first ready move) from the sequence
@@ -149,15 +148,10 @@ export class Move {
           (move) =>
             move.stateKind === 'completed' || move.stateKind === 'confirmed'
         )
-        const inProgressMoves = movesArray.filter(
-          (move) => move.stateKind === 'in-progress'
-        )
-
         console.log('[DEBUG] ActivePlay.moves state assessment:', {
           totalMoves: movesArray.length,
           readyMoves: readyMoves.length,
           completedMoves: completedMoves.length,
-          inProgressMoves: inProgressMoves.length,
           moveStates: movesArray.map((m) => ({
             id: m.id,
             state: m.stateKind,
@@ -174,14 +168,6 @@ export class Move {
             success: false,
             error:
               'All moves in activePlay are completed - turn should be completed',
-          }
-        }
-
-        // If there are in-progress moves, this might be a race condition
-        if (inProgressMoves.length > 0) {
-          return {
-            success: false,
-            error: 'Move already in progress - wait for completion',
           }
         }
 
@@ -538,14 +524,11 @@ export class Move {
         )
 
         if (moveKind !== 'no-move') {
-          // Cast container to appropriate move origin type
-          const moveOrigin = origin as BackgammonMoveOrigin
           possibleMoves.push({
             id: generateId(),
             player: activePlayer,
             stateKind: 'ready',
             moveKind,
-            origin: moveOrigin,
             dieValue,
             possibleMoves: [], // Will be populated if needed
           })
@@ -733,12 +716,24 @@ export class Move {
   }: MoveProps): BackgammonMove {
     const id = move.id ? move.id : generateId()
     const stateKind = move.stateKind ? move.stateKind : 'ready'
+
+    // If move is ready state, don't include origin (origin is in possibleMoves)
+    // Origin gets added when move transitions to completed
+    if (stateKind === 'ready') {
+      return {
+        ...move,
+        id,
+        stateKind,
+      } as BackgammonMoveReady
+    }
+
+    // For other states (completed, confirmed), include origin
     return {
       ...move,
       id,
       stateKind,
       origin,
-    } as BackgammonMoveReady
+    } as BackgammonMove
   }
 
   // Rule Reference: https://www.bkgm.com/gloss/lookup.cgi?open_point
@@ -758,7 +753,8 @@ export class Move {
 
   public static move = function move(
     board: BackgammonBoard,
-    move: BackgammonMoveReady
+    move: BackgammonMoveReady,
+    origin: BackgammonMoveOrigin
   ): BackgammonMoveResult {
     const { moveKind } = move
     const { player } = move
@@ -768,11 +764,11 @@ export class Move {
 
     switch (moveKind) {
       case 'point-to-point':
-        return PointToPoint.move(board, move)
+        return PointToPoint.move(board, move, origin)
       case 'reenter':
-        return Reenter.move(board, move)
+        return Reenter.move(board, move, origin)
       case 'bear-off':
-        return BearOff.move(board, move)
+        return BearOff.move(board, move, origin)
       case 'no-move':
       case undefined:
         return {
@@ -789,26 +785,4 @@ export class Move {
     }
   }
 
-  public static confirmMove = function confirmMove(
-    move: BackgammonMoveInProgress
-  ): BackgammonMoveConfirmed {
-    if (move.moveKind === 'no-move') {
-      return {
-        ...move,
-        stateKind: 'confirmed',
-        origin: undefined,
-        destination: undefined,
-        isHit: false,
-      } as BackgammonMoveConfirmedNoMove
-    }
-
-    return {
-      ...move,
-      stateKind: 'confirmed',
-      isHit:
-        move.moveKind === 'point-to-point' &&
-        move.destination?.checkers.length === 1 &&
-        move.destination.checkers[0].color !== move.player.color,
-    } as BackgammonMoveConfirmedWithMove
-  }
 }

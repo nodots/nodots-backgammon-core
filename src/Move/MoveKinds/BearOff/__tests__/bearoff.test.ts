@@ -25,7 +25,6 @@ const convertSkeletonToMove = (
   player,
   stateKind: 'ready',
   moveKind,
-  origin: skeleton.origin,
   dieValue: skeleton.dieValue,
   possibleMoves: [],
 })
@@ -102,12 +101,11 @@ describe('BearOff', () => {
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
-        origin,
         dieValue: 6,
         possibleMoves: [],
       }
 
-      const moveResult = BearOff.move(board, move)
+      const moveResult = BearOff.move(board, move, origin)
       expect(moveResult.move.stateKind).toBe('completed')
       expect(
         moveResult.board.points.find((p) => p.position[player.direction] === 6)
@@ -141,12 +139,11 @@ describe('BearOff', () => {
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
-        origin,
         dieValue: 6, // Using higher dice value
         possibleMoves: [],
       }
 
-      const moveResult = BearOff.move(board, move)
+      const moveResult = BearOff.move(board, move, origin)
       expect(moveResult.move.stateKind).toBe('completed')
       expect(
         moveResult.board.points.find((p) => p.position[player.direction] === 3)
@@ -188,12 +185,11 @@ describe('BearOff', () => {
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
-        origin,
         dieValue: 3, // Using lower die value than point position, with checker on higher point
         possibleMoves: [],
       }
 
-      expect(() => BearOff.move(board, move)).toThrow(
+      expect(() => BearOff.move(board, move, origin)).toThrow(
         'Cannot bear off from point 4 with die value 3 while checkers exist on higher points in home board'
       )
     })
@@ -226,12 +222,11 @@ describe('BearOff', () => {
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
-        origin,
         dieValue: 4,
         possibleMoves: [],
       }
 
-      expect(() => BearOff.move(board, move)).toThrow(
+      expect(() => BearOff.move(board, move, origin)).toThrow(
         'Cannot bear off when checkers exist outside home board'
       )
     })
@@ -264,12 +259,11 @@ describe('BearOff', () => {
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
-        origin,
         dieValue: 6, // Trying to use higher dice value
         possibleMoves: [],
       }
 
-      expect(() => BearOff.move(board, move)).toThrow(
+      expect(() => BearOff.move(board, move, origin)).toThrow(
         'Cannot use higher number when checkers exist on higher points'
       )
     })
@@ -293,12 +287,11 @@ describe('BearOff', () => {
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
-        origin,
         dieValue: 4,
         possibleMoves: [],
       }
 
-      expect(() => BearOff.move(board, move)).toThrow('No checker to bear off')
+      expect(() => BearOff.move(board, move, origin)).toThrow('No checker to bear off')
     })
   })
 
@@ -327,12 +320,11 @@ describe('BearOff', () => {
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
-        origin,
         dieValue: 6,
         possibleMoves: [],
       }
 
-      const moveResult = BearOff.move(board, move)
+      const moveResult = BearOff.move(board, move, origin)
       expect(moveResult.move.stateKind).toBe('completed')
       expect(
         moveResult.board.points.find((p) => p.position[player.direction] === 6)
@@ -367,14 +359,13 @@ describe('BearOff', () => {
         player,
         stateKind: 'ready',
         moveKind: 'bear-off',
-        origin,
         dieValue: 5, // Lower than point position (6), but should be allowed
         possibleMoves: [],
       }
 
       // Before fix: this would throw "Cannot bear off from point 6 with die value 5"
       // After fix: this should succeed per backgammon rules
-      const moveResult = BearOff.move(board, move)
+      const moveResult = BearOff.move(board, move, origin)
       expect(moveResult.move.stateKind).toBe('completed')
       expect(
         moveResult.board.points.find((p) => p.position[player.direction] === 6)

@@ -400,11 +400,11 @@ export class Player {
     logger.info('🤖 [Player.getBestMove] Called with:', {
       hasPlay: !!play,
       hasMove: !!play?.moves,
-      movesSize: play?.moves?.size ?? 0,
+      movesSize: play?.moves?.length ?? 0,
       playerUserId
     })
 
-    if (!play.moves || play.moves.size === 0) {
+    if (!play.moves || play.moves.length === 0) {
       logger.warn('🤖 [Player.getBestMove] No moves available, returning undefined')
       return undefined
     }
@@ -417,7 +417,7 @@ export class Player {
         dieValue: m.dieValue,
         stateKind: m.stateKind,
         moveKind: m.moveKind,
-        hasOrigin: !!m.origin,
+        hasOrigin: m.stateKind !== 'ready' && !!(m as any).origin,
         possibleMovesCount: m.possibleMoves?.length ?? 0
       }))
     })
@@ -432,7 +432,8 @@ export class Player {
 
       const bestMove = await aiModule.selectBestMove(play, playerUserId)
       if (bestMove) {
-        logger.info(`🤖 [Player.getBestMove] AI selected move from ${bestMove.origin?.id} (${bestMove.stateKind})`)
+        const originId = bestMove.stateKind === 'ready' ? bestMove.possibleMoves?.[0]?.origin?.id : (bestMove as any).origin?.id
+        logger.info(`🤖 [Player.getBestMove] AI selected move from ${originId} (${bestMove.stateKind})`)
         return bestMove
       } else {
         logger.warn('🤖 [Player.getBestMove] AI returned no move, falling back to first available')
@@ -454,7 +455,7 @@ export class Player {
       readyMoveDetails: readyMoves.map(m => ({
         dieValue: m.dieValue,
         moveKind: m.moveKind,
-        hasOrigin: !!m.origin,
+        hasPossibleMoves: !!m.possibleMoves?.length,
         hasCheckers: !!m.possibleMoves?.[0]?.origin?.checkers?.length
       }))
     })

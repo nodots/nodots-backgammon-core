@@ -87,7 +87,6 @@ describe('PointToPoint isHit Flag Bug Investigation', () => {
       const move: BackgammonMoveReady = {
         id: generateId(),
         player,
-        origin: originPoint,
         stateKind: 'ready',
         dieValue: 1, // Moving from 7 to 6
         moveKind: 'point-to-point',
@@ -101,7 +100,7 @@ describe('PointToPoint isHit Flag Bug Investigation', () => {
       expect(originPoint.checkers[0].color).toBe('white')
 
       // Execute the move
-      const result = PointToPoint.move(board, move)
+      const result = PointToPoint.move(board, move, originPoint)
 
       // Verify the move was completed
       expect(result.move.stateKind).toBe('completed')
@@ -132,7 +131,7 @@ describe('PointToPoint isHit Flag Bug Investigation', () => {
     it('should set isHit: false for moves to empty points', () => {
       // Set up: white checker on position 7, empty position 6
       const board = Board.initialize([])
-      
+
       const originPoint = board.points.find(
         (p) => p.position.clockwise === 7
       )!
@@ -146,18 +145,17 @@ describe('PointToPoint isHit Flag Bug Investigation', () => {
       ]
 
       const player = createTestPlayer('white', 'clockwise')
-      
+
       const move: BackgammonMoveReady = {
         id: generateId(),
         player,
-        origin: originPoint,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
 
-      const result = PointToPoint.move(board, move)
+      const result = PointToPoint.move(board, move, originPoint)
 
       expect(result.move.isHit).toBe(false)
       expect(result.move.stateKind).toBe('completed')
@@ -177,14 +175,13 @@ describe('PointToPoint isHit Flag Bug Investigation', () => {
       const move: BackgammonMoveReady = {
         id: generateId(),
         player,
-        origin: originPoint,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
 
-      const result = PointToPoint.move(board, move)
+      const result = PointToPoint.move(board, move, originPoint)
 
       expect(result.move.isHit).toBe(false)
       expect(result.move.stateKind).toBe('completed')
@@ -232,14 +229,13 @@ describe('PointToPoint isHit Flag Bug Investigation', () => {
       const move: BackgammonMoveReady = {
         id: generateId(),
         player,
-        origin: originPoint,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
 
-      const result = PointToPoint.move(board, move)
+      const result = PointToPoint.move(board, move, originPoint)
 
       // CRITICAL TEST: isHit should be true
       expect(result.move.isHit).toBe(true)
@@ -296,14 +292,13 @@ describe('PointToPoint isHit Flag Bug Investigation', () => {
       const move: BackgammonMoveReady = {
         id: generateId(),
         player,
-        origin: originPoint,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
         possibleMoves: [],
       }
 
-      const result = PointToPoint.move(board, move)
+      const result = PointToPoint.move(board, move, originPoint)
 
       // Should result in a no-move
       expect(result.move.moveKind).toBe('no-move')
@@ -332,7 +327,6 @@ describe('PointToPoint isHit Flag Bug Investigation', () => {
       const move: BackgammonMoveReady = {
         id: generateId(),
         player,
-        origin: originPoint,
         stateKind: 'ready',
         dieValue: 1,
         moveKind: 'point-to-point',
@@ -341,9 +335,9 @@ describe('PointToPoint isHit Flag Bug Investigation', () => {
 
       // Capture the original state before the move
       const originalDestinationCheckers = [...blotPoint.checkers]
-      
+
       // Execute the move
-      const result = PointToPoint.move(board, move)
+      const result = PointToPoint.move(board, move, originPoint)
 
       // The key assertion: isHit should be true because there WAS a blot
       // at the destination when the move was initiated

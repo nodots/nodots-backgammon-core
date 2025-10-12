@@ -1,7 +1,7 @@
 import {
   BackgammonBoard,
   BackgammonMoveCompleted,
-  BackgammonMoveInProgress,
+  BackgammonMoveOrigin,
   BackgammonMoveReady,
   BackgammonMoveResult,
   BackgammonPlayerMoving,
@@ -35,7 +35,7 @@ export class BearOff {
   public static isA = function isABearOff(
     board: BackgammonBoard,
     player: BackgammonPlayerMoving
-  ): BackgammonMoveInProgress | false {
+  ): boolean {
     // If there are checkers on the bar, cannot bear off
     const barCheckers = board.bar[player.direction].checkers.filter(
       (c) => c.color === player.color
@@ -49,15 +49,13 @@ export class BearOff {
       return false
     }
 
-    return {
-      player,
-      moveKind: 'bear-off',
-    } as BackgammonMoveInProgress
+    return true
   }
 
   public static move = function bearOff(
     board: BackgammonBoard,
-    move: BackgammonMoveReady
+    move: BackgammonMoveReady,
+    origin: BackgammonMoveOrigin
   ): BackgammonMoveResult {
     const player = {
       ...move.player,
@@ -70,9 +68,6 @@ export class BearOff {
     if (!BearOff.isA(board, player)) {
       throw Error('Cannot bear off when checkers exist outside home board')
     }
-
-    // Get the origin point
-    const origin = move.origin
     if (!origin || origin.checkers.length === 0) {
       throw Error('No checker to bear off')
     }

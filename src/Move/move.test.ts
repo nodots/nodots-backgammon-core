@@ -39,7 +39,6 @@ describe('Move', () => {
         player,
         stateKind: 'ready',
         moveKind: 'point-to-point',
-        origin: board.points[0],
         dieValue: 1,
         possibleMoves: [],
       }
@@ -50,7 +49,7 @@ describe('Move', () => {
       expect(result.stateKind).toBe('ready')
       expect(result.player).toBe(player)
       expect(result.dieValue).toBe(1)
-      expect(result.origin).toBe(origin)
+      // Ready moves don't have origin - it's in possibleMoves
     })
   })
 

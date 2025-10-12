@@ -89,7 +89,7 @@ describe('Game Turn Passing', () => {
         stateKind: 'moving',
         player: activePlayer,
         board,
-        moves: new Set([mockMove1, mockMove2]),
+        moves: [mockMove1, mockMove2]
       },
       createdAt: new Date(),
       gnuPositionId: 'test-position',
@@ -139,14 +139,13 @@ describe('Game Turn Passing', () => {
       moves[0] = {
         ...moves[0],
         stateKind: 'ready',
-        origin: movingGame.board.points[23],
       }
 
       const gameWithIncompleteMove = {
         ...movingGame,
         activePlay: {
           ...movingGame.activePlay!,
-          moves: new Set(moves),
+          moves: moves,
         },
       }
 

@@ -222,7 +222,8 @@ describe('Comprehensive Auto-Switch Testing', () => {
       console.log(`Remaining after first: ${remainingAfterFirst.length} moves`)
 
       // Execute second move if available
-      const secondMoveOrigin = remainingAfterFirst[0].origin
+      const secondMove = remainingAfterFirst[0]
+      const secondMoveOrigin = secondMove.possibleMoves?.[0]?.origin
       if (secondMoveOrigin) {
         const secondResult = Play.move(playAfterFirst.board, playAfterFirst, secondMoveOrigin)
 

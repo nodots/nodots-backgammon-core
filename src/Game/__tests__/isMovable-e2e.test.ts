@@ -30,7 +30,7 @@ describe('isMovable E2E Tests', () => {
       const movingGame = Game.roll(rolledForStartGame)
       expect(movingGame.stateKind).toBe('moving')
       expect(movingGame.activePlay).toBeDefined()
-      expect(movingGame.activePlay.moves.size).toBeGreaterThan(0)
+      expect(movingGame.activePlay.moves.length).toBeGreaterThan(0)
 
       // 5. Collect all movable container IDs from possible moves
       const expectedMovableContainerIds = new Set<string>()
