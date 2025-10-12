@@ -269,3 +269,19 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## Quick Start
+
+```ts
+import { Game } from '@nodots-llc/backgammon-core'
+
+let game = Game.createNewGame(
+  { userId: 'robot-1', isRobot: true },
+  { userId: 'human-1', isRobot: false }
+)
+
+game = Game.rollForStart(game)
+game = Game.roll(game)
+
+game = await Game.executeRobotTurn(game)
+```
