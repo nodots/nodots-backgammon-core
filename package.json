@@ -44,7 +44,8 @@
     "simulate:gnu-vs-nodots": "ts-node src/scripts/simulateGnuVsNodots.ts",
     "simulate:gnu-vs-nodots-1000": "ts-node src/scripts/simulateGnuVsNodots1000.ts",
     "install:latest-types": "rm -rf node_modules package-lock.json && npm install",
-    "publish:npm": "npm publish --access public"
+    "publish:npm": "npm publish --access public",
+    "prepublishOnly": "npm run build && node ../../scripts/lint-versions.js"
   },
   "dependencies": {
     "@nodots-llc/backgammon-ai": "workspace:*",
@@ -64,4 +65,3 @@
     "typescript-eslint": "^8.23.0"
   }
 }
-    "prepublishOnly": "npm run build && node ../../scripts/lint-versions.js",
