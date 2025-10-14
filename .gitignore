@@ -14,5 +14,4 @@ src/**/*.d.ts
 src/**/*.js.map
 src/**/*.d.ts.map
 
-codecov
 game-logs
