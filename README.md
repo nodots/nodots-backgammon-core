@@ -5,7 +5,7 @@
 ![Lines](https://img.shields.io/badge/Lines-82%25-green?style=flat-square)
 <!-- COVERAGE-END -->
 
-# core
+# @nodots-llc/backgammon-core
 
 Core game logic implementation for the nodots-backgammon project. This library handles all the game mechanics, move validation, and state management for a backgammon game.
 
@@ -25,6 +25,27 @@ The library implements the standard rules of backgammon, including:
 ```bash
 npm i @nodots-llc/backgammon-core
 ```
+
+## Quick Start
+
+```typescript
+import { Game } from '@nodots-llc/backgammon-core'
+
+// Create a new game (robot vs human)
+let game = Game.createNewGame(
+  { userId: 'robot-1', isRobot: true },
+  { userId: 'human-1', isRobot: false }
+)
+
+// Determine starting player and roll into moving state
+game = Game.rollForStart(game)
+game = Game.roll(game)
+
+// Execute a complete robot turn (moves + auto confirm)
+game = await Game.executeRobotTurn(game)
+```
+
+Note: `Game.executeRobotTurn` uses a native analyzer under the hood. Ensure a working `node-gyp` toolchain (Node 18+, Python 3, C/C++ build tools) is available on your system.
 
 ## Development Setup
 

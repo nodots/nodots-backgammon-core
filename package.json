@@ -1,7 +1,7 @@
 {
   "name": "@nodots-llc/backgammon-core",
-  "version": "4.0.1",
-  "description": "Game logic for backgammon",
+  "version": "4.1.1",
+  "description": "Core game logic for Nodots Backgammon",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -9,17 +9,23 @@
   ],
   "keywords": [
     "backgammon",
-    "types",
+    "core",
+    "engine",
+    "rules",
     "boardgame",
-    "code library"
+    "typescript"
   ],
   "author": "Ken Riley <kenr@nodots.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nodots/nodots-backgammon-types.git"
+    "url": "git+https://github.com/nodots/nodots-backgammon.git",
+    "directory": "packages/core"
   },
-  "homepage": "https://github.com/nodots/nodots-backgammon-types#readme",
+  "homepage": "https://github.com/nodots/nodots-backgammon/tree/main/packages/core",
+  "bugs": {
+    "url": "https://github.com/nodots/nodots-backgammon/issues"
+  },
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
@@ -41,8 +47,8 @@
     "publish:npm": "npm publish --access public"
   },
   "dependencies": {
-    "@nodots-llc/backgammon-ai": "^4.1.0",
-    "@nodots-llc/backgammon-types": "^4.1.1",
+    "@nodots-llc/backgammon-ai": "workspace:*",
+    "@nodots-llc/backgammon-types": "workspace:*",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
@@ -58,3 +64,4 @@
     "typescript-eslint": "^8.23.0"
   }
 }
+    "prepublishOnly": "npm run build && node ../../scripts/lint-versions.js",
