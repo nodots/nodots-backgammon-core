@@ -1,0 +1,29 @@
+name: Smoke Simulation Tests
+
+on:
+  push:
+    branches: [ main, development ]
+  pull_request:
+    branches: [ main, development ]
+
+jobs:
+  smoke-core-sim:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies (workspace root)
+        run: npm ci
+
+      - name: Run 10-game simulation smoke test (core)
+        working-directory: packages/core
+        run: npx jest src/scripts/__tests__/simulate-ten-games.test.ts --runInBand --verbose
+
