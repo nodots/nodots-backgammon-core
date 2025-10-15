@@ -30,6 +30,21 @@ function parseArgs(): BatchOptions {
   return { games, workers, gnuColor, fast, quiet, seed }
 }
 
+type SideStats = {
+  gnu: {
+    white: { hintsAttempted: number; hintsMatched: number; wins: number }
+    black: { hintsAttempted: number; hintsMatched: number; wins: number }
+  }
+  nodots: {
+    white: { opening: number; strategic: number; wins: number }
+    black: { opening: number; strategic: number; wins: number }
+  }
+  firstMover: {
+    white: { count: number; wins: number }
+    black: { count: number; wins: number }
+  }
+}
+
 async function runSingleProcess(opts: BatchOptions) {
   // Suppress AI logs if quiet
   if (opts.quiet) {
@@ -58,7 +73,7 @@ async function runSingleProcess(opts: BatchOptions) {
   let totalTurns = 0
   let totalMoves = 0
   // side-based instrumentation
-  const sideStats = {
+  const sideStats: SideStats = {
     gnu: {
       white: { hintsAttempted: 0, hintsMatched: 0, wins: 0 },
       black: { hintsAttempted: 0, hintsMatched: 0, wins: 0 },
@@ -119,13 +134,13 @@ async function runSingleProcess(opts: BatchOptions) {
     totalMoves += res?.executedMoves || 0
   }
 
-  return { whiteWins, blackWins, totalTurns, totalMoves }
+  return { whiteWins, blackWins, totalTurns, totalMoves, sideStats }
 }
 
 async function runMultiProcess(opts: BatchOptions) {
   const perWorker = Math.floor(opts.games / opts.workers)
   const remainder = opts.games % opts.workers
-  const promises: Promise<{ whiteWins: number; blackWins: number; totalTurns: number; totalMoves: number }>[] = []
+  const promises: Promise<{ whiteWins: number; blackWins: number; totalTurns: number; totalMoves: number; sideStats: SideStats }>[] = []
 
   for (let w = 0; w < opts.workers; w++) {
     const count = perWorker + (w < remainder ? 1 : 0)
@@ -161,22 +176,45 @@ async function runMultiProcess(opts: BatchOptions) {
   }
 
   const results = await Promise.all(promises)
-  return results.reduce(
-    (acc, r) => ({
-      whiteWins: acc.whiteWins + r.whiteWins,
-      blackWins: acc.blackWins + r.blackWins,
-      totalTurns: acc.totalTurns + r.totalTurns,
-      totalMoves: acc.totalMoves + r.totalMoves,
-    }),
-    { whiteWins: 0, blackWins: 0, totalTurns: 0, totalMoves: 0 }
+  const merged = results.reduce(
+    (acc, r) => {
+      acc.whiteWins += r.whiteWins
+      acc.blackWins += r.blackWins
+      acc.totalTurns += r.totalTurns
+      acc.totalMoves += r.totalMoves
+      // merge side stats
+      ;(['white','black'] as const).forEach((c) => {
+        acc.sideStats.gnu[c].hintsAttempted += r.sideStats.gnu[c].hintsAttempted
+        acc.sideStats.gnu[c].hintsMatched += r.sideStats.gnu[c].hintsMatched
+        acc.sideStats.gnu[c].wins += r.sideStats.gnu[c].wins
+        acc.sideStats.nodots[c].opening += r.sideStats.nodots[c].opening
+        acc.sideStats.nodots[c].strategic += r.sideStats.nodots[c].strategic
+        acc.sideStats.nodots[c].wins += r.sideStats.nodots[c].wins
+        acc.sideStats.firstMover[c].count += r.sideStats.firstMover[c].count
+        acc.sideStats.firstMover[c].wins += r.sideStats.firstMover[c].wins
+      })
+      return acc
+    },
+    {
+      whiteWins: 0,
+      blackWins: 0,
+      totalTurns: 0,
+      totalMoves: 0,
+      sideStats: {
+        gnu: { white: { hintsAttempted: 0, hintsMatched: 0, wins: 0 }, black: { hintsAttempted: 0, hintsMatched: 0, wins: 0 } },
+        nodots: { white: { opening: 0, strategic: 0, wins: 0 }, black: { opening: 0, strategic: 0, wins: 0 } },
+        firstMover: { white: { count: 0, wins: 0 }, black: { count: 0, wins: 0 } },
+      } as SideStats,
+    }
   )
+  return merged
 }
 
 async function main() {
   const opts = parseArgs()
   const start = Date.now()
   const runner = opts.workers > 1 ? runMultiProcess : runSingleProcess
-  const { whiteWins, blackWins, totalTurns, totalMoves } = await runner(opts)
+  const { whiteWins, blackWins, totalTurns, totalMoves, sideStats } = await runner(opts)
   const games = opts.games
   const duration = (Date.now() - start) / 1000
   // Map color-based wins to side labels

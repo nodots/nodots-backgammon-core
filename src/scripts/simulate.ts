@@ -11,6 +11,8 @@ import {
 import { Board, Game, Player } from '..'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
 import { GnuBgHints } from '@nodots-llc/gnubg-hints'
+import * as fs from 'fs'
+import * as path from 'path'
 // Prefer request-based hints via AI package to avoid PID encoding brittleness
 import {
   initializeGnubgHints,
@@ -27,6 +29,16 @@ const MAPPING_DEBUG = process.argv.includes('--mapping-debug')
 // Performance/verbosity flags
 const QUIET = process.argv.includes('--quiet') || process.env.NODOTS_SIM_QUIET === '1'
 const FAST = process.argv.includes('--fast') || process.env.NODOTS_SIM_FAST === '1'
+const MAPPING_SAMPLE = (() => {
+  const arg = process.argv.find((a) => a.startsWith('--mapping-sample='))
+  if (!arg) return 0
+  const v = parseInt(arg.split('=')[1] || '0', 10)
+  return Number.isFinite(v) && v > 0 ? v : 0
+})()
+const MAPPING_SAMPLES_LEFT: Record<'white' | 'black', number> = {
+  white: MAPPING_SAMPLE,
+  black: MAPPING_SAMPLE,
+}
 const GNU_MAPPER: 'ai' | 'steps' = (() => {
   const arg = process.argv.find((a) => a.startsWith('--gnu-mapper='))
   if (!arg) return 'ai'
@@ -82,6 +94,56 @@ function debugDumpMapping(
     console.log('[Mapping Debug] ----\n')
   } catch (e) {
     console.log('[Mapping Debug] Failed to dump mapping:', e)
+  }
+}
+
+function writeMappingSample(
+  gameMoved: any,
+  hints: any[] | null,
+  normalization: any
+) {
+  try {
+    const color = (gameMoved as any).activePlayer?.color as 'white' | 'black'
+    if (!color) return
+    if (MAPPING_SAMPLES_LEFT[color] <= 0) return
+    MAPPING_SAMPLES_LEFT[color]--
+    const logsDir = path.join(process.cwd(), 'game-logs')
+    if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true })
+    const logFile = path.join(logsDir, `mapping-${color}.log`)
+    const pid = exportToGnuPositionId(gameMoved as any)
+    const roll = (gameMoved as any).activePlayer?.dice?.currentRoll
+    const readyMovesAll = Array.from((gameMoved as any).activePlay?.moves || []).filter((m: any) => m.stateKind === 'ready')
+    const normalizedColor = normalization?.toGnu?.[(gameMoved as any).activePlayer?.color] || 'white'
+    const lines: string[] = []
+    lines.push(`time=${new Date().toISOString()} pid=${pid} color=${color} roll=${Array.isArray(roll) ? roll.join(',') : roll}`)
+    // Top hint step
+    const step = hints && hints[0] && hints[0].moves && hints[0].moves[0]
+    if (step) {
+      lines.push(`hintStep from=${step.from} to=${step.to} fromC=${step.fromContainer} toC=${step.toContainer}`)
+    } else {
+      lines.push(`hintStep none`)
+    }
+    // Enumerate normalized possible moves for each ready die
+    for (const m of readyMovesAll) {
+      const die = m.dieValue
+      const pm = Board.getPossibleMoves(
+        (gameMoved as any).board,
+        (gameMoved as any).activePlay.player,
+        die
+      ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
+      const arr = Array.isArray(pm) ? pm : pm.moves
+      const mapped = arr.map((mv: any) => ({
+        from: getNormalizedPosition(mv.origin, normalizedColor as any),
+        to: getNormalizedPosition(mv.destination, normalizedColor as any),
+        fromC: getContainerKind(mv.origin),
+        toC: getContainerKind(mv.destination),
+      }))
+      lines.push(`die=${die} possible=${mapped.length} -> ` + mapped.map((x) => `${x.from}:${x.to}:${x.fromC}->${x.toC}`).join(','))
+    }
+    lines.push('---\n')
+    fs.appendFileSync(logFile, lines.join('\n'))
+  } catch {
+    // ignore sample write errors
   }
 }
 
@@ -468,6 +530,9 @@ export async function runSimulation(maxTurns: number = 100): Promise<
           if (!matched || !chosenDie) {
             if (MAPPING_DEBUG) {
               debugDumpMapping(gameMoved, hints || null, normalization)
+            }
+            if (MAPPING_SAMPLE > 0) {
+              writeMappingSample(gameMoved, hints || null, normalization)
             }
             // Fallback: choose any playable move for a ready die value
             for (const m of readyMovesAll) {
