@@ -19,7 +19,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nodots/nodots-backgammon.git",
+    "url": "git+https://github.com/nodots/nodots-backgammon-core.git",
     "directory": "packages/core"
   },
   "homepage": "https://github.com/nodots/nodots-backgammon/tree/main/packages/core",
@@ -45,14 +45,13 @@
     "simulate:log": "NODE_OPTIONS= ts-node src/scripts/logSingleGame.ts",
     "simulate:until-win": "NODE_OPTIONS= ts-node src/scripts/simulate.ts 0",
     "simulate:batch": "NODE_OPTIONS= NODOTS_SIM_FAST=1 NODOTS_SIM_QUIET=1 NODOTS_LOG_SILENT=1 ts-node src/scripts/simulateBatch.ts",
-    
     "install:latest-types": "rm -rf node_modules package-lock.json && npm install",
     "publish:npm": "npm publish --access public",
     "prepublishOnly": "npm run build && node ../../scripts/lint-versions.js"
   },
   "dependencies": {
-    "@nodots-llc/backgammon-ai": "workspace:*",
-    "@nodots-llc/backgammon-types": "workspace:*",
+    "@nodots-llc/backgammon-ai": "^4.1.2",
+    "@nodots-llc/backgammon-types": "4.1.1",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
