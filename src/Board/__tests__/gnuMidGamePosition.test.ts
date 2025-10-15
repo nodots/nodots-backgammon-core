@@ -123,6 +123,19 @@ describe('GNU mid-game positions', () => {
     expect(best.moves && best.moves.length > 0).toBeTruthy()
   })
 
+  test('74w9AAC/jwAHAA with 63 has hints (midgame)', async () => {
+    await GnuBgHints.initialize()
+    GnuBgHints.configure({ evalPlies: 2, moveFilter: 2, usePruning: true })
+
+    const positionId = '74w9AAC/jwAHAA'
+    const roll: [number, number] = [6, 3]
+    const hints = await GnuBgHints.getHintsFromPositionId(positionId, roll as any)
+
+    expect(hints && hints.length > 0).toBeTruthy()
+    const best = hints![0]
+    expect(best.moves && best.moves.length > 0).toBeTruthy()
+  })
+
   test('EwAA8AcAAAAAAA with 33 has hints (late-game doubles)', async () => {
     await GnuBgHints.initialize()
     GnuBgHints.configure({ evalPlies: 2, moveFilter: 2, usePruning: true })
