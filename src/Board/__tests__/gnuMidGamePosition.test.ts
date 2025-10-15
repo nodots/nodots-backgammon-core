@@ -57,4 +57,17 @@ describe('GNU mid-game positions', () => {
     const best = hints![0]
     expect(best.moves && best.moves.length > 0).toBeTruthy()
   })
+
+  test('AQAA/AAAAAAAAA with 33 has hints (bear-off doubles)', async () => {
+    await GnuBgHints.initialize()
+    GnuBgHints.configure({ evalPlies: 2, moveFilter: 2, usePruning: true })
+
+    const positionId = 'AQAA/AAAAAAAAA'
+    const roll: [number, number] = [3, 3]
+    const hints = await GnuBgHints.getHintsFromPositionId(positionId, roll as any)
+
+    expect(hints && hints.length > 0).toBeTruthy()
+    const best = hints![0]
+    expect(best.moves && best.moves.length > 0).toBeTruthy()
+  })
 })
