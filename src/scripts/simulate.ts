@@ -221,26 +221,7 @@ export async function runSimulation(maxTurns: number = 100) {
             console.log('[MAPDBG] positionId:', positionId, 'roll:', rollTuple)
           }
           if (!hints || hints.length === 0 || !hints[0].moves || hints[0].moves.length === 0) {
-            // Fallback: if GNU cannot provide hints, use Nodots AI for this move
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            const aiModule = await import('@nodots-llc/backgammon-ai')
-            const best = await aiModule.selectBestMove(gameMoved.activePlay, 'nodots')
-            if (!best) {
-              throw new Error('GNU hints not available or empty for current position/roll')
-            }
-            chosenDie = (best as any).dieValue
-            possibleMoves = (best as any).possibleMoves && (best as any).possibleMoves.length
-              ? (best as any).possibleMoves
-              : ((): BackgammonMoveSkeleton[] => {
-                  const pm2 = Board.getPossibleMoves(
-                    gameMoved.board,
-                    (best as any).player,
-                    (best as any).dieValue
-                  ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
-                  return Array.isArray(pm2) ? pm2 : pm2.moves
-                })()
-            selectedOrigin = possibleMoves[0]?.origin as any
+            throw new Error('GNU hints not available or empty for current position/roll')
           } else {
             // Pick the first move in GNU's preferred sequence that is playable with remaining dice
             const gmSeq = hints[0].moves

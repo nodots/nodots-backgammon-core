@@ -6,7 +6,7 @@ import { GnuBgHints } from '@nodots-llc/gnubg-hints'
 // Rolled: 55
 
 describe('GNU mid-game position (Position ID: NnsOADAWr5EBMA)', () => {
-  test.skip('GNU hints are available for roll 55 and include moves (skipped: environment/hints availability may vary)', async () => {
+  test('GNU hints are available for roll 55 and include moves', async () => {
     await GnuBgHints.initialize()
     GnuBgHints.configure({ evalPlies: 2, moveFilter: 2, usePruning: true })
 
