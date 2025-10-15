@@ -54,7 +54,8 @@ function displayBoard(
 }
 
 export async function runDebugSingleGame() {
-  console.log('Starting single game simulation with detailed output...\n')
+  const FAST = process.env.NODOTS_SIM_FAST === '1'
+  if (!FAST) console.log('Starting single game simulation with detailed output...\n')
 
   // Initialize players
   const whitePlayer = Player.initialize(
@@ -90,17 +91,23 @@ export async function runDebugSingleGame() {
   let gameRolling = Game.rollForStart(game)
 
   // Display initial board
-  console.log('=== GAME START ===')
-  const initialAsciiBoard = Board.getAsciiGameBoard(
-    gameRolling.board,
-    gameRolling.players,
-    gameRolling.activeColor,
-    gameRolling.stateKind,
-    undefined,
-    playerModels
-  )
-  console.log(initialAsciiBoard)
-  console.log('='.repeat(80))
+  if (!FAST) {
+    console.log('=== GAME START ===')
+    try {
+      const initialAsciiBoard = Board.getAsciiGameBoard(
+        gameRolling.board,
+        gameRolling.players,
+        gameRolling.activeColor,
+        gameRolling.stateKind,
+        undefined,
+        playerModels
+      )
+      console.log(initialAsciiBoard)
+    } catch {
+      // ignore ascii errors in fast mode
+    }
+    console.log('='.repeat(80))
+  }
 
   // If maxTurns is 0, run until there's a winner
   const maxTurns = 1000 // High limit to prevent infinite loops
@@ -186,7 +193,7 @@ export async function runDebugSingleGame() {
             (c: any) => c.color === (gameMoved as any).activeColor
           )
           if (!originChecker) {
-            console.log('No checker of active color at chosen origin; breaking')
+            if (!FAST) console.log('No checker of active color at chosen origin; breaking')
             break
           }
           const moveResult = Game.move(
@@ -200,8 +207,8 @@ export async function runDebugSingleGame() {
             moveCount++
             totalMoves++
 
-            // Display board after this move
-            if (gameMoved.stateKind === 'moving') {
+            // Display board after this move (skip in FAST mode)
+            if (!FAST && gameMoved.stateKind === 'moving') {
               displayBoard(
                 gameMoved,
                 turnCount,
@@ -213,27 +220,31 @@ export async function runDebugSingleGame() {
             }
           }
         } catch (error) {
-          console.log(`\n❌ Error making move: ${error}`)
-          console.log(
-            `Origin: ${
-              origin.kind === 'point' ? origin.position.clockwise : 'bar'
-            }`
-          )
-          console.log(
-            `Destination: ${
-              destination.kind === 'point'
-                ? destination.position.clockwise
-                : 'off'
-            }`
-          )
-          console.log(`Game state: ${gameMoved.stateKind}`)
-          console.log('\n⚠️  Game stuck due to move error!')
+          if (!FAST) {
+            console.log(`\n❌ Error making move: ${error}`)
+            console.log(
+              `Origin: ${
+                origin.kind === 'point' ? origin.position.clockwise : 'bar'
+              }`
+            )
+            console.log(
+              `Destination: ${
+                destination.kind === 'point'
+                  ? destination.position.clockwise
+                  : 'off'
+              }`
+            )
+            console.log(`Game state: ${gameMoved.stateKind}`)
+            console.log('\n⚠️  Game stuck due to move error!')
+          }
           break
         }
       }
     } catch (error) {
-      console.log(`\n❌ Error during moves: ${error}`)
-      console.log('\n⚠️  Game stuck due to error during moves!')
+      if (!FAST) {
+        console.log(`\n❌ Error during moves: ${error}`)
+        console.log('\n⚠️  Game stuck due to error during moves!')
+      }
       // Use the last valid board state
       gameMoved = {
         ...gameMoved,
@@ -244,74 +255,79 @@ export async function runDebugSingleGame() {
     // Check for winner
     const winner = checkWinCondition(gameMoved.board)
     if (winner) {
-      console.log(`\n🎉 ${winner.toUpperCase()} WINS!`)
-      console.log(`Total Turns: ${turnCount}`)
-      console.log(`Total Moves: ${totalMoves}`)
+      if (!FAST) {
+        console.log(`\n🎉 ${winner.toUpperCase()} WINS!`)
+        console.log(`Total Turns: ${turnCount}`)
+        console.log(`Total Moves: ${totalMoves}`)
+      }
       return { winner, turns: turnCount, moves: totalMoves, stuck: false }
     }
 
-    // Debug: Show moves array state
-    console.log(`\n🔍 Debug: Moves array state:`)
-    Array.from(gameMoved.activePlay.moves).forEach((m: any, index: number) => {
-      const originInfo = m.origin
-        ? (() => {
-            switch (m.origin.kind) {
-              case 'point':
-                return `point-${
-                  m.origin.position[gameMoved.activePlayer.direction]
-                }`
-              case 'bar':
-                return `bar-${gameMoved.activePlayer.direction}`
-              case 'off':
-                return `off-${gameMoved.activePlayer.direction}`
-              default:
-                throw new Error(`Unknown origin kind: ${m.origin.kind}`)
-            }
-          })()
-        : 'null'
+    // Skip verbose per-move debug in FAST mode
+    if (!FAST) {
+      console.log(`\n🔍 Debug: Moves array state:`)
+      Array.from(gameMoved.activePlay.moves).forEach((m: any, index: number) => {
+        const originInfo = m.origin
+          ? (() => {
+              switch (m.origin.kind) {
+                case 'point':
+                  return `point-${
+                    m.origin.position[gameMoved.activePlayer.direction]
+                  }`
+                case 'bar':
+                  return `bar-${gameMoved.activePlayer.direction}`
+                case 'off':
+                  return `off-${gameMoved.activePlayer.direction}`
+                default:
+                  throw new Error(`Unknown origin kind: ${m.origin.kind}`)
+              }
+            })()
+          : 'null'
 
-      const destinationInfo = m.destination
-        ? (() => {
-            switch (m.destination.kind) {
-              case 'point':
-                return `point-${
-                  m.destination.position[gameMoved.activePlayer.direction]
-                }`
-              case 'bar':
-                return `bar-${gameMoved.activePlayer.direction}`
-              case 'off':
-                return `off-${gameMoved.activePlayer.direction}`
-              default:
-                throw new Error(
-                  `Unknown destination kind: ${m.destination.kind}`
-                )
-            }
-          })()
-        : 'null'
+        const destinationInfo = m.destination
+          ? (() => {
+              switch (m.destination.kind) {
+                case 'point':
+                  return `point-${
+                    m.destination.position[gameMoved.activePlayer.direction]
+                  }`
+                case 'bar':
+                  return `bar-${gameMoved.activePlayer.direction}`
+                case 'off':
+                  return `off-${gameMoved.activePlayer.direction}`
+                default:
+                  throw new Error(
+                    `Unknown destination kind: ${m.destination.kind}`
+                  )
+              }
+            })()
+          : 'null'
 
-      console.log(
-        `  Move ${index}: stateKind=${m.stateKind}, dieValue=${m.dieValue}, origin=${originInfo}, destination=${destinationInfo}`
-      )
-      if (
-        m.stateKind === 'ready' ||
-        (m.stateKind === 'in-progress' && !m.origin)
-      ) {
-        const possibleMoves = Board.getPossibleMoves(
-          gameMoved.board,
-          m.player,
-          m.dieValue
-        )
         console.log(
-          `    Possible moves for die ${m.dieValue}: ${possibleMoves.length}`
+          `  Move ${index}: stateKind=${m.stateKind}, dieValue=${m.dieValue}, origin=${originInfo}, destination=${destinationInfo}`
         )
-      }
-    })
+        if (
+          m.stateKind === 'ready' ||
+          (m.stateKind === 'in-progress' && !m.origin)
+        ) {
+          const possibleMoves = Board.getPossibleMoves(
+            gameMoved.board,
+            m.player,
+            m.dieValue
+          )
+          console.log(
+            `    Possible moves for die ${m.dieValue}: ${possibleMoves.length}`
+          )
+        }
+      })
+    }
 
     // If the game reached 'moved' state, confirm turn
     if (gameMoved.stateKind === 'moved') {
-      console.log(
-        `\n✅ All moves completed for ${gameMoved.activeColor}. Switching turns.`
-      )
+      if (!FAST)
+        console.log(
+          `\n✅ All moves completed for ${gameMoved.activeColor}. Switching turns.`
+        )
       gameRolling = Game.confirmTurn(gameMoved)
       continue // Start next turn
     }
@@ -326,26 +342,30 @@ export async function runDebugSingleGame() {
           0
     )
     if (stuckMoves.length > 0) {
-      console.log(
-        `\n⚠️  Game stuck! Player ${gameMoved.activeColor} has dice left but no valid moves.`
-      )
-      console.log(`Current board state:`)
-      displayBoard(
-        gameMoved,
-        turnCount,
-        moveCount,
-        roll,
-        gameMoved.activeColor,
-        playerModels
-      )
+      if (!FAST) {
+        console.log(
+          `\n⚠️  Game stuck! Player ${gameMoved.activeColor} has dice left but no valid moves.`
+        )
+        console.log(`Current board state:`)
+        displayBoard(
+          gameMoved,
+          turnCount,
+          moveCount,
+          roll,
+          gameMoved.activeColor,
+          playerModels
+        )
+      }
       return { winner: null, turns: turnCount, moves: totalMoves, stuck: true }
     }
   }
 
   // If we reach here, the game didn't finish within the turn limit
-  console.log(`\n⚠️  Game timeout! Reached turn limit: ${maxTurns}`)
-  console.log(`Total Turns: ${turnCount}`)
-  console.log(`Total Moves: ${totalMoves}`)
+  if (!FAST) {
+    console.log(`\n⚠️  Game timeout! Reached turn limit: ${maxTurns}`)
+    console.log(`Total Turns: ${turnCount}`)
+    console.log(`Total Moves: ${totalMoves}`)
+  }
   return { winner: null, turns: turnCount, moves: totalMoves, stuck: true }
 }
 

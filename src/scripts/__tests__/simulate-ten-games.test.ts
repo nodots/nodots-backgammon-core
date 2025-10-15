@@ -4,6 +4,7 @@ describe('Simulation integration: N games to completion (fast mode by default)',
   it('runs a small number of games until a winner without getting stuck', async () => {
     // Keep fast in CI/unit runs; allow override via env
     const GAMES = parseInt(process.env.NODOTS_SIM_GAMES || '3', 10)
+    process.env.NODOTS_SIM_FAST = '1'
     jest.setTimeout(Math.max(60000, GAMES * 15000))
 
     // Silence console to speed up tests

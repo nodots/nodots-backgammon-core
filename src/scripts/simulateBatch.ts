@@ -1,0 +1,162 @@
+import { runSimulation } from './simulate'
+import { cpus } from 'os'
+import { fork } from 'child_process'
+
+interface BatchOptions {
+  games: number
+  workers: number
+  gnuColor?: 'white' | 'black'
+  fast: boolean
+  quiet: boolean
+}
+
+function parseArgs(): BatchOptions {
+  const args = process.argv.slice(2)
+  let games = 100
+  let workers = Math.max(1, Math.min(cpus().length, 4))
+  let gnuColor: 'white' | 'black' | undefined
+  let fast = true
+  let quiet = true
+  for (const a of args) {
+    if (a.startsWith('--games=')) games = parseInt(a.split('=')[1], 10)
+    else if (a.startsWith('--workers=')) workers = parseInt(a.split('=')[1], 10)
+    else if (a.startsWith('--gnu-color=')) gnuColor = a.split('=')[1] as any
+    else if (a === '--no-fast') fast = false
+    else if (a === '--no-quiet') quiet = false
+  }
+  return { games, workers, gnuColor, fast, quiet }
+}
+
+async function runSingleProcess(opts: BatchOptions) {
+  // Suppress AI logs if quiet
+  if (opts.quiet) {
+    const origLog = console.log.bind(console)
+    const origInfo = console.info.bind(console)
+    const origWarn = console.warn.bind(console)
+    const filter = (fn: (...args: any[]) => void) =>
+      (...args: any[]) => {
+        if (typeof args[0] === 'string' && args[0].startsWith('[AI]')) return
+        return fn(...args)
+      }
+    ;(console as any).log = filter(origLog)
+    ;(console as any).info = filter(origInfo)
+    ;(console as any).warn = filter(origWarn)
+  }
+  if (opts.fast) process.env.NODOTS_SIM_FAST = '1'
+  if (opts.quiet) process.env.NODOTS_SIM_QUIET = '1'
+  process.env.NODOTS_LOG_SILENT = opts.quiet ? '1' : process.env.NODOTS_LOG_SILENT
+  if (opts.gnuColor) {
+    // Ensure simulate.ts can read this flag
+    process.argv.push(`--gnu-color=${opts.gnuColor}`)
+  }
+
+  let whiteWins = 0
+  let blackWins = 0
+  let totalTurns = 0
+  let totalMoves = 0
+
+  for (let i = 0; i < opts.games; i++) {
+    const res = (await runSimulation(0)) as any
+    const winnerColor: 'white' | 'black' | null = res?.winner || null
+    const gnuColor: 'white' | 'black' | undefined = res?.gnuColor || opts.gnuColor
+    if (opts.quiet) {
+      // Minimal per-game line for training stats
+      const winnerLabel = winnerColor
+        ? (winnerColor === gnuColor ? 'GNU' : 'NODOTS')
+        : 'none'
+      const gnuLabel = gnuColor ?? 'unknown'
+      console.log(`Game ${i + 1}: gnu=${gnuLabel}, winner=${winnerLabel}, turns=${res?.turnCount ?? 0}, moves=${res?.executedMoves ?? 0}, noMoves=${res?.noMoves ?? 0}`)
+    }
+    if (winnerColor === 'white') whiteWins++
+    if (winnerColor === 'black') blackWins++
+    totalTurns += res?.turnCount || 0
+    totalMoves += res?.executedMoves || 0
+  }
+
+  return { whiteWins, blackWins, totalTurns, totalMoves }
+}
+
+async function runMultiProcess(opts: BatchOptions) {
+  const perWorker = Math.floor(opts.games / opts.workers)
+  const remainder = opts.games % opts.workers
+  const promises: Promise<{ whiteWins: number; blackWins: number; totalTurns: number; totalMoves: number }>[] = []
+
+  for (let w = 0; w < opts.workers; w++) {
+    const count = perWorker + (w < remainder ? 1 : 0)
+    if (count === 0) continue
+    promises.push(
+      new Promise((resolve, reject) => {
+        const env = { ...process.env }
+        if (opts.fast) env.NODOTS_SIM_FAST = '1'
+        if (opts.quiet) env.NODOTS_SIM_QUIET = '1'
+        env.NODOTS_LOG_SILENT = opts.quiet ? '1' : env.NODOTS_LOG_SILENT
+        const child = fork(
+          require.resolve('./workerSim'),
+          [String(count), opts.gnuColor ? `--gnu-color=${opts.gnuColor}` : ''],
+          { env }
+        )
+        child.on('message', (msg: any) => {
+          if (msg && msg.type === 'result') {
+            resolve(msg.payload)
+          }
+        })
+        child.on('error', reject)
+        child.on('exit', (code) => {
+          if (code !== 0) reject(new Error(`Worker exited with code ${code}`))
+        })
+      })
+    )
+  }
+
+  const results = await Promise.all(promises)
+  return results.reduce(
+    (acc, r) => ({
+      whiteWins: acc.whiteWins + r.whiteWins,
+      blackWins: acc.blackWins + r.blackWins,
+      totalTurns: acc.totalTurns + r.totalTurns,
+      totalMoves: acc.totalMoves + r.totalMoves,
+    }),
+    { whiteWins: 0, blackWins: 0, totalTurns: 0, totalMoves: 0 }
+  )
+}
+
+async function main() {
+  const opts = parseArgs()
+  const start = Date.now()
+  const runner = opts.workers > 1 ? runMultiProcess : runSingleProcess
+  const { whiteWins, blackWins, totalTurns, totalMoves } = await runner(opts)
+  const games = opts.games
+  const duration = (Date.now() - start) / 1000
+  // Map color-based wins to side labels
+  const gnuWins = opts.gnuColor === 'black' ? blackWins : whiteWins
+  const nodotsWins = games - gnuWins
+  console.log(`\n=== Batch Summary ===`)
+  console.log(`Games: ${games}, Workers: ${opts.workers}`)
+  if (opts.gnuColor) {
+    console.log(
+      `GNU (${opts.gnuColor}) wins: ${gnuWins} (${((gnuWins / games) * 100).toFixed(1)}%)`
+    )
+    console.log(
+      `NODOTS (${opts.gnuColor === 'white' ? 'black' : 'white'}) wins: ${nodotsWins} (${(
+        (nodotsWins / games) * 100
+      ).toFixed(1)}%)`
+    )
+  } else {
+    console.log(`WHITE wins: ${whiteWins} (${((whiteWins / games) * 100).toFixed(1)}%)`)
+    console.log(`BLACK wins: ${blackWins} (${((blackWins / games) * 100).toFixed(1)}%)`)
+  }
+  console.log(`Avg turns: ${(totalTurns / games).toFixed(2)}`)
+  console.log(`Avg executed moves: ${(totalMoves / games).toFixed(2)}`)
+  console.log(`Duration: ${duration.toFixed(2)}s | ${(
+    games / duration
+  ).toFixed(1)} games/sec`)
+}
+
+if (require.main === module) {
+  main().catch((err) => {
+    console.error('Batch simulation failed:', err)
+    process.exit(1)
+  })
+}
+
+export { main as runBatch }

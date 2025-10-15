@@ -1026,23 +1026,26 @@ export class Game {
       (p) => p.id === movedPlayer.id
     ) as any
     const finalMoves = Array.from(updatedActivePlay.moves || [])
-    console.log('🎲 [DICE DEBUG] Game.move result:')
-    console.log(
-      '  game.activePlayer.dice:',
-      game.activePlayer.dice?.currentRoll
-    )
-    console.log(
-      '  finalActivePlayer.dice:',
-      finalActivePlayer?.dice?.currentRoll
-    )
-    console.log(
-      '  finalMoves.dieValues:',
-      finalMoves.map((m: any) => m.dieValue)
-    )
-    console.log(
-      '  finalMoves.states:',
-      finalMoves.map((m: any) => m.stateKind)
-    )
+    if (process.env.NODOTS_DEBUG_DICE === '1') {
+      // Optional dice/move state debug
+      console.log('🎲 [DICE DEBUG] Game.move result:')
+      console.log(
+        '  game.activePlayer.dice:',
+        game.activePlayer.dice?.currentRoll
+      )
+      console.log(
+        '  finalActivePlayer.dice:',
+        finalActivePlayer?.dice?.currentRoll
+      )
+      console.log(
+        '  finalMoves.dieValues:',
+        finalMoves.map((m: any) => m.dieValue)
+      )
+      console.log(
+        '  finalMoves.states:',
+        finalMoves.map((m: any) => m.stateKind)
+      )
+    }
 
     // Set game stateKind based on activePlay stateKind
     const gameStateKind =
