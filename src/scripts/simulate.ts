@@ -216,12 +216,23 @@ export async function runSimulation(maxTurns: number = 100) {
           await GnuBgHints.initialize()
           GnuBgHints.configure({ evalPlies: 2, moveFilter: 2, usePruning: true })
           const rollTuple = gameMoved.activePlayer.dice.currentRoll as [number, number]
-          const hints = await GnuBgHints.getHintsFromPositionId(positionId, rollTuple as any)
+          let hints = await GnuBgHints.getHintsFromPositionId(positionId, rollTuple as any)
           if (MAPPING_DEBUG) {
             console.log('[MAPDBG] positionId:', positionId, 'roll:', rollTuple)
           }
           if (!hints || hints.length === 0 || !hints[0].moves || hints[0].moves.length === 0) {
-            throw new Error('GNU hints not available or empty for current position/roll')
+            // Retry once with reversed dice order to handle any order-sensitivity
+            const swappedRoll: [number, number] = [rollTuple[1], rollTuple[0]]
+            if (MAPPING_DEBUG) console.log('[MAPDBG] retry with swapped roll:', swappedRoll)
+            hints = await GnuBgHints.getHintsFromPositionId(positionId, swappedRoll as any)
+          }
+          if (!hints || hints.length === 0 || !hints[0].moves || hints[0].moves.length === 0) {
+            const ap = (gameMoved as any).activePlayer
+            const dir = ap?.direction
+            const col = ap?.color
+            throw new Error(
+              `GNU hints not available or empty for current position/roll | pid=${positionId} roll=${rollTuple.join(',')} color=${col} dir=${dir}`
+            )
           } else {
             // Pick the first move in GNU's preferred sequence that is playable with remaining dice
             const gmSeq = hints[0].moves
