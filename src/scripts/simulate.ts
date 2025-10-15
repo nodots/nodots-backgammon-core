@@ -244,85 +244,31 @@ export async function runSimulation(maxTurns: number = 100) {
           }
 
           {
-            // Pick the first move in GNU's preferred sequence that is playable with remaining dice
+            // Strict mapping: iterate GNU's sequence; choose the first step playable with remaining dice
             const gmSeq = hints[0].moves
             const readyMovesAll = Array.from(gameMoved.activePlay.moves).filter((m: any) => m.stateKind === 'ready')
-            let gm = gmSeq[0]
-            for (const g of gmSeq) {
-              // Temporarily map origin and see if any ready die supports it
-              const { direction, color } = gameMoved.activePlayer as any
-              const dir = direction as 'clockwise' | 'counterclockwise'
-              const points = (gameMoved.board as any).points
-              const originCandidate = g.moveKind === 'reenter'
-                ? (gameMoved.board as any).bar[dir]
-                : points.find((p: any) => p.position[dir] === (g as any).from)
-              if (!originCandidate) continue
-              if (originCandidate?.checkers?.some((c: any) => c.color === color)) {
-                for (const m of readyMovesAll) {
-                  const dv = m.dieValue
-                  const pm = Board.getPossibleMoves(
-                    gameMoved.board,
-                    (gameMoved as any).activePlay.player,
-                    dv
-                  ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
-                  const movesArr = Array.isArray(pm) ? pm : pm.moves
-                  const hasOrigin = movesArr.some((mv: any) => mv.origin?.id === originCandidate.id)
-                  if (hasOrigin) {
-                    gm = g
-                    break
-                  }
-                }
-                if (gm === g) break
-              }
-            }
-            // Map GNU origin/destination using the active player's own direction only
             const { direction, color } = gameMoved.activePlayer as any
             const dir = direction as 'clockwise' | 'counterclockwise'
 
-            const resolveOrigin = (): any => {
+            let matched = false
+            for (const g of gmSeq) {
               const points = (gameMoved.board as any).points
-              if (gm.moveKind === 'reenter') {
-                const barDir = (gameMoved.board as any).bar[dir]
-                return barDir?.checkers?.some((c: any) => c.color === color)
-                  ? barDir
-                  : undefined
-              }
-              const origin = points.find((p: any) => p.position[dir] === gm.from)
-              if (!origin) return undefined
-              return origin.checkers?.some((c: any) => c.color === color)
-                ? origin
-                : undefined
-            }
-            const origin = resolveOrigin()
-            if (MAPPING_DEBUG) {
-              console.log('[MAPDBG] GNU move selected:', gm)
-              console.log('[MAPDBG] active dir:', dir, 'color:', color)
-              console.log('[MAPDBG] resolved origin id:', origin?.id)
-            }
-            if (!origin) {
-              throw new Error('GNU suggested origin has no checker of active color or is invalid')
-            }
-            if (origin) {
-              selectedOrigin = origin
-              // Map destination as well for robust matching
-              const resolveDest = (): any => {
-                const points = (gameMoved.board as any).points
-                const toRaw: any = (gm as any).to
-                if (toRaw === 'off') return (gameMoved.board as any).off[dir]
-                const toVal = typeof toRaw === 'number' ? toRaw : NaN
-                if (Number.isNaN(toVal)) return undefined
-                return points.find((p: any) => p.position[dir] === toVal)
-              }
-              const destination = resolveDest()
-              if (MAPPING_DEBUG) {
-                console.log('[MAPDBG] resolved destination id:', destination?.id)
-              }
+              const origin = g.moveKind === 'reenter'
+                ? (gameMoved.board as any).bar[dir]
+                : points.find((p: any) => p.position[dir] === (g as any).from)
+              if (!origin) continue
+              if (!origin.checkers?.some((c: any) => c.color === color)) continue
 
-              // Evaluate each ready die and pick the one whose possibleMoves include origin+destination
-              const readyMoves = Array.from(gameMoved.activePlay.moves).filter(
-                (m: any) => m.stateKind === 'ready'
-              )
-              for (const m of readyMoves) {
+              const toRaw: any = (g as any).to
+              const destination = toRaw === 'off'
+                ? (gameMoved.board as any).off[dir]
+                : ((): any => {
+                    const toVal = typeof toRaw === 'number' ? toRaw : NaN
+                    if (Number.isNaN(toVal)) return undefined
+                    return points.find((p: any) => p.position[dir] === toVal)
+                  })()
+
+              for (const m of readyMovesAll) {
                 const dv = m.dieValue
                 const pm = Board.getPossibleMoves(
                   gameMoved.board,
@@ -330,37 +276,23 @@ export async function runSimulation(maxTurns: number = 100) {
                   dv
                 ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
                 const movesArr = Array.isArray(pm) ? pm : pm.moves
-                // Prefer exact origin+destination match; otherwise accept any origin match
-                const match = movesArr.find(
-                  (mv: any) =>
-                    mv.origin?.id === origin.id &&
-                    (!destination || mv.destination?.id === destination.id)
-                ) ||
-                movesArr.find((mv: any) => mv.origin?.id === origin.id)
+                const match = movesArr.find((mv: any) => mv.origin?.id === origin.id && (!destination || mv.destination?.id === destination.id))
+                  || movesArr.find((mv: any) => mv.origin?.id === origin.id)
                 if (match) {
                   chosenDie = dv
                   possibleMoves = movesArr
+                  selectedOrigin = origin
+                  matched = true
                   break
                 }
               }
-              if (!chosenDie) {
-                // As a fallback to keep the simulation running, take the first legal ready move
-                const fallback = readyMoves[0]
-                if (!fallback) throw new Error('GNU suggested origin cannot be played with current dice')
-                const pm = Board.getPossibleMoves(
-                  gameMoved.board,
-                  (gameMoved as any).activePlay.player,
-                  fallback.dieValue
-                ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
-                const movesArr = Array.isArray(pm) ? pm : pm.moves
-                if (!movesArr.length) throw new Error('GNU suggested origin cannot be played with current dice')
-                chosenDie = fallback.dieValue
-                possibleMoves = movesArr
-                selectedOrigin = movesArr[0].origin as any
-                if (MAPPING_DEBUG) {
-                  console.log('[MAPDBG] fallback die used:', chosenDie, 'origin id:', (selectedOrigin as any)?.id)
-                }
-              }
+              if (matched) break
+            }
+
+            if (!matched || !chosenDie) {
+              const roll = (gameMoved as any).activePlayer?.dice?.currentRoll?.join(',')
+              const pid = exportToGnuPositionId(gameMoved as any)
+              throw new Error(`GNU suggested sequence has no playable step for current dice | pid=${pid} roll=${roll}`)
             }
           }
         }
