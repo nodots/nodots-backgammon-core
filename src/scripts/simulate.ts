@@ -196,6 +196,7 @@ export async function runSimulation(maxTurns: number = 100): Promise<
       gnuHintsMatched: number
       nodotsOpeningChosen: number
       nodotsStrategicChosen: number
+      firstMoverColor: 'white' | 'black'
     }
 > {
   // Initialize players
@@ -256,6 +257,7 @@ export async function runSimulation(maxTurns: number = 100): Promise<
   // Roll for start
   let gameState: BackgammonGameRolledForStart | BackgammonGameRolling =
     Game.rollForStart(game)
+  const firstMoverColor = (gameState as any).activeColor as 'white' | 'black'
   if (!QUIET) {
     console.log('Initial board state:')
     logger.info('[Simulation] Initial board state')
@@ -748,6 +750,7 @@ export async function runSimulation(maxTurns: number = 100): Promise<
     gnuHintsMatched,
     nodotsOpeningChosen,
     nodotsStrategicChosen,
+    firstMoverColor,
   }
 }
 

@@ -16,6 +16,8 @@ async function main() {
     ;(console as any).warn = filter(origWarn)
   }
   const count = parseInt(process.argv[2] || '0', 10)
+  const seedArg = process.argv.find((a) => a.startsWith('--seed='))
+  const baseSeed = seedArg ? parseInt(seedArg.split('=')[1] || '0', 10) : undefined
   let whiteWins = 0
   let blackWins = 0
   let totalTurns = 0
@@ -27,6 +29,10 @@ async function main() {
   }
 
   for (let i = 0; i < count; i++) {
+    if (baseSeed !== undefined) {
+      const perSeed = (baseSeed + i) >>> 0
+      process.argv.push(`--seed=${perSeed}`)
+    }
     const res = (await runSimulation(0)) as any
     const winner = res?.winner || null
     if (winner === 'white') whiteWins++

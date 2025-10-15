@@ -57,6 +57,21 @@ async function runSingleProcess(opts: BatchOptions) {
   let blackWins = 0
   let totalTurns = 0
   let totalMoves = 0
+  // side-based instrumentation
+  const sideStats = {
+    gnu: {
+      white: { hintsAttempted: 0, hintsMatched: 0, wins: 0 },
+      black: { hintsAttempted: 0, hintsMatched: 0, wins: 0 },
+    },
+    nodots: {
+      white: { opening: 0, strategic: 0, wins: 0 },
+      black: { opening: 0, strategic: 0, wins: 0 },
+    },
+    firstMover: {
+      white: { count: 0, wins: 0 },
+      black: { count: 0, wins: 0 },
+    },
+  }
 
   for (let i = 0; i < opts.games; i++) {
     if (opts.seed !== undefined) {
@@ -67,6 +82,12 @@ async function runSingleProcess(opts: BatchOptions) {
     const res = (await runSimulation(0)) as any
     const winnerColor: 'white' | 'black' | null = res?.winner || null
     const gnuColor: 'white' | 'black' | undefined = res?.gnuColor || opts.gnuColor
+    // Track first mover stats
+    const fm = res?.firstMoverColor as 'white' | 'black'
+    if (fm) {
+      sideStats.firstMover[fm].count++
+      if (winnerColor === fm) sideStats.firstMover[fm].wins++
+    }
     if (opts.quiet) {
       // Minimal per-game line for training stats
       const winnerLabel = winnerColor
@@ -77,6 +98,23 @@ async function runSingleProcess(opts: BatchOptions) {
     }
     if (winnerColor === 'white') whiteWins++
     if (winnerColor === 'black') blackWins++
+    // Side-based wins
+    if (winnerColor && gnuColor) {
+      if (winnerColor === gnuColor) {
+        sideStats.gnu[gnuColor].wins++
+      } else {
+        const nodotsColor = gnuColor === 'white' ? 'black' : 'white'
+        sideStats.nodots[nodotsColor].wins++
+      }
+    }
+    // Instrumentation counters
+    if (gnuColor) {
+      sideStats.gnu[gnuColor].hintsAttempted += res?.gnuHintsAttempted || 0
+      sideStats.gnu[gnuColor].hintsMatched += res?.gnuHintsMatched || 0
+      const nodotsColor = gnuColor === 'white' ? 'black' : 'white'
+      sideStats.nodots[nodotsColor].opening += res?.nodotsOpeningChosen || 0
+      sideStats.nodots[nodotsColor].strategic += res?.nodotsStrategicChosen || 0
+    }
     totalTurns += res?.turnCount || 0
     totalMoves += res?.executedMoves || 0
   }
@@ -98,9 +136,15 @@ async function runMultiProcess(opts: BatchOptions) {
         if (opts.fast) env.NODOTS_SIM_FAST = '1'
         if (opts.quiet) env.NODOTS_SIM_QUIET = '1'
         env.NODOTS_LOG_SILENT = opts.quiet ? '1' : env.NODOTS_LOG_SILENT
+        const args: string[] = [String(count)]
+        if (opts.gnuColor) args.push(`--gnu-color=${opts.gnuColor}`)
+        if (opts.seed !== undefined) {
+          const baseSeed = (opts.seed + w * 100000) >>> 0
+          args.push(`--seed=${baseSeed}`)
+        }
         const child = fork(
           require.resolve('./workerSim'),
-          [String(count), opts.gnuColor ? `--gnu-color=${opts.gnuColor}` : ''],
+          args,
           { env }
         )
         child.on('message', (msg: any) => {
@@ -149,6 +193,20 @@ async function main() {
         (nodotsWins / games) * 100
       ).toFixed(1)}%)`
     )
+    // Instrumentation summaries
+    const gnuWhite = sideStats.gnu.white
+    const gnuBlack = sideStats.gnu.black
+    const nodotsWhite = sideStats.nodots.white
+    const nodotsBlack = sideStats.nodots.black
+    const fmWhite = sideStats.firstMover.white
+    const fmBlack = sideStats.firstMover.black
+    const rate = (a: number, b: number) => (b > 0 ? ((a / b) * 100).toFixed(1) : '0.0')
+    console.log(`GNU hints (white): matched ${gnuWhite.hintsMatched}/${gnuWhite.hintsAttempted} (${rate(gnuWhite.hintsMatched, gnuWhite.hintsAttempted)}%)`)
+    console.log(`GNU hints (black): matched ${gnuBlack.hintsMatched}/${gnuBlack.hintsAttempted} (${rate(gnuBlack.hintsMatched, gnuBlack.hintsAttempted)}%)`)
+    console.log(`NODOTS opening chosen (white): ${nodotsWhite.opening}, strategic: ${nodotsWhite.strategic}`)
+    console.log(`NODOTS opening chosen (black): ${nodotsBlack.opening}, strategic: ${nodotsBlack.strategic}`)
+    console.log(`First mover white: ${fmWhite.count} (wins ${fmWhite.wins}, ${rate(fmWhite.wins, fmWhite.count)}%)`)
+    console.log(`First mover black: ${fmBlack.count} (wins ${fmBlack.wins}, ${rate(fmBlack.wins, fmBlack.count)}%)`)
   } else {
     console.log(`WHITE wins: ${whiteWins} (${((whiteWins / games) * 100).toFixed(1)}%)`)
     console.log(`BLACK wins: ${blackWins} (${((blackWins / games) * 100).toFixed(1)}%)`)
