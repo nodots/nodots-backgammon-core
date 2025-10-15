@@ -124,10 +124,10 @@ function writeMappingSample(
       lines.push(`hintStep none`)
     }
     // Enumerate normalized possible moves for each candidate die (ready + in-progress w/o origin)
-    const candidateMoves = Array.from((gameMoved as any).activePlay?.moves || []).filter(
+    const candidateMoves: any[] = (Array.from(((gameMoved as any).activePlay?.moves || []) as any) as any[]).filter(
       (mm: any) => mm.stateKind === 'ready' || (mm.stateKind === 'in-progress' && !mm.origin)
     )
-    for (const m of candidateMoves) {
+    for (const m of candidateMoves as any[]) {
       const die = m.dieValue
       const pm = Board.getPossibleMoves(
         (gameMoved as any).board,
@@ -261,6 +261,23 @@ function seedRandom(seed: number) {
   ;(Math as any).random = rng
 }
 
+function getSeedFromEnvOrArgs(): number | undefined {
+  // Prefer explicit environment variable if provided
+  const envSeed = process.env.NODOTS_SEED
+  if (envSeed !== undefined) {
+    const v = parseInt(envSeed, 10)
+    if (!Number.isNaN(v)) return v >>> 0
+  }
+  // Fall back to the LAST --seed= occurrence in argv (avoid stale first entry)
+  const seeds = process.argv.filter((a) => a.startsWith('--seed='))
+  if (seeds.length > 0) {
+    const last = seeds[seeds.length - 1]
+    const v = parseInt(last.split('=')[1] || '0', 10)
+    if (!Number.isNaN(v)) return v >>> 0
+  }
+  return undefined
+}
+
 export async function runSimulation(maxTurns: number = 100): Promise<
   | void
   | {
@@ -279,29 +296,19 @@ export async function runSimulation(maxTurns: number = 100): Promise<
     }
 > {
   // Initialize players
-  const whitePlayer = Player.initialize(
-    'white',
-    'clockwise',
-    'rolling-for-start',
-    true
-  )
-  const blackPlayer = Player.initialize(
-    'black',
-    'counterclockwise',
-    'rolling-for-start',
-    true
-  )
+  const swapDirections = process.argv.includes('--swap-directions') || process.env.NODOTS_SWAP_DIRECTIONS === '1'
+  const whiteDir: 'clockwise' | 'counterclockwise' = swapDirections ? 'counterclockwise' : 'clockwise'
+  const blackDir: 'clockwise' | 'counterclockwise' = swapDirections ? 'clockwise' : 'counterclockwise'
+  const whitePlayer = Player.initialize('white', whiteDir, 'rolling-for-start', true)
+  const blackPlayer = Player.initialize('black', blackDir, 'rolling-for-start', true)
   const players = [whitePlayer, blackPlayer] as [
     typeof whitePlayer,
     typeof blackPlayer
   ]
 
   // Optional seeding
-  const seedArg = process.argv.find((a) => a.startsWith('--seed='))
-  if (seedArg) {
-    const sv = parseInt(seedArg.split('=')[1] || '0', 10)
-    if (!Number.isNaN(sv)) seedRandom(sv)
-  }
+  const seed = getSeedFromEnvOrArgs()
+  if (seed !== undefined) seedRandom(seed)
 
   // Initialize game
   let game = Game.initialize(players) as BackgammonGameRollingForStart

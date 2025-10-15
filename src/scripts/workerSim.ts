@@ -41,11 +41,16 @@ async function main() {
   if (gnuArg && !process.argv.includes(gnuArg)) {
     process.argv.push(gnuArg)
   }
+  const swapArg = process.argv.includes('--swap-directions')
+  if (swapArg) {
+    process.env.NODOTS_SWAP_DIRECTIONS = '1'
+  }
 
   for (let i = 0; i < count; i++) {
     if (baseSeed !== undefined) {
       const perSeed = (baseSeed + i) >>> 0
-      process.argv.push(`--seed=${perSeed}`)
+      // set per-game seed via env to avoid accumulating argv flags
+      process.env.NODOTS_SEED = String(perSeed)
     }
     const res = (await runSimulation(0)) as any
     const winner = res?.winner || null
