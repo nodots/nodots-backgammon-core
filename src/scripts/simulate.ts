@@ -470,8 +470,9 @@ export async function runSimulation(maxTurns: number = 100): Promise<
           }
 
           // Strict mapping with exact normalized step match (from/to + container kinds)
-          // Compare in GNU's normalized 'white' frame to avoid color-orientation mismatch
-          const normalizedColor = 'white' as const
+          // Prefer the frame indicated by normalization, but also try alternate frame to guard color-orientation mismatches
+          const primaryFrame = (normalization.toGnu[(gameMoved.activePlayer as any).color as 'white' | 'black'] as 'white' | 'black')
+          const frames: Array<'white' | 'black'> = primaryFrame === 'white' ? ['white', 'black'] : ['black', 'white']
 
           let matched = false
           if (GNU_MAPPER === 'ai') {
@@ -483,18 +484,21 @@ export async function runSimulation(maxTurns: number = 100): Promise<
                 const dv = m.dieValue
                 const movesArr = getMovesForDie(dv)
                 for (const mv of movesArr) {
-                  const from = getNormalizedPosition(mv.origin as any, normalizedColor)
-                  const to = getNormalizedPosition(mv.destination as any, normalizedColor)
-                  if (from === null || to === null) continue
                   const fromKind = getContainerKind(mv.origin as any)
                   const toKind = getContainerKind(mv.destination as any)
-                  if (step.from === from && step.to === to && step.fromContainer === fromKind && step.toContainer === toKind) {
-                    chosenDie = dv
-                    possibleMoves = movesArr
-                    selectedOrigin = mv.origin as any
-                    matched = true
-                    break
+                  for (const frame of frames) {
+                    const from = getNormalizedPosition(mv.origin as any, frame)
+                    const to = getNormalizedPosition(mv.destination as any, frame)
+                    if (from === null || to === null) continue
+                    if (step.from === from && step.to === to && step.fromContainer === fromKind && step.toContainer === toKind) {
+                      chosenDie = dv
+                      possibleMoves = movesArr
+                      selectedOrigin = mv.origin as any
+                      matched = true
+                      break
+                    }
                   }
+                  if (matched) break
                 }
                 if (matched) break
               }
@@ -508,18 +512,21 @@ export async function runSimulation(maxTurns: number = 100): Promise<
                 const dv = m.dieValue
                 const movesArr = getMovesForDie(dv)
                 for (const mv of movesArr) {
-                  const from = getNormalizedPosition(mv.origin as any, normalizedColor)
-                  const to = getNormalizedPosition(mv.destination as any, normalizedColor)
-                  if (from === null || to === null) continue
                   const fromKind = getContainerKind(mv.origin as any)
                   const toKind = getContainerKind(mv.destination as any)
-                  if ((step as any).from === from && (step as any).to === to && (step as any).fromContainer === fromKind && (step as any).toContainer === toKind) {
-                    chosenDie = dv
-                    possibleMoves = movesArr
-                    selectedOrigin = mv.origin as any
-                    matched = true
-                    break
+                  for (const frame of frames) {
+                    const from = getNormalizedPosition(mv.origin as any, frame)
+                    const to = getNormalizedPosition(mv.destination as any, frame)
+                    if (from === null || to === null) continue
+                    if ((step as any).from === from && (step as any).to === to && (step as any).fromContainer === fromKind && (step as any).toContainer === toKind) {
+                      chosenDie = dv
+                      possibleMoves = movesArr
+                      selectedOrigin = mv.origin as any
+                      matched = true
+                      break
+                    }
                   }
+                  if (matched) break
                 }
                 if (matched) break
               }
