@@ -113,7 +113,7 @@ function writeMappingSample(
     const pid = exportToGnuPositionId(gameMoved as any)
     const roll = (gameMoved as any).activePlayer?.dice?.currentRoll
     const readyMovesAll: any[] = (Array.from(((gameMoved as any).activePlay?.moves || []) as any) as any[]).filter((m: any) => m.stateKind === 'ready')
-    const normalizedColor = normalization?.toGnu?.[(gameMoved as any).activePlayer?.color] || 'white'
+    const normalizedColor = 'white'
     const lines: string[] = []
     lines.push(`time=${new Date().toISOString()} pid=${pid} color=${color} roll=${Array.isArray(roll) ? roll.join(',') : roll}`)
     // Top hint step
@@ -470,8 +470,8 @@ export async function runSimulation(maxTurns: number = 100): Promise<
           }
 
           // Strict mapping with exact normalized step match (from/to + container kinds)
-          const { color } = gameMoved.activePlayer as any
-          const normalizedColor = (normalization.toGnu[color as 'white' | 'black'] as 'white' | 'black')
+          // Compare in GNU's normalized 'white' frame to avoid color-orientation mismatch
+          const normalizedColor = 'white' as const
 
           let matched = false
           if (GNU_MAPPER === 'ai') {
