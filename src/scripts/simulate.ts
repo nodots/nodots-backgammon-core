@@ -11,6 +11,13 @@ import {
 import { Board, Game, Player } from '..'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
 import { GnuBgHints } from '@nodots-llc/gnubg-hints'
+// Prefer request-based hints via AI package to avoid PID encoding brittleness
+import {
+  initializeGnubgHints,
+  configureGnubgHints,
+  getMoveHints as getGnuMoveHints,
+  buildHintContextFromGame,
+} from '@nodots-llc/backgammon-ai'
 import { logger } from '../utils/logger'
 
 // Mapping debug flag: enable with `npm run simulate -- --mapping-debug`
@@ -212,28 +219,31 @@ export async function runSimulation(maxTurns: number = 100) {
         let selectedOrigin: { id: string; kind: string; checkers: any[] } | undefined
         if (isGnu) {
           // Use GNU Backgammon hints to select origin
-          const positionId = exportToGnuPositionId(gameMoved as any)
-          await GnuBgHints.initialize()
-          GnuBgHints.configure({ evalPlies: 2, moveFilter: 2, usePruning: true })
+          // Build a direct hint request from the game state to avoid Position ID encoding issues
+          await initializeGnubgHints()
+          await configureGnubgHints({ evalPlies: 2, moveFilter: 2, usePruning: true })
+          const { request } = buildHintContextFromGame(gameMoved as any)
           const rollTuple = gameMoved.activePlayer.dice.currentRoll as [number, number]
-          let hints = await GnuBgHints.getHintsFromPositionId(positionId, rollTuple as any)
-          if (MAPPING_DEBUG) {
-            console.log('[MAPDBG] positionId:', positionId, 'roll:', rollTuple)
-          }
+          request.dice = [rollTuple[0], rollTuple[1]]
+          const hints = await getGnuMoveHints(request, 1)
           if (!hints || hints.length === 0 || !hints[0].moves || hints[0].moves.length === 0) {
-            // Retry once with reversed dice order to handle any order-sensitivity
-            const swappedRoll: [number, number] = [rollTuple[1], rollTuple[0]]
-            if (MAPPING_DEBUG) console.log('[MAPDBG] retry with swapped roll:', swappedRoll)
-            hints = await GnuBgHints.getHintsFromPositionId(positionId, swappedRoll as any)
+            // Retry once with reversed dice order
+            request.dice = [rollTuple[1], rollTuple[0]]
+            const retry = await getGnuMoveHints(request, 1)
+            if (!retry || retry.length === 0 || !retry[0].moves || retry[0].moves.length === 0) {
+              const ap = (gameMoved as any).activePlayer
+              const dir = ap?.direction
+              const col = ap?.color
+              const positionId = exportToGnuPositionId(gameMoved as any)
+              throw new Error(
+                `GNU hints not available or empty for current position/roll | pid=${positionId} roll=${rollTuple.join(',')} color=${col} dir=${dir}`
+              )
+            }
+            // Use retry results
+            (hints as any) = retry
           }
-          if (!hints || hints.length === 0 || !hints[0].moves || hints[0].moves.length === 0) {
-            const ap = (gameMoved as any).activePlayer
-            const dir = ap?.direction
-            const col = ap?.color
-            throw new Error(
-              `GNU hints not available or empty for current position/roll | pid=${positionId} roll=${rollTuple.join(',')} color=${col} dir=${dir}`
-            )
-          } else {
+
+          {
             // Pick the first move in GNU's preferred sequence that is playable with remaining dice
             const gmSeq = hints[0].moves
             const readyMovesAll = Array.from(gameMoved.activePlay.moves).filter((m: any) => m.stateKind === 'ready')
