@@ -10,10 +10,10 @@ import {
   BackgammonPlayMoving,
 } from '@nodots-llc/backgammon-types'
 import { GnuBgHints } from '@nodots-llc/gnubg-hints'
+import { exportToGnuPositionId } from '../Board/gnuPositionId'
 import { Checker } from '../Checker'
 import { Play } from '../Play'
 import { logger } from '../utils/logger'
-import { exportToGnuPositionId } from '../Board/gnuPositionId'
 // Avoid importing Game or Player here to prevent circular dependencies
 
 // Pure helpers for functional style
@@ -39,18 +39,21 @@ const getGnuMovesOrThrow = async (
   await GnuBgHints.initialize()
   GnuBgHints.configure({ evalPlies: 2, moveFilter: 2, usePruning: true })
   const hints = await GnuBgHints.getHintsFromPositionId(positionId, roll as any)
-  if (!hints || hints.length === 0 || !hints[0].moves || hints[0].moves.length === 0) {
+  if (
+    !hints ||
+    hints.length === 0 ||
+    !hints[0].moves ||
+    hints[0].moves.length === 0
+  ) {
     throw new Error('GNU Backgammon did not return a valid move sequence')
   }
   return hints[0].moves
 }
 
-const requireCheckerOfColor = (
-  container: any,
-  color: any,
-  err: string
-) => {
-  const count = (container?.checkers || []).filter((c: any) => c.color === color).length
+const requireCheckerOfColor = (container: any, color: any, err: string) => {
+  const count = (container?.checkers || []).filter(
+    (c: any) => c.color === color
+  ).length
   if (count <= 0) throw new Error(err)
   return container
 }
@@ -71,7 +74,10 @@ const findOriginOrThrow = (
     case 'bear-off':
     case 'point-to-point': {
       const origin = board.points.find((p) => p.position[direction] === gm.from)
-      if (!origin) throw new Error(`GNU suggested move from invalid origin position ${gm.from}`)
+      if (!origin)
+        throw new Error(
+          `GNU suggested move from invalid origin position ${gm.from}`
+        )
       return requireCheckerOfColor(
         origin,
         color,
@@ -94,7 +100,7 @@ const applyGnuMove = (
   origin: any,
   desiredDestinationId?: string
 ): TurnState => {
-  const result = Play.move(state.board, state.play, origin, desiredDestinationId)
+  const result = Play.move(state.board, state.play, origin)
   return {
     board: result.board,
     play: result.play as BackgammonPlayMoving,
@@ -105,7 +111,10 @@ const applyGnuMove = (
 const confirmToNextRolling = (
   gameMoved: BackgammonGameMoved
 ): BackgammonGameRolling => {
-  const boardWithResetMovable = Checker.updateMovableCheckers(gameMoved.board, [])
+  const boardWithResetMovable = Checker.updateMovableCheckers(
+    gameMoved.board,
+    []
+  )
   const nextColor = gameMoved.activeColor === 'white' ? 'black' : 'white'
 
   const updatedPlayers = gameMoved.players.map((player) =>
@@ -118,12 +127,20 @@ const confirmToNextRolling = (
               ? { ...player.dice, stateKind: 'inactive' as const }
               : { stateKind: 'inactive' as const },
         }
-      : { ...player, stateKind: 'rolling' as const, dice: { stateKind: 'rolling' as const } }
+      : {
+          ...player,
+          stateKind: 'rolling' as const,
+          dice: { stateKind: 'rolling' as const },
+        }
   ) as BackgammonPlayersRollingTuple
 
   const [p0, p1] = updatedPlayers
-  const newActive = (p0.color === nextColor ? p0 : p1) as BackgammonPlayerRolling
-  const newInactive = (p0.color !== nextColor ? p0 : p1) as BackgammonPlayerInactive
+  const newActive = (
+    p0.color === nextColor ? p0 : p1
+  ) as BackgammonPlayerRolling
+  const newInactive = (
+    p0.color !== nextColor ? p0 : p1
+  ) as BackgammonPlayerInactive
 
   return {
     ...gameMoved,
@@ -183,7 +200,9 @@ export const executeRobotTurn = async function executeRobotTurn(
       activePlay,
     } as BackgammonGameMoving
   } else {
-    throw new Error(`Cannot execute robot turn from ${game.stateKind} state. Must be in 'moving' state.`)
+    throw new Error(
+      `Cannot execute robot turn from ${game.stateKind} state. Must be in 'moving' state.`
+    )
   }
   if (!movingGame.activePlayer.isRobot) {
     throw new Error('Cannot execute robot turn for non-robot player')
@@ -215,7 +234,9 @@ export const executeRobotTurn = async function executeRobotTurn(
         throw new Error('GNU suggested more moves than available ready moves')
       }
       if (!hasAnyReady(state.play)) {
-        throw new Error('GNU suggested a move but there are no ready moves remaining')
+        throw new Error(
+          'GNU suggested a move but there are no ready moves remaining'
+        )
       }
       const origin = findOriginOrThrow(state.board, direction, color, gm)
       logger.info('🤖 [executeRobotTurn] GNU suggestion', {
@@ -227,7 +248,9 @@ export const executeRobotTurn = async function executeRobotTurn(
       state = applyGnuMove(state, origin)
       logger.info('🤖 [executeRobotTurn] Executed GNU move', {
         moveCount: state.moveCount,
-        remainingReadyMoves: state.play.moves.filter((m) => m.stateKind === 'ready').length,
+        remainingReadyMoves: state.play.moves.filter(
+          (m) => m.stateKind === 'ready'
+        ).length,
       })
       if ((state.play as any).stateKind === 'moved') break
       if (state.moveCount >= maxMoves) break
@@ -235,12 +258,32 @@ export const executeRobotTurn = async function executeRobotTurn(
   }
 
   // Transition to 'moved' (end of turn) and auto-confirm to next player's 'rolling' state
+  // Construct players as a BackgammonPlayersRollingTuple to satisfy BackgammonGameMoved
+  const movedPlayers = (movingGame.players.map((player) =>
+    player.color === movingGame.activeColor
+      ? {
+          ...player,
+          stateKind: 'inactive' as const,
+          dice:
+            player.isRobot && player.dice?.currentRoll
+              ? { ...player.dice, stateKind: 'inactive' as const }
+              : { stateKind: 'inactive' as const },
+        }
+      : {
+          ...player,
+          stateKind: 'rolling' as const,
+          dice: { stateKind: 'rolling' as const },
+        }
+  ) as unknown) as BackgammonPlayersRollingTuple
+
   const movedGame: BackgammonGameMoved = {
     ...movingGame,
     stateKind: 'moved',
+    players: movedPlayers,
     board: Checker.updateMovableCheckers(state.board, []),
     activePlay: state.play,
   }
+
   const nextRolling = confirmToNextRolling(movedGame)
 
   logger.info('🤖 [executeRobotTurn] Turn complete, next player rolling', {

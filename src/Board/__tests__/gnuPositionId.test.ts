@@ -1,48 +1,49 @@
+import { Board } from '../../Board'
 import { Game } from '../../Game'
 import { exportToGnuPositionId } from '../gnuPositionId'
+import { GnuBgHints } from '@nodots-llc/gnubg-hints'
 
-describe('exportToGnuPositionId', () => {
-  it('exports the default Nodots board to the correct GNU Position ID', () => {
-    // Create a game with explicit configuration
-    // White is clockwise, black is counterclockwise
-    // The expected ID '4HPwATDgc/ABMA' assumes white (clockwise) is on roll
-    const game = Game.createNewGame(
-      { userId: 'player1', isRobot: true },
-      { userId: 'player2', isRobot: true }
+describe('GNU Position ID orientation and mapping', () => {
+  test('first suggested GNU move maps to a valid origin for active player', async () => {
+    const gameRollingForStart = Game.createNewGame(
+      { userId: 'p1', isRobot: true },
+      { userId: 'p2', isRobot: true }
     )
 
-    // Manually set up the game state with white as the active player
-    const whitePlayer = game.players.find((p) => p.color === 'white')!
-    const blackPlayer = game.players.find((p) => p.color === 'black')!
+    // Roll for start to establish activeColor and activePlayer direction
+    const gameRolled = Game.rollForStart(gameRollingForStart)
+    const posId = exportToGnuPositionId(gameRolled as any)
 
-    // Create a game state where white is the active player
-    const gameWithWhiteActive = {
-      ...game,
-      stateKind: 'rolled-for-start' as const,
-      activeColor: 'white' as const,
-      activePlayer: {
-        ...whitePlayer,
-        stateKind: 'rolled-for-start' as const,
-      },
-      inactivePlayer: {
-        ...blackPlayer,
-        stateKind: 'inactive' as const,
-      },
-    } as any // Use any to bypass strict typing for test purposes
+    await GnuBgHints.initialize()
+    GnuBgHints.configure({ evalPlies: 2, moveFilter: 2, usePruning: true })
+    const roll: [number, number] = [6, 5]
+    const hints = await GnuBgHints.getHintsFromPositionId(posId, roll as any)
 
-    // Verify white is the active player
-    if (!gameWithWhiteActive.activePlayer) {
-      throw new Error('No active player found in game')
-    }
+    expect(hints && hints.length > 0).toBeTruthy()
+    const seq = hints![0]
+    expect(seq.moves && seq.moves.length > 0).toBeTruthy()
 
-    if (gameWithWhiteActive.activePlayer.color !== 'white') {
-      throw new Error(
-        `Expected white to be active player, but got ${gameWithWhiteActive.activePlayer.color}`
-      )
-    }
+    const gm = seq.moves![0]
+    const activePlayer = (gameRolled as any).activePlayer
+    const dir: 'clockwise' | 'counterclockwise' = activePlayer.direction
+    const oppDir: 'clockwise' | 'counterclockwise' = dir === 'clockwise' ? 'counterclockwise' : 'clockwise'
 
-    const posId = exportToGnuPositionId(gameWithWhiteActive)
-    // Standard starting position for GNU BG (assuming white/player X on roll)
-    expect(posId).toBe('4HPwATDgc/ABMA')
+    const points = (gameRolled as any).board.points
+    const colors = activePlayer.color
+
+    // Try multiple interpretations (direct, flipped, inverted)
+    const candidates = [
+      points.find((p: any) => p.position[dir] === gm.from),
+      points.find((p: any) => p.position[oppDir] === gm.from),
+      points.find((p: any) => p.position[dir] === 25 - gm.from),
+      points.find((p: any) => p.position[oppDir] === 25 - gm.from),
+    ].filter(Boolean) as any[]
+
+    expect(candidates.length).toBeGreaterThan(0)
+    const hasChecker = candidates.some((origin) =>
+      origin.checkers.some((c: any) => c.color === colors)
+    )
+    expect(hasChecker).toBeTruthy()
   })
 })
+

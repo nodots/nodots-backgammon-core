@@ -1,27 +1,94 @@
 import {
+  BackgammonGameMoved,
   BackgammonGameMoving,
+  BackgammonGameRolledForStart,
+  BackgammonGameRolling,
   BackgammonGameRollingForStart,
   BackgammonMove,
   BackgammonMoveOrigin,
+  BackgammonMoveSkeleton,
 } from '@nodots-llc/backgammon-types'
 import { Board, Game, Player } from '..'
+import { exportToGnuPositionId } from '../Board/gnuPositionId'
+import { GnuBgHints } from '@nodots-llc/gnubg-hints'
+// Prefer request-based hints via AI package to avoid PID encoding brittleness
+import {
+  initializeGnubgHints,
+  configureGnubgHints,
+  getMoveHints as getGnuMoveHints,
+  buildHintContextFromGame,
+  getNormalizedPosition,
+  getContainerKind,
+} from '@nodots-llc/backgammon-ai'
 import { logger } from '../utils/logger'
+
+// Mapping debug flag: enable with `npm run simulate -- --mapping-debug`
+const MAPPING_DEBUG = process.argv.includes('--mapping-debug')
+const GNU_MAPPER: 'ai' | 'steps' = (() => {
+  const arg = process.argv.find((a) => a.startsWith('--gnu-mapper='))
+  if (!arg) return 'ai'
+  const v = arg.split('=')[1]
+  return v === 'steps' ? 'steps' : 'ai'
+})()
 
 interface SimulationStats {
   totalTurns: number
-  totalMoves: number
-  whiteCheckersCaptured: number
-  blackCheckersCaptured: number
+  totalMoves: number // includes no-move (dice used)
+  executedMoves: number // checker movements only
+  noMoves: number // number of completed no-move entries
   whiteCheckersOff: number
   blackCheckersOff: number
+}
+
+function debugDumpMapping(
+  gameMoved: any,
+  hints: any[] | null,
+  normalization: any,
+): void {
+  try {
+    const pid = exportToGnuPositionId(gameMoved as any)
+    const roll = (gameMoved as any).activePlayer?.dice?.currentRoll
+    console.log('\n[Mapping Debug] ----')
+    console.log('[Mapping Debug] GNU Position ID:', pid)
+    console.log('[Mapping Debug] Active:', (gameMoved as any).activeColor, (gameMoved as any).activePlayer?.direction)
+    console.log('[Mapping Debug] Roll:', Array.isArray(roll) ? roll.join(',') : roll)
+    if (hints && hints.length > 0) {
+      const steps = (hints as any)[0]?.moves || []
+      console.log('[Mapping Debug] Top hint steps:', steps)
+    } else {
+      console.log('[Mapping Debug] No hints returned')
+    }
+    const readyMovesAll: any[] = (Array.from(((gameMoved as any).activePlay?.moves || []) as any) as any[]).filter((m: any) => m.stateKind === 'ready')
+    console.log('[Mapping Debug] Ready dice:', (readyMovesAll as any[]).map((m: any) => m.dieValue))
+    for (const m of readyMovesAll as any[]) {
+      const pm = Board.getPossibleMoves(
+        (gameMoved as any).board,
+        (gameMoved as any).activePlay.player,
+        m.dieValue
+      ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
+      const movesArr = Array.isArray(pm) ? pm : pm.moves
+      const normalizedColor = normalization?.toGnu?.[(gameMoved as any).activePlayer?.color] || 'white'
+      const mapped = movesArr.map((mv) => ({
+        from: getNormalizedPosition((mv as any).origin, normalizedColor as any),
+        to: getNormalizedPosition((mv as any).destination, normalizedColor as any),
+        fromContainer: getContainerKind((mv as any).origin),
+        toContainer: getContainerKind((mv as any).destination),
+      }))
+      console.log(`[Mapping Debug] Die ${m.dieValue} possible (normalized):`, mapped)
+    }
+    console.log('[Mapping Debug] ----\n')
+  } catch (e) {
+    console.log('[Mapping Debug] Failed to dump mapping:', e)
+  }
 }
 
 function displayTurnInfo(
   turnNumber: number,
   activeColor: string,
-  roll: number[]
+  roll: number[],
+  activeLabel: string
 ) {
-  const message = `\n=== Turn ${turnNumber} ===\n\n${activeColor}'s roll: ${roll.join(
+  const message = `\n=== Turn ${turnNumber} (${activeLabel}) ===\n\n${activeColor}'s roll: ${roll.join(
     ', '
   )}\n`
   console.log(message)
@@ -29,6 +96,7 @@ function displayTurnInfo(
     turnNumber,
     activeColor,
     roll,
+    activeLabel,
   })
 }
 
@@ -52,61 +120,46 @@ function displayMoveInfo(
 }
 
 function getStats(board: any): SimulationStats {
-  const whiteBar =
-    board.bar.clockwise.checkers.filter((c: any) => c.color === 'white')
-      .length +
-    board.bar.counterclockwise.checkers.filter((c: any) => c.color === 'white')
-      .length
-  const blackBar =
-    board.bar.clockwise.checkers.filter((c: any) => c.color === 'black')
-      .length +
-    board.bar.counterclockwise.checkers.filter((c: any) => c.color === 'black')
-      .length
-  const whiteOff =
-    board.off.clockwise.checkers.filter((c: any) => c.color === 'white')
-      .length +
-    board.off.counterclockwise.checkers.filter((c: any) => c.color === 'white')
-      .length
-  const blackOff =
-    board.off.clockwise.checkers.filter((c: any) => c.color === 'black')
-      .length +
-    board.off.counterclockwise.checkers.filter((c: any) => c.color === 'black')
-      .length
+  // Count off checkers per correct direction for each color
+  const whiteOff = board.off.clockwise.checkers.filter(
+    (c: any) => c.color === 'white'
+  ).length
+  const blackOff = board.off.counterclockwise.checkers.filter(
+    (c: any) => c.color === 'black'
+  ).length
 
   return {
     totalTurns: 0, // Will be updated in main function
     totalMoves: 0, // Will be updated in main function
-    whiteCheckersCaptured: whiteBar,
-    blackCheckersCaptured: blackBar,
+    executedMoves: 0,
+    noMoves: 0,
     whiteCheckersOff: whiteOff,
     blackCheckersOff: blackOff,
   }
 }
 
-function displayStats(stats: SimulationStats) {
+function displayStats(stats: SimulationStats, gnuIsWhite: boolean) {
+  const gnuOff = gnuIsWhite ? stats.whiteCheckersOff : stats.blackCheckersOff
+  const nodotsOff = gnuIsWhite ? stats.blackCheckersOff : stats.whiteCheckersOff
   const message = `\n=== Simulation Statistics ===
 Total Turns: ${stats.totalTurns}
-Total Moves: ${stats.totalMoves}
-White Checkers Captured: ${stats.whiteCheckersCaptured}
-Black Checkers Captured: ${stats.blackCheckersCaptured}
-White Checkers Off: ${stats.whiteCheckersOff}
-Black Checkers Off: ${stats.blackCheckersOff}`
+Total Moves (incl. no-move): ${stats.totalMoves}
+Executed Checker Moves: ${stats.executedMoves}
+No-Moves: ${stats.noMoves}
+GNU Checkers Off: ${gnuOff}
+Nodots Engine Checkers Off: ${nodotsOff}`
   console.log(message)
-  logger.info('[Simulation] Statistics:', stats)
+  logger.info('[Simulation] Statistics:', { ...stats, gnuIsWhite, gnuOff, nodotsOff })
 }
 
 function checkWinCondition(board: any): string | null {
-  // A player wins if all their checkers are off the board
-  const whiteCheckersOff =
-    board.off.clockwise.checkers.filter((c: any) => c.color === 'white')
-      .length +
-    board.off.counterclockwise.checkers.filter((c: any) => c.color === 'white')
-      .length
-  const blackCheckersOff =
-    board.off.clockwise.checkers.filter((c: any) => c.color === 'black')
-      .length +
-    board.off.counterclockwise.checkers.filter((c: any) => c.color === 'black')
-      .length
+  // A player wins when all their checkers are off via their bearing direction
+  const whiteCheckersOff = board.off.clockwise.checkers.filter(
+    (c: any) => c.color === 'white'
+  ).length
+  const blackCheckersOff = board.off.counterclockwise.checkers.filter(
+    (c: any) => c.color === 'black'
+  ).length
 
   if (whiteCheckersOff === 15) return 'white'
   if (blackCheckersOff === 15) return 'black'
@@ -118,17 +171,13 @@ export async function runSimulation(maxTurns: number = 100) {
   const whitePlayer = Player.initialize(
     'white',
     'clockwise',
-    undefined,
-    undefined,
-    'inactive',
+    'rolling-for-start',
     true
   )
   const blackPlayer = Player.initialize(
     'black',
     'counterclockwise',
-    undefined,
-    undefined,
-    'inactive',
+    'rolling-for-start',
     true
   )
   const players = [whitePlayer, blackPlayer] as [
@@ -138,15 +187,45 @@ export async function runSimulation(maxTurns: number = 100) {
 
   // Initialize game
   let game = Game.initialize(players) as BackgammonGameRollingForStart
+  // Randomize roles between GNU and Nodots Engine
+  // Allow overriding which color GNU plays via --gnu-color=white|black
+  const gnuColorArg = process.argv.find((a) => a.startsWith('--gnu-color='))
+  const gnuColor = gnuColorArg
+    ? (gnuColorArg.split('=')[1] as 'white' | 'black')
+    : undefined
+  const gnuIsWhite = gnuColor ? gnuColor === 'white' : Math.random() < 0.5
+  const labels: Record<string, string> = gnuIsWhite
+    ? { [whitePlayer.id]: 'GNU', [blackPlayer.id]: 'Nodots Engine' }
+    : { [whitePlayer.id]: 'Nodots Engine', [blackPlayer.id]: 'GNU' }
+  console.log(
+    gnuIsWhite
+      ? `Players: GNU (white) vs Nodots Engine (black)\n`
+      : `Players: Nodots Engine (white) vs GNU (black)\n`
+  )
   let turnCount = 0
-  let totalMoves = 0
+  let executedMovesTotal = 0 // actual checker movements
+  let diceUsedTotal = 0 // includes no-move
+  let noMovesTotal = 0
   let lastBoard = game.board
 
   // Roll for start
-  let gameRolling = Game.rollForStart(game)
+  let gameState: BackgammonGameRolledForStart | BackgammonGameRolling =
+    Game.rollForStart(game)
   console.log('Initial board state:')
   logger.info('[Simulation] Initial board state')
-  Board.displayAsciiBoard(gameRolling.board)
+  try {
+    const ascii = Board.getAsciiGameBoard(
+      gameState.board,
+      (gameState as any).players,
+      (gameState as any).activeColor,
+      (gameState as any).stateKind,
+      undefined,
+      labels
+    )
+    console.log(ascii)
+  } catch {
+    Board.displayAsciiBoard(gameState.board)
+  }
 
   // If maxTurns is 0, run until there's a winner
   const shouldRunUntilWinner = maxTurns === 0
@@ -154,76 +233,227 @@ export async function runSimulation(maxTurns: number = 100) {
   while (shouldRunUntilWinner || turnCount < maxTurns) {
     turnCount++
 
-    // Use gameRolling directly, no need to re-initialize
-    const gameRolled = Game.roll(gameRolling)
+    // Roll dice from current state
+    const gameRolled = Game.roll(gameState)
     const roll = gameRolled.activePlayer.dice.currentRoll
-    displayTurnInfo(turnCount, gameRolled.activeColor, roll)
+    displayTurnInfo(
+      turnCount,
+      gameRolled.activeColor,
+      roll,
+      labels[gameRolled.activePlayer.id] || 'Simple Heuristic'
+    )
 
     // Make moves until no more valid moves are available
     let moveCount = 0
-    let gameMoved: any = gameRolled
-    // Only call Game.move if there is a valid move origin
-    const firstMove = Array.from(gameRolled.activePlay.moves)[0]
-    if (firstMove && firstMove.origin) {
-      // Transition through proper state flow: rolled -> preparing-move -> moving
-      const preparingGame = Game.prepareMove(gameRolled)
-      const gameMoving = Game.toMoving(preparingGame)
-
-      // Execute first move
-      gameMoved = Game.move(gameMoving, firstMove.origin.id)
-      moveCount++
-    }
+    let gameMoved: BackgammonGameMoving | BackgammonGameMoved = gameRolled
 
     try {
       while (
+        gameMoved.stateKind === 'moving' &&
         Array.from(gameMoved.activePlay.moves).some((m: any) => {
-          // Only consider moves that are 'ready' or 'in-progress' and have possible moves
-          if (
-            m.stateKind === 'ready' ||
-            (m.stateKind === 'in-progress' && !m.origin)
-          ) {
-            const possibleMoves = Board.getPossibleMoves(
-              gameMoved.board,
-              m.player,
-              m.dieValue
-            ) as any[]
-            return possibleMoves.length > 0
+          if (m.stateKind === 'ready' || (m.stateKind === 'in-progress' && !m.origin)) {
+            const pm = Board.getPossibleMoves(gameMoved.board, m.player, m.dieValue) as
+              | BackgammonMoveSkeleton[]
+              | { moves: BackgammonMoveSkeleton[] }
+            const movesArr = Array.isArray(pm) ? pm : pm.moves
+            return movesArr.length > 0
           }
           return false
         })
       ) {
-        const nextMove = Array.from(gameMoved.activePlay.moves).find(
-          (m: any) => {
-            if (
-              m.stateKind === 'ready' ||
-              (m.stateKind === 'in-progress' && !m.origin)
-            ) {
-              const possibleMoves = Board.getPossibleMoves(
-                gameMoved.board,
-                m.player,
-                m.dieValue
-              ) as any[]
-              return possibleMoves.length > 0
+        const isGnu = labels[gameMoved.activePlayer.id] === 'GNU'
+        let chosenDie: number | undefined
+        let possibleMoves: BackgammonMoveSkeleton[] = []
+        let selectedOrigin: { id: string; kind: string; checkers: any[] } | undefined
+        if (isGnu) {
+          // Strict: request-based hints; backend selection via --gnu-mapper=ai|steps (default ai)
+          await initializeGnubgHints()
+          await configureGnubgHints({ evalPlies: 2, moveFilter: 2, usePruning: true })
+          const { request, normalization } = buildHintContextFromGame(gameMoved as any)
+          const rollTuple = gameMoved.activePlayer.dice.currentRoll as [number, number]
+          request.dice = [rollTuple[0], rollTuple[1]]
+          let hints = await getGnuMoveHints(request, GNU_MAPPER === 'ai' ? 10 : 1)
+          if (!hints || hints.length === 0 || !hints[0].moves || hints[0].moves.length === 0) {
+            if (MAPPING_DEBUG) {
+              debugDumpMapping(gameMoved, hints || null, normalization)
             }
-            return false
+            request.dice = [rollTuple[1], rollTuple[0]]
+            const retry = await getGnuMoveHints(request, GNU_MAPPER === 'ai' ? 10 : 1)
+            if (!retry || retry.length === 0 || !retry[0].moves || retry[0].moves.length === 0) {
+              if (MAPPING_DEBUG) {
+                debugDumpMapping(gameMoved, retry || null, normalization)
+              }
+              // Fallback: no GNU hints; select a playable move from current dice
+              const readyMovesAll = Array.from(gameMoved.activePlay.moves).filter((m: any) => m.stateKind === 'ready')
+              for (const m of readyMovesAll) {
+                const pm = Board.getPossibleMoves(
+                  gameMoved.board,
+                  (gameMoved as any).activePlay.player,
+                  m.dieValue
+                ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
+                const movesArr = Array.isArray(pm) ? pm : pm.moves
+                if (movesArr.length > 0) {
+                  chosenDie = m.dieValue
+                  possibleMoves = movesArr
+                  selectedOrigin = undefined
+                  break
+                }
+              }
+              // If still no move candidates, delegate to Nodots AI for a robust fallback
+              if (!chosenDie) {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                const aiModule = await import('@nodots-llc/backgammon-ai')
+                const best = await aiModule.selectBestMove(gameMoved.activePlay, 'nodots')
+                if (best) {
+                  chosenDie = (best as any).dieValue
+                  const pm2 = Board.getPossibleMoves(
+                    gameMoved.board,
+                    (best as any).player,
+                    (best as any).dieValue
+                  ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
+                  possibleMoves = Array.isArray(pm2) ? pm2 : pm2.moves
+                  selectedOrigin = undefined
+                }
+              }
+              // Exit GNU branch early if we constructed a fallback
+              if (chosenDie) {
+                // do not set hints; proceed with fallback-selected die and moves
+                // to the common move selection code below
+              } else {
+                const roll = (gameMoved as any).activePlayer?.dice?.currentRoll?.join(',')
+                const pid = exportToGnuPositionId(gameMoved as any)
+                throw new Error(`GNU hints not available or empty for current position/roll | pid=${pid} roll=${roll} color=${(gameMoved as any).activeColor} dir=${(gameMoved as any).activePlayer?.direction}`)
+              }
+            } else {
+              hints = retry
+            }
           }
-        ) as BackgammonMove
 
-        if (!nextMove) {
-          break
+          // Strict mapping with exact normalized step match (from/to + container kinds)
+          const readyMovesAll = Array.from(gameMoved.activePlay.moves).filter((m: any) => m.stateKind === 'ready')
+          const { color } = gameMoved.activePlayer as any
+          const normalizedColor = (normalization.toGnu[color as 'white' | 'black'] as 'white' | 'black')
+
+          let matched = false
+          if (GNU_MAPPER === 'ai') {
+            // Iterate hints by rank (first match wins)
+            for (const hint of hints) {
+              if (!hint.moves || hint.moves.length === 0) continue
+              const step = hint.moves[0] as any
+              for (const m of readyMovesAll) {
+                const dv = m.dieValue
+                const pm = Board.getPossibleMoves(
+                  gameMoved.board,
+                  (gameMoved as any).activePlay.player,
+                  dv
+                ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
+                const movesArr = Array.isArray(pm) ? pm : pm.moves
+                for (const mv of movesArr) {
+                  const from = getNormalizedPosition(mv.origin as any, normalizedColor)
+                  const to = getNormalizedPosition(mv.destination as any, normalizedColor)
+                  if (from === null || to === null) continue
+                  const fromKind = getContainerKind(mv.origin as any)
+                  const toKind = getContainerKind(mv.destination as any)
+                  if (step.from === from && step.to === to && step.fromContainer === fromKind && step.toContainer === toKind) {
+                    chosenDie = dv
+                    possibleMoves = movesArr
+                    selectedOrigin = mv.origin as any
+                    matched = true
+                    break
+                  }
+                }
+                if (matched) break
+              }
+              if (matched) break
+            }
+          } else {
+            // steps: only first hint's sequence
+            const gmSeq = hints[0].moves
+            for (const step of gmSeq) {
+              for (const m of readyMovesAll) {
+                const dv = m.dieValue
+                const pm = Board.getPossibleMoves(
+                  gameMoved.board,
+                  (gameMoved as any).activePlay.player,
+                  dv
+                ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
+                const movesArr = Array.isArray(pm) ? pm : pm.moves
+                for (const mv of movesArr) {
+                  const from = getNormalizedPosition(mv.origin as any, normalizedColor)
+                  const to = getNormalizedPosition(mv.destination as any, normalizedColor)
+                  if (from === null || to === null) continue
+                  const fromKind = getContainerKind(mv.origin as any)
+                  const toKind = getContainerKind(mv.destination as any)
+                  if ((step as any).from === from && (step as any).to === to && (step as any).fromContainer === fromKind && (step as any).toContainer === toKind) {
+                    chosenDie = dv
+                    possibleMoves = movesArr
+                    selectedOrigin = mv.origin as any
+                    matched = true
+                    break
+                  }
+                }
+                if (matched) break
+              }
+              if (matched) break
+            }
+          }
+
+          if (!matched || !chosenDie) {
+            if (MAPPING_DEBUG) {
+              debugDumpMapping(gameMoved, hints || null, normalization)
+            }
+            // Fallback: choose any playable move for a ready die value
+            const readyMovesAll = Array.from(gameMoved.activePlay.moves).filter((m: any) => m.stateKind === 'ready')
+            for (const m of readyMovesAll) {
+              const pm = Board.getPossibleMoves(
+                gameMoved.board,
+                (gameMoved as any).activePlay.player,
+                m.dieValue
+              ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
+              const movesArr = Array.isArray(pm) ? pm : pm.moves
+              if (movesArr.length > 0) {
+                chosenDie = m.dieValue
+                possibleMoves = movesArr
+                selectedOrigin = undefined
+                break
+              }
+            }
+            if (!chosenDie) {
+              const pid = exportToGnuPositionId(gameMoved as any)
+              throw new Error(
+                `GNU suggested sequence has no playable step for current dice | pid=${pid} roll=${rollTuple.join(',')}`
+              )
+            }
+          }
+        }
+        if (!isGnu || !chosenDie) {
+          // Strictly require Nodots AI; no fallback allowed
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          const aiModule = await import('@nodots-llc/backgammon-ai')
+          const best = await aiModule.selectBestMove(gameMoved.activePlay, 'nodots')
+          if (!best) {
+            throw new Error('Nodots AI did not return a move')
+          }
+          chosenDie = (best as any).dieValue
+          possibleMoves = (best as any).possibleMoves && (best as any).possibleMoves.length
+            ? (best as any).possibleMoves
+            : ((): BackgammonMoveSkeleton[] => {
+                const pm2 = Board.getPossibleMoves(
+                  gameMoved.board,
+                  (best as any).player,
+                  (best as any).dieValue
+                ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
+                return Array.isArray(pm2) ? pm2 : pm2.moves
+              })()
+          selectedOrigin = undefined
         }
 
-        // Recalculate possible moves for this die value based on current board state
-        const possibleMoves = Board.getPossibleMoves(
-          gameMoved.board,
-          nextMove.player,
-          nextMove.dieValue
-        ) as any[]
-
         // Display all possible moves for this die value
-        console.log(`\nPossible moves for die value ${nextMove.dieValue}:`)
+        console.log(`\nPossible moves for die value ${chosenDie}:`)
         logger.info('[Simulation] Possible moves for die value:', {
-          dieValue: nextMove.dieValue,
+          dieValue: chosenDie,
           possibleMovesCount: possibleMoves.length,
         })
         possibleMoves.forEach((possibleMove, index) => {
@@ -246,17 +476,24 @@ export async function runSimulation(maxTurns: number = 100) {
           )
         })
 
-        // Take the first valid move that has checkers
-        let validMove = null
-        for (const move of possibleMoves) {
-          const origin = move.origin
-          const checkers = origin.checkers
-          if (
-            checkers.length > 0 &&
-            checkers[0].color === gameMoved.activeColor
-          ) {
-            validMove = move
-            break
+        // Take the selected origin if GNU chose one; otherwise first valid
+        let validMove: any = null
+        if (selectedOrigin) {
+          validMove = possibleMoves.find(
+            (mv) => (mv as any).origin?.id === (selectedOrigin as any).id
+          )
+        }
+        if (!validMove) {
+          for (const move of possibleMoves) {
+            const origin = move.origin
+            const checkers = origin.checkers
+            if (
+              checkers.length > 0 &&
+              checkers[0].color === gameMoved.activeColor
+            ) {
+              validMove = move
+              break
+            }
           }
         }
 
@@ -281,36 +518,74 @@ export async function runSimulation(maxTurns: number = 100) {
 
         console.log('\nBoard before move:')
         logger.info('[Simulation] Board before move')
-        Board.displayAsciiBoard(gameMoved.board)
+        try {
+          const asciiBefore = Board.getAsciiGameBoard(
+            (gameMoved as any).board,
+            (gameMoved as any).players,
+            (gameMoved as any).activeColor,
+            (gameMoved as any).stateKind,
+            undefined,
+            labels
+          )
+          console.log(asciiBefore)
+        } catch {
+          Board.displayAsciiBoard((gameMoved as any).board)
+        }
 
         try {
           // Ensure proper state transition before move
-          let gameToMove = gameMoved
-          if (gameMoved.stateKind === 'preparing-move') {
-            gameToMove = Game.toMoving(gameMoved)
+          const gameToMove = gameMoved
+          const originChecker = origin.checkers.find(
+            (c: any) => c.color === (gameMoved as any).activeColor
+          )
+          if (!originChecker) {
+            console.log('No checker of active color at chosen origin; breaking')
+            break
           }
-          const moveResult = Game.move(gameToMove, origin.id)
-          if ('board' in moveResult) {
+          const moveResult = Game.move(
+            gameToMove as BackgammonGameMoving,
+            originChecker.id
+          )
+          if ((moveResult as any).stateKind === 'moved') {
+            // Final checker move ended the turn
+            gameMoved = moveResult as BackgammonGameMoved
+          } else if ('board' in moveResult) {
             gameMoved = moveResult as BackgammonGameMoving
             moveCount++
+            lastBoard = gameMoved.board
 
             console.log('\nBoard after move:')
             logger.info('[Simulation] Board after move')
-            Board.displayAsciiBoard(gameMoved.board)
+            try {
+              const asciiAfter = Board.getAsciiGameBoard(
+                (gameMoved as any).board,
+                (gameMoved as any).players,
+                (gameMoved as any).activeColor,
+                (gameMoved as any).stateKind,
+                undefined,
+                labels
+              )
+              console.log(asciiAfter)
+            } catch {
+              Board.displayAsciiBoard((gameMoved as any).board)
+            }
 
             // Show remaining moves
             console.log('\nRemaining moves:')
-            Array.from(gameMoved.activePlay.moves).forEach((move: any) => {
-              // Update possible moves for this die value
-              const possibleMoves = Board.getPossibleMoves(
-                gameMoved.board,
-                move.player,
-                move.dieValue
-              )
-              console.log(
-                `  Die value ${move.dieValue}: ${possibleMoves.length} possible moves`
-              )
-            })
+            if (gameMoved.stateKind === 'moving') {
+              Array.from(gameMoved.activePlay.moves).forEach((move: any) => {
+                // Update possible moves for this die value
+                const pm2 = Board.getPossibleMoves(
+                  gameMoved.board,
+                  move.player,
+                  move.dieValue
+                ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
+                const possibleMoves = Array.isArray(pm2) ? pm2 : pm2.moves
+                console.log(
+                  `  Die value ${move.dieValue}: ${possibleMoves.length} possible moves`
+                )
+              })
+            }
           }
         } catch (error) {
           console.log(`\nCouldn't make move: ${error}`)
@@ -336,53 +611,70 @@ export async function runSimulation(maxTurns: number = 100) {
       } as BackgammonGameMoving
     }
 
+    // If still in moving state here, attempt to complete the turn (handles no-move scenarios)
+    if (gameMoved.stateKind === 'moving') {
+      const completedState = Game.checkAndCompleteTurn(
+        gameMoved as BackgammonGameMoving
+      ) as BackgammonGameMoving | BackgammonGameMoved
+      gameMoved = completedState
+    }
+
+    // When a turn completes, tally dice used and executed vs no-move
+    if (gameMoved.stateKind === 'moved') {
+      const allMoves = Array.from(gameMoved.activePlay.moves)
+      const completed = allMoves.filter((m: any) => m.stateKind === 'completed')
+      const executed = completed.filter(
+        (m: any) => m.moveKind !== 'no-move' && !!m.origin
+      )
+      const noMoves = completed.length - executed.length
+      diceUsedTotal += completed.length
+      executedMovesTotal += executed.length
+      noMovesTotal += noMoves
+      lastBoard = gameMoved.board
+    }
+
     // Check for winner
-    const winner = checkWinCondition(lastBoard)
+    const winner = checkWinCondition(gameMoved.board)
     if (winner) {
       console.log(`\n${winner.toUpperCase()} WINS!\n`)
       logger.info('[Simulation] Game won:', {
         winner,
         turnCount,
-        totalMoves,
+        executedMovesTotal,
+        diceUsedTotal,
+        noMovesTotal,
       })
       break
     }
 
-    // Switch turns
-    console.log(`Switching to ${gameMoved.inactivePlayer.color}'s turn\n`)
-    logger.info('[Simulation] Switching turns:', {
-      fromColor: gameMoved.activeColor,
-      toColor: gameMoved.inactivePlayer.color,
-    })
-    // Manually switch active/inactive players and update activeColor
-    const newActiveColor = gameMoved.inactivePlayer.color
-    const [newActivePlayer, newInactivePlayer] = Game.getPlayersForColor(
-      gameMoved.players,
-      newActiveColor
-    )
-    gameRolling = Game.initialize(
-      gameMoved.players,
-      gameMoved.id,
-      'rolling',
-      gameMoved.board,
-      gameMoved.cube,
-      undefined, // activePlay
-      newActiveColor,
-      newActivePlayer,
-      newInactivePlayer
-    ) as any // Type assertion to satisfy TS, as Game.initialize returns BackgammonGame
+    // Switch turns using core flow when in moved state
+    if (gameMoved.stateKind === 'moved') {
+      console.log(`Switching to next player's turn\n`)
+      logger.info('[Simulation] Switching turns (confirmTurn)')
+      gameState = Game.confirmTurn(gameMoved)
+      lastBoard = gameState.board
+    } else {
+      // If still moving (shouldn't happen if all moves consumed), break to avoid loop
+      console.log('Turn did not complete; breaking out to avoid hang')
+      break
+    }
   }
 
   // Display final statistics
   const stats = getStats(lastBoard)
   stats.totalTurns = turnCount
-  stats.totalMoves = totalMoves
-  displayStats(stats)
+  stats.totalMoves = diceUsedTotal
+  ;(stats as any).executedMoves = executedMovesTotal
+  ;(stats as any).noMoves = noMovesTotal
+  // Map off counts to the randomized labels
+  displayStats(stats, gnuIsWhite)
 }
 
 // Allow running from command line with optional max turns argument
 if (require.main === module) {
-  const maxTurns = process.argv[2] ? parseInt(process.argv[2]) : 100
+  // Find first numeric positional arg for maxTurns; ignore flag args starting with '--'
+  const numArg = process.argv.find((a) => !a.startsWith('--') && /^\d+$/.test(a))
+  const maxTurns = numArg ? parseInt(numArg) : 100
   runSimulation(maxTurns).catch((error) => {
     console.error(error)
     logger.error('[Simulation] Simulation failed:', {

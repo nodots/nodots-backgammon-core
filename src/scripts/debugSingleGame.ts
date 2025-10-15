@@ -1,22 +1,21 @@
 import {
+  BackgammonGameMoved,
   BackgammonGameMoving,
   BackgammonGameRollingForStart,
   BackgammonMove,
+  BackgammonMoveSkeleton,
 } from '@nodots-llc/backgammon-types'
 import { Board, Game, Player } from '..'
 import { logger } from '../utils/logger'
 
 function checkWinCondition(board: any): string | null {
-  const whiteCheckersOff =
-    board.off.clockwise.checkers.filter((c: any) => c.color === 'white')
-      .length +
-    board.off.counterclockwise.checkers.filter((c: any) => c.color === 'white')
-      .length
-  const blackCheckersOff =
-    board.off.clockwise.checkers.filter((c: any) => c.color === 'black')
-      .length +
-    board.off.counterclockwise.checkers.filter((c: any) => c.color === 'black')
-      .length
+  // White bears off clockwise; Black bears off counterclockwise
+  const whiteCheckersOff = board.off.clockwise.checkers.filter(
+    (c: any) => c.color === 'white'
+  ).length
+  const blackCheckersOff = board.off.counterclockwise.checkers.filter(
+    (c: any) => c.color === 'black'
+  ).length
 
   if (whiteCheckersOff === 15) return 'white'
   if (blackCheckersOff === 15) return 'black'
@@ -61,17 +60,13 @@ export async function runDebugSingleGame() {
   const whitePlayer = Player.initialize(
     'white',
     'clockwise',
-    undefined,
-    undefined,
-    'inactive',
+    'rolling-for-start',
     true
   )
   const blackPlayer = Player.initialize(
     'black',
     'counterclockwise',
-    undefined,
-    undefined,
-    'inactive',
+    'rolling-for-start',
     true
   )
   const players = [whitePlayer, blackPlayer] as [
@@ -120,65 +115,32 @@ export async function runDebugSingleGame() {
 
     // Make moves until no more valid moves are available
     let moveCount = 0
-    let gameMoved: any = gameRolled
-
-    // Only call Game.move if there is a valid move origin
-    const firstMove = Array.from(gameRolled.activePlay.moves)[0]
-    if (firstMove && firstMove.origin) {
-      // Transition through proper state flow: rolled -> preparing-move -> moving
-      const preparingGame = Game.prepareMove(gameRolled)
-      const gameMoving = Game.toMoving(preparingGame)
-
-      // Execute first move
-      gameMoved = Game.move(gameMoving, firstMove.origin.id)
-      moveCount++
-      totalMoves++
-
-      // Display board after first move
-      displayBoard(
-        gameMoved,
-        turnCount,
-        moveCount,
-        roll,
-        gameRolled.activeColor,
-        playerModels
-      )
-    }
+    let gameMoved: BackgammonGameMoving | BackgammonGameMoved = gameRolled
 
     try {
       while (
+        gameMoved.stateKind === 'moving' &&
         Array.from(gameMoved.activePlay.moves).some((m: any) => {
-          // Only consider moves that are 'ready' or 'in-progress' and have possible moves
-          if (
-            m.stateKind === 'ready' ||
-            (m.stateKind === 'in-progress' && !m.origin)
-          ) {
-            const possibleMoves = Board.getPossibleMoves(
-              gameMoved.board,
-              m.player,
-              m.dieValue
-            )
-            return possibleMoves.length > 0
+          if (m.stateKind === 'ready' || (m.stateKind === 'in-progress' && !m.origin)) {
+            const pm = Board.getPossibleMoves(gameMoved.board, m.player, m.dieValue) as
+              | BackgammonMoveSkeleton[]
+              | { moves: BackgammonMoveSkeleton[] }
+            const movesArr = Array.isArray(pm) ? pm : pm.moves
+            return movesArr.length > 0
           }
           return false
         })
       ) {
-        const nextMove = Array.from(gameMoved.activePlay.moves).find(
-          (m: any) => {
-            if (
-              m.stateKind === 'ready' ||
-              (m.stateKind === 'in-progress' && !m.origin)
-            ) {
-              const possibleMoves = Board.getPossibleMoves(
-                gameMoved.board,
-                m.player,
-                m.dieValue
-              )
-              return possibleMoves.length > 0
-            }
-            return false
+        const nextMove = Array.from(gameMoved.activePlay.moves).find((m: any) => {
+          if (m.stateKind === 'ready' || (m.stateKind === 'in-progress' && !m.origin)) {
+            const pm = Board.getPossibleMoves(gameMoved.board, m.player, m.dieValue) as
+              | BackgammonMoveSkeleton[]
+              | { moves: BackgammonMoveSkeleton[] }
+            const movesArr = Array.isArray(pm) ? pm : pm.moves
+            return movesArr.length > 0
           }
-        ) as BackgammonMove
+          return false
+        }) as BackgammonMove | undefined
 
         if (!nextMove) {
           console.log('\n⚠️  No next move found - game may be stuck!')
@@ -186,11 +148,12 @@ export async function runDebugSingleGame() {
         }
 
         // Recalculate possible moves for this die value based on current board state
-        const possibleMoves = Board.getPossibleMoves(
+        const pm = Board.getPossibleMoves(
           gameMoved.board,
-          nextMove.player,
-          nextMove.dieValue
-        )
+          (nextMove as any).player,
+          (nextMove as any).dieValue
+        ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
+        const possibleMoves = Array.isArray(pm) ? pm : pm.moves
 
         // Take the first valid move that has checkers
         let validMove = null
@@ -218,25 +181,36 @@ export async function runDebugSingleGame() {
 
         try {
           // Ensure proper state transition before move
-          let gameToMove = gameMoved
-          if (gameMoved.stateKind === 'preparing-move') {
-            gameToMove = Game.toMoving(gameMoved)
+          const gameToMove = gameMoved
+          const originChecker = origin.checkers.find(
+            (c: any) => c.color === (gameMoved as any).activeColor
+          )
+          if (!originChecker) {
+            console.log('No checker of active color at chosen origin; breaking')
+            break
           }
-          const moveResult = Game.move(gameToMove, origin.id)
-          if ('board' in moveResult) {
+          const moveResult = Game.move(
+            gameToMove as BackgammonGameMoving,
+            originChecker.id
+          )
+          if ((moveResult as any).stateKind === 'moved') {
+            gameMoved = moveResult as BackgammonGameMoved
+          } else if ('board' in moveResult) {
             gameMoved = moveResult as BackgammonGameMoving
             moveCount++
             totalMoves++
 
             // Display board after this move
-            displayBoard(
-              gameMoved,
-              turnCount,
-              moveCount,
-              roll,
-              gameRolled.activeColor,
-              playerModels
-            )
+            if (gameMoved.stateKind === 'moving') {
+              displayBoard(
+                gameMoved,
+                turnCount,
+                moveCount,
+                roll,
+                gameRolled.activeColor,
+                playerModels
+              )
+            }
           }
         } catch (error) {
           console.log(`\n❌ Error making move: ${error}`)
@@ -333,43 +307,12 @@ export async function runDebugSingleGame() {
       }
     })
 
-    // Check if all moves are completed
-    const allMovesCompleted = Array.from(gameMoved.activePlay.moves).every(
-      (m: any) => m.stateKind === 'completed'
-    )
-
-    if (allMovesCompleted) {
-      // All dice have been used, switch turns
+    // If the game reached 'moved' state, confirm turn
+    if (gameMoved.stateKind === 'moved') {
       console.log(
         `\n✅ All moves completed for ${gameMoved.activeColor}. Switching turns.`
       )
-      // Switch turns
-      console.log(`\n🔄 Switching to ${gameMoved.inactivePlayer.color}'s turn`)
-      const newActiveColor = gameMoved.inactivePlayer.color
-      let [newActivePlayer, newInactivePlayer] = Game.getPlayersForColor(
-        gameMoved.players,
-        newActiveColor
-      )
-      // Set correct stateKinds for next turn
-      newActivePlayer = {
-        ...newActivePlayer,
-        stateKind: 'rolling',
-      } as any // BackgammonPlayerRolling
-      newInactivePlayer = {
-        ...newInactivePlayer,
-        stateKind: 'inactive',
-      } as any // BackgammonPlayerInactive
-      gameRolling = Game.initialize(
-        [newActivePlayer, newInactivePlayer],
-        gameMoved.id,
-        'rolling',
-        gameMoved.board,
-        gameMoved.cube,
-        undefined, // activePlay
-        newActiveColor,
-        newActivePlayer,
-        newInactivePlayer
-      ) as any
+      gameRolling = Game.confirmTurn(gameMoved)
       continue // Start next turn
     }
 

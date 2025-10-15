@@ -807,9 +807,9 @@ export class Game {
       : activePlay
 
     // Update the players array
-    const updatedPlayers = game.players.map((p) =>
+    const updatedPlayers = (game.players.map((p) =>
       p.id === activePlayer.id ? updatedActivePlayer : p
-    ) as BackgammonPlayers
+    ) as unknown) as BackgammonPlayers
 
     // Return the same state type as input
     return {
@@ -1375,7 +1375,7 @@ export class Game {
           dice: Dice.initialize(player.color, 'rolling'),
         }
       }
-    }) as BackgammonPlayers
+    }) as BackgammonPlayersRollingTuple
 
     // Recalculate pip counts before transitioning to next player
     logger.info(
