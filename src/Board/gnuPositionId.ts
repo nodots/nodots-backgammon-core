@@ -139,7 +139,7 @@ export function exportToGnuPositionId(game: BackgammonGame): string {
     bitString = bitString.padEnd(80, '0')
   }
 
-  const method = (process.env.NODOTS_GNU_PID_ENCODER || 'legacy').toLowerCase()
+  const method = (process.env.NODOTS_GNU_PID_ENCODER || 'strict').toLowerCase()
   if (method === 'strict') {
     return encodeBase64Six(bitString)
   }

@@ -306,3 +306,23 @@ game = Game.roll(game)
 
 game = await Game.executeRobotTurn(game)
 ```
+### If npm is failing in your environment
+
+If `npm` exits with the message:
+
+```
+Exit prior to config file resolving
+cause
+call config.load() before reading values
+```
+
+that indicates a global npm/Node preloader on your machine, not a problem in this package. As a workaround, use the Node-based runners included here (they bypass npm and clear `NODE_OPTIONS`):
+
+- Build without npm:
+  - `node scripts/run-build.js`
+  - or `make build`
+
+- Run simulators without npm:
+  - `node scripts/run-simulate.js [maxTurns]`
+  - `node scripts/run-simulate-multiple.js [numGames]`
+  - or `make simulate`, `make simulate-multi`

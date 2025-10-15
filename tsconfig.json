@@ -18,6 +18,11 @@
     "skipLibCheck": true,                                 /* Skip type checking all .d.ts files. */
 
     "baseUrl": ".",
+    "paths": {
+      "@nodots-llc/backgammon-types": ["../../types/dist"],
+      "@nodots-llc/backgammon-ai": ["../../ai/dist"],
+      "@nodots-llc/backgammon-dice": ["../../dice/dist"]
+    },
     "declaration": true,
     "declarationMap": true,
     "emitDeclarationOnly": false,

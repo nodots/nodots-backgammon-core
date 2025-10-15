@@ -116,16 +116,14 @@ ${'='.repeat(80)}
 }
 
 function checkWinCondition(board: any): string | null {
-  const whiteCheckersOff =
-    board.off.clockwise.checkers.filter((c: any) => c.color === 'white')
-      .length +
-    board.off.counterclockwise.checkers.filter((c: any) => c.color === 'white')
-      .length
-  const blackCheckersOff =
-    board.off.clockwise.checkers.filter((c: any) => c.color === 'black')
-      .length +
-    board.off.counterclockwise.checkers.filter((c: any) => c.color === 'black')
-      .length
+  // Each color bears off to its own directional off area
+  // White plays clockwise; Black plays counterclockwise
+  const whiteCheckersOff = board.off.clockwise.checkers.filter(
+    (c: any) => c.color === 'white'
+  ).length
+  const blackCheckersOff = board.off.counterclockwise.checkers.filter(
+    (c: any) => c.color === 'black'
+  ).length
 
   if (whiteCheckersOff === 15) return 'white'
   if (blackCheckersOff === 15) return 'black'
