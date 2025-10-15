@@ -62,6 +62,48 @@ function getCheckersOnBar(board: BackgammonBoard, player: BackgammonPlayer): num
   return barForPlayer.checkers.filter((c) => c.color === player.color).length
 }
 
+function encodeBase64Six(bitString: string): string {
+  let out = ''
+  for (let i = 0; i < 14; i++) {
+    const start = i * 6
+    let bits = bitString.substring(start, start + 6)
+    if (bits.length < 6) bits = bits.padEnd(6, '0')
+    let value = 0
+    for (let j = 0; j < 6; j++) if (bits[j] === '1') value |= 1 << (5 - j)
+    out += GNU_BASE64[value]
+  }
+  return out
+}
+
+function encodeBase64ViaBytesLSB(bitString: string): string {
+  const bytes: number[] = []
+  for (let i = 0; i < 10; i++) {
+    const byteBits = bitString.substring(i * 8, (i + 1) * 8)
+    let byteValue = 0
+    for (let j = 0; j < 8; j++) {
+      if (byteBits[j] === '1') byteValue |= 1 << j
+    }
+    bytes.push(byteValue)
+  }
+  let base64Chars = ''
+  let numBuffer = 0
+  let numBits = 0
+  for (let i = 0; i < bytes.length; ++i) {
+    numBuffer = (numBuffer << 8) | bytes[i]
+    numBits += 8
+    while (numBits >= 6) {
+      numBits -= 6
+      const chunk = (numBuffer >> numBits) & 0x3f
+      base64Chars += GNU_BASE64[chunk]
+    }
+  }
+  if (numBits > 0) {
+    const chunk = (numBuffer << (6 - numBits)) & 0x3f
+    base64Chars += GNU_BASE64[chunk]
+  }
+  return base64Chars.substring(0, 14)
+}
+
 export function exportToGnuPositionId(game: BackgammonGame): string {
   const { board } = game
   const { playerOnRoll, opponent } = getPlayerAndOpponent(game)
@@ -97,33 +139,10 @@ export function exportToGnuPositionId(game: BackgammonGame): string {
     bitString = bitString.padEnd(80, '0')
   }
 
-  // Convert to bytes (little-endian per-bit within each byte)
-  const bytes: number[] = []
-  for (let i = 0; i < 10; i++) {
-    const byteBits = bitString.substring(i * 8, (i + 1) * 8)
-    let byteValue = 0
-    for (let j = 0; j < 8; j++) {
-      if (byteBits[j] === '1') byteValue |= 1 << j
-    }
-    bytes.push(byteValue)
+  const method = (process.env.NODOTS_GNU_PID_ENCODER || 'legacy').toLowerCase()
+  if (method === 'strict') {
+    return encodeBase64Six(bitString)
   }
-
-  // Base64 encode bytes into 14 chars
-  let base64Chars = ''
-  let numBuffer = 0
-  let numBits = 0
-  for (let i = 0; i < bytes.length; ++i) {
-    numBuffer = (numBuffer << 8) | bytes[i]
-    numBits += 8
-    while (numBits >= 6) {
-      numBits -= 6
-      const chunk = (numBuffer >> numBits) & 0x3f
-      base64Chars += GNU_BASE64[chunk]
-    }
-  }
-  if (numBits > 0) {
-    const chunk = (numBuffer << (6 - numBits)) & 0x3f
-    base64Chars += GNU_BASE64[chunk]
-  }
-  return base64Chars.substring(0, 14)
+  // Default legacy method (matches existing behavior in simulations)
+  return encodeBase64ViaBytesLSB(bitString)
 }
