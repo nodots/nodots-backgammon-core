@@ -1548,13 +1548,8 @@ export class Game {
               }
             )
 
-            // CRITICAL FIX: When Player.getBestMove fails, complete the turn instead of leaving stuck
-            // This handles edge cases where AI cannot select a move but moves are available
-            logger.warn(
-              '🤖 Completing turn due to move selection failure to prevent stuck game'
-            )
-            const movedGame = Game.toMoved(gameMoving)
-            return Game.confirmTurn(movedGame)
+            // Strict behavior: surface AI failure so callers/simulators can react
+            throw new Error('AI move selection failed: Nodots/GBG returned no move')
           }
 
           // Extract checker ID from the selected move's first possible move

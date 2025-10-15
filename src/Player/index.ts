@@ -422,50 +422,18 @@ export class Player {
       }))
     })
 
-    // Try to use AI selectBestMove for intelligent move selection
+    // Require AI module to be available; do not fallback
     logger.info('🤖 [Player.getBestMove] Attempting to load AI package')
+    // @ts-ignore - Dynamic import of optional dependency
+    const aiModule = await import('@nodots-llc/backgammon-ai')
+    logger.info('🤖 [Player.getBestMove] AI package loaded, calling selectBestMove')
 
-    try {
-      // @ts-ignore - Dynamic import of optional dependency
-      const aiModule = await import('@nodots-llc/backgammon-ai')
-      logger.info('🤖 [Player.getBestMove] AI package loaded, calling selectBestMove')
-
-      const bestMove = await aiModule.selectBestMove(play, playerUserId)
-      if (bestMove) {
-        const originId = bestMove.stateKind === 'ready' ? bestMove.possibleMoves?.[0]?.origin?.id : (bestMove as any).origin?.id
-        logger.info(`🤖 [Player.getBestMove] AI selected move from ${originId} (${bestMove.stateKind})`)
-        return bestMove
-      } else {
-        logger.warn('🤖 [Player.getBestMove] AI returned no move, falling back to first available')
-      }
-    } catch (error) {
-      logger.warn(
-        `🤖 [Player.getBestMove] AI package unavailable: ${String(error)}, using fallback`
-      )
+    const bestMove = await aiModule.selectBestMove(play, playerUserId)
+    if (!bestMove) {
+      throw new Error('Nodots AI did not return a move')
     }
-
-    // Fallback to first available move
-    const readyMoves = Array.from(play.moves).filter(
-      (move) => move.stateKind === 'ready'
-    )
-
-    logger.info('🤖 [Player.getBestMove] Fallback logic:', {
-      totalMoves: movesArray.length,
-      readyMoves: readyMoves.length,
-      readyMoveDetails: readyMoves.map(m => ({
-        dieValue: m.dieValue,
-        moveKind: m.moveKind,
-        hasPossibleMoves: !!m.possibleMoves?.length,
-        hasCheckers: !!m.possibleMoves?.[0]?.origin?.checkers?.length
-      }))
-    })
-
-    if (readyMoves.length === 0) {
-      logger.warn('🤖 [Player.getBestMove] No ready moves found, returning undefined')
-      return undefined
-    }
-
-    logger.info('🤖 [Player.getBestMove] Using first available move as fallback')
-    return readyMoves[0]
+    const originId = bestMove.stateKind === 'ready' ? bestMove.possibleMoves?.[0]?.origin?.id : (bestMove as any).origin?.id
+    logger.info(`🤖 [Player.getBestMove] AI selected move from ${originId} (${bestMove.stateKind})`)
+    return bestMove
   }
 }
