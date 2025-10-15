@@ -168,6 +168,20 @@ function checkWinCondition(board: any): 'white' | 'black' | null {
   return null
 }
 
+// Optional dice seeding for reproducibility
+function seedRandom(seed: number) {
+  let t = seed >>> 0
+  // Mulberry32
+  const rng = () => {
+    t += 0x6D2B79F5
+    let r = Math.imul(t ^ (t >>> 15), 1 | t)
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r)
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296
+  }
+  // Patch Math.random
+  ;(Math as any).random = rng
+}
+
 export async function runSimulation(maxTurns: number = 100): Promise<
   | void
   | {
@@ -177,6 +191,11 @@ export async function runSimulation(maxTurns: number = 100): Promise<
       totalMoves: number
       noMoves: number
       gnuColor: 'white' | 'black'
+      // instrumentation
+      gnuHintsAttempted: number
+      gnuHintsMatched: number
+      nodotsOpeningChosen: number
+      nodotsStrategicChosen: number
     }
 > {
   // Initialize players
@@ -196,6 +215,13 @@ export async function runSimulation(maxTurns: number = 100): Promise<
     typeof whitePlayer,
     typeof blackPlayer
   ]
+
+  // Optional seeding
+  const seedArg = process.argv.find((a) => a.startsWith('--seed='))
+  if (seedArg) {
+    const sv = parseInt(seedArg.split('=')[1] || '0', 10)
+    if (!Number.isNaN(sv)) seedRandom(sv)
+  }
 
   // Initialize game
   let game = Game.initialize(players) as BackgammonGameRollingForStart
@@ -221,6 +247,11 @@ export async function runSimulation(maxTurns: number = 100): Promise<
   let diceUsedTotal = 0 // includes no-move
   let noMovesTotal = 0
   let lastBoard = game.board
+  // instrumentation counters
+  let gnuHintsAttempted = 0
+  let gnuHintsMatched = 0
+  let nodotsOpeningChosen = 0
+  let nodotsStrategicChosen = 0
 
   // Roll for start
   let gameState: BackgammonGameRolledForStart | BackgammonGameRolling =
@@ -313,6 +344,7 @@ export async function runSimulation(maxTurns: number = 100): Promise<
           } else {
             hints = await getGnuMoveHints(request, GNU_MAPPER === 'ai' ? 3 : 1)
           }
+          gnuHintsAttempted++
           if (!hints || hints.length === 0 || !hints[0].moves || hints[0].moves.length === 0) {
             if (MAPPING_DEBUG) {
               debugDumpMapping(gameMoved, hints || null, normalization)
@@ -451,6 +483,8 @@ export async function runSimulation(maxTurns: number = 100): Promise<
                 `GNU suggested sequence has no playable step for current dice | pid=${pid} roll=${rollTuple.join(',')}`
               )
             }
+          } else {
+            gnuHintsMatched++
           }
         }
         if (!isGnu || !chosenDie) {
@@ -474,6 +508,9 @@ export async function runSimulation(maxTurns: number = 100): Promise<
                 return Array.isArray(pm2) ? pm2 : pm2.moves
               })()
           selectedOrigin = undefined
+          const src = (best as any).__source
+          if (src === 'opening') nodotsOpeningChosen++
+          if (src === 'strategic') nodotsStrategicChosen++
         }
 
         // Display possible moves unless running in quiet/fast mode
@@ -707,6 +744,10 @@ export async function runSimulation(maxTurns: number = 100): Promise<
     totalMoves: diceUsedTotal,
     noMoves: noMovesTotal,
     gnuColor: gnuIsWhite ? 'white' : 'black',
+    gnuHintsAttempted,
+    gnuHintsMatched,
+    nodotsOpeningChosen,
+    nodotsStrategicChosen,
   }
 }
 

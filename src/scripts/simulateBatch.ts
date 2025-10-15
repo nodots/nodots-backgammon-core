@@ -8,6 +8,7 @@ interface BatchOptions {
   gnuColor?: 'white' | 'black'
   fast: boolean
   quiet: boolean
+  seed?: number
 }
 
 function parseArgs(): BatchOptions {
@@ -17,14 +18,16 @@ function parseArgs(): BatchOptions {
   let gnuColor: 'white' | 'black' | undefined
   let fast = true
   let quiet = true
+  let seed: number | undefined
   for (const a of args) {
     if (a.startsWith('--games=')) games = parseInt(a.split('=')[1], 10)
     else if (a.startsWith('--workers=')) workers = parseInt(a.split('=')[1], 10)
     else if (a.startsWith('--gnu-color=')) gnuColor = a.split('=')[1] as any
     else if (a === '--no-fast') fast = false
     else if (a === '--no-quiet') quiet = false
+    else if (a.startsWith('--seed=')) seed = parseInt(a.split('=')[1], 10)
   }
-  return { games, workers, gnuColor, fast, quiet }
+  return { games, workers, gnuColor, fast, quiet, seed }
 }
 
 async function runSingleProcess(opts: BatchOptions) {
@@ -56,6 +59,11 @@ async function runSingleProcess(opts: BatchOptions) {
   let totalMoves = 0
 
   for (let i = 0; i < opts.games; i++) {
+    if (opts.seed !== undefined) {
+      // advance seed per game to vary sequences deterministically
+      const perGameSeed = (opts.seed + i) >>> 0
+      process.argv.push(`--seed=${perGameSeed}`)
+    }
     const res = (await runSimulation(0)) as any
     const winnerColor: 'white' | 'black' | null = res?.winner || null
     const gnuColor: 'white' | 'black' | undefined = res?.gnuColor || opts.gnuColor
