@@ -222,7 +222,7 @@ export async function runSimulation(maxTurns: number = 100) {
           // Build a direct hint request from the game state to avoid Position ID encoding issues
           await initializeGnubgHints()
           await configureGnubgHints({ evalPlies: 2, moveFilter: 2, usePruning: true })
-          const { request } = buildHintContextFromGame(gameMoved as any)
+          const { request, normalization } = buildHintContextFromGame(gameMoved as any)
           const rollTuple = gameMoved.activePlayer.dice.currentRoll as [number, number]
           request.dice = [rollTuple[0], rollTuple[1]]
           const hints = await getGnuMoveHints(request, 1)
@@ -246,16 +246,37 @@ export async function runSimulation(maxTurns: number = 100) {
           {
             // Strict mapping: iterate GNU's sequence; choose the first step playable with remaining dice
             const gmSeq = hints[0].moves
+            if (MAPPING_DEBUG) {
+              console.log('[MAPDBG] GNU sequence length:', gmSeq.length)
+              console.log('[MAPDBG] GNU steps:', gmSeq.map((s: any) => ({ kind: s.moveKind, from: (s as any).from, to: (s as any).to })))
+            }
             const readyMovesAll = Array.from(gameMoved.activePlay.moves).filter((m: any) => m.stateKind === 'ready')
+            if (MAPPING_DEBUG) {
+              console.log('[MAPDBG] Ready dice:', readyMovesAll.map((m: any) => m.dieValue))
+              for (const m of readyMovesAll) {
+                const pm = Board.getPossibleMoves(gameMoved.board, (gameMoved as any).activePlay.player, m.dieValue) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
+                const movesArr = Array.isArray(pm) ? pm : pm.moves
+                console.log('[MAPDBG] Possible origins for die', m.dieValue, movesArr.map((mv: any) => ({
+                  originId: mv.origin?.id,
+                  originCw: mv.origin?.kind === 'point' ? mv.origin?.position?.clockwise : mv.origin?.position,
+                  originCcw: mv.origin?.kind === 'point' ? mv.origin?.position?.counterclockwise : mv.origin?.position,
+                  destKind: mv.destination?.kind,
+                  destCw: mv.destination?.kind === 'point' ? mv.destination?.position?.clockwise : mv.destination?.position,
+                  destCcw: mv.destination?.kind === 'point' ? mv.destination?.position?.counterclockwise : mv.destination?.position,
+                })))
+              }
+            }
             const { direction, color } = gameMoved.activePlayer as any
             const dir = direction as 'clockwise' | 'counterclockwise'
+            const normalizedColor = normalization.toGnu[color as 'white' | 'black'] as 'white' | 'black'
+            const gnuDir: 'clockwise' | 'counterclockwise' = normalizedColor === 'white' ? 'clockwise' : 'counterclockwise'
 
             let matched = false
             for (const g of gmSeq) {
               const points = (gameMoved.board as any).points
               const origin = g.moveKind === 'reenter'
                 ? (gameMoved.board as any).bar[dir]
-                : points.find((p: any) => p.position[dir] === (g as any).from)
+                : points.find((p: any) => p.position[gnuDir] === (g as any).from)
               if (!origin) continue
               if (!origin.checkers?.some((c: any) => c.color === color)) continue
 
@@ -265,8 +286,11 @@ export async function runSimulation(maxTurns: number = 100) {
                 : ((): any => {
                     const toVal = typeof toRaw === 'number' ? toRaw : NaN
                     if (Number.isNaN(toVal)) return undefined
-                    return points.find((p: any) => p.position[dir] === toVal)
+                    return points.find((p: any) => p.position[gnuDir] === toVal)
                   })()
+              if (MAPPING_DEBUG) {
+                console.log('[MAPDBG] Trying GNU step', { kind: g.moveKind, from: (g as any).from, to: (g as any).to, originId: origin?.id, destId: destination?.id })
+              }
 
               for (const m of readyMovesAll) {
                 const dv = m.dieValue
@@ -277,12 +301,14 @@ export async function runSimulation(maxTurns: number = 100) {
                 ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
                 const movesArr = Array.isArray(pm) ? pm : pm.moves
                 const match = movesArr.find((mv: any) => mv.origin?.id === origin.id && (!destination || mv.destination?.id === destination.id))
-                  || movesArr.find((mv: any) => mv.origin?.id === origin.id)
                 if (match) {
                   chosenDie = dv
                   possibleMoves = movesArr
                   selectedOrigin = origin
                   matched = true
+                  if (MAPPING_DEBUG) {
+                    console.log('[MAPDBG] Matched step with die', dv)
+                  }
                   break
                 }
               }
