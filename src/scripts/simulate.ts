@@ -112,7 +112,7 @@ function writeMappingSample(
     const logFile = path.join(logsDir, `mapping-${color}.log`)
     const pid = exportToGnuPositionId(gameMoved as any)
     const roll = (gameMoved as any).activePlayer?.dice?.currentRoll
-    const readyMovesAll = Array.from((gameMoved as any).activePlay?.moves || []).filter((m: any) => m.stateKind === 'ready')
+    const readyMovesAll: any[] = (Array.from(((gameMoved as any).activePlay?.moves || []) as any) as any[]).filter((m: any) => m.stateKind === 'ready')
     const normalizedColor = normalization?.toGnu?.[(gameMoved as any).activePlayer?.color] || 'white'
     const lines: string[] = []
     lines.push(`time=${new Date().toISOString()} pid=${pid} color=${color} roll=${Array.isArray(roll) ? roll.join(',') : roll}`)

@@ -9,6 +9,7 @@ interface BatchOptions {
   fast: boolean
   quiet: boolean
   seed?: number
+  mappingSample?: number
 }
 
 function parseArgs(): BatchOptions {
@@ -19,6 +20,7 @@ function parseArgs(): BatchOptions {
   let fast = true
   let quiet = true
   let seed: number | undefined
+  let mappingSample: number | undefined
   for (const a of args) {
     if (a.startsWith('--games=')) games = parseInt(a.split('=')[1], 10)
     else if (a.startsWith('--workers=')) workers = parseInt(a.split('=')[1], 10)
@@ -26,8 +28,9 @@ function parseArgs(): BatchOptions {
     else if (a === '--no-fast') fast = false
     else if (a === '--no-quiet') quiet = false
     else if (a.startsWith('--seed=')) seed = parseInt(a.split('=')[1], 10)
+    else if (a.startsWith('--mapping-sample=')) mappingSample = parseInt(a.split('=')[1], 10)
   }
-  return { games, workers, gnuColor, fast, quiet, seed }
+  return { games, workers, gnuColor, fast, quiet, seed, mappingSample }
 }
 
 type SideStats = {
@@ -94,6 +97,9 @@ async function runSingleProcess(opts: BatchOptions) {
       const perGameSeed = (opts.seed + i) >>> 0
       process.argv.push(`--seed=${perGameSeed}`)
     }
+    if (opts.mappingSample && i === 0) {
+      process.argv.push(`--mapping-sample=${opts.mappingSample}`)
+    }
     const res = (await runSimulation(0)) as any
     const winnerColor: 'white' | 'black' | null = res?.winner || null
     const gnuColor: 'white' | 'black' | undefined = res?.gnuColor || opts.gnuColor
@@ -157,6 +163,7 @@ async function runMultiProcess(opts: BatchOptions) {
           const baseSeed = (opts.seed + w * 100000) >>> 0
           args.push(`--seed=${baseSeed}`)
         }
+        if (opts.mappingSample) args.push(`--mapping-sample=${opts.mappingSample}`)
         const child = fork(
           require.resolve('./workerSim'),
           args,
