@@ -1,10 +1,12 @@
+const collectCoverage = process.env.COVERAGE === '1'
+
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   rootDir: './src',
   coverageDirectory: '../coverage',
-  verbose: true,
-  collectCoverage: true,
+  verbose: false,
+  collectCoverage,
   coverageReporters: ['text', 'lcov'],
   testMatch: ['**/?(*.)+(test).ts'],
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
@@ -14,6 +16,8 @@ module.exports = {
       {
         tsconfig: 'tsconfig.json',
         useESM: true,
+        diagnostics: false,
+        isolatedModules: true,
       },
     ],
   },
