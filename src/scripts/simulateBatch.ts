@@ -9,6 +9,8 @@ interface BatchOptions {
   fast: boolean
   quiet: boolean
   seed?: number
+  mappingSample?: number
+  swapDirections?: boolean
 }
 
 function parseArgs(): BatchOptions {
@@ -19,6 +21,8 @@ function parseArgs(): BatchOptions {
   let fast = true
   let quiet = true
   let seed: number | undefined
+  let mappingSample: number | undefined
+  let swapDirections = false
   for (const a of args) {
     if (a.startsWith('--games=')) games = parseInt(a.split('=')[1], 10)
     else if (a.startsWith('--workers=')) workers = parseInt(a.split('=')[1], 10)
@@ -26,8 +30,10 @@ function parseArgs(): BatchOptions {
     else if (a === '--no-fast') fast = false
     else if (a === '--no-quiet') quiet = false
     else if (a.startsWith('--seed=')) seed = parseInt(a.split('=')[1], 10)
+    else if (a.startsWith('--mapping-sample=')) mappingSample = parseInt(a.split('=')[1], 10)
+    else if (a === '--swap-directions') swapDirections = true
   }
-  return { games, workers, gnuColor, fast, quiet, seed }
+  return { games, workers, gnuColor, fast, quiet, seed, mappingSample, swapDirections }
 }
 
 type SideStats = {
@@ -67,6 +73,10 @@ async function runSingleProcess(opts: BatchOptions) {
     // Ensure simulate.ts can read this flag
     process.argv.push(`--gnu-color=${opts.gnuColor}`)
   }
+  if (opts.swapDirections) {
+    process.argv.push('--swap-directions')
+    process.env.NODOTS_SWAP_DIRECTIONS = '1'
+  }
 
   let whiteWins = 0
   let blackWins = 0
@@ -92,7 +102,11 @@ async function runSingleProcess(opts: BatchOptions) {
     if (opts.seed !== undefined) {
       // advance seed per game to vary sequences deterministically
       const perGameSeed = (opts.seed + i) >>> 0
-      process.argv.push(`--seed=${perGameSeed}`)
+      // set per-game seed via env to avoid accumulating argv flags
+      process.env.NODOTS_SEED = String(perGameSeed)
+    }
+    if (opts.mappingSample && i === 0) {
+      process.argv.push(`--mapping-sample=${opts.mappingSample}`)
     }
     const res = (await runSimulation(0)) as any
     const winnerColor: 'white' | 'black' | null = res?.winner || null
@@ -153,10 +167,12 @@ async function runMultiProcess(opts: BatchOptions) {
         env.NODOTS_LOG_SILENT = opts.quiet ? '1' : env.NODOTS_LOG_SILENT
         const args: string[] = [String(count)]
         if (opts.gnuColor) args.push(`--gnu-color=${opts.gnuColor}`)
+        if (opts.swapDirections) args.push('--swap-directions')
         if (opts.seed !== undefined) {
           const baseSeed = (opts.seed + w * 100000) >>> 0
           args.push(`--seed=${baseSeed}`)
         }
+        if (opts.mappingSample) args.push(`--mapping-sample=${opts.mappingSample}`)
         const child = fork(
           require.resolve('./workerSim'),
           args,

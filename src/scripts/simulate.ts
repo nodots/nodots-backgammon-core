@@ -112,8 +112,8 @@ function writeMappingSample(
     const logFile = path.join(logsDir, `mapping-${color}.log`)
     const pid = exportToGnuPositionId(gameMoved as any)
     const roll = (gameMoved as any).activePlayer?.dice?.currentRoll
-    const readyMovesAll = Array.from((gameMoved as any).activePlay?.moves || []).filter((m: any) => m.stateKind === 'ready')
-    const normalizedColor = normalization?.toGnu?.[(gameMoved as any).activePlayer?.color] || 'white'
+    const readyMovesAll: any[] = (Array.from(((gameMoved as any).activePlay?.moves || []) as any) as any[]).filter((m: any) => m.stateKind === 'ready')
+    const normalizedColor = 'white'
     const lines: string[] = []
     lines.push(`time=${new Date().toISOString()} pid=${pid} color=${color} roll=${Array.isArray(roll) ? roll.join(',') : roll}`)
     // Top hint step
@@ -123,8 +123,11 @@ function writeMappingSample(
     } else {
       lines.push(`hintStep none`)
     }
-    // Enumerate normalized possible moves for each ready die
-    for (const m of readyMovesAll) {
+    // Enumerate normalized possible moves for each candidate die (ready + in-progress w/o origin)
+    const candidateMoves: any[] = (Array.from(((gameMoved as any).activePlay?.moves || []) as any) as any[]).filter(
+      (mm: any) => mm.stateKind === 'ready' || (mm.stateKind === 'in-progress' && !mm.origin)
+    )
+    for (const m of candidateMoves as any[]) {
       const die = m.dieValue
       const pm = Board.getPossibleMoves(
         (gameMoved as any).board,
@@ -140,6 +143,20 @@ function writeMappingSample(
       }))
       lines.push(`die=${die} possible=${mapped.length} -> ` + mapped.map((x) => `${x.from}:${x.to}:${x.fromC}->${x.toC}`).join(','))
     }
+    // Also list normalized positions occupied by active player's checkers
+    try {
+      const pts = (gameMoved as any).board.points as any[]
+      const activeDir = (gameMoved as any).activePlayer.direction as 'clockwise' | 'counterclockwise'
+      const positions: number[] = []
+      pts.forEach((p) => {
+        const has = p.checkers.some((c: any) => c.color === (gameMoved as any).activePlayer.color)
+        if (has) {
+          const pos = activeDir === 'clockwise' ? p.position.clockwise : p.position.counterclockwise
+          positions.push(pos)
+        }
+      })
+      lines.push(`activeCheckerPositions(${activeDir})=` + positions.sort((a,b)=>a-b).join(','))
+    } catch {}
     lines.push('---\n')
     fs.appendFileSync(logFile, lines.join('\n'))
   } catch {
@@ -244,6 +261,23 @@ function seedRandom(seed: number) {
   ;(Math as any).random = rng
 }
 
+function getSeedFromEnvOrArgs(): number | undefined {
+  // Prefer explicit environment variable if provided
+  const envSeed = process.env.NODOTS_SEED
+  if (envSeed !== undefined) {
+    const v = parseInt(envSeed, 10)
+    if (!Number.isNaN(v)) return v >>> 0
+  }
+  // Fall back to the LAST --seed= occurrence in argv (avoid stale first entry)
+  const seeds = process.argv.filter((a) => a.startsWith('--seed='))
+  if (seeds.length > 0) {
+    const last = seeds[seeds.length - 1]
+    const v = parseInt(last.split('=')[1] || '0', 10)
+    if (!Number.isNaN(v)) return v >>> 0
+  }
+  return undefined
+}
+
 export async function runSimulation(maxTurns: number = 100): Promise<
   | void
   | {
@@ -262,29 +296,19 @@ export async function runSimulation(maxTurns: number = 100): Promise<
     }
 > {
   // Initialize players
-  const whitePlayer = Player.initialize(
-    'white',
-    'clockwise',
-    'rolling-for-start',
-    true
-  )
-  const blackPlayer = Player.initialize(
-    'black',
-    'counterclockwise',
-    'rolling-for-start',
-    true
-  )
+  const swapDirections = process.argv.includes('--swap-directions') || process.env.NODOTS_SWAP_DIRECTIONS === '1'
+  const whiteDir: 'clockwise' | 'counterclockwise' = swapDirections ? 'counterclockwise' : 'clockwise'
+  const blackDir: 'clockwise' | 'counterclockwise' = swapDirections ? 'clockwise' : 'counterclockwise'
+  const whitePlayer = Player.initialize('white', whiteDir, 'rolling-for-start', true)
+  const blackPlayer = Player.initialize('black', blackDir, 'rolling-for-start', true)
   const players = [whitePlayer, blackPlayer] as [
     typeof whitePlayer,
     typeof blackPlayer
   ]
 
   // Optional seeding
-  const seedArg = process.argv.find((a) => a.startsWith('--seed='))
-  if (seedArg) {
-    const sv = parseInt(seedArg.split('=')[1] || '0', 10)
-    if (!Number.isNaN(sv)) seedRandom(sv)
-  }
+  const seed = getSeedFromEnvOrArgs()
+  if (seed !== undefined) seedRandom(seed)
 
   // Initialize game
   let game = Game.initialize(players) as BackgammonGameRollingForStart
@@ -470,8 +494,9 @@ export async function runSimulation(maxTurns: number = 100): Promise<
           }
 
           // Strict mapping with exact normalized step match (from/to + container kinds)
-          const { color } = gameMoved.activePlayer as any
-          const normalizedColor = (normalization.toGnu[color as 'white' | 'black'] as 'white' | 'black')
+          // Prefer the frame indicated by normalization, but also try alternate frame to guard color-orientation mismatches
+          const primaryFrame = (normalization.toGnu[(gameMoved.activePlayer as any).color as 'white' | 'black'] as 'white' | 'black')
+          const frames: Array<'white' | 'black'> = primaryFrame === 'white' ? ['white', 'black'] : ['black', 'white']
 
           let matched = false
           if (GNU_MAPPER === 'ai') {
@@ -479,22 +504,25 @@ export async function runSimulation(maxTurns: number = 100): Promise<
             for (const hint of hints) {
               if (!hint.moves || hint.moves.length === 0) continue
               const step = hint.moves[0] as any
-              for (const m of readyMovesAll) {
+              for (const m of Array.from(gameMoved.activePlay.moves).filter((mm: any) => mm.stateKind === 'ready' || (mm.stateKind === 'in-progress' && !mm.origin))) {
                 const dv = m.dieValue
                 const movesArr = getMovesForDie(dv)
                 for (const mv of movesArr) {
-                  const from = getNormalizedPosition(mv.origin as any, normalizedColor)
-                  const to = getNormalizedPosition(mv.destination as any, normalizedColor)
-                  if (from === null || to === null) continue
                   const fromKind = getContainerKind(mv.origin as any)
                   const toKind = getContainerKind(mv.destination as any)
-                  if (step.from === from && step.to === to && step.fromContainer === fromKind && step.toContainer === toKind) {
-                    chosenDie = dv
-                    possibleMoves = movesArr
-                    selectedOrigin = mv.origin as any
-                    matched = true
-                    break
+                  for (const frame of frames) {
+                    const from = getNormalizedPosition(mv.origin as any, frame)
+                    const to = getNormalizedPosition(mv.destination as any, frame)
+                    if (from === null || to === null) continue
+                    if (step.from === from && step.to === to && step.fromContainer === fromKind && step.toContainer === toKind) {
+                      chosenDie = dv
+                      possibleMoves = movesArr
+                      selectedOrigin = mv.origin as any
+                      matched = true
+                      break
+                    }
                   }
+                  if (matched) break
                 }
                 if (matched) break
               }
@@ -504,22 +532,25 @@ export async function runSimulation(maxTurns: number = 100): Promise<
             // steps: only first hint's sequence
             const gmSeq = hints[0].moves
             for (const step of gmSeq) {
-              for (const m of readyMovesAll) {
+              for (const m of Array.from(gameMoved.activePlay.moves).filter((mm: any) => mm.stateKind === 'ready' || (mm.stateKind === 'in-progress' && !mm.origin))) {
                 const dv = m.dieValue
                 const movesArr = getMovesForDie(dv)
                 for (const mv of movesArr) {
-                  const from = getNormalizedPosition(mv.origin as any, normalizedColor)
-                  const to = getNormalizedPosition(mv.destination as any, normalizedColor)
-                  if (from === null || to === null) continue
                   const fromKind = getContainerKind(mv.origin as any)
                   const toKind = getContainerKind(mv.destination as any)
-                  if ((step as any).from === from && (step as any).to === to && (step as any).fromContainer === fromKind && (step as any).toContainer === toKind) {
-                    chosenDie = dv
-                    possibleMoves = movesArr
-                    selectedOrigin = mv.origin as any
-                    matched = true
-                    break
+                  for (const frame of frames) {
+                    const from = getNormalizedPosition(mv.origin as any, frame)
+                    const to = getNormalizedPosition(mv.destination as any, frame)
+                    if (from === null || to === null) continue
+                    if ((step as any).from === from && (step as any).to === to && (step as any).fromContainer === fromKind && (step as any).toContainer === toKind) {
+                      chosenDie = dv
+                      possibleMoves = movesArr
+                      selectedOrigin = mv.origin as any
+                      matched = true
+                      break
+                    }
                   }
+                  if (matched) break
                 }
                 if (matched) break
               }

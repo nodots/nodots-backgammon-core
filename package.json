@@ -40,6 +40,8 @@
     "simulate:game": "NODE_OPTIONS= ts-node src/scripts/simulateGame.ts",
     "simulate:multiple": "NODE_OPTIONS= ts-node src/scripts/simulateMultipleGames.ts",
     "simulate:debug": "NODE_OPTIONS= ts-node src/scripts/debugSingleGame.ts",
+    "simulate:gnu-vs-gnu": "NODE_OPTIONS= ts-node src/scripts/simulateGnuVsGnu.ts",
+    "simulate:gnu-vs-gnu-batch": "NODE_OPTIONS= ts-node src/scripts/simulateGnuVsGnuBatch.ts",
     "simulate:log": "NODE_OPTIONS= ts-node src/scripts/logSingleGame.ts",
     "simulate:until-win": "NODE_OPTIONS= ts-node src/scripts/simulate.ts 0",
     "simulate:batch": "NODE_OPTIONS= NODOTS_SIM_FAST=1 NODOTS_SIM_QUIET=1 NODOTS_LOG_SILENT=1 ts-node src/scripts/simulateBatch.ts",
