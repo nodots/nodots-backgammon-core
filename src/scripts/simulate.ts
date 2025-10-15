@@ -123,8 +123,11 @@ function writeMappingSample(
     } else {
       lines.push(`hintStep none`)
     }
-    // Enumerate normalized possible moves for each ready die
-    for (const m of readyMovesAll) {
+    // Enumerate normalized possible moves for each candidate die (ready + in-progress w/o origin)
+    const candidateMoves = Array.from((gameMoved as any).activePlay?.moves || []).filter(
+      (mm: any) => mm.stateKind === 'ready' || (mm.stateKind === 'in-progress' && !mm.origin)
+    )
+    for (const m of candidateMoves) {
       const die = m.dieValue
       const pm = Board.getPossibleMoves(
         (gameMoved as any).board,
@@ -140,6 +143,20 @@ function writeMappingSample(
       }))
       lines.push(`die=${die} possible=${mapped.length} -> ` + mapped.map((x) => `${x.from}:${x.to}:${x.fromC}->${x.toC}`).join(','))
     }
+    // Also list normalized positions occupied by active player's checkers
+    try {
+      const pts = (gameMoved as any).board.points as any[]
+      const activeDir = (gameMoved as any).activePlayer.direction as 'clockwise' | 'counterclockwise'
+      const positions: number[] = []
+      pts.forEach((p) => {
+        const has = p.checkers.some((c: any) => c.color === (gameMoved as any).activePlayer.color)
+        if (has) {
+          const pos = activeDir === 'clockwise' ? p.position.clockwise : p.position.counterclockwise
+          positions.push(pos)
+        }
+      })
+      lines.push(`activeCheckerPositions(${activeDir})=` + positions.sort((a,b)=>a-b).join(','))
+    } catch {}
     lines.push('---\n')
     fs.appendFileSync(logFile, lines.join('\n'))
   } catch {
