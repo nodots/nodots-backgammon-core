@@ -480,7 +480,7 @@ export async function runSimulation(maxTurns: number = 100): Promise<
             for (const hint of hints) {
               if (!hint.moves || hint.moves.length === 0) continue
               const step = hint.moves[0] as any
-              for (const m of readyMovesAll) {
+              for (const m of Array.from(gameMoved.activePlay.moves).filter((mm: any) => mm.stateKind === 'ready' || (mm.stateKind === 'in-progress' && !mm.origin))) {
                 const dv = m.dieValue
                 const movesArr = getMovesForDie(dv)
                 for (const mv of movesArr) {
@@ -508,7 +508,7 @@ export async function runSimulation(maxTurns: number = 100): Promise<
             // steps: only first hint's sequence
             const gmSeq = hints[0].moves
             for (const step of gmSeq) {
-              for (const m of readyMovesAll) {
+              for (const m of Array.from(gameMoved.activePlay.moves).filter((mm: any) => mm.stateKind === 'ready' || (mm.stateKind === 'in-progress' && !mm.origin))) {
                 const dv = m.dieValue
                 const movesArr = getMovesForDie(dv)
                 for (const mv of movesArr) {
