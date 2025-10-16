@@ -33,6 +33,7 @@
     "test:single": "jest -t",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
+    "prebuild": "npm run clean",
     "build": "tsc",
     "clean": "rm -rf dist coverage",
     "update-coverage": "node scripts/update-coverage.js",
@@ -50,9 +51,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@nodots-llc/backgammon-ai": "^4.1.2",
     "@nodots-llc/backgammon-types": "4.1.1",
-    "@nodots-llc/gnubg-hints": "^1.0.2",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
