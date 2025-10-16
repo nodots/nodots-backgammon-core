@@ -50,7 +50,6 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@nodots-llc/backgammon-ai": "^4.1.2",
     "@nodots-llc/backgammon-types": "4.1.1",
     "uuid": "^11.1.0"
   },
