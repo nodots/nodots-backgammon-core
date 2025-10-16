@@ -1,12 +1,10 @@
 import {
   BackgammonBoard,
-  BackgammonChecker,
   BackgammonCheckerContainer,
   BackgammonCube,
   BackgammonDieValue,
   BackgammonMoveCompletedNoMove,
   BackgammonMoveCompletedWithMove,
-  BackgammonMoveKind,
   BackgammonMoveOrigin,
   BackgammonMoveReady,
   BackgammonMoves,
@@ -351,8 +349,14 @@ export class Play {
       } as BackgammonPlayResult
     }
 
+    let plan: MoveExecutionPlan | undefined = undefined
     // Step 1: Plan the execution (pure)
-    const plan = Play.planMoveExecution(board, play, origin)
+
+    try {
+      plan = Play.planMoveExecution(board, play, origin)
+    } catch (e) {
+      throw e
+    }
 
     // Step 2: Execute the plan (pure)
     const result = Play.executePlannedMove(board, play, plan)
@@ -360,9 +364,7 @@ export class Play {
     // Step 3: Validate the result if sequence is complete (pure)
     // FIX: Never validate during individual move execution when play has pre-completed no-moves
     // Only validate when all dice have been rolled and used, not when executing partial sequences
-    const originalHadNoMoves = play.moves.some(
-      (m) => m.moveKind === 'no-move'
-    )
+    const originalHadNoMoves = play.moves.some((m) => m.moveKind === 'no-move')
     const resultHasReadyMoves = result.newPlay.moves.some(
       (m) => m.stateKind === 'ready'
     )
@@ -1027,9 +1029,7 @@ export class Play {
   ): { isMandatory: boolean; sequence?: any[]; reason?: string } {
     // FIX: Only validate when sequence is complete (no ready moves)
     // This prevents validation of incomplete sequences, matching pureMove() behavior
-    const hasReadyMoves = play.moves.some(
-      (m) => m.stateKind === 'ready'
-    )
+    const hasReadyMoves = play.moves.some((m) => m.stateKind === 'ready')
     if (hasReadyMoves) {
       return { isMandatory: false } // Don't validate incomplete sequences
     }

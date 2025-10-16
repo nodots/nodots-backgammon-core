@@ -1,34 +1,33 @@
 import {
+  buildHintContextFromGame,
+  configureGnubgHints,
+  getContainerKind,
+  getMoveHints as getGnuMoveHints,
+  getNormalizedPosition,
+  initializeGnubgHints,
+} from '@nodots-llc/backgammon-ai'
+import {
   BackgammonGameMoved,
   BackgammonGameMoving,
   BackgammonGameRolledForStart,
   BackgammonGameRolling,
   BackgammonGameRollingForStart,
-  BackgammonMove,
   BackgammonMoveOrigin,
   BackgammonMoveSkeleton,
 } from '@nodots-llc/backgammon-types'
-import { Board, Game, Player } from '..'
-import { exportToGnuPositionId } from '../Board/gnuPositionId'
-import { GnuBgHints } from '@nodots-llc/gnubg-hints'
 import * as fs from 'fs'
 import * as path from 'path'
-// Prefer request-based hints via AI package to avoid PID encoding brittleness
-import {
-  initializeGnubgHints,
-  configureGnubgHints,
-  getMoveHints as getGnuMoveHints,
-  buildHintContextFromGame,
-  getNormalizedPosition,
-  getContainerKind,
-} from '@nodots-llc/backgammon-ai'
+import { Board, Game, Player } from '..'
+import { exportToGnuPositionId } from '../Board/gnuPositionId'
 import { logger } from '../utils/logger'
 
 // Mapping debug flag: enable with `npm run simulate -- --mapping-debug`
 const MAPPING_DEBUG = process.argv.includes('--mapping-debug')
 // Performance/verbosity flags
-const QUIET = process.argv.includes('--quiet') || process.env.NODOTS_SIM_QUIET === '1'
-const FAST = process.argv.includes('--fast') || process.env.NODOTS_SIM_FAST === '1'
+const QUIET =
+  process.argv.includes('--quiet') || process.env.NODOTS_SIM_QUIET === '1'
+const FAST =
+  process.argv.includes('--fast') || process.env.NODOTS_SIM_FAST === '1'
 const MAPPING_SAMPLE = (() => {
   const arg = process.argv.find((a) => a.startsWith('--mapping-sample='))
   if (!arg) return 0
@@ -58,23 +57,35 @@ interface SimulationStats {
 function debugDumpMapping(
   gameMoved: any,
   hints: any[] | null,
-  normalization: any,
+  normalization: any
 ): void {
   try {
     const pid = exportToGnuPositionId(gameMoved as any)
     const roll = (gameMoved as any).activePlayer?.dice?.currentRoll
     console.log('\n[Mapping Debug] ----')
     console.log('[Mapping Debug] GNU Position ID:', pid)
-    console.log('[Mapping Debug] Active:', (gameMoved as any).activeColor, (gameMoved as any).activePlayer?.direction)
-    console.log('[Mapping Debug] Roll:', Array.isArray(roll) ? roll.join(',') : roll)
+    console.log(
+      '[Mapping Debug] Active:',
+      (gameMoved as any).activeColor,
+      (gameMoved as any).activePlayer?.direction
+    )
+    console.log(
+      '[Mapping Debug] Roll:',
+      Array.isArray(roll) ? roll.join(',') : roll
+    )
     if (hints && hints.length > 0) {
       const steps = (hints as any)[0]?.moves || []
       console.log('[Mapping Debug] Top hint steps:', steps)
     } else {
       console.log('[Mapping Debug] No hints returned')
     }
-    const readyMovesAll: any[] = (Array.from(((gameMoved as any).activePlay?.moves || []) as any) as any[]).filter((m: any) => m.stateKind === 'ready')
-    console.log('[Mapping Debug] Ready dice:', (readyMovesAll as any[]).map((m: any) => m.dieValue))
+    const readyMovesAll: any[] = (
+      Array.from(((gameMoved as any).activePlay?.moves || []) as any) as any[]
+    ).filter((m: any) => m.stateKind === 'ready')
+    console.log(
+      '[Mapping Debug] Ready dice:',
+      (readyMovesAll as any[]).map((m: any) => m.dieValue)
+    )
     for (const m of readyMovesAll as any[]) {
       const pm = Board.getPossibleMoves(
         (gameMoved as any).board,
@@ -82,14 +93,22 @@ function debugDumpMapping(
         m.dieValue
       ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
       const movesArr = Array.isArray(pm) ? pm : pm.moves
-      const normalizedColor = normalization?.toGnu?.[(gameMoved as any).activePlayer?.color] || 'white'
+      const normalizedColor =
+        normalization?.toGnu?.[(gameMoved as any).activePlayer?.color] ||
+        'white'
       const mapped = movesArr.map((mv) => ({
         from: getNormalizedPosition((mv as any).origin, normalizedColor as any),
-        to: getNormalizedPosition((mv as any).destination, normalizedColor as any),
+        to: getNormalizedPosition(
+          (mv as any).destination,
+          normalizedColor as any
+        ),
         fromContainer: getContainerKind((mv as any).origin),
         toContainer: getContainerKind((mv as any).destination),
       }))
-      console.log(`[Mapping Debug] Die ${m.dieValue} possible (normalized):`, mapped)
+      console.log(
+        `[Mapping Debug] Die ${m.dieValue} possible (normalized):`,
+        mapped
+      )
     }
     console.log('[Mapping Debug] ----\n')
   } catch (e) {
@@ -112,20 +131,30 @@ function writeMappingSample(
     const logFile = path.join(logsDir, `mapping-${color}.log`)
     const pid = exportToGnuPositionId(gameMoved as any)
     const roll = (gameMoved as any).activePlayer?.dice?.currentRoll
-    const readyMovesAll: any[] = (Array.from(((gameMoved as any).activePlay?.moves || []) as any) as any[]).filter((m: any) => m.stateKind === 'ready')
+    const readyMovesAll: any[] = (
+      Array.from(((gameMoved as any).activePlay?.moves || []) as any) as any[]
+    ).filter((m: any) => m.stateKind === 'ready')
     const normalizedColor = 'white'
     const lines: string[] = []
-    lines.push(`time=${new Date().toISOString()} pid=${pid} color=${color} roll=${Array.isArray(roll) ? roll.join(',') : roll}`)
+    lines.push(
+      `time=${new Date().toISOString()} pid=${pid} color=${color} roll=${Array.isArray(roll) ? roll.join(',') : roll}`
+    )
     // Top hint step
     const step = hints && hints[0] && hints[0].moves && hints[0].moves[0]
     if (step) {
-      lines.push(`hintStep from=${step.from} to=${step.to} fromC=${step.fromContainer} toC=${step.toContainer}`)
+      lines.push(
+        `hintStep from=${step.from} to=${step.to} fromC=${step.fromContainer} toC=${step.toContainer}`
+      )
     } else {
       lines.push(`hintStep none`)
     }
     // Enumerate normalized possible moves for each candidate die (ready + in-progress w/o origin)
-    const candidateMoves: any[] = (Array.from(((gameMoved as any).activePlay?.moves || []) as any) as any[]).filter(
-      (mm: any) => mm.stateKind === 'ready' || (mm.stateKind === 'in-progress' && !mm.origin)
+    const candidateMoves: any[] = (
+      Array.from(((gameMoved as any).activePlay?.moves || []) as any) as any[]
+    ).filter(
+      (mm: any) =>
+        mm.stateKind === 'ready' ||
+        (mm.stateKind === 'in-progress' && !mm.origin)
     )
     for (const m of candidateMoves as any[]) {
       const die = m.dieValue
@@ -141,21 +170,34 @@ function writeMappingSample(
         fromC: getContainerKind(mv.origin),
         toC: getContainerKind(mv.destination),
       }))
-      lines.push(`die=${die} possible=${mapped.length} -> ` + mapped.map((x) => `${x.from}:${x.to}:${x.fromC}->${x.toC}`).join(','))
+      lines.push(
+        `die=${die} possible=${mapped.length} -> ` +
+          mapped.map((x) => `${x.from}:${x.to}:${x.fromC}->${x.toC}`).join(',')
+      )
     }
     // Also list normalized positions occupied by active player's checkers
     try {
       const pts = (gameMoved as any).board.points as any[]
-      const activeDir = (gameMoved as any).activePlayer.direction as 'clockwise' | 'counterclockwise'
+      const activeDir = (gameMoved as any).activePlayer.direction as
+        | 'clockwise'
+        | 'counterclockwise'
       const positions: number[] = []
       pts.forEach((p) => {
-        const has = p.checkers.some((c: any) => c.color === (gameMoved as any).activePlayer.color)
+        const has = p.checkers.some(
+          (c: any) => c.color === (gameMoved as any).activePlayer.color
+        )
         if (has) {
-          const pos = activeDir === 'clockwise' ? p.position.clockwise : p.position.counterclockwise
+          const pos =
+            activeDir === 'clockwise'
+              ? p.position.clockwise
+              : p.position.counterclockwise
           positions.push(pos)
         }
       })
-      lines.push(`activeCheckerPositions(${activeDir})=` + positions.sort((a,b)=>a-b).join(','))
+      lines.push(
+        `activeCheckerPositions(${activeDir})=` +
+          positions.sort((a, b) => a - b).join(',')
+      )
     } catch {}
     lines.push('---\n')
     fs.appendFileSync(logFile, lines.join('\n'))
@@ -230,7 +272,12 @@ No-Moves: ${stats.noMoves}
 GNU Checkers Off: ${gnuOff}
 Nodots Engine Checkers Off: ${nodotsOff}`
   console.log(message)
-  logger.info('[Simulation] Statistics:', { ...stats, gnuIsWhite, gnuOff, nodotsOff })
+  logger.info('[Simulation] Statistics:', {
+    ...stats,
+    gnuIsWhite,
+    gnuOff,
+    nodotsOff,
+  })
 }
 
 function checkWinCondition(board: any): 'white' | 'black' | null {
@@ -252,7 +299,7 @@ function seedRandom(seed: number) {
   let t = seed >>> 0
   // Mulberry32
   const rng = () => {
-    t += 0x6D2B79F5
+    t += 0x6d2b79f5
     let r = Math.imul(t ^ (t >>> 15), 1 | t)
     r ^= r + Math.imul(r ^ (r >>> 7), 61 | r)
     return ((r ^ (r >>> 14)) >>> 0) / 4294967296
@@ -278,32 +325,45 @@ function getSeedFromEnvOrArgs(): number | undefined {
   return undefined
 }
 
-export async function runSimulation(maxTurns: number = 100): Promise<
-  | void
-  | {
-      winner: 'white' | 'black' | null
-      turnCount: number
-      executedMoves: number
-      totalMoves: number
-      noMoves: number
-      gnuColor: 'white' | 'black'
-      // instrumentation
-      gnuHintsAttempted: number
-      gnuHintsMatched: number
-      nodotsOpeningChosen: number
-      nodotsStrategicChosen: number
-      firstMoverColor: 'white' | 'black'
-    }
-> {
+export async function runSimulation(maxTurns: number = 100): Promise<void | {
+  winner: 'white' | 'black' | null
+  turnCount: number
+  executedMoves: number
+  totalMoves: number
+  noMoves: number
+  gnuColor: 'white' | 'black'
+  // instrumentation
+  gnuHintsAttempted: number
+  gnuHintsMatched: number
+  nodotsOpeningChosen: number
+  nodotsStrategicChosen: number
+  firstMoverColor: 'white' | 'black'
+}> {
   // Initialize players
-  const swapDirections = process.argv.includes('--swap-directions') || process.env.NODOTS_SWAP_DIRECTIONS === '1'
-  const whiteDir: 'clockwise' | 'counterclockwise' = swapDirections ? 'counterclockwise' : 'clockwise'
-  const blackDir: 'clockwise' | 'counterclockwise' = swapDirections ? 'clockwise' : 'counterclockwise'
-  const whitePlayer = Player.initialize('white', whiteDir, 'rolling-for-start', true)
-  const blackPlayer = Player.initialize('black', blackDir, 'rolling-for-start', true)
+  const swapDirections =
+    process.argv.includes('--swap-directions') ||
+    process.env.NODOTS_SWAP_DIRECTIONS === '1'
+  const whiteDir: 'clockwise' | 'counterclockwise' = swapDirections
+    ? 'counterclockwise'
+    : 'clockwise'
+  const blackDir: 'clockwise' | 'counterclockwise' = swapDirections
+    ? 'clockwise'
+    : 'counterclockwise'
+  const whitePlayer = Player.initialize(
+    'white',
+    whiteDir,
+    'rolling-for-start',
+    true
+  )
+  const blackPlayer = Player.initialize(
+    'black',
+    blackDir,
+    'rolling-for-start',
+    true
+  )
   const players = [whitePlayer, blackPlayer] as [
     typeof whitePlayer,
-    typeof blackPlayer
+    typeof blackPlayer,
   ]
 
   // Optional seeding
@@ -386,10 +446,15 @@ export async function runSimulation(maxTurns: number = 100): Promise<
       while (
         gameMoved.stateKind === 'moving' &&
         Array.from(gameMoved.activePlay.moves).some((m: any) => {
-          if (m.stateKind === 'ready' || (m.stateKind === 'in-progress' && !m.origin)) {
-            const pm = Board.getPossibleMoves(gameMoved.board, m.player, m.dieValue) as
-              | BackgammonMoveSkeleton[]
-              | { moves: BackgammonMoveSkeleton[] }
+          if (
+            m.stateKind === 'ready' ||
+            (m.stateKind === 'in-progress' && !m.origin)
+          ) {
+            const pm = Board.getPossibleMoves(
+              gameMoved.board,
+              m.player,
+              m.dieValue
+            ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
             const movesArr = Array.isArray(pm) ? pm : pm.moves
             return movesArr.length > 0
           }
@@ -399,10 +464,14 @@ export async function runSimulation(maxTurns: number = 100): Promise<
         const isGnu = labels[gameMoved.activePlayer.id] === 'GNU'
         let chosenDie: number | undefined
         let possibleMoves: BackgammonMoveSkeleton[] = []
-        let selectedOrigin: { id: string; kind: string; checkers: any[] } | undefined
+        let selectedOrigin:
+          | { id: string; kind: string; checkers: any[] }
+          | undefined
 
         // Cache possible moves per die for current board state
-        const readyMovesAll = Array.from(gameMoved.activePlay.moves).filter((m: any) => m.stateKind === 'ready')
+        const readyMovesAll = Array.from(gameMoved.activePlay.moves).filter(
+          (m: any) => m.stateKind === 'ready'
+        )
         const dieCache = new Map<number, BackgammonMoveSkeleton[]>()
         const getMovesForDie = (dv: number) => {
           if (dieCache.has(dv)) return dieCache.get(dv)!
@@ -418,9 +487,18 @@ export async function runSimulation(maxTurns: number = 100): Promise<
         if (isGnu) {
           // Strict: request-based hints; backend selection via --gnu-mapper=ai|steps (default ai)
           await initializeGnubgHints()
-          await configureGnubgHints({ evalPlies: FAST ? 1 : 2, moveFilter: FAST ? 1 : 2, usePruning: true })
-          const { request, normalization } = buildHintContextFromGame(gameMoved as any)
-          const rollTuple = gameMoved.activePlayer.dice.currentRoll as [number, number]
+          await configureGnubgHints({
+            evalPlies: FAST ? 1 : 2,
+            moveFilter: FAST ? 1 : 2,
+            usePruning: true,
+          })
+          const { request, normalization } = buildHintContextFromGame(
+            gameMoved as any
+          )
+          const rollTuple = gameMoved.activePlayer.dice.currentRoll as [
+            number,
+            number,
+          ]
           request.dice = [rollTuple[0], rollTuple[1]]
           let hints: any[] = []
           if (FAST) {
@@ -433,7 +511,12 @@ export async function runSimulation(maxTurns: number = 100): Promise<
             hints = await getGnuMoveHints(request, GNU_MAPPER === 'ai' ? 3 : 1)
           }
           gnuHintsAttempted++
-          if (!hints || hints.length === 0 || !hints[0].moves || hints[0].moves.length === 0) {
+          if (
+            !hints ||
+            hints.length === 0 ||
+            !hints[0].moves ||
+            hints[0].moves.length === 0
+          ) {
             if (MAPPING_DEBUG) {
               debugDumpMapping(gameMoved, hints || null, normalization)
             }
@@ -446,9 +529,17 @@ export async function runSimulation(maxTurns: number = 100): Promise<
               const best2 = await aiModule.getBestMove(request)
               if (best2) retry = [best2]
             } else {
-              retry = await getGnuMoveHints(request, GNU_MAPPER === 'ai' ? 3 : 1)
+              retry = await getGnuMoveHints(
+                request,
+                GNU_MAPPER === 'ai' ? 3 : 1
+              )
             }
-            if (!retry || retry.length === 0 || !retry[0].moves || retry[0].moves.length === 0) {
+            if (
+              !retry ||
+              retry.length === 0 ||
+              !retry[0].moves ||
+              retry[0].moves.length === 0
+            ) {
               if (MAPPING_DEBUG) {
                 debugDumpMapping(gameMoved, retry || null, normalization)
               }
@@ -467,14 +558,19 @@ export async function runSimulation(maxTurns: number = 100): Promise<
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 const aiModule = await import('@nodots-llc/backgammon-ai')
-                const best = await aiModule.selectBestMove(gameMoved.activePlay, 'nodots')
+                const best = await aiModule.selectBestMove(
+                  gameMoved.activePlay,
+                  'nodots'
+                )
                 if (best) {
                   chosenDie = (best as any).dieValue
                   const pm2 = Board.getPossibleMoves(
                     gameMoved.board,
                     (best as any).player,
                     (best as any).dieValue
-                  ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
+                  ) as
+                    | BackgammonMoveSkeleton[]
+                    | { moves: BackgammonMoveSkeleton[] }
                   possibleMoves = Array.isArray(pm2) ? pm2 : pm2.moves
                   selectedOrigin = undefined
                 }
@@ -484,9 +580,13 @@ export async function runSimulation(maxTurns: number = 100): Promise<
                 // do not set hints; proceed with fallback-selected die and moves
                 // to the common move selection code below
               } else {
-                const roll = (gameMoved as any).activePlayer?.dice?.currentRoll?.join(',')
+                const roll = (
+                  gameMoved as any
+                ).activePlayer?.dice?.currentRoll?.join(',')
                 const pid = exportToGnuPositionId(gameMoved as any)
-                throw new Error(`GNU hints not available or empty for current position/roll | pid=${pid} roll=${roll} color=${(gameMoved as any).activeColor} dir=${(gameMoved as any).activePlayer?.direction}`)
+                throw new Error(
+                  `GNU hints not available or empty for current position/roll | pid=${pid} roll=${roll} color=${(gameMoved as any).activeColor} dir=${(gameMoved as any).activePlayer?.direction}`
+                )
               }
             } else {
               hints = retry
@@ -495,8 +595,11 @@ export async function runSimulation(maxTurns: number = 100): Promise<
 
           // Strict mapping with exact normalized step match (from/to + container kinds)
           // Prefer the frame indicated by normalization, but also try alternate frame to guard color-orientation mismatches
-          const primaryFrame = (normalization.toGnu[(gameMoved.activePlayer as any).color as 'white' | 'black'] as 'white' | 'black')
-          const frames: Array<'white' | 'black'> = primaryFrame === 'white' ? ['white', 'black'] : ['black', 'white']
+          const primaryFrame = normalization.toGnu[
+            (gameMoved.activePlayer as any).color as 'white' | 'black'
+          ] as 'white' | 'black'
+          const frames: Array<'white' | 'black'> =
+            primaryFrame === 'white' ? ['white', 'black'] : ['black', 'white']
 
           let matched = false
           if (GNU_MAPPER === 'ai') {
@@ -504,7 +607,11 @@ export async function runSimulation(maxTurns: number = 100): Promise<
             for (const hint of hints) {
               if (!hint.moves || hint.moves.length === 0) continue
               const step = hint.moves[0] as any
-              for (const m of Array.from(gameMoved.activePlay.moves).filter((mm: any) => mm.stateKind === 'ready' || (mm.stateKind === 'in-progress' && !mm.origin))) {
+              for (const m of Array.from(gameMoved.activePlay.moves).filter(
+                (mm: any) =>
+                  mm.stateKind === 'ready' ||
+                  (mm.stateKind === 'in-progress' && !mm.origin)
+              )) {
                 const dv = m.dieValue
                 const movesArr = getMovesForDie(dv)
                 for (const mv of movesArr) {
@@ -512,9 +619,17 @@ export async function runSimulation(maxTurns: number = 100): Promise<
                   const toKind = getContainerKind(mv.destination as any)
                   for (const frame of frames) {
                     const from = getNormalizedPosition(mv.origin as any, frame)
-                    const to = getNormalizedPosition(mv.destination as any, frame)
+                    const to = getNormalizedPosition(
+                      mv.destination as any,
+                      frame
+                    )
                     if (from === null || to === null) continue
-                    if (step.from === from && step.to === to && step.fromContainer === fromKind && step.toContainer === toKind) {
+                    if (
+                      step.from === from &&
+                      step.to === to &&
+                      step.fromContainer === fromKind &&
+                      step.toContainer === toKind
+                    ) {
                       chosenDie = dv
                       possibleMoves = movesArr
                       selectedOrigin = mv.origin as any
@@ -532,7 +647,11 @@ export async function runSimulation(maxTurns: number = 100): Promise<
             // steps: only first hint's sequence
             const gmSeq = hints[0].moves
             for (const step of gmSeq) {
-              for (const m of Array.from(gameMoved.activePlay.moves).filter((mm: any) => mm.stateKind === 'ready' || (mm.stateKind === 'in-progress' && !mm.origin))) {
+              for (const m of Array.from(gameMoved.activePlay.moves).filter(
+                (mm: any) =>
+                  mm.stateKind === 'ready' ||
+                  (mm.stateKind === 'in-progress' && !mm.origin)
+              )) {
                 const dv = m.dieValue
                 const movesArr = getMovesForDie(dv)
                 for (const mv of movesArr) {
@@ -540,9 +659,17 @@ export async function runSimulation(maxTurns: number = 100): Promise<
                   const toKind = getContainerKind(mv.destination as any)
                   for (const frame of frames) {
                     const from = getNormalizedPosition(mv.origin as any, frame)
-                    const to = getNormalizedPosition(mv.destination as any, frame)
+                    const to = getNormalizedPosition(
+                      mv.destination as any,
+                      frame
+                    )
                     if (from === null || to === null) continue
-                    if ((step as any).from === from && (step as any).to === to && (step as any).fromContainer === fromKind && (step as any).toContainer === toKind) {
+                    if (
+                      (step as any).from === from &&
+                      (step as any).to === to &&
+                      (step as any).fromContainer === fromKind &&
+                      (step as any).toContainer === toKind
+                    ) {
                       chosenDie = dv
                       possibleMoves = movesArr
                       selectedOrigin = mv.origin as any
@@ -590,21 +717,27 @@ export async function runSimulation(maxTurns: number = 100): Promise<
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           const aiModule = await import('@nodots-llc/backgammon-ai')
-          const best = await aiModule.selectBestMove(gameMoved.activePlay, 'nodots')
+          const best = await aiModule.selectBestMove(
+            gameMoved.activePlay,
+            'nodots'
+          )
           if (!best) {
             throw new Error('Nodots AI did not return a move')
           }
           chosenDie = (best as any).dieValue
-          possibleMoves = (best as any).possibleMoves && (best as any).possibleMoves.length
-            ? (best as any).possibleMoves
-            : ((): BackgammonMoveSkeleton[] => {
-                const pm2 = Board.getPossibleMoves(
-                  gameMoved.board,
-                  (best as any).player,
-                  (best as any).dieValue
-                ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
-                return Array.isArray(pm2) ? pm2 : pm2.moves
-              })()
+          possibleMoves =
+            (best as any).possibleMoves && (best as any).possibleMoves.length
+              ? (best as any).possibleMoves
+              : ((): BackgammonMoveSkeleton[] => {
+                  const pm2 = Board.getPossibleMoves(
+                    gameMoved.board,
+                    (best as any).player,
+                    (best as any).dieValue
+                  ) as
+                    | BackgammonMoveSkeleton[]
+                    | { moves: BackgammonMoveSkeleton[] }
+                  return Array.isArray(pm2) ? pm2 : pm2.moves
+                })()
           selectedOrigin = undefined
           const src = (best as any).__source
           if (src === 'opening') nodotsOpeningChosen++
@@ -704,7 +837,9 @@ export async function runSimulation(maxTurns: number = 100): Promise<
           )
           if (!originChecker) {
             if (!QUIET)
-              console.log('No checker of active color at chosen origin; breaking')
+              console.log(
+                'No checker of active color at chosen origin; breaking'
+              )
             break
           }
           const moveResult = Game.move(
@@ -744,7 +879,9 @@ export async function runSimulation(maxTurns: number = 100): Promise<
                     gameMoved.board,
                     move.player,
                     move.dieValue
-                  ) as BackgammonMoveSkeleton[] | { moves: BackgammonMoveSkeleton[] }
+                  ) as
+                    | BackgammonMoveSkeleton[]
+                    | { moves: BackgammonMoveSkeleton[] }
                   const possibleMoves2 = Array.isArray(pm2) ? pm2 : pm2.moves
                   console.log(
                     `  Die value ${move.dieValue}: ${possibleMoves2.length} possible moves`
@@ -821,7 +958,8 @@ export async function runSimulation(maxTurns: number = 100): Promise<
       lastBoard = gameState.board
     } else {
       // If still moving (shouldn't happen if all moves consumed), break to avoid loop
-      if (!QUIET) console.log('Turn did not complete; breaking out to avoid hang')
+      if (!QUIET)
+        console.log('Turn did not complete; breaking out to avoid hang')
       break
     }
   }
@@ -853,7 +991,9 @@ export async function runSimulation(maxTurns: number = 100): Promise<
 // Allow running from command line with optional max turns argument
 if (require.main === module) {
   // Find first numeric positional arg for maxTurns; ignore flag args starting with '--'
-  const numArg = process.argv.find((a) => !a.startsWith('--') && /^\d+$/.test(a))
+  const numArg = process.argv.find(
+    (a) => !a.startsWith('--') && /^\d+$/.test(a)
+  )
   const maxTurns = numArg ? parseInt(numArg) : 100
   runSimulation(maxTurns).catch((error) => {
     console.error(error)

@@ -50,6 +50,7 @@ import type {
   BackgammonPlayersRollingTuple,
 } from '@nodots-llc/backgammon-types'
 import { RESTORABLE_GAME_STATE_KINDS } from '@nodots-llc/backgammon-types'
+import { executeRobotTurn } from './executeRobotTurn'
 
 export class Game {
   id: string = generateId()
@@ -807,9 +808,9 @@ export class Game {
       : activePlay
 
     // Update the players array
-    const updatedPlayers = (game.players.map((p) =>
+    const updatedPlayers = game.players.map((p) =>
       p.id === activePlayer.id ? updatedActivePlayer : p
-    ) as unknown) as BackgammonPlayers
+    ) as unknown as BackgammonPlayers
 
     // Return the same state type as input
     return {
@@ -1433,197 +1434,7 @@ export class Game {
     return game
   }
 
-  /**
-   * Execute a complete robot turn including all moves and turn confirmation
-   * This method handles the entire turn cycle for a robot player:
-   * 1. Executes all available dice moves using Player.getBestMove()
-   * 2. Transitions to 'moved' state when all moves complete
-   * 3. Automatically confirms the turn (equivalent to dice click)
-   * 4. Transitions to next player's 'rolling' state
-   * @param game - Current game state in 'moving' state with robot player
-   * @returns Updated game state with next player ready to roll (or current player if turn incomplete)
-   */
-  public static executeRobotTurn = async function executeRobotTurn(
-    game: BackgammonGame
-  ): Promise<BackgammonGame> {
-    switch (game.stateKind) {
-      case 'moving': {
-        const movingGame = game as BackgammonGameMoving
-
-        if (!movingGame.activePlayer.isRobot) {
-          throw new Error('Cannot execute robot turn for non-robot player')
-        }
-
-        if (!movingGame.activePlay) {
-          throw new Error(
-            'No active play found. Game must be in a valid play state.'
-          )
-        }
-
-        // CRITICAL FIX: Check if all moves are already completed (no-move scenario)
-        // When Play.initialize detects all moves are no-moves, it creates them as 'completed'
-        // In this case, we should immediately complete the turn without trying to execute moves
-        const movesArray = movingGame.activePlay.moves
-        const allMovesCompleted = movesArray.every(
-          (move) => move.stateKind === 'completed'
-        )
-
-        if (allMovesCompleted) {
-          debug(
-            'Game.executeRobotTurn: All moves already completed (no-move scenario), transitioning turn immediately'
-          )
-          // All moves are already completed as no-moves, transition to 'moved' state and confirm turn
-          const movedGame = Game.toMoved(movingGame)
-          return Game.confirmTurn(movedGame)
-        }
-
-        let currentGame: BackgammonGame = movingGame
-        let moveCount = 0
-        const maxMoves = 4 // Maximum moves in a turn (doubles)
-
-        // Execute moves until no more ready moves or max moves reached
-        while (currentGame.stateKind === 'moving' && moveCount < maxMoves) {
-          const gameMoving = currentGame as BackgammonGameMoving
-
-          if (!gameMoving.activePlay) {
-            return currentGame // No active play, turn complete
-          }
-
-          // Get all moves from activePlay
-          const movesArray = gameMoving.activePlay.moves
-          const readyMoves = movesArray.filter(
-            (move) => move.stateKind === 'ready'
-          )
-
-          // Debug logging to understand the issue
-          logger.info('🤖 Robot turn - moves state:', {
-            totalMoves: movesArray.length,
-            readyMoves: readyMoves.length,
-            completedMoves: movesArray.filter(
-              (m) => m.stateKind === 'completed'
-            ).length,
-            moveDetails: movesArray.map((m) => ({
-              dieValue: m.dieValue,
-              stateKind: m.stateKind,
-              moveKind: m.moveKind,
-            })),
-          })
-
-          // Check for turn completion conditions
-          const allMovesCompleted = movesArray.every(
-            (move) => move.stateKind === 'completed'
-          )
-
-          if (readyMoves.length === 0 || allMovesCompleted) {
-            // No ready moves available OR all moves are completed (including no-moves)
-            // Transition to 'moved' state and auto-confirm turn
-            logger.info('🤖 No ready moves or all completed, ending turn')
-            const movedGame = Game.toMoved(gameMoving)
-            return Game.confirmTurn(movedGame)
-          }
-
-          // Use Player.getBestMove to select the optimal move
-          // CRITICAL FIX: Use gameMoving.activePlay to ensure we have the correct activePlay
-          logger.info(
-            '🤖 Calling Player.getBestMove with',
-            readyMoves.length,
-            'ready moves'
-          )
-          const selectedMove = await Player.getBestMove(
-            gameMoving.activePlay,
-            gameMoving.activePlayer.userId
-          )
-
-          if (!selectedMove) {
-            logger.warn('🤖 Player.getBestMove failed to select a move')
-            logger.info(
-              '🤖 Ready moves available but getBestMove returned null:',
-              {
-                readyMovesCount: readyMoves.length,
-                readyMoveDetails: readyMoves.map((m) => ({
-                  dieValue: m.dieValue,
-                  moveKind: m.moveKind,
-                  possibleMovesCount: m.possibleMoves?.length || 0,
-                })),
-              }
-            )
-
-            // Strict behavior: surface AI failure so callers/simulators can react
-            throw new Error('AI move selection failed: Nodots/GBG returned no move')
-          }
-
-          // Extract checker ID from the selected move's first possible move
-          const checkerId =
-            selectedMove.possibleMoves?.[0]?.origin?.checkers?.[0]?.id
-
-          if (!checkerId) {
-            logger.warn('🤖 Unable to extract checker ID from selected move')
-            logger.info('🤖 Selected move details:', {
-              selectedMoveId: selectedMove.id,
-              possibleMovesCount: selectedMove.possibleMoves?.length || 0,
-              hasOrigin: !!selectedMove.possibleMoves?.[0]?.origin,
-              originCheckersCount:
-                selectedMove.possibleMoves?.[0]?.origin?.checkers?.length || 0,
-            })
-
-            // CRITICAL FIX: When checker ID extraction fails, complete the turn instead of leaving stuck
-            logger.warn(
-              '🤖 Completing turn due to checker ID extraction failure to prevent stuck game'
-            )
-            const movedGame = Game.toMoved(gameMoving)
-            return Game.confirmTurn(movedGame)
-          }
-
-          // Execute the move
-          try {
-            currentGame = Game.move(currentGame, checkerId)
-            moveCount++
-
-            logger.info(
-              `Robot executed move ${moveCount} with checker ${checkerId}`
-            )
-          } catch (error) {
-            logger.error('🤖 Error executing robot move:', error)
-            logger.warn(
-              '🤖 Completing turn due to move execution error to prevent stuck game'
-            )
-
-            // CRITICAL FIX: When move execution fails, complete the turn instead of leaving stuck
-            const movedGame = Game.toMoved(gameMoving)
-            return Game.confirmTurn(movedGame)
-          }
-        }
-
-        // Handle final state transitions
-        switch (currentGame.stateKind) {
-          case 'moving': {
-            const gameMoving = currentGame as BackgammonGameMoving
-            if (!gameMoving.activePlay) return currentGame
-
-            const movesArray = gameMoving.activePlay.moves
-            const allCompleted = movesArray.every(
-              (move) => move.stateKind === 'completed'
-            )
-
-            if (!allCompleted) return currentGame
-
-            // All moves completed, transition to 'moved' state
-            currentGame = Game.toMoved(gameMoving)
-            // Fall through to handle 'moved' state
-          }
-          case 'moved':
-            logger.info('Robot turn complete, automatically confirming turn')
-            return Game.confirmTurn(currentGame as BackgammonGameMoved)
-          default:
-            return currentGame
-        }
-      }
-      default:
-        throw new Error(
-          `Cannot execute robot turn from ${game.stateKind} state. Must be in 'moving' state.`
-        )
-    }
-  }
+  public static executeRobotTurn = executeRobotTurn
 
   public static activePlayer = function activePlayer(
     game: BackgammonGame
