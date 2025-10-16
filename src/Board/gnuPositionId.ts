@@ -51,9 +51,15 @@ function getPlayerAndOpponent(game: BackgammonGame): { playerOnRoll: BackgammonP
   return { playerOnRoll: playerOnRoll!, opponent }
 }
 
-function getCheckersOnPoint(board: BackgammonBoard, color: BackgammonColor, index: number): number {
-  if (index < 0 || index > 23) return 0
-  const point = board.points[index]
+function getCheckersOnPoint(
+  board: BackgammonBoard,
+  color: BackgammonColor,
+  position: number,
+  direction: 'clockwise' | 'counterclockwise'
+): number {
+  if (position < 1 || position > 24) return 0
+  const point = board.points.find(p => p.position[direction] === position)
+  if (!point) return 0
   return point.checkers.filter((c) => c.color === color).length
 }
 
@@ -62,20 +68,8 @@ function getCheckersOnBar(board: BackgammonBoard, player: BackgammonPlayer): num
   return barForPlayer.checkers.filter((c) => c.color === player.color).length
 }
 
-function encodeBase64Six(bitString: string): string {
-  let out = ''
-  for (let i = 0; i < 14; i++) {
-    const start = i * 6
-    let bits = bitString.substring(start, start + 6)
-    if (bits.length < 6) bits = bits.padEnd(6, '0')
-    let value = 0
-    for (let j = 0; j < 6; j++) if (bits[j] === '1') value |= 1 << (5 - j)
-    out += GNU_BASE64[value]
-  }
-  return out
-}
-
 function encodeBase64ViaBytesLSB(bitString: string): string {
+  // Convert bit string to bytes using LSB-first bit ordering within each byte
   const bytes: number[] = []
   for (let i = 0; i < 10; i++) {
     const byteBits = bitString.substring(i * 8, (i + 1) * 8)
@@ -85,23 +79,28 @@ function encodeBase64ViaBytesLSB(bitString: string): string {
     }
     bytes.push(byteValue)
   }
+
+  // Encode bytes to base64 using GNU BG algorithm (positionid.c lines 207-218)
   let base64Chars = ''
-  let numBuffer = 0
-  let numBits = 0
-  for (let i = 0; i < bytes.length; ++i) {
-    numBuffer = (numBuffer << 8) | bytes[i]
-    numBits += 8
-    while (numBits >= 6) {
-      numBits -= 6
-      const chunk = (numBuffer >> numBits) & 0x3f
-      base64Chars += GNU_BASE64[chunk]
-    }
+
+  // Process 3 bytes at a time (4 base64 characters)
+  for (let i = 0; i < 3; i++) {
+    const b0 = bytes[i * 3]
+    const b1 = bytes[i * 3 + 1]
+    const b2 = bytes[i * 3 + 2]
+
+    base64Chars += GNU_BASE64[b0 >> 2]
+    base64Chars += GNU_BASE64[((b0 & 0x03) << 4) | (b1 >> 4)]
+    base64Chars += GNU_BASE64[((b1 & 0x0F) << 2) | (b2 >> 6)]
+    base64Chars += GNU_BASE64[b2 & 0x3F]
   }
-  if (numBits > 0) {
-    const chunk = (numBuffer << (6 - numBits)) & 0x3f
-    base64Chars += GNU_BASE64[chunk]
-  }
-  return base64Chars.substring(0, 14)
+
+  // Last byte (10th byte, produces 2 base64 characters)
+  const lastByte = bytes[9]
+  base64Chars += GNU_BASE64[lastByte >> 2]
+  base64Chars += GNU_BASE64[(lastByte & 0x03) << 4]
+
+  return base64Chars
 }
 
 export function exportToGnuPositionId(game: BackgammonGame): string {
@@ -110,19 +109,19 @@ export function exportToGnuPositionId(game: BackgammonGame): string {
 
   let bitString = ''
 
-  // Player on roll points 0..23 in array order for clockwise, reversed for counterclockwise
-  for (let i = 0; i < 24; i++) {
-    const idx = playerOnRoll.direction === 'clockwise' ? i : 23 - i
-    const checkers = getCheckersOnPoint(board, playerOnRoll.color, idx)
+  // Player on roll: encode GNU positions 0-23 (map to Nodots positions 1-24)
+  for (let gnuPosition = 0; gnuPosition < 24; gnuPosition++) {
+    const nodotsPosition = gnuPosition + 1
+    const checkers = getCheckersOnPoint(board, playerOnRoll.color, nodotsPosition, playerOnRoll.direction)
     bitString += '1'.repeat(checkers) + '0'
   }
   const playerBarCheckers = getCheckersOnBar(board, playerOnRoll)
   bitString += '1'.repeat(playerBarCheckers) + '0'
 
-  // Opponent points
-  for (let i = 0; i < 24; i++) {
-    const idx = opponent.direction === 'clockwise' ? i : 23 - i
-    const checkers = getCheckersOnPoint(board, opponent.color, idx)
+  // Opponent: encode GNU positions 0-23 (map to Nodots positions 1-24)
+  for (let gnuPosition = 0; gnuPosition < 24; gnuPosition++) {
+    const nodotsPosition = gnuPosition + 1
+    const checkers = getCheckersOnPoint(board, opponent.color, nodotsPosition, opponent.direction)
     bitString += '1'.repeat(checkers) + '0'
   }
   const opponentBarCheckers = getCheckersOnBar(board, opponent)
@@ -139,10 +138,5 @@ export function exportToGnuPositionId(game: BackgammonGame): string {
     bitString = bitString.padEnd(80, '0')
   }
 
-  const method = (process.env.NODOTS_GNU_PID_ENCODER || 'strict').toLowerCase()
-  if (method === 'strict') {
-    return encodeBase64Six(bitString)
-  }
-  // Default legacy method (matches existing behavior in simulations)
   return encodeBase64ViaBytesLSB(bitString)
 }
