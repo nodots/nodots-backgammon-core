@@ -47,11 +47,12 @@
     "simulate:batch": "NODE_OPTIONS= NODOTS_SIM_FAST=1 NODOTS_SIM_QUIET=1 NODOTS_LOG_SILENT=1 ts-node src/scripts/simulateBatch.ts",
     "install:latest-types": "rm -rf node_modules package-lock.json && npm install",
     "publish:npm": "npm publish --access public",
-    "prepublishOnly": "npm run build && node ../../scripts/lint-versions.js"
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@nodots-llc/backgammon-ai": "^4.1.2",
     "@nodots-llc/backgammon-types": "4.1.1",
+    "@nodots-llc/gnubg-hints": "^1.0.2",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
