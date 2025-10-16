@@ -1,0 +1,45 @@
+import type {
+  BackgammonGameMoving,
+  BackgammonGameRolling,
+} from '@nodots-llc/backgammon-types'
+
+/**
+ * RobotAIProvider Interface
+ *
+ * This interface defines the contract for AI providers that can execute
+ * complete robot turns in a backgammon game. Implementations of this interface
+ * are responsible for analyzing the game state, selecting optimal moves, and
+ * executing the full sequence of moves for a robot player's turn.
+ *
+ * The separation of concerns is:
+ * - CORE: Defines this interface and game rules
+ * - AI: Implements this interface with specific AI strategies (GNU, Nodots, etc.)
+ * - API: Calls CORE's executeRobotTurn which delegates to registered provider
+ *
+ * @example
+ * ```typescript
+ * class GNUAIProvider implements RobotAIProvider {
+ *   async executeRobotTurn(game: BackgammonGameMoving): Promise<BackgammonGameRolling> {
+ *     // Use GNU Backgammon hints to determine and execute moves
+ *     // Return updated game in rolling state for next player
+ *   }
+ * }
+ * ```
+ */
+export interface RobotAIProvider {
+  /**
+   * Execute a complete robot turn
+   *
+   * Takes a game in the 'moving' state where a robot player needs to make moves,
+   * analyzes the position, selects and executes all moves for this turn, and
+   * returns the game in 'rolling' state ready for the next player.
+   *
+   * @param game - The current game state with a robot as the active player
+   * @returns Promise resolving to the updated game state after all moves are executed
+   * @throws Error if the active player is not a robot
+   * @throws Error if move execution fails
+   */
+  executeRobotTurn(
+    game: BackgammonGameMoving
+  ): Promise<BackgammonGameRolling>
+}
