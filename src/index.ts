@@ -45,6 +45,10 @@ export * from './Play'
 export * from './Player'
 export * from './Services'
 
+// Export AI interfaces for dependency injection
+export { RobotAIProvider } from './AI/RobotAIProvider'
+export { RobotAIRegistry } from './AI/RobotAIRegistry'
+
 // Export logger utilities for consumers to configure
 export {
   debug,

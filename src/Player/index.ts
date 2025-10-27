@@ -422,13 +422,12 @@ export class Player {
       }))
     })
 
-    // Require AI module to be available; do not fallback
-    logger.info('🤖 [Player.getBestMove] Attempting to load AI package')
-    // @ts-ignore - Dynamic import of optional dependency
-    const aiModule = await import('@nodots-llc/backgammon-ai')
-    logger.info('🤖 [Player.getBestMove] AI package loaded, calling selectBestMove')
+    // Use DI-registered AI provider (no direct dependency on AI package)
+    const { RobotAIRegistry } = await import('../AI/RobotAIRegistry')
+    const provider = RobotAIRegistry.getProvider()
+    logger.info('🤖 [Player.getBestMove] Using DI provider for selectBestMove')
 
-    const bestMove = await aiModule.selectBestMove(play, playerUserId)
+    const bestMove = await provider.selectBestMove(play, playerUserId)
     if (!bestMove) {
       throw new Error('Nodots AI did not return a move')
     }
