@@ -17,18 +17,16 @@
     /* Completeness */
     "skipLibCheck": true,                                 /* Skip type checking all .d.ts files. */
 
-    "baseUrl": ".",
-    "paths": {
-      "@nodots-llc/backgammon-types": ["../../types/dist"],
-      "@nodots-llc/backgammon-ai": ["../../ai/dist"],
-      "@nodots-llc/backgammon-dice": ["../../dice/dist"]
-    },
+    "composite": true,
     "declaration": true,
     "declarationMap": true,
     "emitDeclarationOnly": false,
     "outDir": "dist",
     "rootDir": "src"
   },
+  "references": [
+    { "path": "../types" }
+  ],
   "include": [
     "src/**/*"
   ],
@@ -37,10 +35,7 @@
     "dist",
     "**/*.test.ts",
     "**/__tests__/**",
-    "src/scripts/debugSingleGame.ts",
-    "src/scripts/logSingleGame.ts", 
-    "src/scripts/simulate.ts",
-    "src/scripts/simulateGame.ts",
-    "src/scripts/simulateMultipleGames.ts"
+    "src/scripts/**/*",
+    "src/Services/PerformanceRatingCalculator.ts"
   ]
 }

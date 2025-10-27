@@ -1,0 +1,3 @@
+import { BackgammonBoard, BackgammonCheckerContainer, BackgammonDieValue, BackgammonOff, BackgammonPlayerMoving, BackgammonPoint } from '@nodots-llc/backgammon-types';
+export declare function getDestination(origin: BackgammonCheckerContainer, board: BackgammonBoard, player: BackgammonPlayerMoving, dieValue: BackgammonDieValue): BackgammonPoint | BackgammonOff | undefined;
+//# sourceMappingURL=utils.d.ts.map
