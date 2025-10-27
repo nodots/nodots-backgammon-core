@@ -1,6 +1,8 @@
 import type {
   BackgammonGameMoving,
   BackgammonGameRolling,
+  BackgammonPlayMoving,
+  BackgammonMoveReady,
 } from '@nodots-llc/backgammon-types'
 
 /**
@@ -42,4 +44,14 @@ export interface RobotAIProvider {
   executeRobotTurn(
     game: BackgammonGameMoving
   ): Promise<BackgammonGameRolling>
+
+  /**
+   * Select the best single move from a play's available moves.
+   * This is used by tooling and scenarios where only move selection is needed
+   * without executing a full robot turn.
+   */
+  selectBestMove(
+    play: BackgammonPlayMoving,
+    playerUserId?: string
+  ): Promise<BackgammonMoveReady | undefined>
 }

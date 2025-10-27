@@ -326,26 +326,56 @@ export class Play {
     play: BackgammonPlayMoving,
     origin: BackgammonMoveOrigin
   ): BackgammonPlayResult {
-    // Handle no-move case (pure)
+    // Handle case where there are no ready moves
+    // IMPORTANT: Do NOT collapse the moves array to a single no-move.
+    // Preserve existing completed/no-move entries so dice count remains correct.
     const movesArray = play.moves
     const anyReadyMove = movesArray.find((m) => m.stateKind === 'ready')
     if (!anyReadyMove) {
-      debug('Play.pureMove: No ready moves found in activePlay.moves')
-      const noMove: BackgammonMoveCompletedNoMove = {
+      debug('Play.pureMove: No ready moves found in activePlay.moves — preserving existing moves')
+
+      // If moves already exist (completed/no-move), return them unchanged
+      if (Array.isArray(movesArray) && movesArray.length > 0) {
+        // Return immutable result with unchanged play/board; pick a representative completed move
+        const repMove =
+          (movesArray.find((m) => m.stateKind === 'completed') as BackgammonMoveCompletedNoMove) ||
+          ({
+            id: generateId(),
+            player: play.player,
+            dieValue: play.player.dice.currentRoll[0],
+            stateKind: 'completed',
+            moveKind: 'no-move',
+            possibleMoves: [],
+            isHit: false,
+            origin: undefined,
+            destination: undefined,
+          } as BackgammonMoveCompletedNoMove)
+        return {
+          play: { ...play },
+          board,
+          move: repMove,
+        } as BackgammonPlayResult
+      }
+
+      // If for some reason moves are empty, synthesize per-die no-move entries (2 or 4)
+      const roll = play.player.dice.currentRoll
+      const isDoubles = roll[0] === roll[1]
+      const diceToProcess = isDoubles ? [roll[0], roll[0], roll[0], roll[0]] : [roll[0], roll[1]]
+      const synthesized: BackgammonMoveCompletedNoMove[] = diceToProcess.map((dieValue) => ({
         id: generateId(),
         player: play.player,
-        dieValue: play.player.dice.currentRoll[0],
+        dieValue: dieValue,
         stateKind: 'completed',
         moveKind: 'no-move',
         possibleMoves: [],
         isHit: false,
         origin: undefined,
         destination: undefined,
-      }
+      }))
       return {
-        play: { ...play, moves: [noMove] },
+        play: { ...play, moves: synthesized },
         board,
-        move: noMove,
+        move: synthesized[0],
       } as BackgammonPlayResult
     }
 
@@ -614,6 +644,53 @@ export class Play {
         board,
         player,
         moves: completedMoves,
+        stateKind: 'moving',
+      } as BackgammonPlayMoving
+    }
+
+    // Guard: ensure we have exactly one move per die (or four for doubles)
+    const expectedCount = diceToProcess.length
+    if (allMoves.length !== expectedCount) {
+      debug('Play.initialize: Normalizing moves to expected count', {
+        have: allMoves.length,
+        expected: expectedCount,
+        roll,
+      })
+
+      // Count current occurrences by die value
+      const counts = new Map<number, number>()
+      for (const mv of allMoves) {
+        counts.set(mv.dieValue, (counts.get(mv.dieValue) || 0) + 1)
+      }
+
+      // Build target counts from diceToProcess
+      const targetCounts = new Map<number, number>()
+      diceToProcess.forEach((d) => targetCounts.set(d, (targetCounts.get(d) || 0) + 1))
+
+      // For any shortfall, add completed no-move entries
+      const normalized = [...allMoves]
+      for (const [dieValue, target] of targetCounts.entries()) {
+        const have = counts.get(dieValue) || 0
+        for (let i = have; i < target; i++) {
+          normalized.push({
+            id: generateId(),
+            player,
+            dieValue: dieValue as any,
+            stateKind: 'completed',
+            moveKind: 'no-move',
+            possibleMoves: [],
+            origin: undefined,
+            destination: undefined,
+            isHit: false,
+          } as BackgammonMoveCompletedNoMove)
+        }
+      }
+
+      return {
+        id: generateId(),
+        board,
+        player,
+        moves: normalized,
         stateKind: 'moving',
       } as BackgammonPlayMoving
     }
