@@ -1,6 +1,6 @@
 {
   "name": "@nodots-llc/backgammon-core",
-  "version": "4.1.1",
+  "version": "4.5.0",
   "description": "Core game logic for Nodots Backgammon",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,9 +17,13 @@
   ],
   "author": "Ken Riley <kenr@nodots.com>",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nodots/nodots-backgammon-core.git",
+    "url": "git+https://github.com/nodots/nodots-backgammon.git",
     "directory": "packages/core"
   },
   "homepage": "https://github.com/nodots/nodots-backgammon/tree/main/packages/core",
@@ -34,7 +38,7 @@
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "prebuild": "npm run clean",
-    "build": "tsc",
+    "build": "tsc -b --force",
     "clean": "rm -rf dist coverage",
     "update-coverage": "node scripts/update-coverage.js",
     "simulate": "NODE_OPTIONS= ts-node src/scripts/simulate.ts",
@@ -47,15 +51,16 @@
     "simulate:until-win": "NODE_OPTIONS= ts-node src/scripts/simulate.ts 0",
     "simulate:batch": "NODE_OPTIONS= NODOTS_SIM_FAST=1 NODOTS_SIM_QUIET=1 NODOTS_LOG_SILENT=1 ts-node src/scripts/simulateBatch.ts",
     "install:latest-types": "rm -rf node_modules package-lock.json && npm install",
-    "publish:npm": "npm publish --access public",
+    "publish:npm": "npm publish --access public --provenance",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@nodots-llc/backgammon-types": "4.1.1",
+    "@nodots-llc/backgammon-types": "^4.5.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.2.0",
+    "@nodots-llc/gnubg-hints": "^1.0.2",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.30",
     "eslint": "^9.19.0",
@@ -65,5 +70,9 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.23.0"
+  }
+  ,
+  "engines": {
+    "node": ">=18"
   }
 }
