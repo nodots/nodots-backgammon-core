@@ -9,6 +9,44 @@ import {
 import { debug } from '../../utils/logger'
 import { Board } from '../index'
 
+/**
+ * Directional Position Helpers
+ *
+ * Golden Rule (unchanged): We never "walk" the board manually or create ad‑hoc
+ * containers. We always resolve containers by comparing against the player's
+ * directional coordinates, e.g.
+ *    points.find(p => p.position[player.direction] === <position>)
+ *
+ * IMPORTANT: In our representation, p.position.clockwise and
+ * p.position.counterclockwise are expressed in each player's moving coordinate
+ * system such that advancing toward bearing‑off corresponds to DECREASING the
+ * numeric position in that system. That is why the original implementation
+ * always used `originPos - die` for destination computation regardless of
+ * direction, and why reentry used `25 - die`.
+ *
+ * These helpers preserve that behavior while keeping the intent explicit.
+ */
+function computeDestinationPosition(
+  originPos: number,
+  dieValue: BackgammonDieValue,
+  direction: 'clockwise' | 'counterclockwise'
+): number {
+  // In directional coordinates, advancing always subtracts the die value.
+  // See note above — both position.clockwise and position.counterclockwise
+  // are oriented so that forward movement is originPos - dieValue.
+  return originPos - dieValue
+}
+
+function computeReentryPosition(
+  dieValue: BackgammonDieValue,
+  direction: 'clockwise' | 'counterclockwise'
+): number {
+  // In directional coordinates, reentry point is represented as 25 - die.
+  // The directional mapping in p.position[...] ensures the correct container
+  // is resolved via the Golden Rule lookup.
+  return 25 - dieValue
+}
+
 // Core move calculation logic - now internal use only
 const getBasicPossibleMoves = function getBasicPossibleMoves(
   board: BackgammonBoard,
@@ -30,7 +68,9 @@ const getBasicPossibleMoves = function getBasicPossibleMoves(
 
   // If player has checkers on the bar, they must move those first
   if (bar.checkers.length > 0) {
-    const reentryPoint = 25 - dieValue
+    // Reentry: compute scalar position within player's directional coords,
+    // then resolve the container by the Golden Rule lookup.
+    const reentryPoint = computeReentryPosition(dieValue, playerDirection)
     const possibleDestination = Board.getPoints(board).find(
       (p: BackgammonPoint) =>
         // Point must be empty, have only one opponent checker (hit), or have player's own checkers (stacking)
@@ -64,7 +104,12 @@ const getBasicPossibleMoves = function getBasicPossibleMoves(
   // Handle both regular point-to-point moves and bearing-off moves
   playerPoints.forEach(function mapPlayerPoints(point) {
     const originPosition = point.position[playerDirection]
-    const destinationPosition = originPosition - dieValue
+    // Compute scalar destination in player's directional coords.
+    const destinationPosition = computeDestinationPosition(
+      originPosition,
+      dieValue,
+      playerDirection
+    )
 
     // Handle regular point-to-point moves
     if (destinationPosition >= 1 && destinationPosition <= 24) {

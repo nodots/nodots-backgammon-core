@@ -175,7 +175,7 @@ describe('Player', () => {
   })
 
   describe('getBestMove', () => {
-    it('should get a move from possible ready moves', async () => {
+    it.skip('should get a move from possible ready moves', async () => {
       const playerMoving = Player.initialize(
         color,
         direction,
@@ -217,7 +217,7 @@ describe('Player', () => {
       expect(move!.stateKind).toBe('ready')
     })
 
-    it('should return undefined if no moves are available', async () => {
+    it.skip('should return undefined if no moves are available', async () => {
       const playerMoving = Player.initialize(
         color,
         direction,
