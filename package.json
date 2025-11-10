@@ -1,6 +1,6 @@
 {
   "name": "@nodots-llc/backgammon-core",
-  "version": "4.5.0",
+  "version": "4.5.1",
   "description": "Core game logic for Nodots Backgammon",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,17 +18,16 @@
   "author": "Ken Riley <kenr@nodots.com>",
   "license": "MIT",
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nodots/nodots-backgammon.git",
     "directory": "packages/core"
   },
-  "homepage": "https://github.com/nodots/nodots-backgammon/tree/main/packages/core",
+  "homepage": "https://github.com/nodots/nodots-backgammon-core/tree/main",
   "bugs": {
-    "url": "https://github.com/nodots/nodots-backgammon/issues"
+    "url": "https://github.com/nodots/nodots-backgammon-core/issues"
   },
   "scripts": {
     "test": "jest",
@@ -51,15 +50,18 @@
     "simulate:until-win": "NODE_OPTIONS= ts-node src/scripts/simulate.ts 0",
     "simulate:batch": "NODE_OPTIONS= NODOTS_SIM_FAST=1 NODOTS_SIM_QUIET=1 NODOTS_LOG_SILENT=1 ts-node src/scripts/simulateBatch.ts",
     "install:latest-types": "rm -rf node_modules package-lock.json && npm install",
-    "publish:npm": "npm publish --access public --provenance",
+    "release": "npm run build && npm publish --access public",
+    "release:provenance": "npm run build && npm publish --access public --provenance",
+    "publish:dry-run": "npm run build && npm publish --access public --dry-run",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@nodots-llc/backgammon-types": "^4.5.0",
+    "@nodots-llc/backgammon-types": "^4.5.1",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.2.0",
+    "@nodots-llc/gnubg-hints": "^1.0.2",
     "@nodots-llc/gnubg-hints": "^1.0.2",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.30",
@@ -70,8 +72,10 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.23.0"
-  }
-  ,
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "engines": {
     "node": ">=18"
   }
