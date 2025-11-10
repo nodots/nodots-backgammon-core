@@ -22,12 +22,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nodots/nodots-backgammon.git",
+    "url": "git+https://github.com/nodots/nodots-backgammon-core.git",
     "directory": "packages/core"
   },
-  "homepage": "https://github.com/nodots/nodots-backgammon/tree/main/packages/core",
+  "homepage": "https://github.com/nodots/nodots-backgammon-core/tree/main",
   "bugs": {
-    "url": "https://github.com/nodots/nodots-backgammon/issues"
+    "url": "https://github.com/nodots/nodots-backgammon-core/issues"
   },
   "scripts": {
     "test": "jest",
@@ -56,7 +56,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@nodots-llc/backgammon-types": "^4.5.0",
+    "@nodots-llc/backgammon-types": "^4.5.1",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
@@ -71,8 +71,7 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.23.0"
-  }
-  ,
+  },
   "engines": {
     "node": ">=18"
   }
