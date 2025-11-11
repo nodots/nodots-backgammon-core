@@ -22,8 +22,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nodots/nodots-backgammon.git",
-    "directory": "packages/core"
+    "url": "git+https://github.com/nodots/nodots-backgammon-core.git"
   },
   "homepage": "https://github.com/nodots/nodots-backgammon-core/tree/main",
   "bugs": {
