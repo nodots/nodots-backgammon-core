@@ -56,11 +56,11 @@
   },
   "dependencies": {
     "@nodots-llc/backgammon-types": "^4.6.2",
+    "@nodots-llc/gnubg-hints": "^4.6.2",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.2.0",
-    "@nodots-llc/gnubg-hints": "^1.0.2",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.30",
     "eslint": "^9.19.0",
