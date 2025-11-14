@@ -921,7 +921,24 @@ export class Game {
     } as typeof game
   }
 
-      try { const ap: any = (game as any).activePlay; if (ap) { if (!ap.undo) ap.undo = { frames: [] }; const snapshot = typeof structuredClone === 'function' ? structuredClone(game) : JSON.parse(JSON.stringify(game)); ap.undo.frames.push(snapshot) } } catch (e) { logger?.warn?.('Failed to push undo snapshot in Game.move', e) }
+  public static move = function move(
+    game: BackgammonGameMoving,
+    checkerId: string
+  ): BackgammonGameMoving | BackgammonGameMoved | BackgammonGameCompleted {
+    // Push a pre-move snapshot to the turn-local undo stack
+    try {
+      const ap: any = (game as any).activePlay
+      if (ap) {
+        if (!ap.undo) ap.undo = { frames: [] }
+        const snapshot =
+          typeof structuredClone === 'function'
+            ? structuredClone(game)
+            : (JSON.parse(JSON.stringify(game)) as any)
+        ap.undo.frames.push(snapshot)
+      }
+    } catch (e) {
+      logger?.warn?.('Failed to push undo snapshot in Game.move', e)
+    }
 
     const checker = Board.getCheckers(game.board).find(
       (c) => c.id === checkerId
@@ -1244,8 +1261,61 @@ export class Game {
    * @param originId - ID of the origin point/bar to move from
    * @returns Updated game state with fresh moves calculated
    */
-  public static executeAndRecalculate = function try { const ap: any = (game as any).activePlay; if (ap) { if (!ap.undo) { ap.undo = { frames: [] } } const snapshot = typeof structuredClone === 'function' ? structuredClone(game) : JSON.parse(JSON.stringify(game)); ap.undo.frames.push(snapshot) } } catch (e) { logger?.warn?.('Failed to push undo snapshot before move', e) }
+  public static executeAndRecalculate = function executeAndRecalculate(
+    game: BackgammonGameMoving,
+    originId: string
+  ): BackgammonGameMoving | BackgammonGame {
+    // First, execute the move using the existing move method
+    console.log(
+      '[DEBUG] Game.executeAndRecalculate: About to execute move from origin:',
+      originId
+    )
 
+    // DEBUG: Check if game is defined and has required properties
+    if (!game) {
+      console.error('[DEBUG] CRITICAL: game parameter is undefined/null!')
+      throw new Error('Game parameter is undefined - cannot execute move')
+    }
+
+    if (!game.board) {
+      console.error('[DEBUG] CRITICAL: game.board is undefined!', {
+        gameStateKind: game.stateKind,
+        gameKeys: Object.keys(game),
+        hasActivePlay: !!game.activePlay,
+        hasActivePlayer: !!game.activePlayer,
+      })
+      throw new Error('Game.board is undefined - cannot execute move')
+    }
+
+    // Find a checker in the specified origin container to execute the move
+    const checkers = Board.getCheckers(game.board)
+    const checkerInOrigin = checkers.find(
+      (c) =>
+        c.checkercontainerId === originId && c.color === game.activePlayer.color
+    )
+
+    if (!checkerInOrigin) {
+      throw new Error(
+        `No ${game.activePlayer.color} checker found in container ${originId}`
+      )
+    }
+
+    // Push a pre-move snapshot
+    try {
+      const ap: any = (game as any).activePlay
+      if (ap) {
+        if (!ap.undo) ap.undo = { frames: [] }
+        const snapshot =
+          typeof structuredClone === 'function'
+            ? structuredClone(game)
+            : (JSON.parse(JSON.stringify(game)) as any)
+        ap.undo.frames.push(snapshot)
+      }
+    } catch (e) {
+      logger?.warn?.('Failed to push undo snapshot before move', e)
+    }
+
+    const gameAfterMove = Game.move(game, checkerInOrigin.id)
 
     console.log(
       '[DEBUG] Game.executeAndRecalculate: Move executed, game state:',
@@ -1931,7 +2001,6 @@ export class Game {
       statistics: updatedStatistics,
     } as BackgammonGameDoubled
   }
-}
 
   /**
    * Undo the last executed move within the current activePlay using the turn-local undo stack.
@@ -1964,3 +2033,4 @@ export class Game {
     const frames: any[] | undefined = ap.undo.frames
     return Array.isArray(frames) && frames.length > 0
   }
+}
