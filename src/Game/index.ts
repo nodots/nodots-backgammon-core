@@ -821,9 +821,10 @@ export class Game {
             )
           : false
 
-        const undoStackEmpty = !((game.activePlay as any)?.undo?.frames?.length > 0)
-        if (!(allMovesUndone && undoStackEmpty)) {
-          throw new Error('Cannot switch dice in moving state unless all moves are undone')
+        if (!allMovesUndone) {
+          throw new Error(
+            'Cannot switch dice in moving state unless all moves are undone'
+          )
         }
         break
       }
@@ -925,21 +926,6 @@ export class Game {
     game: BackgammonGameMoving,
     checkerId: string
   ): BackgammonGameMoving | BackgammonGameMoved | BackgammonGameCompleted {
-    // Push a pre-move snapshot to the turn-local undo stack
-    try {
-      const ap: any = (game as any).activePlay
-      if (ap) {
-        if (!ap.undo) ap.undo = { frames: [] }
-        const snapshot =
-          typeof structuredClone === 'function'
-            ? structuredClone(game)
-            : (JSON.parse(JSON.stringify(game)) as any)
-        ap.undo.frames.push(snapshot)
-      }
-    } catch (e) {
-      logger?.warn?.('Failed to push undo snapshot in Game.move', e)
-    }
-
     const checker = Board.getCheckers(game.board).find(
       (c) => c.id === checkerId
     )
@@ -1298,21 +1284,6 @@ export class Game {
       throw new Error(
         `No ${game.activePlayer.color} checker found in container ${originId}`
       )
-    }
-
-    // Push a pre-move snapshot
-    try {
-      const ap: any = (game as any).activePlay
-      if (ap) {
-        if (!ap.undo) ap.undo = { frames: [] }
-        const snapshot =
-          typeof structuredClone === 'function'
-            ? structuredClone(game)
-            : (JSON.parse(JSON.stringify(game)) as any)
-        ap.undo.frames.push(snapshot)
-      }
-    } catch (e) {
-      logger?.warn?.('Failed to push undo snapshot before move', e)
     }
 
     const gameAfterMove = Game.move(game, checkerInOrigin.id)
@@ -1700,12 +1671,16 @@ export class Game {
     player: BackgammonPlayerActive
   ): boolean {
     // Allow doubling from rolling state only (before rolling dice)
-    // Only if player does not own the cube and cube is not maxxed or already offered
+    // BACKGAMMON RULE: Only the player who OWNS the cube can offer a double.
+    // If no one owns the cube (initial state), either player can double.
+    const cubeHasOwner = !!game.cube.owner
+    const playerOwnsCube = game.cube.owner?.id === player.id
+    const canOfferBasedOnOwnership = !cubeHasOwner || playerOwnsCube
     return (
       game.stateKind === 'rolling' &&
       game.cube.stateKind !== 'maxxed' &&
       game.cube.stateKind !== 'offered' &&
-      (!game.cube.owner || game.cube.owner.id !== player.id)
+      canOfferBasedOnOwnership
     )
   }
 
@@ -1794,64 +1769,59 @@ export class Game {
   ): BackgammonGame {
     if (!Game.canAcceptDouble(game, player))
       throw new Error('Cannot accept double')
-    // Double the cube value, transfer ownership to accepting player, clear offeredBy, set to 'doubled' or 'maxxed'
-    const nextValue = Math.min(
+    // NOW the cube value doubles - acceptance is when the value actually changes
+    // undefined -> 2, 2 -> 4, 4 -> 8, etc.
+    const newValue = Math.min(
       game.cube.value ? game.cube.value * 2 : 2,
       64
-    ) as typeof game.cube.value
+    ) as BackgammonCubeValue
     const offeringPlayer = game.cube.offeredBy!
-    // Convert players to correct types
-    const activePlayer = {
-      ...player,
-      stateKind: 'doubled',
-    } as BackgammonPlayerDoubled
-    const inactivePlayer = {
+    // Determine cube state - 'maxxed' if at 64, otherwise 'doubled'
+    const cubeStateKind = newValue === 64 ? 'maxxed' : 'doubled'
+    // After accepting a double, the OFFERING player (who was active) continues
+    // their turn and should roll. The accepting player becomes inactive but owns the cube.
+    const rollingPlayer = {
       ...offeringPlayer,
+      stateKind: 'rolling',
+      dice: {
+        ...offeringPlayer.dice,
+        stateKind: 'rolling',
+        currentRoll: undefined,
+      },
+    } as BackgammonPlayerRolling
+
+    const newInactivePlayer = {
+      ...player,
       stateKind: 'inactive',
+      dice: {
+        ...player.dice,
+        stateKind: 'inactive',
+      },
     } as BackgammonPlayerInactive
-    // Create a BackgammonPlayDoubled (for now, reuse activePlay)
-    const activePlay = game.activePlay as any // TODO: ensure correct type
-    if (nextValue === 64) {
-      // If maxxed, game should be completed
-      const winner = {
-        ...player,
-        stateKind: 'winner',
-      } as BackgammonPlayerWinner
 
-      // Update players array to reflect winner status
-      const updatedPlayers = game.players.map((p) =>
-        p.id === winner.id ? winner : p
-      ) as BackgammonPlayers
+    // Update the players array to reflect new states
+    const updatedPlayers = game.players.map((p) => {
+      if (p.id === offeringPlayer.id) return rollingPlayer
+      if (p.id === player.id) return newInactivePlayer
+      return p
+    }) as BackgammonPlayers
 
-      return {
-        ...game,
-        stateKind: 'completed',
-        winner: winner.id,
-        players: updatedPlayers,
-        cube: {
-          ...game.cube,
-          stateKind: 'maxxed',
-          owner: undefined,
-          value: 64,
-          offeredBy: undefined,
-        },
-      } as any // TODO: type as BackgammonGameCompleted
-    }
     return {
       ...game,
-      stateKind: 'doubled',
+      stateKind: 'rolling',
       cube: {
         ...game.cube,
-        stateKind: 'doubled',
-        owner: player,
-        value: nextValue,
+        stateKind: cubeStateKind,
+        owner: newInactivePlayer, // Accepting player owns the cube
+        value: newValue,
         offeredBy: undefined,
       },
-      activePlayer,
-      inactivePlayer,
-      activePlay,
-      activeColor: player.color,
-    } as any // TODO: type as BackgammonGameDoubled
+      players: updatedPlayers,
+      activePlayer: rollingPlayer, // Offering player continues their turn
+      inactivePlayer: newInactivePlayer, // Accepting player becomes inactive
+      activePlay: undefined,
+      activeColor: offeringPlayer.color,
+    } as BackgammonGameRolling
   }
 
   public static canRefuseDouble(
@@ -1946,18 +1916,17 @@ export class Game {
 
     const { activePlayer, cube } = game
 
-    // Calculate new cube value - initial doubling sets cube to 2
-    const newValue = (
-      cube.value ? Math.min(cube.value * 2, 64) : 2
-    ) as BackgammonCubeValue
-
-    // Create updated cube in 'offered' state (waiting for opponent response)
+    // Cube value does NOT change when offering - it only changes if opponent accepts
+    // Just mark the cube as 'offered' and record who offered it
     const updatedCube = {
       ...cube,
       stateKind: 'offered' as const,
-      value: newValue,
+      // Value stays the same until accepted
       offeredBy: activePlayer,
     }
+
+    // Calculate proposed value for statistics (what value would be if accepted)
+    const proposedValue = cube.value ? Math.min(cube.value * 2, 64) : 2
 
     // Convert active player to doubled state
     const doubledPlayer = {
@@ -1983,7 +1952,7 @@ export class Game {
             ...game.statistics.cubeHistory,
             {
               turn: game.statistics.totalRolls,
-              value: newValue || 2,
+              value: proposedValue,
               offeredBy: activePlayer.color,
               accepted: false, // Not yet accepted - just offered
             },
@@ -2000,37 +1969,5 @@ export class Game {
       activePlayer: doubledPlayer,
       statistics: updatedStatistics,
     } as BackgammonGameDoubled
-  }
-
-  /**
-   * Undo the last executed move within the current activePlay using the turn-local undo stack.
-   * Returns the exact pre-move moving game state.
-   */
-  public static undoLastInActivePlay = function undoLastInActivePlay(
-    game: BackgammonGame
-  ): BackgammonGameMoving {
-    if (!game) throw new Error('No game state provided')
-    if (game.stateKind !== 'moving' && game.stateKind !== 'moved') {
-      throw new Error(`Cannot undo in ${game.stateKind} state. Must be in 'moving' or 'moved'`)
-    }
-    const ap: any = (game as any).activePlay
-    if (!ap) throw new Error('No active play found for undo')
-    const frames: any[] | undefined = ap.undo?.frames
-    if (!frames || frames.length === 0) throw new Error('No moves to undo for current player')
-    const previous = frames.pop()
-    if (!previous || previous.stateKind !== 'moving') throw new Error('Undo snapshot is invalid or not a moving state')
-    return previous as BackgammonGameMoving
-  }
-
-  /**
-   * Game-level check for whether an undo is currently possible within activePlay.
-   */
-  public static canUndoActivePlay = function canUndoActivePlay(game: BackgammonGame): boolean {
-    if (!game) return false
-    if (game.stateKind !== 'moving' && game.stateKind !== 'moved') return false
-    const ap: any = (game as any).activePlay
-    if (!ap || !ap.undo) return false
-    const frames: any[] | undefined = ap.undo.frames
-    return Array.isArray(frames) && frames.length > 0
   }
 }
