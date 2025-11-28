@@ -55,7 +55,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@nodots-llc/backgammon-types": "^4.6.2",
+    "@nodots-llc/backgammon-types": "file:../types",
     "@nodots-llc/gnubg-hints": "^4.6.2",
     "uuid": "^11.1.0"
   },
