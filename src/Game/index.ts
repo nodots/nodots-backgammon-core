@@ -1564,6 +1564,7 @@ export class Game {
     // Return game with next player's turn
     return {
       ...game,
+      cube: { ...(game.cube as any), offeredThisTurnBy: undefined } as any,
       stateKind: 'rolling',
       players: [
         newActivePlayerWithPips as BackgammonPlayerRolling,
@@ -1700,12 +1701,15 @@ export class Game {
     player: BackgammonPlayerActive
   ): boolean {
     // Allow doubling from rolling state only (before rolling dice)
-    // Only if player does not own the cube and cube is not maxxed or already offered
+    // Only if cube is centered (no owner) OR the player owns the cube
+    // and cube is not maxxed or already offered
     return (
       game.stateKind === 'rolling' &&
       game.cube.stateKind !== 'maxxed' &&
       game.cube.stateKind !== 'offered' &&
-      (!game.cube.owner || game.cube.owner.id !== player.id)
+      (!game.cube.owner || game.cube.owner.id === player.id) &&
+      // Disallow repeat doubles in same turn unless Beaver is implemented
+      (game.cube as any).offeredThisTurnBy?.id !== player.id
     )
   }
 
@@ -1967,6 +1971,7 @@ export class Game {
       stateKind: 'offered' as const,
       value: newValue,
       offeredBy: activePlayer,
+      offeredThisTurnBy: activePlayer,
     }
 
     // Convert active player to doubled state
