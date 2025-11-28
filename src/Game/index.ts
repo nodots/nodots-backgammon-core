@@ -1564,6 +1564,7 @@ export class Game {
     // Return game with next player's turn
     return {
       ...game,
+      cube: { ...(game.cube as any), offeredThisTurnBy: undefined } as any,
       stateKind: 'rolling',
       players: [
         newActivePlayerWithPips as BackgammonPlayerRolling,
@@ -1700,12 +1701,15 @@ export class Game {
     player: BackgammonPlayerActive
   ): boolean {
     // Allow doubling from rolling state only (before rolling dice)
-    // Only if player does not own the cube and cube is not maxxed or already offered
+    // Only if cube is centered (no owner) OR the player owns the cube
+    // and cube is not maxxed or already offered
     return (
       game.stateKind === 'rolling' &&
       game.cube.stateKind !== 'maxxed' &&
       game.cube.stateKind !== 'offered' &&
-      (!game.cube.owner || game.cube.owner.id !== player.id)
+      (!game.cube.owner || game.cube.owner.id === player.id) &&
+      // Disallow repeat doubles in same turn unless Beaver is implemented
+      (game.cube as any).offeredThisTurnBy?.id !== player.id
     )
   }
 
@@ -1794,24 +1798,11 @@ export class Game {
   ): BackgammonGame {
     if (!Game.canAcceptDouble(game, player))
       throw new Error('Cannot accept double')
-    // Double the cube value, transfer ownership to accepting player, clear offeredBy, set to 'doubled' or 'maxxed'
-    const nextValue = Math.min(
-      game.cube.value ? game.cube.value * 2 : 2,
-      64
-    ) as typeof game.cube.value
+    // Accept the offered value (do NOT double again here). Transfer ownership to accepting player.
+    const acceptedValue = (game.cube.value ?? 2) as typeof game.cube.value
     const offeringPlayer = game.cube.offeredBy!
-    // Convert players to correct types
-    const activePlayer = {
-      ...player,
-      stateKind: 'doubled',
-    } as BackgammonPlayerDoubled
-    const inactivePlayer = {
-      ...offeringPlayer,
-      stateKind: 'inactive',
-    } as BackgammonPlayerInactive
-    // Create a BackgammonPlayDoubled (for now, reuse activePlay)
-    const activePlay = game.activePlay as any // TODO: ensure correct type
-    if (nextValue === 64) {
+    // If accepting at 64, preserve prior behavior (may end the game depending on rules)
+    if (acceptedValue === 64) {
       // If maxxed, game should be completed
       const winner = {
         ...player,
@@ -1837,21 +1828,44 @@ export class Game {
         },
       } as any // TODO: type as BackgammonGameCompleted
     }
+    // Transition back to 'rolling' state for the original offering player to roll
+    const updatedCube = {
+      ...game.cube,
+      stateKind: 'doubled' as const,
+      owner: player,
+      value: acceptedValue,
+      offeredBy: undefined,
+    }
+
+    const updatedActivePlayer: BackgammonPlayerRolling = {
+      ...offeringPlayer,
+      stateKind: 'rolling',
+      dice: Dice.initialize(offeringPlayer.color, 'rolling'),
+      rollForStartValue: (offeringPlayer as any).rollForStartValue,
+    }
+    const updatedInactivePlayer: BackgammonPlayerInactive = {
+      ...player,
+      stateKind: 'inactive',
+      dice: Dice.initialize(player.color, 'inactive'),
+      rollForStartValue: (player as any).rollForStartValue,
+    }
+
+    const updatedPlayers = game.players.map((p) => {
+      if (p.id === updatedActivePlayer.id) return updatedActivePlayer
+      if (p.id === updatedInactivePlayer.id) return updatedInactivePlayer
+      return p
+    }) as BackgammonPlayers
+
     return {
       ...game,
-      stateKind: 'doubled',
-      cube: {
-        ...game.cube,
-        stateKind: 'doubled',
-        owner: player,
-        value: nextValue,
-        offeredBy: undefined,
-      },
-      activePlayer,
-      inactivePlayer,
-      activePlay,
-      activeColor: player.color,
-    } as any // TODO: type as BackgammonGameDoubled
+      stateKind: 'rolling',
+      cube: updatedCube,
+      players: updatedPlayers,
+      activePlayer: updatedActivePlayer,
+      inactivePlayer: updatedInactivePlayer,
+      activeColor: updatedActivePlayer.color,
+      activePlay: undefined as any,
+    } as any
   }
 
   public static canRefuseDouble(
@@ -1957,6 +1971,7 @@ export class Game {
       stateKind: 'offered' as const,
       value: newValue,
       offeredBy: activePlayer,
+      offeredThisTurnBy: activePlayer,
     }
 
     // Convert active player to doubled state
