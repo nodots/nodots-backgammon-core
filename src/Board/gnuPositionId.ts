@@ -83,13 +83,19 @@ function getPlayerAndOpponent(game: BackgammonGame): {
 }
 
 // Helper to get checker count on a specific point for a given player
-function getCheckersOnPoint(
+// GOLDEN RULE: Always look up points by position[direction], never by array index
+function getCheckersOnPointByPosition(
   board: BackgammonBoard,
   playerColor: BackgammonColor,
-  pointIndex: number // 0-23, mapping to board.points
+  playerDirection: 'clockwise' | 'counterclockwise',
+  gnuPosition: number // 1-24, GNU position from player's perspective
 ): number {
-  if (pointIndex < 0 || pointIndex > 23) return 0
-  const point = board.points[pointIndex]
+  if (gnuPosition < 1 || gnuPosition > 24) return 0
+  // Find the point where position[direction] equals the GNU position
+  const point = board.points.find(
+    (p) => p.position[playerDirection] === gnuPosition
+  )
+  if (!point) return 0
   return point.checkers.filter((c) => c.color === playerColor).length
 }
 
@@ -119,14 +125,15 @@ export function exportToGnuPositionId(game: BackgammonGame): string {
 
   let bitString = ''
 
-  // 1. Player on roll's points
-  for (let i = 0; i < 24; i++) {
-    let checkers = 0
-    if (playerOnRoll.direction === 'clockwise') {
-      checkers = getCheckersOnPoint(board, playerOnRoll.color, i)
-    } else {
-      checkers = getCheckersOnPoint(board, playerOnRoll.color, 23 - i)
-    }
+  // 1. Player on roll's points (GNU positions 1-24 from player's perspective)
+  // GOLDEN RULE: Use position[direction] to find points, not array indices
+  for (let gnuPos = 1; gnuPos <= 24; gnuPos++) {
+    const checkers = getCheckersOnPointByPosition(
+      board,
+      playerOnRoll.color,
+      playerOnRoll.direction,
+      gnuPos
+    )
     bitString += '1'.repeat(checkers)
     bitString += '0'
   }
@@ -134,14 +141,15 @@ export function exportToGnuPositionId(game: BackgammonGame): string {
   bitString += '1'.repeat(playerBarCheckers)
   bitString += '0'
 
-  // 2. Opponent's points
-  for (let i = 0; i < 24; i++) {
-    let checkers = 0
-    if (opponent.direction === 'clockwise') {
-      checkers = getCheckersOnPoint(board, opponent.color, i)
-    } else {
-      checkers = getCheckersOnPoint(board, opponent.color, 23 - i)
-    }
+  // 2. Opponent's points (GNU positions 1-24 from opponent's perspective)
+  // GOLDEN RULE: Use position[direction] to find points, not array indices
+  for (let gnuPos = 1; gnuPos <= 24; gnuPos++) {
+    const checkers = getCheckersOnPointByPosition(
+      board,
+      opponent.color,
+      opponent.direction,
+      gnuPos
+    )
     bitString += '1'.repeat(checkers)
     bitString += '0'
   }
