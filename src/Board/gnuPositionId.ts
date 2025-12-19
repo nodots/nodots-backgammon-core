@@ -106,6 +106,17 @@ export function exportToGnuPositionId(game: BackgammonGame): string {
   const { board } = game
   const { playerOnRoll, opponent } = getPlayerAndOpponent(game)
 
+  // Diagnostic logging to trace position ID encoding
+  logger.debug('[GnuPositionId] Encoding position', {
+    gameStateKind: game.stateKind,
+    activePlayerColor: game.activePlayer?.color,
+    activePlayerDirection: (game.activePlayer as any)?.direction,
+    playerOnRollColor: playerOnRoll.color,
+    playerOnRollDirection: playerOnRoll.direction,
+    opponentColor: opponent.color,
+    opponentDirection: opponent.direction,
+  })
+
   let bitString = ''
 
   // 1. Player on roll's points
