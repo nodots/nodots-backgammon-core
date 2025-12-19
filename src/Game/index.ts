@@ -9,6 +9,7 @@ import {
   BackgammonGameDoubled,
   BackgammonGameMoved,
   BackgammonGameMoving,
+  BackgammonGameOutcome,
   BackgammonGameRolledForStart,
   BackgammonGameRolling,
   BackgammonGameRollingForStart,
@@ -27,6 +28,7 @@ import {
   BackgammonPlayerWinner,
   BackgammonPlayMoving,
   BackgammonRoll,
+  GAME_OUTCOME_POINTS,
 } from '@nodots-llc/backgammon-types'
 import { generateId, Player } from '..'
 import { Board } from '../Board'
@@ -51,6 +53,67 @@ import type {
 } from '@nodots-llc/backgammon-types'
 import { RESTORABLE_GAME_STATE_KINDS } from '@nodots-llc/backgammon-types'
 import { executeRobotTurn } from './executeRobotTurn'
+
+/**
+ * Detects the game outcome (normal, gammon, or backgammon) when a player wins.
+ *
+ * Rules:
+ * - Normal (1 point): Opponent has at least 1 checker borne off
+ * - Gammon (2 points): Opponent has 0 checkers borne off, no checkers in winner's home or bar
+ * - Backgammon (3 points): Opponent has 0 checkers borne off AND has checker(s) in winner's home board or on bar
+ */
+function detectGameOutcome(
+  board: BackgammonBoard,
+  winner: BackgammonPlayer,
+  opponent: BackgammonPlayer
+): BackgammonGameOutcome {
+  // Get opponent's off area
+  const opponentOff = board.off[opponent.direction]
+  const opponentCheckersOff = opponentOff.checkers.filter(
+    (c) => c.color === opponent.color
+  ).length
+
+  // If opponent has any checkers off, it's a normal win
+  if (opponentCheckersOff > 0) {
+    return 'normal'
+  }
+
+  // Opponent has 0 checkers off - check for backgammon conditions
+  // Backgammon: opponent has checker(s) in winner's home board (positions 1-6 from winner's perspective)
+  // OR on the bar
+
+  // Check if opponent has checkers on the bar
+  const opponentBar = board.bar[opponent.direction]
+  const opponentCheckersOnBar = opponentBar.checkers.filter(
+    (c) => c.color === opponent.color
+  ).length
+
+  if (opponentCheckersOnBar > 0) {
+    return 'backgammon'
+  }
+
+  // Check if opponent has checkers in winner's home board (positions 1-6 from winner's perspective)
+  // Winner's home board is positions 1-6 in the winner's direction
+  const winnerHomeBoardPositions = [1, 2, 3, 4, 5, 6]
+
+  const opponentInWinnerHome = board.points.some((point) => {
+    const positionFromWinnerPerspective = point.position[winner.direction]
+    const isInWinnerHomeBoard = winnerHomeBoardPositions.includes(
+      positionFromWinnerPerspective
+    )
+    const hasOpponentCheckers = point.checkers.some(
+      (c) => c.color === opponent.color
+    )
+    return isInWinnerHomeBoard && hasOpponentCheckers
+  })
+
+  if (opponentInWinnerHome) {
+    return 'backgammon'
+  }
+
+  // Opponent has 0 off, not on bar, not in winner's home - it's a gammon
+  return 'gammon'
+}
 
 export class Game {
   id: string = generateId()
@@ -1140,22 +1203,37 @@ export class Game {
         pipCount: 0, // Winner has 0 pip count
       } as BackgammonPlayerWinner
 
+      // Get the opponent (the other player)
+      const opponent = updatedPlayers.find(
+        (p) => p.id !== winner.id
+      ) as BackgammonPlayer
+
+      // Detect the game outcome (normal, gammon, or backgammon)
+      const outcome = detectGameOutcome(board, winner, opponent)
+      const basePoints = GAME_OUTCOME_POINTS[outcome]
+      const finalScore = basePoints * game.cube.value
+
+      logger.info(
+        `🏁 [Game] Game ${game.id} completed - Winner: ${winner.id}, Outcome: ${outcome}, Score: ${finalScore} (${basePoints} x ${game.cube.value})`
+      )
+
       // Update players array to include the winner with correct state
       const finalPlayers = updatedPlayers.map((p) =>
         p.id === winner.id ? winner : p
       ) as BackgammonPlayers
 
-      logger.info(`🏁 [Game] Game ${game.id} completed - Winner: ${winner.id}`)
-
       return Game.incrementStateVersion({
         ...game,
         stateKind: 'completed',
         winner: winner.id,
+        outcome,
+        basePoints,
+        finalScore,
         board,
         activePlayer: winner,
         activePlay: updatedActivePlay,
         players: finalPlayers,
-        endTime: new Date(), // Add end time for completed games
+        endTime: new Date(),
       } as BackgammonGameCompleted)
     }
     // --- END WIN CONDITION CHECK ---
