@@ -9,6 +9,7 @@ import {
   BackgammonGameDoubled,
   BackgammonGameMoved,
   BackgammonGameMoving,
+  BackgammonGameOutcome,
   BackgammonGameRolledForStart,
   BackgammonGameRolling,
   BackgammonGameRollingForStart,
@@ -27,6 +28,7 @@ import {
   BackgammonPlayerWinner,
   BackgammonPlayMoving,
   BackgammonRoll,
+  GAME_OUTCOME_POINTS,
 } from '@nodots-llc/backgammon-types'
 import { generateId, Player } from '..'
 import { Board } from '../Board'
@@ -51,6 +53,67 @@ import type {
 } from '@nodots-llc/backgammon-types'
 import { RESTORABLE_GAME_STATE_KINDS } from '@nodots-llc/backgammon-types'
 import { executeRobotTurn } from './executeRobotTurn'
+
+/**
+ * Detects the game outcome (normal, gammon, or backgammon) when a player wins.
+ *
+ * Rules:
+ * - Normal (1 point): Opponent has at least 1 checker borne off
+ * - Gammon (2 points): Opponent has 0 checkers borne off, no checkers in winner's home or bar
+ * - Backgammon (3 points): Opponent has 0 checkers borne off AND has checker(s) in winner's home board or on bar
+ */
+function detectGameOutcome(
+  board: BackgammonBoard,
+  winner: BackgammonPlayer,
+  opponent: BackgammonPlayer
+): BackgammonGameOutcome {
+  // Get opponent's off area
+  const opponentOff = board.off[opponent.direction]
+  const opponentCheckersOff = opponentOff.checkers.filter(
+    (c) => c.color === opponent.color
+  ).length
+
+  // If opponent has any checkers off, it's a normal win
+  if (opponentCheckersOff > 0) {
+    return 'normal'
+  }
+
+  // Opponent has 0 checkers off - check for backgammon conditions
+  // Backgammon: opponent has checker(s) in winner's home board (positions 1-6 from winner's perspective)
+  // OR on the bar
+
+  // Check if opponent has checkers on the bar
+  const opponentBar = board.bar[opponent.direction]
+  const opponentCheckersOnBar = opponentBar.checkers.filter(
+    (c) => c.color === opponent.color
+  ).length
+
+  if (opponentCheckersOnBar > 0) {
+    return 'backgammon'
+  }
+
+  // Check if opponent has checkers in winner's home board (positions 1-6 from winner's perspective)
+  // Winner's home board is positions 1-6 in the winner's direction
+  const winnerHomeBoardPositions = [1, 2, 3, 4, 5, 6]
+
+  const opponentInWinnerHome = board.points.some((point) => {
+    const positionFromWinnerPerspective = point.position[winner.direction]
+    const isInWinnerHomeBoard = winnerHomeBoardPositions.includes(
+      positionFromWinnerPerspective
+    )
+    const hasOpponentCheckers = point.checkers.some(
+      (c) => c.color === opponent.color
+    )
+    return isInWinnerHomeBoard && hasOpponentCheckers
+  })
+
+  if (opponentInWinnerHome) {
+    return 'backgammon'
+  }
+
+  // Opponent has 0 off, not on bar, not in winner's home - it's a gammon
+  return 'gammon'
+}
 
 export class Game {
   id: string = generateId()
@@ -139,6 +202,7 @@ export class Game {
     return {
       createdAt: new Date(),
       version: `v4.0`, // FIXME
+      stateVersion: 1, // Initialize state version for equality checks
       rules: {},
       settings: {
         allowUndo: false,
@@ -147,6 +211,18 @@ export class Game {
         showHints: false,
         showProbabilities: false,
       },
+    }
+  }
+
+  /**
+   * Increments the stateVersion field for change detection.
+   * This allows clients to quickly compare if game state has changed
+   * without performing deep equality checks.
+   */
+  private static incrementStateVersion<T extends BackgammonGame>(game: T): T {
+    return {
+      ...game,
+      stateVersion: (game.stateVersion ?? 0) + 1,
     }
   }
 
@@ -366,7 +442,7 @@ export class Game {
       (p) => p.color !== activeColor
     )!
 
-    return {
+    return Game.incrementStateVersion({
       ...game,
       stateKind: 'rolled-for-start',
       activeColor,
@@ -377,7 +453,7 @@ export class Game {
       ] as BackgammonPlayersRolledForStartTuple,
       activePlayer,
       inactivePlayer,
-    } as BackgammonGameRolledForStart
+    } as BackgammonGameRolledForStart)
   }
 
   public static roll = function roll(
@@ -447,14 +523,14 @@ export class Game {
             { expectedMoveCount, actualMoveCount, currentRoll }
           )
           // Player has no legal moves, return game in 'moved' state
-          return {
+          return Game.incrementStateVersion({
             ...game,
             stateKind: 'moved',
             activePlayer: movingPlayer,
             inactivePlayer: unrolledPlayer,
             activePlay,
             board: game.board, // Board unchanged
-          } as any // Cast to avoid type issues since we're returning moved instead of moving
+          } as any) // Cast to avoid type issues since we're returning moved instead of moving
         } else if (allMovesCompleted && actualMoveCount !== expectedMoveCount) {
           // BUG DETECTED: Moves are completed but count doesn't match expected dice
           debug(
@@ -564,7 +640,7 @@ export class Game {
           movableContainerIds
         )
 
-        return {
+        return Game.incrementStateVersion({
           ...game,
           stateKind: 'moving',
           players: [
@@ -576,7 +652,7 @@ export class Game {
           inactivePlayer: unrolledPlayer,
           activePlay,
           board: updatedBoard,
-        }
+        })
       }
 
       case 'doubled': {
@@ -609,14 +685,14 @@ export class Game {
           debug(
             'Game.roll: All moves auto-completed (doubled case) - no legal moves available, transitioning to moved state'
           )
-          return {
+          return Game.incrementStateVersion({
             ...game,
             stateKind: 'moved',
             activePlayer: playerMoving,
             inactivePlayer,
             activePlay,
             board,
-          } as any
+          } as any)
         }
 
         const movingPlay = {
@@ -698,7 +774,7 @@ export class Game {
           board: updatedBoard,
         } as BackgammonGameMoving
 
-        return movingGame
+        return Game.incrementStateVersion(movingGame)
       }
 
       case 'rolling': {
@@ -727,14 +803,14 @@ export class Game {
           debug(
             'Game.roll: All moves auto-completed (rolling case) - no legal moves available, transitioning to moved state'
           )
-          return {
+          return Game.incrementStateVersion({
             ...game,
             stateKind: 'moved',
             activePlayer: playerMoving,
             inactivePlayer,
             activePlay,
             board,
-          } as any
+          } as any)
         }
 
         const movingPlay = {
@@ -794,7 +870,7 @@ export class Game {
           board: updatedBoard,
         } as BackgammonGameMoving
 
-        return movingGame
+        return Game.incrementStateVersion(movingGame)
       }
 
       default:
@@ -913,12 +989,12 @@ export class Game {
     ) as unknown as BackgammonPlayers
 
     // Return the same state type as input
-    return {
+    return Game.incrementStateVersion({
       ...game,
       players: updatedPlayers,
       activePlayer: updatedActivePlayer,
       activePlay: updatedActivePlay,
-    } as typeof game
+    } as typeof game)
   }
 
   public static move = function move(
@@ -1127,23 +1203,38 @@ export class Game {
         pipCount: 0, // Winner has 0 pip count
       } as BackgammonPlayerWinner
 
+      // Get the opponent (the other player)
+      const opponent = updatedPlayers.find(
+        (p) => p.id !== winner.id
+      ) as BackgammonPlayer
+
+      // Detect the game outcome (normal, gammon, or backgammon)
+      const outcome = detectGameOutcome(board, winner, opponent)
+      const basePoints = GAME_OUTCOME_POINTS[outcome]
+      const finalScore = basePoints * game.cube.value
+
+      logger.info(
+        `🏁 [Game] Game ${game.id} completed - Winner: ${winner.id}, Outcome: ${outcome}, Score: ${finalScore} (${basePoints} x ${game.cube.value})`
+      )
+
       // Update players array to include the winner with correct state
       const finalPlayers = updatedPlayers.map((p) =>
         p.id === winner.id ? winner : p
       ) as BackgammonPlayers
 
-      logger.info(`🏁 [Game] Game ${game.id} completed - Winner: ${winner.id}`)
-
-      return {
+      return Game.incrementStateVersion({
         ...game,
         stateKind: 'completed',
         winner: winner.id,
+        outcome,
+        basePoints,
+        finalScore,
         board,
         activePlayer: winner,
         activePlay: updatedActivePlay,
         players: finalPlayers,
-        endTime: new Date(), // Add end time for completed games
-      } as BackgammonGameCompleted
+        endTime: new Date(),
+      } as BackgammonGameCompleted)
     }
     // --- END WIN CONDITION CHECK ---
 
@@ -1183,7 +1274,7 @@ export class Game {
       stateKind: updatedActivePlay.stateKind === 'moved' ? 'moved' : 'moving',
     }
 
-    return {
+    return Game.incrementStateVersion({
       ...game,
       stateKind: gameStateKind,
       board,
@@ -1192,7 +1283,7 @@ export class Game {
       ),
       activePlayer: finalActivePlayerWithState,
       activePlay: updatedActivePlay,
-    } as BackgammonGameMoving | BackgammonGameMoved
+    } as BackgammonGameMoving | BackgammonGameMoved)
   }
 
   /**
@@ -1248,10 +1339,10 @@ export class Game {
     }
 
     // Create moved state - human player's turn is complete, waiting for dice click confirmation
-    return {
+    return Game.incrementStateVersion({
       ...game,
       stateKind: 'moved',
-    } as BackgammonGameMoved
+    } as BackgammonGameMoved)
   }
 
   /**
@@ -1562,7 +1653,7 @@ export class Game {
     // For now, keep the original behavior but document the fix location
 
     // Return game with next player's turn
-    return {
+    return Game.incrementStateVersion({
       ...game,
       cube: { ...(game.cube as any), offeredThisTurnBy: undefined } as any,
       stateKind: 'rolling',
@@ -1575,7 +1666,7 @@ export class Game {
       activePlayer: newActivePlayerWithPips,
       inactivePlayer: newInactivePlayerWithPips,
       activePlay: undefined, // No activePlay after turn confirmation
-    } as BackgammonGameRolling
+    } as BackgammonGameRolling)
   }
 
   /**
@@ -1814,7 +1905,7 @@ export class Game {
         p.id === winner.id ? winner : p
       ) as BackgammonPlayers
 
-      return {
+      return Game.incrementStateVersion({
         ...game,
         stateKind: 'completed',
         winner: winner.id,
@@ -1826,7 +1917,7 @@ export class Game {
           value: 64,
           offeredBy: undefined,
         },
-      } as any // TODO: type as BackgammonGameCompleted
+      } as any) // TODO: type as BackgammonGameCompleted
     }
     // Transition back to 'rolling' state for the original offering player to roll
     const updatedCube = {
@@ -1856,7 +1947,7 @@ export class Game {
       return p
     }) as BackgammonPlayers
 
-    return {
+    return Game.incrementStateVersion({
       ...game,
       stateKind: 'rolling',
       cube: updatedCube,
@@ -1865,7 +1956,7 @@ export class Game {
       inactivePlayer: updatedInactivePlayer,
       activeColor: updatedActivePlayer.color,
       activePlay: undefined as any,
-    } as any
+    } as any)
   }
 
   public static canRefuseDouble(
@@ -1895,12 +1986,12 @@ export class Game {
       p.id === winner.id ? winner : p
     ) as BackgammonPlayers
 
-    return {
+    return Game.incrementStateVersion({
       ...game,
       stateKind: 'completed',
       winner: winner.id,
       players: updatedPlayers,
-    } as BackgammonGameCompleted
+    } as BackgammonGameCompleted)
   }
 
   /**
@@ -2007,14 +2098,14 @@ export class Game {
       : undefined
 
     // Return game in 'doubled' state (waiting for opponent to accept/refuse)
-    return {
+    return Game.incrementStateVersion({
       ...game,
       stateKind: 'doubled',
       cube: updatedCube,
       players: updatedPlayers,
       activePlayer: doubledPlayer,
       statistics: updatedStatistics,
-    } as BackgammonGameDoubled
+    } as BackgammonGameDoubled)
   }
 
   /**
