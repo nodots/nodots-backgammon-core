@@ -35,7 +35,6 @@
     "dist",
     "**/*.test.ts",
     "**/__tests__/**",
-    "src/scripts/**/*",
-    "src/Services/PerformanceRatingCalculator.ts"
+    "src/scripts/**/*"
   ]
 }

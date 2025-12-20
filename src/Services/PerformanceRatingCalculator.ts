@@ -1,12 +1,48 @@
 import { BackgammonGame } from '@nodots-llc/backgammon-types'
 import type { MoveHint, MoveStep } from '@nodots-llc/gnubg-hints'
-import {
-  buildHintContextFromGame,
-  GnubgColorNormalization,
-  gnubgHints,
-} from '@nodots-llc/backgammon-ai'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
 import { logger } from '../utils/logger'
+
+// Dynamic import types - avoids compile-time circular dependency with ai package
+type GnubgColor = 'white' | 'black'
+interface GnubgColorNormalization {
+  toGnu: Record<GnubgColor, GnubgColor>
+  fromGnu: Record<GnubgColor, GnubgColor>
+}
+
+// AI module interface for dependency injection
+export interface AiModuleInterface {
+  gnubgHints: {
+    isAvailable: () => Promise<boolean>
+    getBuildInstructions: () => string
+    getMoveHints: (request: any, maxHints?: number) => Promise<MoveHint[]>
+  }
+  buildHintContextFromGame: (game: BackgammonGame, overrides?: any) => {
+    request: any
+    normalization: GnubgColorNormalization
+  }
+}
+
+// Lazy-loaded ai module reference
+let aiModule: AiModuleInterface | null = null
+
+async function getAiModule(): Promise<AiModuleInterface> {
+  if (!aiModule) {
+    // Dynamic import with string indirection to prevent TypeScript from resolving at compile time
+    const moduleName = '@nodots-llc/backgammon-ai'
+    const ai = await (Function('m', 'return import(m)')(moduleName) as Promise<any>)
+    aiModule = {
+      gnubgHints: ai.gnubgHints,
+      buildHintContextFromGame: ai.buildHintContextFromGame,
+    }
+  }
+  return aiModule
+}
+
+// Allow tests to inject a mock ai module
+export function setAiModuleForTesting(module: AiModuleInterface | null): void {
+  aiModule = module
+}
 
 export interface PRMoveAnalysis {
   player: string
@@ -56,10 +92,11 @@ export class PerformanceRatingCalculator {
     try {
       logger.info(`Starting PR calculation for game ${gameId}`)
 
-      const isAvailable = await gnubgHints.isAvailable()
+      const ai = await getAiModule()
+      const isAvailable = await ai.gnubgHints.isAvailable()
       if (!isAvailable) {
         throw new Error(
-          `${gnubgHints.getBuildInstructions()}\n\nGNU Backgammon hints are required for performance rating analysis.`
+          `${ai.gnubgHints.getBuildInstructions()}\n\nGNU Backgammon hints are required for performance rating analysis.`
         )
       }
 
@@ -162,11 +199,12 @@ export class PerformanceRatingCalculator {
     moveNumber: number,
   ): Promise<PRMoveAnalysis | null> {
     try {
-      const { request, normalization } = buildHintContextFromGame(gameState, {
+      const ai = await getAiModule()
+      const { request, normalization } = ai.buildHintContextFromGame(gameState, {
         dice,
       })
 
-      const hints = await gnubgHints.getMoveHints(request, 12)
+      const hints = await ai.gnubgHints.getMoveHints(request, 12)
       if (!Array.isArray(hints) || hints.length === 0) {
         logger.warn('No hints returned for PR analysis')
         return null
