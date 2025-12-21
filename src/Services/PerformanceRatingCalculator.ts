@@ -169,7 +169,9 @@ export class PerformanceRatingCalculator {
         if (player.analyzedMoves > 0) {
           player.averageEquityLoss =
             player.totalEquityLoss / player.analyzedMoves
-          player.performanceRating = player.averageEquityLoss * 500
+          // PR is measured in millipoints per move (equity loss * 1000)
+          // World Class: PR ≤ 3, Expert: PR ≤ 5, Advanced: PR ≤ 7.5
+          player.performanceRating = player.averageEquityLoss * 1000
         }
       }
 
@@ -217,6 +219,12 @@ export class PerformanceRatingCalculator {
         gameState,
         normalization,
       )
+
+      // Debug: log the actual step and hints for comparison
+      logger.info(`Move ${moveNumber} - actualStep: ${JSON.stringify(actualStep)}`)
+      logger.info(`Move ${moveNumber} - bestHint moves: ${JSON.stringify(bestHint?.moves)}`)
+      logger.info(`Move ${moveNumber} - all hint steps: ${JSON.stringify(hints.slice(0, 3).map(h => h.moves))}`)
+
       const actualHint = actualStep
         ? this.findHintForStep(hints, actualStep)
         : undefined
@@ -261,7 +269,10 @@ export class PerformanceRatingCalculator {
       return null
     }
 
-    const executingPlayer = gameState.players.find((p) => p.id === playerId)
+    // History stores userId in player_id field, so check both id and userId
+    // Debug: log what we're searching for and what we have
+    logger.info(`Looking for player ${playerId} in players: ${JSON.stringify(gameState.players.map(p => ({ id: p.id, userId: p.userId })))}`)
+    const executingPlayer = gameState.players.find((p) => p.id === playerId || p.userId === playerId)
     if (!executingPlayer) {
       return null
     }

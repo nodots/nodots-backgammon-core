@@ -11,10 +11,49 @@ import { logger } from '../utils/logger'
 const GNU_BASE64 =
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
-function getPlayerAndOpponent(game: BackgammonGame): {
-  playerOnRoll: BackgammonPlayer
-  opponent: BackgammonPlayer
-} {
+// GNU Backgammon has FIXED conventions:
+// - GNU white = always clockwise
+// - GNU black = always counterclockwise
+// Nodots allows any player/color/direction combination, so we must normalize.
+type GnuColor = 'white' | 'black'
+
+interface GnuNormalization {
+  // Maps Nodots color to GNU color
+  toGnu: Record<BackgammonColor, GnuColor>
+  // The Nodots player who maps to GNU white (clockwise)
+  gnuWhitePlayer: BackgammonPlayer
+  // The Nodots player who maps to GNU black (counterclockwise)
+  gnuBlackPlayer: BackgammonPlayer
+}
+
+function createGnuNormalization(game: BackgammonGame): GnuNormalization {
+  const clockwisePlayer = game.players.find((p) => p.direction === 'clockwise')
+  const counterclockwisePlayer = game.players.find(
+    (p) => p.direction === 'counterclockwise'
+  )
+
+  if (!clockwisePlayer || !counterclockwisePlayer) {
+    throw new Error(
+      'Unable to determine player directions for GNU BG normalization.'
+    )
+  }
+
+  // GNU white = clockwise, GNU black = counterclockwise
+  // Type assertion needed because BackgammonColor might be undefined in some contexts,
+  // but we know both players have valid colors at this point
+  const toGnu = {
+    [clockwisePlayer.color]: 'white',
+    [counterclockwisePlayer.color]: 'black',
+  } as Record<BackgammonColor, GnuColor>
+
+  return {
+    toGnu,
+    gnuWhitePlayer: clockwisePlayer,
+    gnuBlackPlayer: counterclockwisePlayer,
+  }
+}
+
+function getPlayerOnRoll(game: BackgammonGame): BackgammonPlayer {
   let playerOnRoll: BackgammonPlayer | undefined
 
   // EXHAUSTIVE switch on BackgammonGameStateKind for player determination
@@ -24,41 +63,31 @@ function getPlayerAndOpponent(game: BackgammonGame): {
       break
 
     case 'rolled-for-start':
-      // In rolled-for-start, activePlayer indicates who won the roll and will be the first player on roll.
-      // This state is just before the first actual turn where checkers move.
-      // GNU Pos ID usually represents a position where someone is about to move checkers.
-      // Use the activePlayer property which exists in rolled-for-start state
       playerOnRoll = game.activePlayer
       break
 
     case 'rolling-for-start':
-      // In rolling-for-start, no active player is determined yet, but we can still calculate GNU Position ID
-      // For starting position, conventionally use white as player on roll (standard GNU convention)
+      // For starting position, use the clockwise player (GNU white convention)
       playerOnRoll =
-        game.players.find((p) => p.color === 'white') ?? game.players[0]
+        game.players.find((p) => p.direction === 'clockwise') ?? game.players[0]
       logger.info(
-        `Using ${playerOnRoll?.color} as player on roll for rolling-for-start state`
+        `Using ${playerOnRoll?.color} (clockwise/GNU white) as player on roll for rolling-for-start state`
       )
       break
 
     case 'rolling':
-      // Player is about to roll dice - use the active player
       playerOnRoll = game.activePlayer
       break
 
     case 'doubled':
-      // Double offered - use the active player (the one who offered the double)
       playerOnRoll = game.activePlayer
       break
 
     case 'moved':
-      // Player has completed moves but not confirmed turn - use the active player
       playerOnRoll = game.activePlayer
       break
 
     case 'completed':
-      // Game is completed - use the last active player (from winner's perspective)
-      // If we have a winner, use them; otherwise just use the first player
       const completedGame = game as BackgammonGame & {
         winner?: BackgammonPlayer
       }
@@ -75,28 +104,29 @@ function getPlayerAndOpponent(game: BackgammonGame): {
     throw new Error('Could not determine player on roll.')
   }
 
-  const opponent = game.players.find((p) => p.id !== playerOnRoll.id)
-  if (!opponent) {
-    throw new Error('Opponent not found')
-  }
-  return { playerOnRoll, opponent }
+  return playerOnRoll
 }
 
-// Helper to get checker count on a specific point for a given player
+// Helper to get checker count on a specific point for a GNU-normalized player
+// GNU white uses clockwise positions, GNU black uses counterclockwise positions
 // GOLDEN RULE: Always look up points by position[direction], never by array index
-function getCheckersOnPointByPosition(
+function getCheckersOnPointForGnuPlayer(
   board: BackgammonBoard,
-  playerColor: BackgammonColor,
-  playerDirection: 'clockwise' | 'counterclockwise',
+  nodotPlayer: BackgammonPlayer, // The actual Nodots player
   gnuPosition: number // 1-24, GNU position from player's perspective
 ): number {
   if (gnuPosition < 1 || gnuPosition > 24) return 0
-  // Find the point where position[direction] equals the GNU position
+
+  // Use the player's direction to find the correct point
+  // Clockwise player (GNU white) uses clockwise positions
+  // Counterclockwise player (GNU black) uses counterclockwise positions
   const point = board.points.find(
-    (p) => p.position[playerDirection] === gnuPosition
+    (p) => p.position[nodotPlayer.direction] === gnuPosition
   )
   if (!point) return 0
-  return point.checkers.filter((c) => c.color === playerColor).length
+
+  // Count checkers of this player's color on the point
+  return point.checkers.filter((c) => c.color === nodotPlayer.color).length
 }
 
 // Helper to get checker count on the bar for a given player
@@ -110,50 +140,59 @@ function getCheckersOnBar(
 
 export function exportToGnuPositionId(game: BackgammonGame): string {
   const { board } = game
-  const { playerOnRoll, opponent } = getPlayerAndOpponent(game)
+
+  // Create GNU normalization: maps Nodots colors/directions to GNU conventions
+  // GNU white = clockwise, GNU black = counterclockwise
+  const normalization = createGnuNormalization(game)
+
+  // Get the player who is on roll in Nodots
+  const nodotPlayerOnRoll = getPlayerOnRoll(game)
+
+  // Determine GNU color of player on roll
+  const gnuColorOnRoll = normalization.toGnu[nodotPlayerOnRoll.color]
+
+  // Get the GNU white and black players (mapped from Nodots players)
+  // gnuWhitePlayer is the clockwise player, gnuBlackPlayer is the counterclockwise player
+  const gnuPlayerOnRoll =
+    gnuColorOnRoll === 'white'
+      ? normalization.gnuWhitePlayer
+      : normalization.gnuBlackPlayer
+  const gnuOpponent =
+    gnuColorOnRoll === 'white'
+      ? normalization.gnuBlackPlayer
+      : normalization.gnuWhitePlayer
 
   // Diagnostic logging to trace position ID encoding
-  logger.debug('[GnuPositionId] Encoding position', {
+  logger.debug('[GnuPositionId] Encoding position with GNU normalization', {
     gameStateKind: game.stateKind,
-    activePlayerColor: game.activePlayer?.color,
-    activePlayerDirection: (game.activePlayer as any)?.direction,
-    playerOnRollColor: playerOnRoll.color,
-    playerOnRollDirection: playerOnRoll.direction,
-    opponentColor: opponent.color,
-    opponentDirection: opponent.direction,
+    nodotPlayerOnRollColor: nodotPlayerOnRoll.color,
+    nodotPlayerOnRollDirection: nodotPlayerOnRoll.direction,
+    gnuColorOnRoll,
+    gnuWhitePlayerColor: normalization.gnuWhitePlayer.color,
+    gnuBlackPlayerColor: normalization.gnuBlackPlayer.color,
   })
 
   let bitString = ''
 
-  // 1. Player on roll's points (GNU positions 1-24 from player's perspective)
+  // 1. GNU player on roll's points (GNU positions 1-24 from their perspective)
   // GOLDEN RULE: Use position[direction] to find points, not array indices
   for (let gnuPos = 1; gnuPos <= 24; gnuPos++) {
-    const checkers = getCheckersOnPointByPosition(
-      board,
-      playerOnRoll.color,
-      playerOnRoll.direction,
-      gnuPos
-    )
+    const checkers = getCheckersOnPointForGnuPlayer(board, gnuPlayerOnRoll, gnuPos)
     bitString += '1'.repeat(checkers)
     bitString += '0'
   }
-  const playerBarCheckers = getCheckersOnBar(board, playerOnRoll)
+  const playerBarCheckers = getCheckersOnBar(board, gnuPlayerOnRoll)
   bitString += '1'.repeat(playerBarCheckers)
   bitString += '0'
 
-  // 2. Opponent's points (GNU positions 1-24 from opponent's perspective)
+  // 2. GNU opponent's points (GNU positions 1-24 from their perspective)
   // GOLDEN RULE: Use position[direction] to find points, not array indices
   for (let gnuPos = 1; gnuPos <= 24; gnuPos++) {
-    const checkers = getCheckersOnPointByPosition(
-      board,
-      opponent.color,
-      opponent.direction,
-      gnuPos
-    )
+    const checkers = getCheckersOnPointForGnuPlayer(board, gnuOpponent, gnuPos)
     bitString += '1'.repeat(checkers)
     bitString += '0'
   }
-  const opponentBarCheckers = getCheckersOnBar(board, opponent)
+  const opponentBarCheckers = getCheckersOnBar(board, gnuOpponent)
   bitString += '1'.repeat(opponentBarCheckers)
   bitString += '0'
 
