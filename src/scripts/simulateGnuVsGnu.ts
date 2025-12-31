@@ -13,6 +13,7 @@ import {
   getNormalizedPosition,
   getContainerKind,
 } from '@nodots-llc/backgammon-ai'
+import { MoveFilterSetting } from '@nodots-llc/gnubg-hints'
 
 function checkWin(board: any): 'white' | 'black' | null {
   if (!board || !board.off) return null
@@ -55,18 +56,25 @@ async function simulateGnuVsGnu(
 
     try {
       await initializeGnubgHints()
-      await configureGnubgHints({ evalPlies: 1, moveFilter: 1, usePruning: true })
-      const { request, normalization } = buildHintContextFromGame(rolled as any)
+      await configureGnubgHints({
+        evalPlies: 1,
+        moveFilter: MoveFilterSetting.Narrow,
+        usePruning: true,
+      })
+      const { request } = buildHintContextFromGame(rolled as any)
       request.dice = [rollTuple[0], rollTuple[1]]
       let hints = await getGnuMoveHints(request, 1)
-      if (!hints || hints.length === 0 || !hints[0].moves || hints[0].moves.length === 0) {
-        // try swapped dice
-        request.dice = [rollTuple[1], rollTuple[0]]
-        hints = await getGnuMoveHints(request, 1)
-      }
+      // Prepare alternate hints with swapped dice for step-0 fallback
+      const altReq = { ...request, dice: [rollTuple[1], rollTuple[0]] as [number, number] }
+      const altHints = (!hints || hints.length === 0 || !hints[0].moves?.length)
+        ? await getGnuMoveHints(altReq, 1)
+        : await getGnuMoveHints(altReq, 1).catch(() => [])
 
       // Execute moves until completion using hint mapping each time
       let moveCount = 0
+      let hintSeq = (hints && hints[0] && Array.isArray(hints[0].moves)) ? hints[0].moves : []
+      const hintSeqAlt = (altHints && altHints[0] && Array.isArray(altHints[0].moves)) ? altHints[0].moves : []
+      let stepIndex = 0
       while (moving.stateKind === 'moving') {
         const readyMoves = Array.from(moving.activePlay.moves).filter(
           (m: any) => m.stateKind === 'ready' || (m.stateKind === 'in-progress' && !m.origin)
@@ -77,10 +85,8 @@ async function simulateGnuVsGnu(
         let chosenDie: number | undefined
         let selectedOrigin: any
         let possibleMoves: BackgammonMoveSkeleton[] = []
-        const top = hints && hints[0] && hints[0].moves && hints[0].moves[0]
-        if (top) {
-          const primaryFrame = normalization.toGnu[(moving.activePlayer as any).color as 'white' | 'black'] as 'white' | 'black'
-          const frames: Array<'white' | 'black'> = primaryFrame === 'white' ? ['white', 'black'] : ['black', 'white']
+        const direction = (moving.activePlayer as any).direction as 'clockwise' | 'counterclockwise'
+        const tryMap = (target: any) => {
           outer: for (const m of readyMoves) {
             const dv = (m as any).dieValue as number
             const pm = Board.getPossibleMoves(
@@ -92,21 +98,31 @@ async function simulateGnuVsGnu(
             for (const mv of arr) {
               const fromKind = getContainerKind(mv.origin as any)
               const toKind = getContainerKind(mv.destination as any)
-              for (const frame of frames) {
-                const from = getNormalizedPosition(mv.origin as any, frame)
-                const to = getNormalizedPosition(mv.destination as any, frame)
-                if (from === null || to === null) continue
-                if (
-                  top.from === from &&
-                  top.to === to &&
-                  top.fromContainer === fromKind &&
-                  top.toContainer === toKind
-                ) {
-                  chosenDie = dv
-                  selectedOrigin = (mv as any).origin
-                  possibleMoves = arr
-                  break outer
-                }
+              const from = getNormalizedPosition(mv.origin as any, direction)
+              const to = getNormalizedPosition(mv.destination as any, direction)
+              if (from === null || to === null) continue
+              if (
+                target.from === from &&
+                target.to === to &&
+                target.fromContainer === fromKind &&
+                target.toContainer === toKind
+              ) {
+                chosenDie = dv
+                selectedOrigin = (mv as any).origin
+                possibleMoves = arr
+                return true
+              }
+            }
+          }
+          return false
+        }
+        const target = (stepIndex < hintSeq.length) ? hintSeq[stepIndex] : undefined
+        if (target) {
+          if (!tryMap(target)) {
+            if (stepIndex === 0 && hintSeqAlt.length > 0) {
+              const altTarget = hintSeqAlt[0]
+              if (tryMap(altTarget)) {
+                hintSeq = hintSeqAlt
               }
             }
           }
@@ -135,6 +151,7 @@ async function simulateGnuVsGnu(
         if (!originChecker) break
         const moved = Game.move(moving as BackgammonGameMoving, originChecker.id)
         moveCount++
+        if (target && chosenDie) stepIndex++
         if ((moved as any).stateKind === 'moved') {
           moving = moved as BackgammonGameMoved
           break

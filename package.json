@@ -1,6 +1,6 @@
 {
   "name": "@nodots-llc/backgammon-core",
-  "version": "4.6.4-staging.0",
+  "version": "4.6.4-staging.1",
   "description": "Core game logic for Nodots Backgammon",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -56,7 +56,7 @@
   },
   "dependencies": {
     "@nodots-llc/backgammon-types": "file:../types",
-    "@nodots-llc/gnubg-hints": "^4.6.2",
+    "@nodots-llc/gnubg-hints": "file:../gnubg-hints/gnubg-node-addon",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
@@ -72,6 +72,6 @@
     "typescript-eslint": "^8.23.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20 <21"
   }
 }

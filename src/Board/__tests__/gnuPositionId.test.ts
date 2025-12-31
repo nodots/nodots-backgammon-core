@@ -1,7 +1,7 @@
 import { Board } from '../../Board'
 import { Game } from '../../Game'
 import { exportToGnuPositionId } from '../gnuPositionId'
-import { GnuBgHints } from '@nodots-llc/gnubg-hints'
+import { GnuBgHints, MoveFilterSetting } from '@nodots-llc/gnubg-hints'
 
 describe('GNU Position ID orientation and mapping', () => {
   test('first suggested GNU move maps to a valid origin for active player', async () => {
@@ -15,7 +15,11 @@ describe('GNU Position ID orientation and mapping', () => {
     const posId = exportToGnuPositionId(gameRolled as any)
 
     await GnuBgHints.initialize()
-    GnuBgHints.configure({ evalPlies: 2, moveFilter: 2, usePruning: true })
+    GnuBgHints.configure({
+      evalPlies: 2,
+      moveFilter: MoveFilterSetting.Normal,
+      usePruning: true,
+    })
     const roll: [number, number] = [6, 5]
     const hints = await GnuBgHints.getHintsFromPositionId(posId, roll as any)
 
@@ -46,4 +50,3 @@ describe('GNU Position ID orientation and mapping', () => {
     expect(hasChecker).toBeTruthy()
   })
 })
-

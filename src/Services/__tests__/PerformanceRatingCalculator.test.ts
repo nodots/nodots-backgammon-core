@@ -22,8 +22,12 @@ const createMockAiModule = (overrides: Partial<AiModuleInterface> = {}): AiModul
     ...overrides.gnubgHints,
   },
   buildHintContextFromGame: jest.fn<() => any>().mockReturnValue({
-    request: { positionId: 'test', matchId: 'test' },
-    normalization: { toGnu: { white: 'white', black: 'black' }, fromGnu: { white: 'white', black: 'black' } },
+    request: {
+      positionId: 'test',
+      matchId: 'test',
+      activePlayerColor: 'white',
+      activePlayerDirection: 'clockwise',
+    },
   }),
   ...overrides,
 })

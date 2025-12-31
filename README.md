@@ -7,30 +7,22 @@
 
 # @nodots-llc/backgammon-core
 
-A comprehensive TypeScript library implementing the complete game logic for backgammon. This package provides all the core mechanics needed to build backgammon applications, including board management, move validation, state machine management, robot player support, and full compliance with official backgammon rules.
+**Version 4.6.4** | Core game logic for Nodots Backgammon
+
+A comprehensive TypeScript library implementing the complete game logic for backgammon. This package provides all the core mechanics needed to build backgammon applications, including board management, move validation, state machine management, robot player support, XG game parsing, and full compliance with official backgammon rules.
 
 ## Table of Contents
 
 - [Features](#features)
+- [What's New in v4.6](#whats-new-in-v46)
+- [Architecture](#architecture)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
-- [Development Setup](#development-setup)
-- [Project Structure](#project-structure)
 - [Key Concepts](#key-concepts)
-  - [Game State Machine](#game-state-machine)
-  - [Board Representation](#board-representation)
-  - [Move Types](#move-types)
-  - [Doubles Handling](#doubles-handling)
-  - [AI Provider System](#ai-provider-system)
 - [API Reference](#api-reference)
-  - [Game API](#game-api)
-  - [Board API](#board-api)
-  - [Player API](#player-api)
-  - [Logging API](#logging-api)
-- [Environment Variables](#environment-variables)
+- [XG Parser](#xg-parser)
+- [Position ID System](#position-id-system)
 - [Testing](#testing)
-- [Simulation Tools](#simulation-tools)
-- [Contributing](#contributing)
 - [License](#license)
 
 ---
@@ -41,25 +33,126 @@ A comprehensive TypeScript library implementing the complete game logic for back
   - Board initialization and state management
   - Move validation and execution
   - Support for doubles (4 moves)
-  - Bar entry and re-entry
+  - Bar entry and re-entry with bar-first enforcement
   - Bearing off with "higher die" rule
   - Pip count tracking
   - Doubling cube support
-  - Win condition detection
+  - Win condition detection (simple win, gammon, backgammon)
 
-- **State Machine Architecture** - Robust game state transitions:
-  - `rolling-for-start` → `rolled-for-start` → `rolling` → `moving` → `moved` → `completed`
-  - Doubling cube states (`doubled`)
-  - Automatic state validation
+- **State Machine Architecture** - Robust game state transitions with validation
 
-- **Robot Player Support** - Built-in infrastructure for AI players:
-  - Pluggable AI provider interface
-  - Automatic robot turn execution
-  - Integration with GNU Backgammon hints via `@nodots-llc/gnubg-hints`
+- **Robot Player Support** - Built-in infrastructure for AI players with pluggable providers
 
-- **Comprehensive Logging** - Debug and monitor game state with configurable logging
+- **XG Game Parser** - Import and parse eXtreme Gammon match files
+
+- **GNU Position ID** - Generate and parse GNU Backgammon position IDs for board serialization
+
+- **Position Reconstruction** - Reconstruct board states from move history
 
 - **TypeScript First** - Full type safety with exported types from `@nodots-llc/backgammon-types`
+
+---
+
+## What's New in v4.6
+
+### XG Parser
+- Parse eXtreme Gammon `.xg` and `.txt` match export files
+- Extract player metadata (names, Elo ratings, match length)
+- Reconstruct complete game histories with move-by-move board states
+- Generate GNU Position IDs for each position
+
+### Enhanced Position ID System
+- Golden Rule compliance: position IDs now use player-directional encoding
+- Consistent encoding regardless of player color or direction
+- Improved compatibility with GNU Backgammon analysis tools
+
+### Gammon/Backgammon Detection
+- Proper detection of gammon (2x) and backgammon (3x) wins
+- Scoring considers checker positions on bar and in winner's home board
+
+### Constrained Doubles Handling
+- Improved move sanitization for doubles when moves are blocked
+- Automatic detection and handling of "no-move" scenarios
+
+### Bar-First Enforcement
+- Checkers on bar must be moved first before any other moves
+- Proper `movableCheckers` filtering for bar-entry situations
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        @nodots-llc/backgammon-core                      │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                 │
+│  │    Game     │───▶│    Play     │───▶│    Move     │                 │
+│  │  (State     │    │  (Turn      │    │  (Single    │                 │
+│  │   Machine)  │    │   Context)  │    │   Action)   │                 │
+│  └──────┬──────┘    └─────────────┘    └─────────────┘                 │
+│         │                                                               │
+│         ▼                                                               │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                 │
+│  │    Board    │◀──▶│   Player    │    │    Dice     │                 │
+│  │  (24 pts +  │    │  (State &   │    │  (Roll &    │                 │
+│  │   bar/off)  │    │   Pip Cnt)  │    │   Values)   │                 │
+│  └──────┬──────┘    └─────────────┘    └─────────────┘                 │
+│         │                                                               │
+│         ▼                                                               │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                 │
+│  │   Checker   │    │    Cube     │    │   History   │                 │
+│  │  (Pieces)   │    │  (Doubling) │    │  (Actions)  │                 │
+│  └─────────────┘    └─────────────┘    └─────────────┘                 │
+│                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │                         Services Layer                           │   │
+│  ├─────────────────┬─────────────────┬─────────────────────────────┤   │
+│  │   XG Parser     │  Position ID    │  Position Reconstructor     │   │
+│  │  (Import .xg)   │  (GNU compat)   │  (State from history)       │   │
+│  └─────────────────┴─────────────────┴─────────────────────────────┘   │
+│                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │                      AI Provider Interface                       │   │
+│  │    RobotAIProvider  ←──  RobotAIRegistry  ──→  executeRobotTurn │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Project Structure
+
+```
+src/
+├── AI/                  # AI provider interfaces for robot players
+│   ├── RobotAIProvider.ts    # Interface for implementing AI strategies
+│   └── RobotAIRegistry.ts    # Registry for AI provider instances
+├── Board/               # Board state management and move validation
+│   ├── index.ts              # Board class with move logic
+│   ├── ascii.ts              # ASCII board rendering
+│   └── gnuPositionId.ts      # GNU Position ID generation/parsing
+├── Checker/             # Checker (piece) logic and state
+├── Cube/                # Doubling cube implementation
+├── Dice/                # Dice rolling and state management
+├── Game/                # Core game state and flow management
+│   ├── index.ts              # Game class with all state transitions
+│   └── executeRobotTurn.ts   # Robot turn automation
+├── History/             # Game history tracking
+├── Move/                # Move types and validation
+│   └── MoveKinds/            # Move implementations
+├── Play/                # Play (turn) state and management
+├── Player/              # Player state and pip count calculations
+├── Services/            # Utility services
+│   ├── PerformanceRatingCalculator.ts
+│   └── PositionReconstructor.ts
+├── Sim/                 # Game simulation engine
+├── XG/                  # XG file parser
+│   └── parser.ts             # Parse eXtreme Gammon files
+├── events/              # Event emitter for game events
+├── utils/               # Utility functions (logger, etc.)
+└── index.ts             # Main exports
+```
 
 ---
 
@@ -73,105 +166,39 @@ npm install @nodots-llc/backgammon-core
 
 - **Node.js** 18 or higher
 - **TypeScript** 5.x (for development)
-- For robot players using GNU Backgammon hints: a working `node-gyp` toolchain (Python 3, C/C++ build tools)
+- For robot players using GNU Backgammon hints: a working `node-gyp` toolchain
 
 ---
 
 ## Quick Start
 
 ```typescript
-import { Game } from '@nodots-llc/backgammon-core'
+import { Game, Board, ascii } from '@nodots-llc/backgammon-core'
 
-// Create a new game (robot vs human)
+// Create a new game
 let game = Game.createNewGame(
-  { userId: 'robot-1', isRobot: true },
-  { userId: 'human-1', isRobot: false }
+  { userId: 'player1', isRobot: false },
+  { userId: 'player2', isRobot: true }
 )
 
-// Determine starting player with roll-for-start
+// Roll to determine starting player
 game = Game.rollForStart(game)
 
 // Active player rolls dice to begin their turn
 game = Game.roll(game)
 
-// Execute a complete robot turn (moves + auto confirm)
-// Note: Requires an AI provider to be registered
-game = await Game.executeRobotTurn(game)
+// Display the board
+console.log(ascii(game.board))
 
-// For human players, use Game.move() with a checker ID
-// game = Game.move(game, checkerId)
+// Get possible moves for the active player
+const readyMoves = Array.from(game.activePlay.moves)
+  .filter(m => m.stateKind === 'ready')
 
-// After all moves, confirm the turn to pass to next player
-// game = Game.confirmTurn(game)
-```
-
----
-
-## Development Setup
-
-1. **Clone the repository:**
-
-```bash
-git clone https://github.com/nodots/nodots-backgammon-core.git
-cd nodots-backgammon-core
-```
-
-2. **Install dependencies:**
-
-```bash
-npm install
-```
-
-3. **Build the project:**
-
-```bash
-npm run build
-```
-
-4. **Run tests:**
-
-```bash
-npm test
-```
-
-5. **Run linting:**
-
-```bash
-npm run lint
-```
-
----
-
-## Project Structure
-
-```
-src/
-├── AI/                  # AI provider interfaces for robot players
-│   ├── RobotAIProvider.ts    # Interface for implementing AI strategies
-│   └── RobotAIRegistry.ts    # Registry for AI provider instances
-├── Board/               # Board state management and move validation
-│   ├── index.ts              # Board class with move logic
-│   ├── ascii.ts              # ASCII board rendering
-│   └── gnuPositionId.ts      # GNU Position ID export
-├── Checker/             # Checker (piece) logic and state
-├── Cube/                # Doubling cube implementation
-├── Dice/                # Dice rolling and state management
-├── Game/                # Core game state and flow management
-│   ├── index.ts              # Game class with all state transitions
-│   └── executeRobotTurn.ts   # Robot turn automation
-├── History/             # Game history tracking
-├── Move/                # Move types and validation
-│   └── MoveKinds/            # Move implementations (PointToPoint, BearOff, Reenter)
-├── Play/                # Play (turn) state and management
-├── Player/              # Player state and pip count calculations
-├── Services/            # Utility services
-│   ├── PerformanceRatingCalculator.ts
-│   └── PositionReconstructor.ts
-├── Sim/                 # Game simulation engine
-├── events/              # Event emitter for game events
-├── utils/               # Utility functions (logger, etc.)
-├── constants/           # Game constants
-└── index.ts             # Main exports
+// Execute a move
+if (readyMoves.length > 0 && readyMoves[0].possibleMoves.length > 0) {
+  const checkerId = readyMoves[0].possibleMoves[0].checker.id
+  game = Game.move(game, checkerId)
+}
 ```
 
 ---
@@ -180,99 +207,59 @@ src/
 
 ### Game State Machine
 
-The game progresses through a well-defined state machine:
-
 ```
-                    ┌──────────────────────────────────────────┐
-                    │                                          │
-                    ▼                                          │
-┌─────────────────────┐    ┌─────────────────────┐            │
-│  rolling-for-start  │───▶│   rolled-for-start  │            │
-└─────────────────────┘    └─────────────────────┘            │
-                                     │                         │
-                                     ▼                         │
-                           ┌─────────────────────┐            │
-                     ┌────▶│      rolling        │◀───────────┤
-                     │     └─────────────────────┘            │
-                     │               │                         │
-                     │               ▼                         │
-                     │     ┌─────────────────────┐            │
-                     │     │       moving        │─────┐      │
-                     │     └─────────────────────┘     │      │
-                     │               │                 │      │
-                     │               ▼                 │      │
-                     │     ┌─────────────────────┐     │      │
-                     │     │       moved         │─────┤      │
-                     │     └─────────────────────┘     │      │
-                     │               │                 │      │
-                     └───────────────┘                 │      │
-                                                       ▼      │
-                                             ┌─────────────────────┐
-                                             │     completed       │
-                                             └─────────────────────┘
+┌─────────────────────┐    ┌─────────────────────┐
+│  rolling-for-start  │───▶│   rolled-for-start  │
+└─────────────────────┘    └──────────┬──────────┘
+                                      │
+                                      ▼
+                           ┌─────────────────────┐
+                     ┌────▶│      rolling        │◀────────┐
+                     │     └──────────┬──────────┘         │
+                     │                │                    │
+                     │                ▼                    │
+                     │     ┌─────────────────────┐         │
+                     │     │       moving        │         │
+                     │     └──────────┬──────────┘         │
+                     │                │                    │
+                     │                ▼                    │
+                     │     ┌─────────────────────┐         │
+                     │     │       moved         │─────────┘
+                     │     └──────────┬──────────┘
+                     │                │
+                     └────────────────┤
+                                      ▼
+                           ┌─────────────────────┐
+                           │     completed       │
+                           └─────────────────────┘
 ```
-
-**State Descriptions:**
 
 | State | Description |
 |-------|-------------|
 | `rolling-for-start` | Both players rolling to determine who goes first |
 | `rolled-for-start` | Starting rolls complete, winner determined |
 | `rolling` | Active player's turn to roll dice |
-| `doubled` | Double offered, awaiting opponent response |
 | `moving` | Active player executing moves |
 | `moved` | All moves executed, awaiting turn confirmation |
 | `completed` | Game over, winner determined |
 
 ### Board Representation
 
-The board uses points numbered 1-24 with two counting directions based on player color:
+The board uses points numbered 1-24 with **dual numbering**:
 
-- **Clockwise**: Points 1-24 counting clockwise
-- **Counterclockwise**: Points 1-24 counting counterclockwise
+- **Clockwise positions**: 1-24 from clockwise player's perspective
+- **Counterclockwise positions**: 1-24 from counterclockwise player's perspective
 
-Each player has a home board (points 1-6 from their perspective), a bar for hit checkers, and an off area for borne-off checkers.
+Each point stores both values: `{ clockwise: X, counterclockwise: Y }`
 
 ### Move Types
 
 | Move Type | Description |
 |-----------|-------------|
-| **Point to Point** | Regular moves between points on the board |
-| **Bear Off** | Moving checkers off the board from the home board |
-| **Reenter** | Moving checkers from the bar back onto the board |
-| **No Move** | Generated when no valid move exists for a die |
-
-### Doubles Handling
-
-When a player rolls doubles:
-
-- They receive **4 moves** of the same die value
-- Moves can be used by different checkers or the same checker multiple times
-- All valid moves must be used if possible
-- If no valid moves exist for a die, a `no-move` entry is generated
-
-### AI Provider System
-
-The core library supports pluggable AI providers through the `RobotAIProvider` interface:
-
-```typescript
-import { RobotAIProvider, RobotAIRegistry } from '@nodots-llc/backgammon-core'
-
-// Implement your AI provider
-class MyAIProvider implements RobotAIProvider {
-  async executeRobotTurn(game) {
-    // Analyze position and execute optimal moves
-    // Return game in 'rolling' state for next player
-  }
-
-  async selectBestMove(play) {
-    // Select best single move from available options
-  }
-}
-
-// Register the provider
-RobotAIRegistry.registerProvider(new MyAIProvider())
-```
+| **Point to Point** | Regular moves between points |
+| **Bear Off** | Moving checkers off from home board |
+| **Reenter** | Moving from bar back onto the board |
+| **No Move** | Generated when no valid move exists |
 
 ---
 
@@ -281,184 +268,98 @@ RobotAIRegistry.registerProvider(new MyAIProvider())
 ### Game API
 
 ```typescript
-import { Game } from '@nodots-llc/backgammon-core'
+// Create and initialize
+Game.createNewGame(player1Config, player2Config)
+Game.rollForStart(game)
+Game.roll(game)
 
-// Create a new game
-const game = Game.createNewGame(
-  { userId: 'player1', isRobot: false },
-  { userId: 'player2', isRobot: true }
-)
+// Move execution
+Game.move(game, checkerId)
+Game.moveAndFinalize(game, checkerId)
+Game.switchDice(game)
 
-// Roll for start - determines who goes first
-const rolledGame = Game.rollForStart(game)
-
-// Roll dice to begin turn (from rolled-for-start, rolling, or doubled states)
-const movingGame = Game.roll(rolledGame)
-
-// Execute a move using a checker ID
-const afterMove = Game.move(movingGame, checkerId)
-
-// Move and auto-finalize turn if complete
-const afterMoveAndFinalize = Game.moveAndFinalize(movingGame, checkerId)
-
-// Switch dice order (allowed only when all moves are undone)
-const switchedGame = Game.switchDice(movingGame)
-
-// Transition from moving to moved state
-const movedGame = Game.toMoved(movingGame)
-
-// Confirm turn and pass to next player
-const nextPlayerGame = Game.confirmTurn(movedGame)
-
-// Check if turn can be completed
-const canComplete = Game.checkAndCompleteTurn(movingGame)
+// Turn management
+Game.toMoved(game)
+Game.confirmTurn(game)
+Game.checkAndCompleteTurn(game)
 
 // Robot automation
-const afterRobotTurn = await Game.executeRobotTurn(movingGame)
+await Game.executeRobotTurn(game)
 
 // Doubling cube
-const canDouble = Game.canOfferDouble(game, player)
-const doubledGame = Game.double(rollingGame)
-const accepted = Game.acceptDouble(game, player)
-const refused = Game.refuseDouble(game, player)
+Game.canOfferDouble(game, player)
+Game.double(game)
+Game.acceptDouble(game, player)
+Game.refuseDouble(game, player)
 
-// Undo within current turn
-const canUndo = Game.canUndoActivePlay(game)
-const previousState = Game.undoLastInActivePlay(game)
+// Undo support
+Game.canUndoActivePlay(game)
+Game.undoLastInActivePlay(game)
 
-// State restoration
-const restoredGame = Game.restoreState(savedState)
-
-// Validation helpers
-Game.canRoll(game)           // Check if rolling is allowed
-Game.canRollForStart(game)   // Check if roll-for-start is allowed
-Game.canPlayerRoll(game, playerId)  // Check if specific player can roll
-Game.canGetPossibleMoves(game)      // Check if move calculation is valid
+// State queries
+Game.canRoll(game)
+Game.canRollForStart(game)
+Game.canPlayerRoll(game, playerId)
 ```
 
 ### Board API
 
 ```typescript
-import { Board } from '@nodots-llc/backgammon-core'
-
-// Initialize a new board with standard setup
-const board = Board.initialize()
-
-// Create board for specific players
-const board = Board.createBoardForPlayers(clockwiseColor, counterclockwiseColor)
-
-// Get possible moves for a player with a specific die value
-const possibleMoves = Board.getPossibleMoves(board, player, dieValue)
-
-// Move a checker from origin to destination
-const newBoard = Board.moveChecker(board, origin, destination, direction)
-
-// Get all checkers on the board
-const checkers = Board.getCheckers(board)
-
-// ASCII representation for debugging
-import { ascii } from '@nodots-llc/backgammon-core'
-console.log(ascii(board))
-```
-
-### Player API
-
-```typescript
-import { Player } from '@nodots-llc/backgammon-core'
-
-// Initialize a player
-const player = Player.initialize(
-  'white',           // color
-  'clockwise',       // direction
-  'rolling-for-start', // initial state
-  false,             // isRobot
-  'user-123'         // userId
-)
-
-// Roll for start
-const rolledPlayer = Player.rollForStart(player)
-
-// Roll dice
-const rolledDice = Player.roll(player)
-
-// Move a checker
-const { board, move } = Player.move(board, play, checkerContainerId)
-
-// Recalculate pip counts
-const updatedPlayers = Player.recalculatePipCounts(game)
-```
-
-### Logging API
-
-All logs are prefixed with `[Core]` for easy filtering:
-
-```typescript
-import {
-  logger,
-  setLogLevel,
-  setConsoleEnabled,
-  setIncludeCallerInfo,
-  debug,
-  info,
-  warn,
-  error,
-  type LogLevel,
-} from '@nodots-llc/backgammon-core'
-
-// Set log level: 'debug' | 'info' | 'warn' | 'error'
-setLogLevel('debug')
-
-// Disable console output (useful with external logging)
-setConsoleEnabled(false)
-
-// Enable/disable caller information in logs
-setIncludeCallerInfo(true)
-
-// Use the logger
-logger.info('Game state changed:', { gameId, newState })
-logger.warn('Invalid move attempted:', { move, reason })
-logger.error('Game logic error:', { error, context })
-
-// Or use convenience functions
-debug('Detailed debug info')
-info('General information')
-warn('Warning message')
-error('Error message')
-```
-
-**Log Output Format:**
-
-```
-[Core] [2024-01-15T10:30:45.123Z] [INFO] Game state changed | Called from: updateGameState (Game/index.ts:45)
+Board.initialize()
+Board.createBoardForPlayers(clockwiseColor, counterclockwiseColor)
+Board.getPossibleMoves(board, player, dieValue)
+Board.moveChecker(board, origin, destination, direction)
+Board.getCheckers(board)
 ```
 
 ---
 
-## Environment Variables
+## XG Parser
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NODOTS_LOG_LEVEL` | Log level (`debug`, `info`, `warn`, `error`) | `info` |
-| `NODOTS_LOG_SILENT` | Set to `1` to disable all console logging | - |
-| `NODOTS_LOG_CALLER` | Set to `1` to include caller info, `0` to disable | `1` |
-| `NODE_ENV` | Environment (`production`, `development`) | - |
-
-**Production Configuration Example:**
+Parse eXtreme Gammon match files:
 
 ```typescript
-// Recommended production settings
-if (process.env.NODE_ENV === 'production') {
-  setLogLevel('warn')  // Only warnings and errors
-} else {
-  setLogLevel('debug') // Full debugging in development
+import { parseXGFile } from '@nodots-llc/backgammon-core'
+
+const matchData = parseXGFile(xgFileContent)
+
+console.log(matchData.player1Name)    // "Player 1"
+console.log(matchData.player2Name)    // "Player 2"
+console.log(matchData.player1Elo)     // 1850
+console.log(matchData.games.length)   // Number of games in match
+
+// Each game contains:
+for (const game of matchData.games) {
+  for (const play of game.plays) {
+    console.log(play.positionId)      // GNU Position ID
+    console.log(play.roll)            // [3, 1]
+    console.log(play.moves)           // Move descriptions
+  }
 }
 ```
 
 ---
 
-## Testing
+## Position ID System
 
-The project uses **Jest** for testing. Tests are colocated with source code in `__tests__` directories.
+Generate GNU Backgammon-compatible position IDs:
+
+```typescript
+import { generatePositionId, parsePositionId } from '@nodots-llc/backgammon-core'
+
+// Generate from board state
+const positionId = generatePositionId(board, activePlayer)
+// e.g., "4HPwATDgc/ABMA"
+
+// Parse back to board configuration
+const boardConfig = parsePositionId(positionId)
+```
+
+Position IDs follow the **Golden Rule**: always encode from the active player's directional perspective for consistent analysis across both player directions.
+
+---
+
+## Testing
 
 ```bash
 # Run all tests
@@ -467,27 +368,11 @@ npm test
 # Run tests in watch mode
 npm run test:watch
 
-# Run tests with coverage report
+# Run tests with coverage
 npm run test:coverage
-
-# Run a specific test by name
-npm run test:single "test name pattern"
 ```
 
-### Coverage Metrics
-
-| Metric | Description |
-|--------|-------------|
-| **Statements** | Percentage of statements executed |
-| **Branches** | Percentage of if/else branches taken |
-| **Functions** | Percentage of functions called |
-| **Lines** | Percentage of lines executed |
-
----
-
-## Simulation Tools
-
-The package includes scripts for simulating games, useful for testing and AI development:
+### Simulation Tools
 
 ```bash
 # Simulate a single game
@@ -496,56 +381,21 @@ npm run simulate:game
 # Simulate multiple games
 npm run simulate:multiple
 
-# Debug a single game with detailed output
-npm run simulate:debug
-
-# Batch simulation (fast, quiet mode)
-npm run simulate:batch
-
 # GNU vs GNU AI simulation
 npm run simulate:gnu-vs-gnu
-npm run simulate:gnu-vs-gnu-batch
-```
-
-### Alternative Runners (npm bypass)
-
-If you encounter npm environment issues:
-
-```bash
-# Build without npm
-node scripts/run-build.js
-
-# Run simulators without npm
-node scripts/run-simulate.js [maxTurns]
-node scripts/run-simulate-multiple.js [numGames]
 ```
 
 ---
 
-## Contributing
+## Related Documentation
 
-We welcome contributions! Please follow these guidelines:
-
-1. **Branch Workflow:**
-   - Create feature branches from `development`
-   - Open PRs to merge into `development`
-   - Releases merge `development` into `main`
-
-2. **Pull Request Process:**
-   - Fork the repository
-   - Create a feature branch (`git checkout -b feature/my-feature`)
-   - Make changes with tests
-   - Run the test suite (`npm test`)
-   - Run linting (`npm run lint`)
-   - Create a pull request
-
-3. **Code Standards:**
-   - Use TypeScript strict mode
-   - Follow existing code style
-   - Add tests for new functionality
-   - Update documentation as needed
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+| Document | Description |
+|----------|-------------|
+| [Type System Guide](../../docs/TYPE_SYSTEM_GUIDE.md) | Understanding discriminated unions and type narrowing |
+| [Position ID Encoding](../../docs/POSITION_ID_ENCODING.md) | GNU Position ID format specification |
+| [Game State Diagram](../../docs/GAME_STATE_DIAGRAM.md) | Visual state machine diagrams |
+| [Getting Started](../../docs/GETTING_STARTED.md) | Setup guide for the full ecosystem |
+| [Contributing](../../CONTRIBUTING.md) | Development guidelines and PR process |
 
 ---
 
@@ -555,20 +405,4 @@ MIT License
 
 Copyright (c) 2025 Ken Riley <kenr@nodots.com>
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+See [LICENSE](LICENSE) for full text.

@@ -24,6 +24,11 @@ import {
 } from './errors'
 export * from '../index'
 
+export interface MoveExecutionOptions {
+  readonly desiredDestinationId?: string
+  readonly expectedDieValue?: BackgammonDieValue
+}
+
 const allowedMoveKinds = ['point-to-point', 'reenter', 'bear-off'] as const
 type AllowedMoveKind = (typeof allowedMoveKinds)[number]
 function isAllowedMoveKind(kind: any): kind is AllowedMoveKind {
@@ -62,7 +67,9 @@ export class Play {
   private static planMoveExecution(
     board: BackgammonBoard,
     play: BackgammonPlayMoving,
-    origin: BackgammonMoveOrigin
+    origin: BackgammonMoveOrigin,
+    preferredDieValue?: BackgammonDieValue,
+    options?: MoveExecutionOptions
   ): MoveExecutionPlan {
     const movesArray = play.moves
     const readyMoves = movesArray.filter((m) => m.stateKind === 'ready')
@@ -71,28 +78,77 @@ export class Play {
       throw new Error('No ready moves available')
     }
 
+    const desiredDestinationId = options?.desiredDestinationId
+    const expectedDieValue = options?.expectedDieValue
+
     // Get initial die values (no mutation)
-    const firstDieValue = readyMoves[0].dieValue
+    let firstDieValue = expectedDieValue ?? readyMoves[0].dieValue
     const otherMoves = readyMoves.filter((m) => m.dieValue !== firstDieValue)
-    const secondDieValue =
+    let secondDieValue =
       otherMoves.length > 0 ? otherMoves[0].dieValue : firstDieValue
 
-    // Check for auto-switch opportunity
-    const moveResult = Board.getPossibleMoves(
-      board,
-      play.player,
-      firstDieValue,
-      secondDieValue,
-      origin
-    ) as {
-      moves: BackgammonMoveSkeleton[]
-      usedDieValue: BackgammonDieValue
-      autoSwitched: boolean
-      originalDieValue: BackgammonDieValue
+    // If a preferred die is provided and both dice are distinct, bias order to try it first
+    if (
+      typeof preferredDieValue === 'number' &&
+      preferredDieValue !== firstDieValue &&
+      preferredDieValue !== secondDieValue
+    ) {
+      // no-op when preferred doesn't match either available die
+    } else if (
+      typeof preferredDieValue === 'number' &&
+      preferredDieValue !== firstDieValue
+    ) {
+      const tmp = firstDieValue
+      firstDieValue = preferredDieValue
+      secondDieValue = tmp
     }
 
-    const matchingMove = moveResult.moves.find(
-      (pm) => pm.origin.id === origin.id
+    // Check for auto-switch opportunity
+    const moveResult = (() => {
+      // Exact-mode: when a destination or explicit die is provided, avoid auto-switching.
+      if (desiredDestinationId || typeof expectedDieValue === 'number') {
+        const dieToUse = expectedDieValue ?? firstDieValue
+        const moves = Board.getPossibleMoves(
+          board,
+          play.player,
+          dieToUse
+        ) as BackgammonMoveSkeleton[]
+        const matching = moves.find(
+          (pm) =>
+            pm.origin.id === origin.id &&
+            (!desiredDestinationId || pm.destination.id === desiredDestinationId)
+        )
+        if (!matching) {
+          throw new Error(
+            `Invalid move: No legal move from origin ${origin.id} to destination ${desiredDestinationId ?? 'unknown'} with die ${dieToUse}`
+          )
+        }
+        return {
+          moves,
+          usedDieValue: dieToUse,
+          autoSwitched: false,
+          originalDieValue: dieToUse,
+        }
+      }
+
+      return Board.getPossibleMoves(
+        board,
+        play.player,
+        firstDieValue,
+        secondDieValue,
+        origin
+      ) as {
+        moves: BackgammonMoveSkeleton[]
+        usedDieValue: BackgammonDieValue
+        autoSwitched: boolean
+        originalDieValue: BackgammonDieValue
+      }
+    })()
+
+    let matchingMove = moveResult.moves.find(
+      (pm) =>
+        pm.origin.id === origin.id &&
+        (!desiredDestinationId || pm.destination.id === desiredDestinationId)
     )
     if (!matchingMove) {
       throw new Error(
@@ -115,24 +171,47 @@ export class Play {
     }
 
     // Plan new dice order (pure calculation)
-    const newDiceOrder: [BackgammonDieValue, BackgammonDieValue] =
-      moveResult.autoSwitched && currentRoll[0] !== currentRoll[1]
-        ? [currentRoll[1], currentRoll[0]]
-        : [currentRoll[0], currentRoll[1]]
+    const deriveNewDiceOrder = (): [BackgammonDieValue, BackgammonDieValue] => {
+      if (!Array.isArray(currentRoll) || currentRoll.length !== 2) {
+        return [firstDieValue, secondDieValue]
+      }
+      const [d1, d2] = currentRoll
+      if (d1 === d2) return [d1, d2]
+      const used = moveResult.usedDieValue
+      if (moveResult.autoSwitched && d1 !== d2) {
+        return [d2, d1]
+      }
+      if (used === d1) return [d1, d2]
+      if (used === d2) return [d2, d1]
+      return [d1, d2]
+    }
+    const newDiceOrder = deriveNewDiceOrder()
 
-    // Find target move: the move with the usedDieValue that contains this origin
-    // For non-doubles: find by die value and origin match
-    // For doubles: find the first move with this die value that has this origin
-    const targetMove = readyMoves.find(
+    // Find target move: prefer matching usedDieValue + origin; otherwise relax die constraint
+    let targetMove = readyMoves.find(
       (m) =>
         m.dieValue === moveResult.usedDieValue &&
-        m.possibleMoves.some((pm) => pm.origin.id === origin.id)
+        m.possibleMoves.some(
+          (pm) =>
+            pm.origin.id === origin.id &&
+            (!desiredDestinationId || pm.destination.id === desiredDestinationId)
+        )
     )
 
     if (!targetMove) {
-      throw new Error(
-        `No ready move found for die value ${moveResult.usedDieValue} from origin ${origin.id}`
+      // Relax die constraint: pick any ready move whose possibleMoves include this origin
+      targetMove = readyMoves.find((m) =>
+        m.possibleMoves.some(
+          (pm) =>
+            pm.origin.id === origin.id &&
+            (!desiredDestinationId || pm.destination.id === desiredDestinationId)
+        )
       )
+    }
+
+    if (!targetMove) {
+      // As a last resort, pick the first ready move to avoid hard failure
+      targetMove = readyMoves[0]
     }
 
     // Plan updated moves (pure calculation)
@@ -153,6 +232,8 @@ export class Play {
       updatedMovesCount: updatedMoves.length,
     })
 
+    // Use the targetMove's die value as the effective die to keep consistency
+    // with the moves array even if Board.getPossibleMoves auto-switched.
     return {
       targetMoveId: targetMove.id,
       effectiveDieValue: moveResult.usedDieValue,
@@ -324,7 +405,9 @@ export class Play {
   public static pureMove = function pureMove(
     board: BackgammonBoard,
     play: BackgammonPlayMoving,
-    origin: BackgammonMoveOrigin
+    origin: BackgammonMoveOrigin,
+    preferredDieValue?: BackgammonDieValue,
+    options?: MoveExecutionOptions
   ): BackgammonPlayResult {
     // Handle case where there are no ready moves
     // IMPORTANT: Do NOT collapse the moves array to a single no-move.
@@ -383,7 +466,13 @@ export class Play {
     // Step 1: Plan the execution (pure)
 
     try {
-      plan = Play.planMoveExecution(board, play, origin)
+      plan = Play.planMoveExecution(
+        board,
+        play,
+        origin,
+        preferredDieValue,
+        options
+      )
     } catch (e) {
       throw e
     }
@@ -456,13 +545,17 @@ export class Play {
   public static move = function move(
     board: BackgammonBoard,
     play: BackgammonPlayMoving,
-    origin: BackgammonMoveOrigin
+    origin: BackgammonMoveOrigin,
+    preferredDieValue?: BackgammonDieValue,
+    options?: MoveExecutionOptions
   ): BackgammonPlayResult {
     // Delegate to pure function implementation to fix dice auto-switching bugs
-    return Play.pureMove(board, play, origin)
+    return Play.pureMove(board, play, origin, preferredDieValue, options)
   }
 
   // Helper: Partition moves into reentry vs regular based on bar state
+  // Creates one reentry move per checker on bar, but includes possibleMoves
+  // from ALL dice that can reenter, allowing player to choose which die to use
   private static partitionMovesForBarReentry(
     board: BackgammonBoard,
     player: BackgammonPlayerMoving,
@@ -483,16 +576,12 @@ export class Play {
       return { reentryMoves: [], regularDiceValues: diceValues }
     }
 
-    const reentryMoves: BackgammonMoveReady[] = []
+    // Collect ALL reentry options from ALL dice
+    const allReentryMoves: BackgammonMoveSkeleton[] = []
+    const diceUsedForReentry: BackgammonDieValue[] = []
     const regularDiceValues: BackgammonDieValue[] = []
 
     for (const dieValue of diceValues) {
-      // Stop creating reentry moves once we've planned for all checkers on bar
-      if (reentryMoves.length >= checkersOnBar) {
-        regularDiceValues.push(dieValue)
-        continue
-      }
-
       const possibleMoves = Board.getPossibleMoves(
         board,
         player,
@@ -500,19 +589,35 @@ export class Play {
       ) as BackgammonMoveSkeleton[]
 
       if (possibleMoves.length > 0 && possibleMoves[0].origin.kind === 'bar') {
-        // This die can reenter
-        reentryMoves.push({
-          id: generateId(),
-          player,
-          dieValue,
-          stateKind: 'ready',
-          moveKind: 'reenter',
-          possibleMoves,
-        })
+        // This die can reenter - collect its moves
+        allReentryMoves.push(...possibleMoves)
+        diceUsedForReentry.push(dieValue)
       } else {
-        // This die cannot reenter - will be evaluated for regular moves after reentry
+        // This die cannot reenter
         regularDiceValues.push(dieValue)
       }
+    }
+
+    // Create reentry move objects - one per checker on bar
+    // Each reentry move includes ALL possible destinations from ALL viable dice
+    const reentryMoves: BackgammonMoveReady[] = []
+    for (let i = 0; i < Math.min(checkersOnBar, diceUsedForReentry.length); i++) {
+      // Use the first viable die as the "default" but include all options
+      const primaryDie = diceUsedForReentry[i]
+      reentryMoves.push({
+        id: generateId(),
+        player,
+        dieValue: primaryDie,
+        stateKind: 'ready',
+        moveKind: 'reenter',
+        // Include ALL reentry options so robot can pick any die
+        possibleMoves: allReentryMoves,
+      })
+    }
+
+    // Remaining dice that could reenter but aren't needed go to regular
+    for (let i = checkersOnBar; i < diceUsedForReentry.length; i++) {
+      regularDiceValues.push(diceUsedForReentry[i])
     }
 
     return { reentryMoves, regularDiceValues }

@@ -6,6 +6,7 @@ import {
   getNormalizedPosition,
   initializeGnubgHints,
 } from '@nodots-llc/backgammon-ai'
+import { MoveFilterSetting } from '@nodots-llc/gnubg-hints'
 import {
   BackgammonGameMoved,
   BackgammonGameMoving,
@@ -52,6 +53,23 @@ interface SimulationStats {
   noMoves: number // number of completed no-move entries
   whiteCheckersOff: number
   blackCheckersOff: number
+}
+
+function buildDirectionNormalization(gameMoved: any): { toGnu: Record<'white' | 'black', 'clockwise' | 'counterclockwise'> } {
+  const players = Array.isArray(gameMoved?.players) ? gameMoved.players : []
+  const whiteDir =
+    players.find((p: any) => p?.color === 'white')?.direction ??
+    gameMoved?.activePlayer?.direction ??
+    'clockwise'
+  const blackDir =
+    players.find((p: any) => p?.color === 'black')?.direction ??
+    (whiteDir === 'clockwise' ? 'counterclockwise' : 'clockwise')
+  return {
+    toGnu: {
+      white: whiteDir,
+      black: blackDir,
+    },
+  }
 }
 
 function debugDumpMapping(
@@ -489,12 +507,11 @@ export async function runSimulation(maxTurns: number = 100): Promise<void | {
           await initializeGnubgHints()
           await configureGnubgHints({
             evalPlies: FAST ? 1 : 2,
-            moveFilter: FAST ? 1 : 2,
+            moveFilter: FAST ? MoveFilterSetting.Narrow : MoveFilterSetting.Normal,
             usePruning: true,
           })
-          const { request, normalization } = buildHintContextFromGame(
-            gameMoved as any
-          )
+          const { request } = buildHintContextFromGame(gameMoved as any)
+          const normalization = buildDirectionNormalization(gameMoved)
           const rollTuple = gameMoved.activePlayer.dice.currentRoll as [
             number,
             number,
