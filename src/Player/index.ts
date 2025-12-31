@@ -6,6 +6,7 @@ import {
   BackgammonDiceInactive,
   BackgammonDiceRolled,
   BackgammonMoveDirection,
+  BackgammonDieValue,
   BackgammonMoveResult,
   BackgammonPlayer,
   BackgammonPlayerDoubled,
@@ -21,6 +22,7 @@ import {
 } from '@nodots-llc/backgammon-types'
 import { Board, Dice, generateId } from '..'
 import { Play } from '../Play'
+import type { MoveExecutionOptions } from '../Play'
 import { logger } from '../utils/logger'
 
 // Hardcoded constant to avoid import issues during build
@@ -274,19 +276,21 @@ export class Player {
   public static move = function move(
     board: Board,
     play: BackgammonPlayMoving,
-    originId: string
+    originId: string,
+    preferredDieValue?: BackgammonDieValue,
+    options?: MoveExecutionOptions
   ): BackgammonMoveResult {
     let moveResults: BackgammonMoveResult | undefined = undefined
     const origin = Board.getCheckerContainer(board, originId)
     switch (origin.kind) {
       case 'bar': {
         const bar = origin as BackgammonBar
-        moveResults = Play.move(board, play, bar)
+        moveResults = Play.move(board, play, bar, preferredDieValue, options)
         break
       }
       case 'point': {
         const point = origin as BackgammonPoint
-        moveResults = Play.move(board, play, point)
+        moveResults = Play.move(board, play, point, preferredDieValue, options)
         break
       }
       case 'off':

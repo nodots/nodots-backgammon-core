@@ -1,10 +1,6 @@
 import type { HintRequest, MoveHint } from '@nodots-llc/gnubg-hints'
 import { jest } from '@jest/globals'
 
-const defaultNormalization = {
-  toGnu: { white: 'white', black: 'black' },
-  fromGnu: { white: 'white', black: 'black' },
-} as const
 
 export const gnubgHints = {
   initialize: jest.fn(),
@@ -26,14 +22,12 @@ export const buildHintContextFromGame = jest
   .fn()
   .mockImplementation(() => ({
     request: {} as HintRequest,
-    normalization: defaultNormalization,
   }))
 
 export const buildHintContextFromPlay = jest
   .fn()
   .mockImplementation(() => ({
     request: {} as HintRequest,
-    normalization: defaultNormalization,
   }))
 
 export const getContainerKind = jest.fn().mockReturnValue('point')

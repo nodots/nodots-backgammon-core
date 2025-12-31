@@ -44,7 +44,7 @@ export declare class Game {
      * Allowed in 'moving' state when all moves are undone
      */
     static switchDice: (game: BackgammonGameMoving) => BackgammonGameMoving;
-    static move: (game: BackgammonGameMoving, checkerId: string) => BackgammonGameMoving | BackgammonGameMoved | BackgammonGameCompleted;
+    static move: (game: BackgammonGameMoving, checkerId: string, preferredDieValue?: BackgammonDieValue | undefined, options?: import("../Play").MoveExecutionOptions | undefined) => BackgammonGameMoving | BackgammonGameMoved | BackgammonGameCompleted;
     /**
      * Transition from 'moving' to 'moved' state
      * This represents that all moves are completed and the player must confirm their turn
@@ -57,7 +57,7 @@ export declare class Game {
      * @param originId - ID of the origin point/bar to move from
      * @returns Updated game state with fresh moves calculated
      */
-    static executeAndRecalculate: (game: BackgammonGameMoving, originId: string) => BackgammonGameMoving | BackgammonGame;
+    static executeAndRecalculate: (game: BackgammonGameMoving, originId: string, options?: import("../Play").MoveExecutionOptions | undefined) => BackgammonGameMoving | BackgammonGame;
     /**
      * Check if the current turn is complete and transition to 'moved' state
      * This method now follows the same state machine as human players for consistency

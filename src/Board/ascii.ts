@@ -84,6 +84,16 @@ export const ascii = (
     )
   }
 
+  // Get bar checker symbols
+  // Counterclockwise bar shows in top half (black checkers moving counterclockwise)
+  // Clockwise bar shows in bottom half (white checkers moving clockwise)
+  const counterclockwiseBarCheckers = board.bar.counterclockwise.checkers.map(
+    (c) => (c.color === 'black' ? 'X' : 'O')
+  )
+  const clockwiseBarCheckers = board.bar.clockwise.checkers.map((c) =>
+    c.color === 'black' ? 'X' : 'O'
+  )
+
   // Total number of checker rows (top + bottom)
   // The vertical center row index (0-based, across all checker rows)
   let checkerRowIndex = 0
@@ -109,8 +119,12 @@ export const ascii = (
       boardDisplay += cell
     }
     boardDisplay += '|'
-    // Bar column: always spaces in checker rows
-    boardDisplay += '   |'
+    // Bar column: show counterclockwise bar checkers in top half
+    let barCell = '   '
+    if (row < counterclockwiseBarCheckers.length) {
+      barCell = ' ' + counterclockwiseBarCheckers[row] + ' '
+    }
+    boardDisplay += barCell + '|'
     // 19-24 (right half)
     for (let visualPos = 19; visualPos <= 24; visualPos++) {
       const symbols = getCheckerSymbols(visualPos)
@@ -196,8 +210,13 @@ export const ascii = (
       boardDisplay += cell
     }
     boardDisplay += '|'
-    // Bar column: always spaces in checker rows
-    boardDisplay += '   |'
+    // Bar column: show clockwise bar checkers in bottom half
+    // Bottom half iterates row from 4 down to 0, so we show checkers from bottom up
+    let barCell = '   '
+    if (row < clockwiseBarCheckers.length) {
+      barCell = ' ' + clockwiseBarCheckers[row] + ' '
+    }
+    boardDisplay += barCell + '|'
     // 6-1 (right half)
     for (let visualPos = 6; visualPos >= 1; visualPos--) {
       const symbols = getCheckerSymbols(visualPos)

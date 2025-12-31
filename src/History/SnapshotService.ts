@@ -1077,7 +1077,14 @@ function canBearOff(game: BackgammonGame, color: BackgammonColor): boolean {
 }
 
 function generateGnuPositionId(game: BackgammonGame): string | undefined {
-  // Implementation would generate GNU Backgammon position ID
-  // This would use the existing gnuPositionId functionality from the Board module
-  return undefined
+  try {
+    // Delegate to the canonical exporter used throughout core
+    const { exportToGnuPositionId } = require('../Board/gnuPositionId') as {
+      exportToGnuPositionId: (g: BackgammonGame) => string
+    }
+    return exportToGnuPositionId(game)
+  } catch (err) {
+    logger.warn('Snapshot: failed to generate gnuPositionId', err)
+    return undefined
+  }
 }

@@ -35,6 +35,7 @@ import { Checker } from '../Checker'
 import { Cube } from '../Cube'
 import { Dice } from '../Dice'
 import { BackgammonMoveDirection, Play } from '../Play'
+import type { MoveExecutionOptions } from '../Play'
 import { debug, logger } from '../utils/logger'
 
 // Hardcoded constant to avoid import issues during build
@@ -936,7 +937,9 @@ export class Game {
 
   public static move = function move(
     game: BackgammonGameMoving,
-    checkerId: string
+    checkerId: string,
+    preferredDieValue?: BackgammonDieValue,
+    options?: MoveExecutionOptions
   ): BackgammonGameMoving | BackgammonGameMoved | BackgammonGameCompleted {
     // Push a pre-move snapshot to the turn-local undo stack
     try {
@@ -990,7 +993,9 @@ export class Game {
     const playResult = Player.move(
       board,
       activePlay,
-      checker.checkercontainerId
+      checker.checkercontainerId,
+      preferredDieValue,
+      options
     )
     board = playResult.board
 
@@ -1276,7 +1281,8 @@ export class Game {
    */
   public static executeAndRecalculate = function executeAndRecalculate(
     game: BackgammonGameMoving,
-    originId: string
+    originId: string,
+    options?: MoveExecutionOptions
   ): BackgammonGameMoving | BackgammonGame {
     // First, execute the move using the existing move method
     console.log(
@@ -1328,7 +1334,7 @@ export class Game {
       logger?.warn?.('Failed to push undo snapshot before move', e)
     }
 
-    const gameAfterMove = Game.move(game, checkerInOrigin.id)
+    const gameAfterMove = Game.move(game, checkerInOrigin.id, undefined, options)
 
     console.log(
       '[DEBUG] Game.executeAndRecalculate: Move executed, game state:',

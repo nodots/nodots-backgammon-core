@@ -1,5 +1,10 @@
 import {
+  BackgammonBoard,
+  BackgammonColor,
   BackgammonGame,
+  BackgammonMoveDirection,
+  BackgammonPlayer,
+  BackgammonPoint,
   failure,
   GameEndActionData,
   GameHistory,
@@ -17,9 +22,12 @@ import {
   XGMatchHeader,
   XGMove,
   XGMoveRecord,
-} from '-llc/backgammon-types'
+} from '@nodots-llc/backgammon-types'
+import { Board, exportToGnuPositionId } from '../../src/Board'
 import { XGConverter, XGParser, XGSerializer } from '../XG'
 import { GameHistoryService, HistoryState } from './GameHistoryService'
+// Note: Using local createGameSnapshot function instead of SnapshotService.createSnapshot
+// for better control over board state tracking during XG import
 
 // Pure data structures for XG conversion
 export interface XGConversionState {
@@ -154,6 +162,8 @@ export const importXGToGameHistory = async (
 
     for (const gameHistoryData of successes) {
       // Record each action using the functional service
+      // NOTE: Each action now has its own proper gameStateBefore and gameStateAfter
+      // that reflect the board state at that point in the game
       for (const action of gameHistoryData.actions) {
         const recordResult = await GameHistoryService.recordAction(
           newHistoryState,
@@ -162,8 +172,8 @@ export const importXGToGameHistory = async (
             playerId: action.playerId,
             actionType: action.actionType,
             actionData: action.actionData,
-            gameStateBefore: gameHistoryData.simulatedGame,
-            gameStateAfter: gameHistoryData.simulatedGame,
+            gameStateBefore: action.gameStateBefore,
+            gameStateAfter: action.gameStateAfter,
             metadata: action.metadata,
           }
         )
@@ -374,6 +384,362 @@ const gameHistoryToXGGame = async (
   }
 }
 
+// ============================================================================
+// Board State Tracking Helper Functions (Issue #213 Fix)
+// ============================================================================
+
+/**
+ * Deep clone a board to avoid mutating the original
+ */
+const cloneBoard = (board: BackgammonBoard): BackgammonBoard => {
+  return {
+    id: board.id,
+    points: board.points.map(p => ({
+      id: p.id,
+      kind: p.kind,
+      position: { ...p.position },
+      checkers: p.checkers.map(c => ({ ...c })),
+    })) as BackgammonBoard['points'],
+    bar: {
+      clockwise: {
+        ...board.bar.clockwise,
+        checkers: board.bar.clockwise.checkers.map(c => ({ ...c })),
+      },
+      counterclockwise: {
+        ...board.bar.counterclockwise,
+        checkers: board.bar.counterclockwise.checkers.map(c => ({ ...c })),
+      },
+    },
+    off: {
+      clockwise: {
+        ...board.off.clockwise,
+        checkers: board.off.clockwise.checkers.map(c => ({ ...c })),
+      },
+      counterclockwise: {
+        ...board.off.counterclockwise,
+        checkers: board.off.counterclockwise.checkers.map(c => ({ ...c })),
+      },
+    },
+  }
+}
+
+/**
+ * Create a GameStateSnapshot from game and current board state
+ */
+const createGameSnapshot = (
+  game: BackgammonGame,
+  board: BackgammonBoard,
+  activeColor: BackgammonColor
+): GameStateSnapshot => {
+  // Create board positions from current board state
+  const boardPositions: { [position: string]: { id: string; color: BackgammonColor }[] } = {}
+
+  // Capture points
+  for (const point of board.points) {
+    const posKey = `${point.position.clockwise}`
+    if (point.checkers.length > 0) {
+      boardPositions[posKey] = point.checkers.map(c => ({
+        id: c.id,
+        color: c.color,
+      }))
+    }
+  }
+
+  // Capture bar positions
+  if (board.bar.clockwise.checkers.length > 0) {
+    boardPositions['bar-clockwise'] = board.bar.clockwise.checkers.map(c => ({
+      id: c.id,
+      color: c.color,
+    }))
+  }
+  if (board.bar.counterclockwise.checkers.length > 0) {
+    boardPositions['bar-counterclockwise'] = board.bar.counterclockwise.checkers.map(c => ({
+      id: c.id,
+      color: c.color,
+    }))
+  }
+
+  // Capture off positions
+  if (board.off.clockwise.checkers.length > 0) {
+    boardPositions['off-clockwise'] = board.off.clockwise.checkers.map(c => ({
+      id: c.id,
+      color: c.color,
+    }))
+  }
+  if (board.off.counterclockwise.checkers.length > 0) {
+    boardPositions['off-counterclockwise'] = board.off.counterclockwise.checkers.map(c => ({
+      id: c.id,
+      color: c.color,
+    }))
+  }
+
+  // Generate gnuPositionId for this board state
+  let gnuPositionId: string | undefined
+  try {
+    // Create a minimal game-like object for gnuPositionId generation
+    const gameForPositionId = {
+      ...game,
+      board,
+      activeColor,
+    }
+    gnuPositionId = exportToGnuPositionId(gameForPositionId as BackgammonGame)
+  } catch {
+    gnuPositionId = undefined
+  }
+
+  return {
+    stateKind: 'moving',
+    activeColor,
+    boardPositions,
+    diceState: {
+      black: { stateKind: 'inactive' },
+      white: { stateKind: 'inactive' },
+    },
+    cubeState: { value: 1, stateKind: 'centered' },
+    playerStates: {
+      black: {
+        pipCount: 0,
+        stateKind: activeColor === 'black' ? 'active' : 'inactive',
+        isRobot: false,
+        userId: '',
+        direction: 'counterclockwise',
+      },
+      white: {
+        pipCount: 0,
+        stateKind: activeColor === 'white' ? 'active' : 'inactive',
+        isRobot: false,
+        userId: '',
+        direction: 'clockwise',
+      },
+    },
+    gnuPositionId,
+    moveCount: 0,
+    turnCount: 0,
+  }
+}
+
+/**
+ * Apply an XG move to a board and return the updated board
+ * Uses player direction to correctly translate XG coordinates
+ */
+const applyXGMoveToBoard = (
+  board: BackgammonBoard,
+  xgMove: XGMove,
+  direction: BackgammonMoveDirection,
+  playerColor: BackgammonColor
+): { success: boolean; board: BackgammonBoard; isHit: boolean } => {
+  try {
+    const clonedBoard = cloneBoard(board)
+
+    // Convert XG positions to board positions using player direction
+    // XG uses 1-24 for points, 25 for bar, 0 for off
+    const fromXG = xgMove.from
+    const toXG = xgMove.to
+
+    // Find origin container
+    let originContainer: BackgammonPoint | typeof board.bar.clockwise | null = null
+    if (fromXG === 25) {
+      // Bar - use player's direction
+      originContainer = clonedBoard.bar[direction]
+    } else if (fromXG >= 1 && fromXG <= 24) {
+      // Find point by player's directional position
+      originContainer = clonedBoard.points.find(p => p.position[direction] === fromXG) || null
+    }
+
+    // Find destination container
+    let destContainer: BackgammonPoint | typeof board.off.clockwise | null = null
+    if (toXG === 0) {
+      // Off - use player's direction
+      destContainer = clonedBoard.off[direction]
+    } else if (toXG >= 1 && toXG <= 24) {
+      // Find point by player's directional position
+      destContainer = clonedBoard.points.find(p => p.position[direction] === toXG) || null
+    }
+
+    if (!originContainer || !destContainer) {
+      return { success: false, board, isHit: false }
+    }
+
+    // Check for hit (opponent checker on destination point)
+    let isHit = false
+    if ('position' in destContainer && typeof destContainer.position === 'object') {
+      // It's a point
+      const destPoint = destContainer as BackgammonPoint
+      if (destPoint.checkers.length === 1 && destPoint.checkers[0].color !== playerColor) {
+        isHit = true
+        // Move hit checker to opponent's bar
+        const hitChecker = destPoint.checkers[0]
+        const opponentDirection = direction === 'clockwise' ? 'counterclockwise' : 'clockwise'
+        clonedBoard.bar[opponentDirection].checkers.push({
+          ...hitChecker,
+          checkercontainerId: clonedBoard.bar[opponentDirection].id,
+        })
+        destPoint.checkers = []
+      }
+    }
+
+    // Remove checker from origin
+    if (originContainer.checkers.length > 0) {
+      const movingChecker = originContainer.checkers.pop()
+      if (movingChecker) {
+        // Add checker to destination
+        destContainer.checkers.push({
+          ...movingChecker,
+          checkercontainerId: destContainer.id,
+        })
+      }
+    }
+
+    return { success: true, board: clonedBoard, isHit }
+  } catch {
+    return { success: false, board, isHit: false }
+  }
+}
+
+/**
+ * Create a game start action with proper snapshot
+ */
+const createGameStartActionWithSnapshot = (
+  gameId: string,
+  header: XGMatchHeader,
+  sequenceNumber: number,
+  snapshot: GameStateSnapshot
+): GameHistoryAction => {
+  const gameStartData: GameStartActionData = {
+    startingPlayer: 'white',
+    initialDiceRoll: [1, 1],
+  }
+
+  return {
+    id: `action-${sequenceNumber}`,
+    gameId,
+    sequenceNumber,
+    timestamp: new Date(),
+    playerId: header.player1,
+    actionType: 'game-start',
+    actionData: { type: 'game-start', data: gameStartData },
+    gameStateBefore: snapshot,
+    gameStateAfter: snapshot,
+  }
+}
+
+/**
+ * Create a roll action with proper snapshots
+ */
+const createRollActionWithSnapshot = (
+  moveRecord: XGMoveRecord,
+  gameId: string,
+  playerId: string,
+  sequenceNumber: number,
+  snapshotBefore: GameStateSnapshot,
+  snapshotAfter: GameStateSnapshot
+): GameHistoryAction => {
+  const rollData: RollDiceActionData = {
+    dice: moveRecord.dice!,
+  }
+
+  return {
+    id: `action-${sequenceNumber}`,
+    gameId,
+    sequenceNumber,
+    timestamp: new Date(),
+    playerId,
+    actionType: 'roll-dice',
+    actionData: { type: 'roll-dice', data: rollData },
+    gameStateBefore: snapshotBefore,
+    gameStateAfter: snapshotAfter,
+  }
+}
+
+/**
+ * Create a move action with proper snapshots
+ */
+const createMoveActionWithSnapshot = (
+  xgMove: XGMove,
+  moveRecord: XGMoveRecord,
+  gameId: string,
+  playerId: string,
+  sequenceNumber: number,
+  direction: BackgammonMoveDirection,
+  snapshotBefore: GameStateSnapshot,
+  snapshotAfter: GameStateSnapshot,
+  isHit: boolean,
+  preserveAnalysis: boolean
+): GameHistoryAction => {
+  // Determine move kind and positions
+  const fromXG = xgMove.from
+  const toXG = xgMove.to
+
+  let moveKind: 'point-to-point' | 'reenter' | 'bear-off' = 'point-to-point'
+  let originPosition: number | 'bar' | 'off' = fromXG
+  let destinationPosition: number | 'bar' | 'off' = toXG
+
+  if (fromXG === 25) {
+    moveKind = 'reenter'
+    originPosition = 'bar'
+  }
+  if (toXG === 0) {
+    moveKind = 'bear-off'
+    destinationPosition = 'off'
+  }
+
+  const moveData: MakeMoveActionData = {
+    checkerId: 'unknown',
+    originPosition,
+    destinationPosition,
+    dieValue: Math.abs(toXG - fromXG),
+    isHit,
+    moveKind,
+  }
+
+  return {
+    id: `action-${sequenceNumber}`,
+    gameId,
+    sequenceNumber,
+    timestamp: new Date(),
+    playerId,
+    actionType: 'make-move',
+    actionData: { type: 'make-move', data: moveData },
+    gameStateBefore: snapshotBefore,
+    gameStateAfter: snapshotAfter,
+    metadata: undefined,
+  }
+}
+
+/**
+ * Create a game end action with proper snapshot
+ */
+const createGameEndActionWithSnapshot = (
+  xgGame: XGGameRecord,
+  gameId: string,
+  header: XGMatchHeader,
+  sequenceNumber: number,
+  snapshot: GameStateSnapshot
+): GameHistoryAction => {
+  const gameEndData: GameEndActionData = {
+    winner: xgGame.winner === 1 ? 'white' : 'black',
+    reason: 'checkmate',
+    points: xgGame.pointsWon,
+    finalPipCounts: { black: 0, white: 0 },
+  }
+
+  return {
+    id: `action-${sequenceNumber}`,
+    gameId,
+    sequenceNumber,
+    timestamp: new Date(),
+    playerId: xgGame.winner === 1 ? header.player1 : header.player2,
+    actionType: 'game-end',
+    actionData: { type: 'game-end', data: gameEndData },
+    gameStateBefore: snapshot,
+    gameStateAfter: snapshot,
+  }
+}
+
+// ============================================================================
+// Original Helper Functions (kept for export compatibility)
+// ============================================================================
+
 const historyActionToXGMoveRecord = (
   action: GameHistoryAction,
   moveNumber: number
@@ -442,49 +808,142 @@ const xgGameToGameHistory = async (
     const game = gameConversionResult as BackgammonGame
     const gameId = game.id || `xg-import-${Date.now()}-${xgGame.gameNumber}`
 
+    // Get player information for direction mapping
+    const player1 = game.players.find(p => p.color === 'white')
+    const player2 = game.players.find(p => p.color === 'black')
+
+    // Track mutable game state throughout the conversion
+    // Start with a deep clone of the initial board state
+    let currentBoard: BackgammonBoard = cloneBoard(game.board)
+    let currentActiveColor: BackgammonColor = 'white'
+
     // Convert XG moves to history actions using pure functions
     const actions: GameHistoryAction[] = []
     let sequenceNumber = 1
 
-    // Add game start action
-    const startAction = createGameStartAction(
+    // Create initial game snapshot
+    const initialSnapshot = createGameSnapshot(
+      game,
+      currentBoard,
+      currentActiveColor
+    )
+
+    // Add game start action with proper snapshots
+    const startAction = createGameStartActionWithSnapshot(
       gameId,
       header,
       sequenceNumber++,
-      game
+      initialSnapshot
     )
     actions.push(startAction)
 
-    // Convert XG moves to history actions
+    // Convert XG moves to history actions, tracking board state
     for (const moveRecord of xgGame.moves) {
-      const historyActions = xgMoveRecordToHistoryActions(
-        moveRecord,
-        gameId,
-        header,
-        sequenceNumber,
-        preserveAnalysis
+      // Determine which player is moving
+      const movingPlayerColor: BackgammonColor = moveRecord.player === 1 ? 'white' : 'black'
+      const movingPlayer = game.players.find(p => p.color === movingPlayerColor)
+
+      if (!movingPlayer) {
+        continue
+      }
+
+      // Create snapshot before this move record is processed
+      const snapshotBefore = createGameSnapshot(
+        game,
+        currentBoard,
+        movingPlayerColor
       )
 
-      actions.push(...historyActions)
-      sequenceNumber += historyActions.length
+      // Process dice roll action
+      if (moveRecord.dice) {
+        const rollAction = createRollActionWithSnapshot(
+          moveRecord,
+          gameId,
+          moveRecord.player === 1 ? header.player1 : header.player2,
+          sequenceNumber++,
+          snapshotBefore,
+          snapshotBefore // Roll doesn't change board state
+        )
+        actions.push(rollAction)
+      }
+
+      // Process each move in the move record, updating board state
+      for (const xgMove of moveRecord.moves || []) {
+        const movingDirection = movingPlayer.direction
+
+        // Create snapshot before this individual move
+        const moveSnapshotBefore = createGameSnapshot(
+          game,
+          currentBoard,
+          movingPlayerColor
+        )
+
+        // Apply the move to the board and get the updated board
+        const moveResult = applyXGMoveToBoard(
+          currentBoard,
+          xgMove,
+          movingDirection,
+          movingPlayerColor
+        )
+
+        if (moveResult.success) {
+          currentBoard = moveResult.board
+        }
+
+        // Create snapshot after this individual move
+        const moveSnapshotAfter = createGameSnapshot(
+          game,
+          currentBoard,
+          movingPlayerColor
+        )
+
+        // Create move action with proper snapshots
+        const moveAction = createMoveActionWithSnapshot(
+          xgMove,
+          moveRecord,
+          gameId,
+          moveRecord.player === 1 ? header.player1 : header.player2,
+          sequenceNumber++,
+          movingDirection,
+          moveSnapshotBefore,
+          moveSnapshotAfter,
+          moveResult.isHit || false,
+          preserveAnalysis
+        )
+        actions.push(moveAction)
+      }
+
+      // Switch active color for next turn
+      currentActiveColor = currentActiveColor === 'white' ? 'black' : 'white'
     }
 
     // Add game end action if we have a winner
     if (xgGame.winner) {
-      const endAction = createGameEndAction(
+      const finalSnapshot = createGameSnapshot(
+        game,
+        currentBoard,
+        xgGame.winner === 1 ? 'white' : 'black'
+      )
+      const endAction = createGameEndActionWithSnapshot(
         xgGame,
         gameId,
         header,
         sequenceNumber,
-        game
+        finalSnapshot
       )
       actions.push(endAction)
+    }
+
+    // Update the game with the final board state
+    const finalGame: BackgammonGame = {
+      ...game,
+      board: currentBoard,
     }
 
     return success({
       gameId,
       actions,
-      simulatedGame: game,
+      simulatedGame: finalGame,
     })
   } catch (error) {
     return failure(
