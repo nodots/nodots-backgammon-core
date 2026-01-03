@@ -14,7 +14,8 @@ export class XGParser {
   private static readonly MOVE_PATTERN = /^(\d+)\) (.+)$/
   private static readonly DICE_MOVE_PATTERN = /^(\d{1,2}): (.+)$/
   private static readonly CUBE_PATTERN = /^(Doubles => \d+|Takes|Drops)$/
-  private static readonly GAME_END_PATTERN = /^Wins (\d+) point$/
+  // Handle both singular "point" and plural "points" for gammons/backgammons
+  private static readonly GAME_END_PATTERN = /^Wins (\d+) points?$/
   private static readonly GAME_HEADER_PATTERN = /^Game (\d+)$/
   private static readonly SCORE_PATTERN = /^(.+) : (\d+)\s+(.+) : (\d+)$/
   private static readonly MATCH_LENGTH_PATTERN = /^(\d+) point match$/
@@ -312,7 +313,7 @@ export class XGParser {
     // - Cube actions: "Takes", "Drops", "Doubles"
     // - Game end: "Wins"
     // We need at least 2 spaces before player 2's content to avoid matching within move notation
-    const secondColumnMatch = trimmed.match(/^(.+?)\s{2,}(\d{1,2}:.+|Takes|Drops|Doubles\s*=>.+|Wins\s+\d+\s+point.*)$/i)
+    const secondColumnMatch = trimmed.match(/^(.+?)\s{2,}(\d{1,2}:.+|Takes|Drops|Doubles\s*=>.+|Wins\s+\d+\s+points?.*)$/i)
 
     if (secondColumnMatch) {
       // Found two columns - split at the boundary

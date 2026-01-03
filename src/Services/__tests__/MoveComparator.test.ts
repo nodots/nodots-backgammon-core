@@ -34,12 +34,32 @@ describe('MoveComparator', () => {
       ])).toBe(false)
     })
 
-    it('should return false when same source', () => {
-      // 8/3 8/5 - both from 8
+    it('should return true when same source with different destinations', () => {
+      // 8/3 8/5 - both from 8 to different places
+      // This IS independent - just moving two different checkers from same point
       expect(areSimplifiedMovesIndependent([
         { from: 8, to: 3 },
         { from: 8, to: 5 },
-      ])).toBe(false)
+      ])).toBe(true)
+    })
+
+    it('should return true for identical moves repeated (doubles)', () => {
+      // 13/7 13/7 13/7 - same move repeated with doubles
+      expect(areSimplifiedMovesIndependent([
+        { from: 13, to: 7 },
+        { from: 13, to: 7 },
+        { from: 13, to: 7 },
+      ])).toBe(true)
+    })
+
+    it('should return true for identical moves plus independent move', () => {
+      // 13/7 13/7 13/7 22/16 - three identical plus one independent
+      expect(areSimplifiedMovesIndependent([
+        { from: 13, to: 7 },
+        { from: 13, to: 7 },
+        { from: 13, to: 7 },
+        { from: 22, to: 16 },
+      ])).toBe(true)
     })
 
     it('should return false for chained moves (dest = source)', () => {
@@ -233,6 +253,56 @@ describe('MoveComparator', () => {
       // Independent moves - should match via unordered
       expect(result).toBeDefined()
       expect(result?.equity).toBe(0.5)
+    })
+
+    it('same-source scenario: 6/2 6/5 should match 6/5 6/2', () => {
+      // Real bug scenario: moves from same point to different destinations
+      // Player played: 6/2 6/5
+      // Hint #2: 6/5 6/2
+      // These are equivalent - just moving two checkers from point 6
+
+      const hints = [
+        createHint([{ from: 3, to: 2 }, { from: 8, to: 4 }], -0.191), // Best
+        createHint([{ from: 6, to: 5 }, { from: 6, to: 2 }], -0.328), // #2
+      ]
+
+      const playerMove = [
+        { from: 6, to: 2 },
+        { from: 6, to: 5 },
+      ]
+      const result = findMatchingHint(hints, playerMove)
+
+      // Should match hint #2 - same moves just reordered
+      expect(result).toBeDefined()
+      expect(result?.equity).toBe(-0.328)
+    })
+
+    it('doubles scenario: 13/7 13/7 13/7 22/16 should match 22/16 13/7 13/7 13/7', () => {
+      // Real bug scenario: player rolled 6-6
+      // Player played: 13/7 13/7 13/7 22/16
+      // Best move: 22/16 13/7 13/7 13/7
+      // These are functionally identical - same final position
+
+      const hints = [
+        createHint([
+          { from: 22, to: 16 },
+          { from: 13, to: 7 },
+          { from: 13, to: 7 },
+          { from: 13, to: 7 },
+        ], 0.362),
+      ]
+
+      const playerMove = [
+        { from: 13, to: 7 },
+        { from: 13, to: 7 },
+        { from: 13, to: 7 },
+        { from: 22, to: 16 },
+      ]
+      const result = findMatchingHint(hints, playerMove)
+
+      // Should match - identical moves just reordered
+      expect(result).toBeDefined()
+      expect(result?.equity).toBe(0.362)
     })
   })
 })

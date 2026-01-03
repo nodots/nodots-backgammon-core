@@ -77,24 +77,46 @@ export function areStepsIndependent(sequence: MoveStep[]): boolean {
 /**
  * Check if simplified moves can be reordered without affecting the result.
  *
- * Since we don't have hit/moveKind info, this is a conservative check
- * that only verifies no position overlaps or chains exist.
+ * Moves are independent (order doesn't matter) when:
+ * - No chains exist (dest of one move = source of another)
+ * - No same-destination moves (could involve hit order)
+ *
+ * Same-source moves with different destinations ARE independent because
+ * you're moving different checkers from the same point.
+ *
+ * Identical moves (same from AND same to) repeated are always independent.
  */
 export function areSimplifiedMovesIndependent(moves: SimplifiedMove[]): boolean {
   if (!moves || moves.length <= 1) return true
 
+  // Deduplicate identical moves (same from AND same to).
+  // Repeated identical moves are always order-independent.
+  const seen = new Set<string>()
+  const uniqueMoves: SimplifiedMove[] = []
+  for (const m of moves) {
+    const key = `${m.from}->${m.to}`
+    if (!seen.has(key)) {
+      seen.add(key)
+      uniqueMoves.push(m)
+    }
+  }
+
+  // If all moves were identical, order doesn't matter
+  if (uniqueMoves.length <= 1) return true
+
   const sources = new Set<number>()
   const dests = new Set<number>()
 
-  // Check for direct overlaps
-  for (const m of moves) {
-    if (sources.has(m.from) || dests.has(m.to)) return false
+  // Check for same-destination (could involve hit order issues)
+  // Same-source is OK - just moving different checkers from same point
+  for (const m of uniqueMoves) {
+    if (dests.has(m.to)) return false
     sources.add(m.from)
     dests.add(m.to)
   }
 
-  // Check for chains
-  for (const m of moves) {
+  // Check for chains (dest of one = source of another)
+  for (const m of uniqueMoves) {
     if (sources.has(m.to) || dests.has(m.from)) return false
   }
 
