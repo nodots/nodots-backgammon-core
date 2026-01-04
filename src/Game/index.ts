@@ -79,7 +79,17 @@ export class Game {
 
   public static createNewGame = function createNewGame(
     player1: { userId: string; isRobot: boolean },
-    player2: { userId: string; isRobot: boolean }
+    player2: { userId: string; isRobot: boolean },
+    options?: {
+      rules?: {
+        useCrawfordRule?: boolean
+        useJacobyRule?: boolean
+        useBeaverRule?: boolean
+        useRaccoonRule?: boolean
+        useMurphyRule?: boolean
+        useHollandRule?: boolean
+      }
+    }
   ): BackgammonGameRollingForStart {
     let blackDirection: BackgammonMoveDirection
     let whiteDirection: BackgammonMoveDirection
@@ -130,6 +140,11 @@ export class Game {
       ...game,
       players:
         playersWithCorrectPipCounts as BackgammonPlayersRollingForStartTuple,
+      // Apply game rules if provided
+      rules: {
+        ...game.rules,
+        ...options?.rules,
+      },
     }
 
     return game
@@ -1145,6 +1160,62 @@ export class Game {
         pipCount: 0, // Winner has 0 pip count
       } as BackgammonPlayerWinner
 
+      // Find the loser for scoring calculation
+      const loser = updatedPlayers.find((p) => p.id !== winner.id)!
+      const loserDirection = loser.direction
+
+      // Calculate win type based on loser's checker positions
+      const loserCheckersOff = board.off[loserDirection]?.checkers?.length ?? 0
+      const loserCheckersOnBar = board.bar[loserDirection]?.checkers?.length ?? 0
+
+      // Check if loser has checkers in winner's home board (positions 1-6 from winner's perspective)
+      const winnerDirection = winner.direction
+      const loserCheckersInWinnerHome = board.points.some((point) => {
+        const positionFromWinnerPerspective = point.position[winnerDirection]
+        return (
+          positionFromWinnerPerspective >= 1 &&
+          positionFromWinnerPerspective <= 6 &&
+          point.checkers.some((c) => c.color === loser.color)
+        )
+      })
+
+      // Determine base win type
+      let winType: 'simple' | 'gammon' | 'backgammon' = 'simple'
+      let baseMultiplier = 1
+
+      if (loserCheckersOff === 0) {
+        // Loser has no checkers off - at minimum a gammon
+        if (loserCheckersOnBar > 0 || loserCheckersInWinnerHome) {
+          // Backgammon: loser has checkers on bar OR in winner's home board
+          winType = 'backgammon'
+          baseMultiplier = 3
+        } else {
+          // Gammon: loser just has no checkers off
+          winType = 'gammon'
+          baseMultiplier = 2
+        }
+      }
+
+      // Jacoby rule: In money games, gammons/backgammons only count if cube was turned
+      // Cube is considered "never turned" if value is undefined (centered)
+      const cubeValue = game.cube?.value
+      const cubeWasTurned = cubeValue !== undefined
+      if (game.rules?.useJacobyRule && !cubeWasTurned && winType !== 'simple') {
+        logger.info(
+          `📜 [Game] Jacoby rule applied: ${winType} reduced to simple (cube never turned)`
+        )
+        winType = 'simple'
+        baseMultiplier = 1
+      }
+
+      // Calculate total points: base multiplier * cube value (cube defaults to 1 if not turned)
+      const cubeMultiplier = cubeValue ?? 1
+      const pointsWon = baseMultiplier * cubeMultiplier
+
+      logger.info(
+        `🏆 [Game] Win type: ${winType}, Points won: ${pointsWon} (${baseMultiplier}x base * ${cubeMultiplier} cube)`
+      )
+
       // Update players array to include the winner with correct state
       const finalPlayers = updatedPlayers.map((p) =>
         p.id === winner.id ? winner : p
@@ -1156,6 +1227,8 @@ export class Game {
         ...game,
         stateKind: 'completed',
         winner: winner.id,
+        winType,
+        pointsWon,
         board,
         activePlayer: winner,
         activePlay: updatedActivePlay,
@@ -1719,6 +1792,12 @@ export class Game {
     game: BackgammonGame,
     player: BackgammonPlayerActive
   ): boolean {
+    // Crawford rule: No doubling allowed during the Crawford game
+    // The Crawford game is the first game after a player reaches match point - 1
+    if (game.rules?.useCrawfordRule && game.matchInfo?.isCrawford) {
+      return false
+    }
+
     // Allow doubling from rolling state only (before rolling dice)
     // Only if cube is centered (no owner) OR the player owns the cube
     // and cube is not maxxed or already offered
@@ -1901,7 +1980,7 @@ export class Game {
   ): BackgammonGame {
     if (!Game.canRefuseDouble(game, player))
       throw new Error('Cannot refuse double')
-    // The refusing player loses at the current cube value
+    // The refusing player loses at the current cube value (before the proposed double)
     // The offering player is the winner
     const offeringPlayer = game.cube.offeredBy!
     const winner = {
@@ -1914,10 +1993,21 @@ export class Game {
       p.id === winner.id ? winner : p
     ) as BackgammonPlayers
 
+    // When refusing a double, winner gets the cube value BEFORE the proposed double
+    // If cube was centered (value undefined), use 1. Otherwise use current value / 2 (pre-double value)
+    const currentCubeValue = game.cube?.value
+    const pointsWon = currentCubeValue !== undefined ? currentCubeValue / 2 : 1
+
+    logger.info(
+      `🏆 [Game] Double refused - Winner: ${winner.id}, Points won: ${pointsWon}`
+    )
+
     return Game.incrementStateVersion({
       ...game,
       stateKind: 'completed',
       winner: winner.id,
+      winType: 'simple', // Cube drops are always simple wins
+      pointsWon,
       players: updatedPlayers,
     } as BackgammonGameCompleted)
   }
