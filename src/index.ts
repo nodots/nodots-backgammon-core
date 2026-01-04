@@ -66,3 +66,4 @@ export {
 export type * from '@nodots-llc/backgammon-types'
 export { GameEventEmitter } from './events/GameEventEmitter'
 export * from './XG' // Re-enabled for Issue #213 fix - XG import with proper board state tracking
+export * from './MET'
