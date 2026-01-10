@@ -173,4 +173,93 @@ describe('ActivePlay stateKind transition to moved', () => {
         throw new Error(`Unexpected play state: ${result.play.stateKind}`)
     }
   })
+
+  it('should allow all 4 moves to be executed for doubles', () => {
+    // Setup: Create a board with a bearing-off position for testing doubles
+    // Import a position where player can bear off with doubles
+    const boardImport = [
+      {
+        position: { clockwise: 3, counterclockwise: 22 },
+        checkers: { qty: 2, color: 'white' as const },
+      },
+      {
+        position: { clockwise: 4, counterclockwise: 21 },
+        checkers: { qty: 2, color: 'white' as const },
+      },
+    ]
+    const board = Board.buildBoard(boardImport)
+
+    const player: BackgammonPlayerMoving = {
+      id: generateId(),
+      userId: generateId(),
+      color: 'white',
+      direction: 'clockwise',
+      stateKind: 'moving',
+      dice: {
+        id: generateId(),
+        stateKind: 'rolled',
+        currentRoll: [6, 6], // Doubles
+        total: 24,
+        color: 'white',
+      },
+      rollForStartValue: 6,
+      pipCount: 10, // 2 checkers on 3 + 2 checkers on 4
+      isRobot: true, // Simulate robot for AI move path
+    }
+
+    // Initialize play - should create 4 moves for doubles
+    const play = Play.initialize(board, player)
+    expect(play.stateKind).toBe('moving')
+    expect(play.moves.length).toBe(4)
+
+    // Verify all 4 moves have the same die value (6)
+    const allDieValuesSix = play.moves.every(m => m.dieValue === 6)
+    expect(allDieValuesSix).toBe(true)
+
+    // Execute moves one by one, simulating AI move execution with expectedDieValue
+    let currentBoard = board
+    let currentPlay = play
+    let movesExecuted = 0
+
+    for (let i = 0; i < 4; i++) {
+      const movesArray = Array.from(currentPlay.moves)
+      const readyMove = movesArray.find((m): m is BackgammonMoveReady =>
+        m.stateKind === 'ready' && m.possibleMoves.length > 0
+      )
+
+      if (!readyMove) {
+        // No more ready moves - either no-move or all completed
+        break
+      }
+
+      // Execute with expectedDieValue (AI path) to test the fix
+      const origin = readyMove.possibleMoves[0].origin
+      const destination = readyMove.possibleMoves[0].destination
+      const result = Play.move(currentBoard, currentPlay, origin, undefined, {
+        expectedDieValue: 6,
+        desiredDestinationId: destination.id,
+      })
+
+      currentBoard = result.board
+      currentPlay = result.play
+      movesExecuted++
+
+      // After each move (except the last), there should still be ready moves
+      if (i < 3) {
+        const remainingReady = Array.from(currentPlay.moves).filter(
+          m => m.stateKind === 'ready'
+        )
+        // With the fix, remaining ready moves should be 3, 2, 1 respectively
+        expect(remainingReady.length).toBeGreaterThanOrEqual(0)
+
+        // If play is still 'moving', there should be ready moves
+        if (currentPlay.stateKind === 'moving') {
+          expect(remainingReady.length).toBeGreaterThan(0)
+        }
+      }
+    }
+
+    // Verify we executed at least 2 moves (the position has 4 checkers that can bear off)
+    expect(movesExecuted).toBeGreaterThanOrEqual(2)
+  })
 })

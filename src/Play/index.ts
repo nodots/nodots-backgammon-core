@@ -187,19 +187,14 @@ export class Play {
     }
     const newDiceOrder = deriveNewDiceOrder()
 
-    // Find target move: prefer matching usedDieValue + origin; otherwise relax die constraint
-    let targetMove = readyMoves.find(
-      (m) =>
-        m.dieValue === moveResult.usedDieValue &&
-        m.possibleMoves.some(
-          (pm) =>
-            pm.origin.id === origin.id &&
-            (!desiredDestinationId || pm.destination.id === desiredDestinationId)
-        )
-    )
+    // Find target move
+    // When expectedDieValue is explicitly set (AI/GNU moves), find by origin/destination only
+    // The die to consume is determined by expectedDieValue, not the Move's pre-assigned die
+    // NO FALLBACKS for AI moves - GNU is GOD
+    let targetMove: typeof readyMoves[0] | undefined
 
-    if (!targetMove) {
-      // Relax die constraint: pick any ready move whose possibleMoves include this origin
+    if (typeof expectedDieValue === 'number') {
+      // AI move: match by origin and destination only, ignore pre-assigned die
       targetMove = readyMoves.find((m) =>
         m.possibleMoves.some(
           (pm) =>
@@ -207,21 +202,52 @@ export class Play {
             (!desiredDestinationId || pm.destination.id === desiredDestinationId)
         )
       )
-    }
-
-    if (!targetMove) {
-      // As a last resort, pick the first ready move to avoid hard failure
-      targetMove = readyMoves[0]
+      if (!targetMove) {
+        // No fallback - throw error with diagnostic info
+        throw new Error(
+          `[CORE] Cannot execute GNU-planned move: No ready move has origin=${origin.id}` +
+          (desiredDestinationId ? ` destination=${desiredDestinationId}` : '') +
+          `. expectedDieValue=${expectedDieValue}. Available moves: ${readyMoves.map(m =>
+            `die=${m.dieValue}:[${m.possibleMoves.map(pm => pm.origin.id).join(',')}]`
+          ).join('; ')}`
+        )
+      }
+    } else {
+      // Human move: use original logic with die matching
+      targetMove = readyMoves.find(
+        (m) =>
+          m.dieValue === moveResult.usedDieValue &&
+          m.possibleMoves.some(
+            (pm) =>
+              pm.origin.id === origin.id &&
+              (!desiredDestinationId || pm.destination.id === desiredDestinationId)
+          )
+      )
+      if (!targetMove) {
+        // For human moves, try relaxing die constraint
+        targetMove = readyMoves.find((m) =>
+          m.possibleMoves.some(
+            (pm) =>
+              pm.origin.id === origin.id &&
+              (!desiredDestinationId || pm.destination.id === desiredDestinationId)
+          )
+        )
+      }
+      if (!targetMove) {
+        throw new Error(
+          `[CORE] No valid move found for origin=${origin.id}. ` +
+          `Available moves: ${readyMoves.map(m =>
+            `die=${m.dieValue}:[${m.possibleMoves.map(pm => pm.origin.id).join(',')}]`
+          ).join('; ')}`
+        )
+      }
     }
 
     // Plan updated moves (pure calculation)
-    // CRITICAL FIX: Do NOT change die values in moves
-    // Moves keep their original die values from initialization
-    // Only the dice order in player.dice.currentRoll changes
-    const updatedMoves = readyMoves.filter((move) => {
-      // Exclude the move that will be executed
-      return move.id !== targetMove.id
-    })
+    // CRITICAL FIX: Always remove by ID, not by die value
+    // For doubles (e.g., 6-6), all 4 moves have the same dieValue
+    // Removing by dieValue would incorrectly remove ALL 4 moves instead of just 1
+    const updatedMoves = readyMoves.filter((move) => move.id !== targetMove.id)
 
     debug('Play.planMoveExecution: Planning completed', {
       targetMoveId: targetMove.id,
@@ -232,11 +258,12 @@ export class Play {
       updatedMovesCount: updatedMoves.length,
     })
 
-    // Use the targetMove's die value as the effective die to keep consistency
-    // with the moves array even if Board.getPossibleMoves auto-switched.
+    // When expectedDieValue is set (AI move), use it as the effective die
+    // This ensures GNU's specified die is consumed, not the pre-assigned one
+    const finalEffectiveDie = expectedDieValue ?? moveResult.usedDieValue
     return {
       targetMoveId: targetMove.id,
-      effectiveDieValue: moveResult.usedDieValue,
+      effectiveDieValue: finalEffectiveDie,
       autoSwitched: moveResult.autoSwitched,
       originalDieValue: moveResult.originalDieValue,
       newDiceOrder,
