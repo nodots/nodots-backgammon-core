@@ -322,7 +322,22 @@ export class PerformanceRatingCalculator {
   ): Promise<PRMoveAnalysis | null> {
     try {
       const ai = await getAiModule()
-      const { request } = ai.buildHintContextFromGame(gameState, { dice })
+
+      // Find the executing player to get their direction for correct hint context
+      const executingPlayer = gameState.players.find(
+        (p) => p.id === playerId || p.userId === playerId
+      )
+      if (!executingPlayer) {
+        logger.warn(`Player ${playerId} not found in game state for PR analysis (move ${moveNumber})`)
+        return null
+      }
+
+      // Pass executing player's color and direction to ensure hints match their perspective
+      const { request } = ai.buildHintContextFromGame(gameState, {
+        dice,
+        activePlayerColor: executingPlayer.color,
+        activePlayerDirection: executingPlayer.direction,
+      })
 
       // Prefer board-based hints (with activePlayerColor) first; then PID fallback
       const posId = exportToGnuPositionId(gameState)
@@ -432,7 +447,22 @@ export class PerformanceRatingCalculator {
   ): Promise<PRMoveAnalysis | null> {
     try {
       const ai = await getAiModule()
-      const { request } = ai.buildHintContextFromGame(gameState, { dice })
+
+      // Find the executing player to get their direction for correct hint context
+      const executingPlayer = gameState.players.find(
+        (p) => p.id === playerId || p.userId === playerId
+      )
+      if (!executingPlayer) {
+        logger.warn(`Player ${playerId} not found in game state for PR analysis`)
+        return null
+      }
+
+      // Pass executing player's color and direction to ensure hints match their perspective
+      const { request } = ai.buildHintContextFromGame(gameState, {
+        dice,
+        activePlayerColor: executingPlayer.color,
+        activePlayerDirection: executingPlayer.direction,
+      })
 
       // Prefer board-based (with active player context) then PID fallback, using executed die order
       let hints: MoveHint[] = []
@@ -663,31 +693,51 @@ export class PerformanceRatingCalculator {
     }
 
     // History stores userId in player_id field, so check both id and userId
-    // Debug: log what we're searching for and what we have
-    logger.info(`Looking for player ${playerId} in players: ${JSON.stringify(gameState.players.map(p => ({ id: p.id, userId: p.userId })))}`)
     const executingPlayer = gameState.players.find((p) => p.id === playerId || p.userId === playerId)
     if (!executingPlayer) {
+      logger.debug(`extractActualMoveStep: player ${playerId} not found`)
       return null
     }
 
     const moveKind = (payload.moveKind || 'point-to-point') as MoveStep['moveKind']
-    const originPosition = typeof payload.originPosition === 'number'
-      ? payload.originPosition
-      : moveKind === 'reenter'
-        ? 0
+
+    // Extract positions from history payload
+    // GNU uses 25 for bar (reenter origin), 0 for off (bear-off destination)
+    let originPosition: number | null = null
+    let destinationPosition: number | null = null
+
+    if (moveKind === 'reenter') {
+      // Bar position: GNU uses 25 for the bar
+      originPosition = 25
+      destinationPosition = typeof payload.destinationPosition === 'number'
+        ? payload.destinationPosition
         : null
-    const destinationPosition = typeof payload.destinationPosition === 'number'
-      ? payload.destinationPosition
-      : moveKind === 'bear-off'
-        ? 0
+    } else if (moveKind === 'bear-off') {
+      originPosition = typeof payload.originPosition === 'number'
+        ? payload.originPosition
         : null
+      // Off position: GNU uses 0 for off
+      destinationPosition = 0
+    } else {
+      // Point-to-point: use positions directly from payload
+      originPosition = typeof payload.originPosition === 'number'
+        ? payload.originPosition
+        : null
+      destinationPosition = typeof payload.destinationPosition === 'number'
+        ? payload.destinationPosition
+        : null
+    }
 
     if (originPosition === null || destinationPosition === null) {
+      logger.debug(`extractActualMoveStep: missing positions - origin=${originPosition}, dest=${destinationPosition}`)
       return null
     }
 
     const fromContainer: MoveStep['fromContainer'] = moveKind === 'reenter' ? 'bar' : 'point'
     const toContainer: MoveStep['toContainer'] = moveKind === 'bear-off' ? 'off' : 'point'
+
+    logger.debug(`extractActualMoveStep: player=${executingPlayer.color}, direction=${executingPlayer.direction}, ` +
+      `moveKind=${moveKind}, from=${originPosition}, to=${destinationPosition}`)
 
     return {
       player: executingPlayer.color,

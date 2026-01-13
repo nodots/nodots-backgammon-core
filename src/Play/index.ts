@@ -244,13 +244,32 @@ export class Play {
     }
 
     // Plan updated moves (pure calculation)
-    // CRITICAL FIX: Always remove by ID, not by die value
-    // For doubles (e.g., 6-6), all 4 moves have the same dieValue
-    // Removing by dieValue would incorrectly remove ALL 4 moves instead of just 1
-    const updatedMoves = readyMoves.filter((move) => move.id !== targetMove.id)
+    // CRITICAL FIX: When expectedDieValue differs from targetMove.dieValue,
+    // we need to consume the move with the expected die, not the targetMove.
+    // This happens when a reentry move has possibleMoves from multiple dice.
+    // Example: Die 1's reentry move has bar→24 (die 1) AND bar→21 (die 4).
+    // If robot picks bar→21, expectedDieValue=4, but targetMove.dieValue=1.
+    // We should consume die 4's move, keeping die 1 available.
+    let moveToConsume = targetMove
+    if (typeof expectedDieValue === 'number' && expectedDieValue !== targetMove.dieValue) {
+      // Find the move that actually has this die value
+      const moveWithExpectedDie = readyMoves.find(m => m.dieValue === expectedDieValue)
+      if (moveWithExpectedDie) {
+        // Consume the move with the expected die value instead
+        moveToConsume = moveWithExpectedDie
+        debug('Play.planMoveExecution: Die swap - consuming different move', {
+          targetMoveDie: targetMove.dieValue,
+          expectedDieValue,
+          consumingMoveId: moveWithExpectedDie.id,
+          consumingMoveDie: moveWithExpectedDie.dieValue,
+        })
+      }
+    }
+    const updatedMoves = readyMoves.filter((move) => move.id !== moveToConsume.id)
 
     debug('Play.planMoveExecution: Planning completed', {
       targetMoveId: targetMove.id,
+      consumedMoveId: moveToConsume.id,
       effectiveDieValue: moveResult.usedDieValue,
       autoSwitched: moveResult.autoSwitched,
       originalDieValue: moveResult.originalDieValue,
@@ -262,7 +281,7 @@ export class Play {
     // This ensures GNU's specified die is consumed, not the pre-assigned one
     const finalEffectiveDie = expectedDieValue ?? moveResult.usedDieValue
     return {
-      targetMoveId: targetMove.id,
+      targetMoveId: moveToConsume.id,  // Use the consumed move's ID, not the matched move
       effectiveDieValue: finalEffectiveDie,
       autoSwitched: moveResult.autoSwitched,
       originalDieValue: moveResult.originalDieValue,
