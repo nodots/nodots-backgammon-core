@@ -674,19 +674,64 @@ export class Play {
   }
 
   // Helper: Create moves for given dice values on given board
+  // CRITICAL FIX: For non-doubles, don't mark a die as no-move if playing the other die first
+  // might open up moves for it. This implements backgammon's "use both dice if possible" rule.
   private static createMovesForDiceValues(
     board: BackgammonBoard,
     player: BackgammonPlayerMoving,
     diceValues: BackgammonDieValue[]
   ): Array<BackgammonMoveReady | BackgammonMoveCompletedNoMove> {
-    return diceValues.map((dieValue) => {
+    const isDoubles = diceValues.length > 2 ||
+      (diceValues.length === 2 && diceValues[0] === diceValues[1])
+
+    // First pass: calculate possibleMoves for each die on current board
+    const initialMoves = diceValues.map((dieValue) => {
       const possibleMoves = Board.getPossibleMoves(
         board,
         player,
         dieValue
       ) as BackgammonMoveSkeleton[]
+      return { dieValue, possibleMoves }
+    })
 
-      if (possibleMoves.length === 0) {
+    // For non-doubles, check sequence-dependent moves:
+    // If die A has moves but die B doesn't, check if playing die A first opens moves for die B
+    if (!isDoubles && diceValues.length === 2) {
+      const [die1Info, die2Info] = initialMoves
+
+      // Check if die1 has moves but die2 doesn't - would playing die1 first open moves for die2?
+      if (die1Info.possibleMoves.length > 0 && die2Info.possibleMoves.length === 0) {
+        const couldOpenMoves = Play.checkIfDieOpensMovesForOther(
+          board, player, die1Info.dieValue, die2Info.dieValue, die1Info.possibleMoves
+        )
+        if (couldOpenMoves) {
+          // Keep die2 as ready with empty possibleMoves - it will be recalculated after die1 is played
+          debug('Play.createMovesForDiceValues: Die', die1Info.dieValue,
+            'can open moves for die', die2Info.dieValue, '- keeping as ready')
+          // Mark die2 as potentially playable
+          initialMoves[1] = { ...die2Info, possibleMoves: [] as BackgammonMoveSkeleton[], keepAsReady: true } as any
+        }
+      }
+
+      // Check the reverse: die2 has moves but die1 doesn't
+      if (die2Info.possibleMoves.length > 0 && die1Info.possibleMoves.length === 0) {
+        const couldOpenMoves = Play.checkIfDieOpensMovesForOther(
+          board, player, die2Info.dieValue, die1Info.dieValue, die2Info.possibleMoves
+        )
+        if (couldOpenMoves) {
+          debug('Play.createMovesForDiceValues: Die', die2Info.dieValue,
+            'can open moves for die', die1Info.dieValue, '- keeping as ready')
+          initialMoves[0] = { ...die1Info, possibleMoves: [] as BackgammonMoveSkeleton[], keepAsReady: true } as any
+        }
+      }
+    }
+
+    // Second pass: convert to Move objects
+    return initialMoves.map((moveInfo) => {
+      const { dieValue, possibleMoves } = moveInfo
+      const keepAsReady = (moveInfo as any).keepAsReady === true
+
+      if (possibleMoves.length === 0 && !keepAsReady) {
         return {
           id: generateId(),
           player,
@@ -700,9 +745,12 @@ export class Play {
         } as BackgammonMoveCompletedNoMove
       }
 
+      // For sequence-dependent moves, keep as ready even with empty possibleMoves
+      // possibleMoves will be recalculated after the first die is played
       const firstMove = possibleMoves[0]
-      const moveKind =
-        firstMove.destination.kind === 'off'
+      const moveKind = possibleMoves.length === 0
+        ? 'point-to-point'
+        : firstMove.destination.kind === 'off'
           ? 'bear-off'
           : firstMove.origin.kind === 'bar'
             ? 'reenter'
@@ -717,6 +765,45 @@ export class Play {
         possibleMoves,
       } as BackgammonMoveReady
     })
+  }
+
+  // Helper: Check if playing one die first would open up moves for another die
+  // This is used to detect sequence-dependent moves (e.g., 6-3 where only 6 is playable
+  // initially, but playing 6 first opens a move for the 3)
+  private static checkIfDieOpensMovesForOther(
+    board: BackgammonBoard,
+    player: BackgammonPlayerMoving,
+    playableDie: BackgammonDieValue,
+    blockedDie: BackgammonDieValue,
+    playableMoves: BackgammonMoveSkeleton[]
+  ): boolean {
+    // Try each possible move with the playable die and check if it opens moves for the blocked die
+    for (const move of playableMoves) {
+      try {
+        // Simulate the move
+        const boardAfterMove = Board.moveChecker(
+          board,
+          move.origin,
+          move.destination,
+          player.direction
+        )
+
+        // Check if the blocked die now has moves
+        const newPossibleMoves = Board.getPossibleMoves(
+          boardAfterMove,
+          player,
+          blockedDie
+        ) as BackgammonMoveSkeleton[]
+
+        if (newPossibleMoves.length > 0) {
+          return true // Found a sequence that uses both dice
+        }
+      } catch {
+        // Move simulation failed, skip this option
+        continue
+      }
+    }
+    return false
   }
 
   public static initialize = function initialize(
