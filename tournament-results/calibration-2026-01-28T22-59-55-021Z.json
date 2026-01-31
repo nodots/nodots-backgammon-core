@@ -1,0 +1,43 @@
+{
+  "tournamentId": "calibration-2026-01-28T22-59-55-021Z",
+  "timestamp": "2026-01-28T23:01:21.537Z",
+  "config": {
+    "games": 10,
+    "matchupsCount": 1
+  },
+  "officialThresholds": {
+    "supernatural": 2,
+    "worldClass": 5,
+    "expert": 8,
+    "advanced": 12,
+    "intermediate": 18,
+    "casual": 26,
+    "beginner": 35
+  },
+  "matchups": [
+    {
+      "robot1": {
+        "name": "GNU Expert",
+        "evalPlies": 2,
+        "expectedPR": 2
+      },
+      "robot2": {
+        "name": "GNU Advanced",
+        "evalPlies": 2,
+        "expectedPR": 5
+      },
+      "robot1Stats": {
+        "wins": 5,
+        "meanPR": 0.6642423009822052,
+        "medianPR": 0.2596477808600122,
+        "stdDevPR": 0.9351925008210658
+      },
+      "robot2Stats": {
+        "wins": 5,
+        "meanPR": 0.5913789514090715,
+        "medianPR": 0.26681921221606575,
+        "stdDevPR": 1.007658749069691
+      }
+    }
+  ]
+}
