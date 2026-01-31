@@ -2012,6 +2012,68 @@ export class Game {
     } as BackgammonGameCompleted)
   }
 
+  public static resign(
+    game: BackgammonGame,
+    resigningPlayer: BackgammonPlayer,
+    points: 1 | 2 | 3 = 1
+  ): BackgammonGameCompleted {
+    if (game.stateKind === 'completed') {
+      throw new Error('Cannot resign a completed game')
+    }
+
+    if (game.settings?.allowResign === false) {
+      throw new Error('Resignation is not allowed for this game')
+    }
+
+    const resigningId = resigningPlayer.id
+    const opponent = game.players.find((p) => p.id !== resigningId)
+    if (!opponent) {
+      throw new Error('Opponent not found for resignation')
+    }
+
+    const winner = {
+      ...opponent,
+      stateKind: 'winner',
+    } as BackgammonPlayerWinner
+
+    const updatedPlayers = game.players.map((p) =>
+      p.id === winner.id ? winner : p
+    ) as BackgammonPlayers
+
+    const cubeValue = game.cube?.value ?? 1
+    let winType: 'simple' | 'gammon' | 'backgammon' = 'simple'
+    let baseMultiplier = 1
+    if (points === 2) {
+      winType = 'gammon'
+      baseMultiplier = 2
+    } else if (points === 3) {
+      winType = 'backgammon'
+      baseMultiplier = 3
+    }
+
+    if (game.rules?.useJacobyRule && game.cube?.value === undefined && winType !== 'simple') {
+      winType = 'simple'
+      baseMultiplier = 1
+    }
+
+    const pointsWon = baseMultiplier * cubeValue
+
+    logger.info(
+      `🏆 [Game] Resignation - Winner: ${winner.id}, Points won: ${pointsWon} (${baseMultiplier}x base * ${cubeValue} cube)`
+    )
+
+    return Game.incrementStateVersion({
+      ...game,
+      stateKind: 'completed',
+      winner: winner.id,
+      winType,
+      pointsWon,
+      endReason: 'resignation',
+      players: updatedPlayers,
+      endTime: new Date(),
+    } as BackgammonGameCompleted)
+  }
+
   /**
    * Async wrapper for confirmTurn that handles robot automation
    * @param game - Game in 'moving' state
