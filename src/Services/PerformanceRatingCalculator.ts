@@ -289,9 +289,10 @@ export class PerformanceRatingCalculator {
         if (player.analyzedMoves > 0) {
           player.averageEquityLoss =
             player.totalEquityLoss / player.analyzedMoves
-          // PR target scale: 0–16 typical. Use equity*100 scaling.
-          // World Class: PR ≤ ~3, Expert: ≤ ~5, Advanced: ≤ ~7.5
-          player.performanceRating = player.averageEquityLoss * 100
+          // Standard GNU BG PR formula: AEL (in equity units [-1,1]) * 500
+          // Produces millipoints-per-move scale matching established PR ranges:
+          // World Class: < 3.0, Expert: 3-5, Advanced: 5-7.5, Intermediate: 7.5-12.5
+          player.performanceRating = player.averageEquityLoss * 500
         }
       }
 
@@ -387,38 +388,23 @@ export class PerformanceRatingCalculator {
       // If still no exact step match, pessimistically use lowest-ranked hint to bound PR
       if (!actualHint) actualHint = hints[hints.length - 1]
 
-      // Normalize equities to [-1, 1] range if addon returns percent/centipoints
-      // Policy:
-      // - |x| > 10  => assume centipoints (divide by 1000)
-      // - |x| > 2   => assume percent (divide by 100)
-      // - otherwise => already in equity space
-      const normalizeEquity = (v: number | null): number | null => {
-        if (v === null || Number.isNaN(v as any)) return null
-        const x = Number(v)
-        if (!Number.isFinite(x)) return null
-        const ax = Math.abs(x)
-        if (ax > 10) return x / 1000
-        if (ax > 2) return x / 100
-        return x
-      }
-
-      // Prefer explicit difference when provided by addon; else compute from equities
+      // Addon returns equity in [-1, 1] range (cubeful equity can exceed this
+      // slightly with gammon/backgammon potential). No normalization needed.
+      // Prefer addon-provided difference field; fall back to equity subtraction.
       const diffRaw = (actualHint as any)?.difference as number | null | undefined
       let equityLoss: number
       if (typeof diffRaw === 'number' && Number.isFinite(diffRaw)) {
-        const ax = Math.abs(diffRaw)
-        const normalizedAbs = ax > 10 ? ax / 1000 : ax > 2 ? ax / 100 : ax
-        equityLoss = Math.max(0, Math.min(2, normalizedAbs))
+        // difference = actualEquity - bestEquity, so it's <= 0; take absolute value
+        equityLoss = Math.max(0, Math.min(2, Math.abs(diffRaw)))
       } else {
-        const bestRaw = (bestHint?.evaluation?.cubefulEquity ?? bestHint?.equity) as number | null
-        const actualRaw = (actualHint?.evaluation?.cubefulEquity ?? actualHint?.equity) as number | null
-        const bestEquity = normalizeEquity(bestRaw)
-        const actualEquity = normalizeEquity(actualRaw)
-        if (bestEquity === null || actualEquity === null) {
+        const bestEquity = (bestHint?.evaluation?.cubefulEquity ?? bestHint?.equity) as number | null
+        const actualEquity = (actualHint?.evaluation?.cubefulEquity ?? actualHint?.equity) as number | null
+        if (bestEquity === null || !Number.isFinite(bestEquity as number) ||
+            actualEquity === null || !Number.isFinite(actualEquity as number)) {
           logger.warn(`Unable to determine equities for move ${moveNumber}: best=${bestEquity}, actual=${actualEquity}`)
           return null
         }
-        equityLoss = Math.max(0, Math.min(2, bestEquity - actualEquity))
+        equityLoss = Math.max(0, Math.min(2, (bestEquity as number) - (actualEquity as number)))
       }
       const errorType = this.classifyError(equityLoss)
 
@@ -634,33 +620,22 @@ export class PerformanceRatingCalculator {
       logger.info(`Turn ${turnNumber} - bestHint moves: ${JSON.stringify(bestHint?.moves)}`)
       logger.info(`Turn ${turnNumber} - matched strategy=${matchStrategy}, rank=${rank ?? 'n/a'}`)
 
-      // Normalize equities and compute loss
-      const normalizeEquity = (v: number | null): number | null => {
-        if (v === null || Number.isNaN(v as any)) return null
-        const x = Number(v)
-        if (!Number.isFinite(x)) return null
-        const ax = Math.abs(x)
-        if (ax > 10) return x / 1000
-        if (ax > 2) return x / 100
-        return x
-      }
-      // Prefer addon-provided difference if available
+      // Addon returns equity in [-1, 1] range. No normalization needed.
+      // Prefer addon-provided difference field; fall back to equity subtraction.
       const diffRaw = (actualHint as any)?.difference as number | null | undefined
       let equityLoss: number
       if (typeof diffRaw === 'number' && Number.isFinite(diffRaw)) {
-        const ax = Math.abs(diffRaw)
-        const normalizedAbs = ax > 10 ? ax / 1000 : ax > 2 ? ax / 100 : ax
-        equityLoss = Math.max(0, Math.min(2, normalizedAbs))
+        // difference = actualEquity - bestEquity, so it's <= 0; take absolute value
+        equityLoss = Math.max(0, Math.min(2, Math.abs(diffRaw)))
       } else {
-        const bestRaw = (bestHint?.evaluation?.cubefulEquity ?? bestHint?.equity) as number | null
-        const actualRaw = (actualHint?.evaluation?.cubefulEquity ?? actualHint?.equity) as number | null
-        const bestEquity = normalizeEquity(bestRaw)
-        const actualEquity = normalizeEquity(actualRaw)
-        if (bestEquity === null || actualEquity === null) {
+        const bestEquity = (bestHint?.evaluation?.cubefulEquity ?? bestHint?.equity) as number | null
+        const actualEquity = (actualHint?.evaluation?.cubefulEquity ?? actualHint?.equity) as number | null
+        if (bestEquity === null || !Number.isFinite(bestEquity as number) ||
+            actualEquity === null || !Number.isFinite(actualEquity as number)) {
           logger.warn(`Unable to determine equities for turn ${turnNumber}: best=${bestEquity}, actual=${actualEquity}`)
           return null
         }
-        equityLoss = Math.max(0, Math.min(2, bestEquity - actualEquity))
+        equityLoss = Math.max(0, Math.min(2, (bestEquity as number) - (actualEquity as number)))
       }
       const errorType = this.classifyError(equityLoss)
 
@@ -699,16 +674,14 @@ export class PerformanceRatingCalculator {
       return null
     }
 
-    const moveKind = (payload.moveKind || 'point-to-point') as MoveStep['moveKind']
+    let moveKind = (payload.moveKind || 'point-to-point') as MoveStep['moveKind']
 
     // Extract positions from history payload
-    // GNU uses 25 for bar (reenter origin), 0 for off (bear-off destination)
     let originPosition: number | null = null
     let destinationPosition: number | null = null
 
     if (moveKind === 'reenter') {
-      // Bar position: GNU uses 25 for the bar
-      originPosition = 25
+      originPosition = 0
       destinationPosition = typeof payload.destinationPosition === 'number'
         ? payload.destinationPosition
         : null
@@ -716,16 +689,30 @@ export class PerformanceRatingCalculator {
       originPosition = typeof payload.originPosition === 'number'
         ? payload.originPosition
         : null
-      // Off position: GNU uses 0 for off
       destinationPosition = 0
     } else {
-      // Point-to-point: use positions directly from payload
       originPosition = typeof payload.originPosition === 'number'
         ? payload.originPosition
         : null
       destinationPosition = typeof payload.destinationPosition === 'number'
         ? payload.destinationPosition
         : null
+    }
+
+    // Infer moveKind from positions when the payload label is wrong.
+    // The game engine sometimes labels bear-off/reenter as "point-to-point".
+    // gnubg-hints uses: bar -> from=0/fromContainer='bar', off -> to=0/toContainer='off'
+    // Points are 1-24, so from=0 can only be bar and to=0 can only be off.
+    if (destinationPosition === 0 && moveKind !== 'bear-off') {
+      moveKind = 'bear-off'
+    }
+    if (originPosition === 0 && moveKind !== 'reenter') {
+      moveKind = 'reenter'
+    }
+    if (originPosition === 25) {
+      // Some code paths use 25 for bar; convert to 0 to match hint format
+      moveKind = 'reenter'
+      originPosition = 0
     }
 
     if (originPosition === null || destinationPosition === null) {
@@ -1014,11 +1001,11 @@ export class PerformanceRatingCalculator {
    * Get skill level description from PR
    */
   static getSkillLevel(pr: number): string {
-    if (pr <= 2.5) return 'World Class'
-    if (pr <= 5) return 'Expert'
-    if (pr <= 7.5) return 'Advanced'
-    if (pr <= 12.5) return 'Intermediate'
-    if (pr <= 17.5) return 'Casual'
+    if (pr <= 3.0) return 'World Class'
+    if (pr <= 5.0) return 'Expert'
+    if (pr <= 7.0) return 'Advanced'
+    if (pr <= 11.0) return 'Intermediate'
+    if (pr <= 15.0) return 'Casual'
     return 'Beginner'
   }
 }

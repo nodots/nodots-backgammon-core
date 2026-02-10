@@ -542,8 +542,8 @@ async function runGame(
   }
 
   // Calculate PR for both players
-  // Reconfigure to 2-ply for fair PR calculation
-  await configureGnubgHints({ evalPlies: 2, moveFilter: MoveFilterSetting.Large, usePruning: true })
+  // Reconfigure to 2-ply Huge for fair PR calculation (matches Expert/WorldClass robot settings)
+  await configureGnubgHints({ evalPlies: 2, moveFilter: MoveFilterSetting.Huge, usePruning: true })
 
   const prCalc = new PerformanceRatingCalculator()
   let robot1Stats: PlayerGameStats = { pr: null, errors: { doubtful: 0, error: 0, blunder: 0, veryBad: 0 } }
