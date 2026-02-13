@@ -953,7 +953,6 @@ export class Game {
   public static move = function move(
     game: BackgammonGameMoving,
     checkerId: string,
-    preferredDieValue?: BackgammonDieValue,
     options?: MoveExecutionOptions
   ): BackgammonGameMoving | BackgammonGameMoved | BackgammonGameCompleted {
     // Push a pre-move snapshot to the turn-local undo stack
@@ -1009,7 +1008,6 @@ export class Game {
       board,
       activePlay,
       checker.checkercontainerId,
-      preferredDieValue,
       options
     )
     board = playResult.board
@@ -1358,19 +1356,19 @@ export class Game {
     options?: MoveExecutionOptions
   ): BackgammonGameMoving | BackgammonGame {
     // First, execute the move using the existing move method
-    console.log(
-      '[DEBUG] Game.executeAndRecalculate: About to execute move from origin:',
+    logger.debug(
+      'Game.executeAndRecalculate: About to execute move from origin:',
       originId
     )
 
     // DEBUG: Check if game is defined and has required properties
     if (!game) {
-      console.error('[DEBUG] CRITICAL: game parameter is undefined/null!')
+      logger.error('CRITICAL: game parameter is undefined/null!')
       throw new Error('Game parameter is undefined - cannot execute move')
     }
 
     if (!game.board) {
-      console.error('[DEBUG] CRITICAL: game.board is undefined!', {
+      logger.error('CRITICAL: game.board is undefined!', {
         gameStateKind: game.stateKind,
         gameKeys: Object.keys(game),
         hasActivePlay: !!game.activePlay,
@@ -1407,18 +1405,15 @@ export class Game {
       logger?.warn?.('Failed to push undo snapshot before move', e)
     }
 
-    const gameAfterMove = Game.move(game, checkerInOrigin.id, undefined, options)
+    const gameAfterMove = Game.move(game, checkerInOrigin.id, options)
 
-    console.log(
-      '[DEBUG] Game.executeAndRecalculate: Move executed, game state:',
-      {
-        stateKind: gameAfterMove.stateKind,
-        hasActivePlay: !!(gameAfterMove as any).activePlay,
-        activePlayMoves: (gameAfterMove as any).activePlay?.moves
-          ? Array.from((gameAfterMove as any).activePlay.moves).length
-          : 0,
-      }
-    )
+    logger.debug('Game.executeAndRecalculate: Move executed, game state:', {
+      stateKind: gameAfterMove.stateKind,
+      hasActivePlay: !!(gameAfterMove as any).activePlay,
+      activePlayMoves: (gameAfterMove as any).activePlay?.moves
+        ? Array.from((gameAfterMove as any).activePlay.moves).length
+        : 0,
+    })
 
     // Check if the game ended (win condition)
     if (gameAfterMove.stateKind === 'completed') {
@@ -1427,7 +1422,7 @@ export class Game {
 
     // Check if the game is already in 'moved' state after the move
     if (gameAfterMove.stateKind === 'moved') {
-      console.log('[DEBUG] 🎯 Game is already in moved state, returning as-is')
+      logger.debug('Game is already in moved state, returning as-is')
       return gameAfterMove
     }
 
@@ -1442,13 +1437,13 @@ export class Game {
       movingGame.activePlayer.isRobot &&
       gameAfterTurnCheck.stateKind === 'moved'
     ) {
-      console.log('[DEBUG] 🤖 Robot turn completed, auto-confirming turn')
+      logger.debug('Robot turn completed, auto-confirming turn')
       return Game.confirmTurn(gameAfterTurnCheck as BackgammonGameMoved)
     }
 
     // Return the game (either still 'moving' or transitioned to 'moved')
     if (gameAfterTurnCheck.stateKind === 'moved') {
-      console.log('[DEBUG] Turn completed, transitioned to moved state')
+      logger.debug('Turn completed, transitioned to moved state')
       return gameAfterTurnCheck
     }
 
@@ -1456,8 +1451,8 @@ export class Game {
     // for all remaining ready moves thanks to the fix in Play.move()
     // The movingGame already has the updated board state and refreshed activePlay
 
-    console.log(
-      '[DEBUG] Game.executeAndRecalculate: Move executed successfully, returning updated game with fresh activePlay'
+    logger.debug(
+      'Game.executeAndRecalculate: Move executed successfully, returning updated game with fresh activePlay'
     )
 
     // Turn continues, return the game with fresh board state and updated activePlay
