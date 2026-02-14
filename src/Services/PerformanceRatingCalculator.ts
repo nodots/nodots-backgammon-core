@@ -153,9 +153,10 @@ export class PerformanceRatingCalculator {
         const head = moveActions[i]
         const startState = gameStates[i]
         if (!startState) {
-          logger.warn(`No game state available for action ${i}`)
-          i += 1
-          continue
+          throw new Error(
+            `calculateGamePR: no game state for action index ${i}. ` +
+            `Game ${gameId}, totalStates=${gameStates.length}, totalActions=${moveActions.length}`
+          )
         }
 
         // Ensure stats bucket exists
@@ -255,7 +256,6 @@ export class PerformanceRatingCalculator {
             if (r === 1) ps.matchedRank1 = (ps.matchedRank1 ?? 0) + 1
             else if (r === 2) ps.matchedRank2 = (ps.matchedRank2 ?? 0) + 1
             else if (r && r >= 3) ps.matchedRank3Plus = (ps.matchedRank3Plus ?? 0) + 1
-            if (strat === 'worst') ps.fallbackWorst = (ps.fallbackWorst ?? 0) + 1
             if (strat === 'ordered') ps.matchOrdered = (ps.matchOrdered ?? 0) + 1
             if (strat === 'unordered') ps.matchUnordered = (ps.matchUnordered ?? 0) + 1
             if (strat === 'alt-ordered') ps.matchAltOrdered = (ps.matchAltOrdered ?? 0) + 1
@@ -278,7 +278,8 @@ export class PerformanceRatingCalculator {
             }
           }
         } catch (error) {
-          logger.warn(`Failed to analyze turn ${turnIndex + 1}: ${error}`)
+          logger.error(`Failed to analyze turn ${turnIndex + 1}: ${error}`)
+          throw error
         }
 
         i = j + 1
@@ -380,13 +381,30 @@ export class PerformanceRatingCalculator {
       logger.info(`Move ${moveNumber} - bestHint moves: ${JSON.stringify(bestHint?.moves)}`)
       logger.info(`Move ${moveNumber} - all hint steps: ${JSON.stringify(hints.slice(0, 3).map(h => h.moves))}`)
 
-      let actualHint = actualStep ? this.findHintForStep(hints, actualStep) : undefined
-      if (!actualHint && actualStep) {
+      if (!actualStep) {
+        const posId = exportToGnuPositionId(gameState)
+        throw new Error(
+          `analyzeMoveWithGnuBG: extractActualMoveStep returned null. ` +
+          `Move ${moveNumber}, positionId=${posId}, dice=${JSON.stringify(dice)}, ` +
+          `moveExecuted=${JSON.stringify(moveExecuted)}`
+        )
+      }
+
+      let actualHint = this.findHintForStep(hints, actualStep)
+      if (!actualHint) {
         const altStep = this.extractActualMoveStep(moveExecuted, playerId, gameState)
         if (altStep) actualHint = this.findHintForStep(hints, altStep)
       }
-      // If still no exact step match, pessimistically use lowest-ranked hint to bound PR
-      if (!actualHint) actualHint = hints[hints.length - 1]
+      if (!actualHint) {
+        const posId = exportToGnuPositionId(gameState)
+        throw new Error(
+          `analyzeMoveWithGnuBG: no hint matched player's move. ` +
+          `Move ${moveNumber}, positionId=${posId}, dice=${JSON.stringify(dice)}, ` +
+          `actualStep=${JSON.stringify({ from: actualStep.from, to: actualStep.to, kind: actualStep.moveKind, fromC: actualStep.fromContainer, toC: actualStep.toContainer })}, ` +
+          `hintsCount=${hints.length}, ` +
+          `topHintMoves=${JSON.stringify(hints[0]?.moves?.map((m: MoveStep) => ({ from: m.from, to: m.to, kind: m.moveKind })))}`
+        )
+      }
 
       // Addon returns equity in [-1, 1] range (cubeful equity can exceed this
       // slightly with gammon/backgammon potential). No normalization needed.
@@ -418,8 +436,8 @@ export class PerformanceRatingCalculator {
         errorType,
       }
     } catch (error) {
-      logger.warn(`GNU BG analysis failed for move ${moveNumber}: ${error}`)
-      return null
+      logger.error(`GNU BG analysis failed for move ${moveNumber}: ${error}`)
+      throw error
     }
   }
 
@@ -611,8 +629,18 @@ export class PerformanceRatingCalculator {
           matchStrategy = 'prefix'
         }
       }
-      const actualHint = matched || hintsUsed[hintsUsed.length - 1]
-      if (!matched) matchStrategy = 'worst'
+      if (!matched) {
+        const posId = exportToGnuPositionId(gameState)
+        throw new Error(
+          `analyzeTurnWithGnuBG: no hint matched player's move sequence. ` +
+          `Turn ${turnNumber}, positionId=${posId}, dice=${JSON.stringify(dice)}, ` +
+          `sequence=${JSON.stringify(sequence.map(s => ({ from: s.from, to: s.to, kind: s.moveKind, fromC: s.fromContainer, toC: s.toContainer })))}, ` +
+          `hintsCount=${hintsUsed.length}, ` +
+          `topHintMoves=${JSON.stringify(bestHint?.moves?.map((m: MoveStep) => ({ from: m.from, to: m.to, kind: m.moveKind, fromC: m.fromContainer, toC: m.toContainer })))}, ` +
+          `strategies_tried=[ordered,unordered,alt-ordered,alt-unordered,final-board,prefix]`
+        )
+      }
+      const actualHint = matched
 
       // Log for debugging
       const rank = this.getHintRank(hintsUsed, matched)
@@ -651,8 +679,8 @@ export class PerformanceRatingCalculator {
         matchStrategy,
       }
     } catch (error) {
-      logger.warn(`GNU BG analysis failed for turn ${turnNumber}: ${error}`)
-      return null
+      logger.error(`GNU BG analysis failed for turn ${turnNumber}: ${error}`)
+      throw error
     }
   }
 
