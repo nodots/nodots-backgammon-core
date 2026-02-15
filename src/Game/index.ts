@@ -1211,7 +1211,7 @@ export class Game {
       // Detect the game outcome (normal, gammon, or backgammon)
       const outcome = detectGameOutcome(board, winner, opponent)
       const basePoints = GAME_OUTCOME_POINTS[outcome]
-      const finalScore = basePoints * game.cube.value
+      const finalScore = basePoints * (game.cube.value ?? 1)
 
       logger.info(
         `🏁 [Game] Game ${game.id} completed - Winner: ${winner.id}, Outcome: ${outcome}, Score: ${finalScore} (${basePoints} x ${game.cube.value})`
