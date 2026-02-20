@@ -152,20 +152,20 @@ describe('GNU Position ID bar encoding', () => {
     const pidWithBar = exportToGnuPositionId(gameWithBar)
     const bitsWithBar = decodePidToBits(pidWithBar)
 
-    // Player on roll is white (clockwise). Opponent is black (counterclockwise).
-    const playerSlots = parseSlots(bitsWithBar.substring(0, 40))
-    const opponentSlots = parseSlots(bitsWithBar.substring(40, 80))
+    // Canonical encoding: TanBoard[0] = clockwise (white), TanBoard[1] = counterclockwise (black)
+    const cwSlots = parseSlots(bitsWithBar.substring(0, 40))
+    const ccwSlots = parseSlots(bitsWithBar.substring(40, 80))
 
-    // Player (white/clockwise) should still have 0 bar checkers
-    expect(playerSlots.bar).toBe(0)
-    // Opponent (black/counterclockwise) should have 1 bar checker
-    expect(opponentSlots.bar).toBe(1)
+    // Clockwise (white) should have 0 bar checkers
+    expect(cwSlots.bar).toBe(0)
+    // Counterclockwise (black) should have 1 bar checker
+    expect(ccwSlots.bar).toBe(1)
 
     // Total should still be 15 each
-    const pTotal = playerSlots.points.reduce((a, b) => a + b, 0) + playerSlots.bar
-    const oTotal = opponentSlots.points.reduce((a, b) => a + b, 0) + opponentSlots.bar
-    expect(pTotal).toBe(15)
-    expect(oTotal).toBe(15)
+    const cwTotal = cwSlots.points.reduce((a, b) => a + b, 0) + cwSlots.bar
+    const ccwTotal = ccwSlots.points.reduce((a, b) => a + b, 0) + ccwSlots.bar
+    expect(cwTotal).toBe(15)
+    expect(ccwTotal).toBe(15)
   })
 
   test('clockwise player bar checkers are encoded in position ID', () => {
@@ -191,20 +191,20 @@ describe('GNU Position ID bar encoding', () => {
     const pid = exportToGnuPositionId(game)
     const bits = decodePidToBits(pid)
 
-    // Player on roll is black (counterclockwise). Opponent is white (clockwise).
-    const playerSlots = parseSlots(bits.substring(0, 40))
-    const opponentSlots = parseSlots(bits.substring(40, 80))
+    // Canonical encoding: TanBoard[0] = clockwise (white), TanBoard[1] = counterclockwise (black)
+    const cwSlots = parseSlots(bits.substring(0, 40))
+    const ccwSlots = parseSlots(bits.substring(40, 80))
 
-    // Player (black/counterclockwise) should have 0 bar checkers
-    expect(playerSlots.bar).toBe(0)
-    // Opponent (white/clockwise) should have 1 bar checker
-    expect(opponentSlots.bar).toBe(1)
+    // Clockwise (white) should have 1 bar checker
+    expect(cwSlots.bar).toBe(1)
+    // Counterclockwise (black) should have 0 bar checkers
+    expect(ccwSlots.bar).toBe(0)
 
     // Total should be 15 each
-    const pTotal = playerSlots.points.reduce((a, b) => a + b, 0) + playerSlots.bar
-    const oTotal = opponentSlots.points.reduce((a, b) => a + b, 0) + opponentSlots.bar
-    expect(pTotal).toBe(15)
-    expect(oTotal).toBe(15)
+    const cwTotal = cwSlots.points.reduce((a, b) => a + b, 0) + cwSlots.bar
+    const ccwTotal = ccwSlots.points.reduce((a, b) => a + b, 0) + ccwSlots.bar
+    expect(cwTotal).toBe(15)
+    expect(ccwTotal).toBe(15)
   })
 
   test('GNU returns bar entry hints when counterclockwise player has checker on bar', async () => {
@@ -230,7 +230,8 @@ describe('GNU Position ID bar encoding', () => {
 
     const pid = exportToGnuPositionId(game)
     const dice: [number, number] = [4, 3]
-    const hints = await GnuBgHints.getHintsFromPositionId(pid, dice)
+    // Pass activePlayerDirection='counterclockwise' because black (CCW) is on roll
+    const hints = await GnuBgHints.getHintsFromPositionId(pid, dice, 5, 'counterclockwise', 'black')
 
     expect(hints).toBeTruthy()
     expect(hints!.length).toBeGreaterThan(0)
@@ -267,7 +268,8 @@ describe('GNU Position ID bar encoding', () => {
 
     const pid = exportToGnuPositionId(game)
     const dice: [number, number] = [4, 3]
-    const hints = await GnuBgHints.getHintsFromPositionId(pid, dice)
+    // Pass activePlayerDirection='clockwise' because white (CW) is on roll
+    const hints = await GnuBgHints.getHintsFromPositionId(pid, dice, 5, 'clockwise', 'white')
 
     expect(hints).toBeTruthy()
     expect(hints!.length).toBeGreaterThan(0)

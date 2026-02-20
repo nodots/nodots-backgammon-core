@@ -2,7 +2,6 @@ import {
   BackgammonBoard,
   BackgammonColor,
   BackgammonGame,
-  BackgammonGameMoving,
   BackgammonPlayer,
 } from '@nodots-llc/backgammon-types'
 import { logger } from '../utils/logger'
@@ -10,77 +9,6 @@ import { logger } from '../utils/logger'
 // GNU BG base64 alphabet
 const GNU_BASE64 =
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-
-function getPlayerAndOpponent(game: BackgammonGame): {
-  playerOnRoll: BackgammonPlayer
-  opponent: BackgammonPlayer
-} {
-  let playerOnRoll: BackgammonPlayer | undefined
-
-  // EXHAUSTIVE switch on BackgammonGameStateKind for player determination
-  switch (game.stateKind) {
-    case 'moving':
-      playerOnRoll = (game as BackgammonGameMoving).activePlayer
-      break
-
-    case 'rolled-for-start':
-      // In rolled-for-start, activePlayer indicates who won the roll and will be the first player on roll.
-      // This state is just before the first actual turn where checkers move.
-      // GNU Pos ID usually represents a position where someone is about to move checkers.
-      // Use the activePlayer property which exists in rolled-for-start state
-      playerOnRoll = game.activePlayer
-      break
-
-    case 'rolling-for-start':
-      // In rolling-for-start, no active player is determined yet, but we can still calculate GNU Position ID
-      // For starting position, conventionally use white as player on roll (standard GNU convention)
-      playerOnRoll =
-        game.players.find((p) => p.color === 'white') ?? game.players[0]
-      logger.info(
-        `Using ${playerOnRoll?.color} as player on roll for rolling-for-start state`
-      )
-      break
-
-    case 'rolling':
-      // Player is about to roll dice - use the active player
-      playerOnRoll = game.activePlayer
-      break
-
-    case 'doubled':
-      // Double offered - use the active player (the one who offered the double)
-      playerOnRoll = game.activePlayer
-      break
-
-    case 'moved':
-      // Player has completed moves but not confirmed turn - use the active player
-      playerOnRoll = game.activePlayer
-      break
-
-    case 'completed':
-      // Game is completed - use the last active player (from winner's perspective)
-      // If we have a winner, use them; otherwise just use the first player
-      const completedGame = game as BackgammonGame & {
-        winner?: BackgammonPlayer
-      }
-      if (completedGame.winner) {
-        playerOnRoll = game.players.find(
-          (p) => p.id === completedGame.winner?.id
-        )
-      }
-      playerOnRoll ??= game.players[0]
-      break
-  }
-
-  if (!playerOnRoll) {
-    throw new Error('Could not determine player on roll.')
-  }
-
-  const opponent = game.players.find((p) => p.id !== playerOnRoll.id)
-  if (!opponent) {
-    throw new Error('Opponent not found')
-  }
-  return { playerOnRoll, opponent }
-}
 
 // Helper to get checker count on a specific point for a given player
 // GOLDEN RULE: Always look up points by position[direction], never by array index
@@ -110,51 +38,64 @@ function getCheckersOnBar(
 
 export function exportToGnuPositionId(game: BackgammonGame): string {
   const { board } = game
-  const { playerOnRoll, opponent } = getPlayerAndOpponent(game)
 
-  // Diagnostic logging to trace position ID encoding
-  logger.debug('[GnuPositionId] Encoding position', {
+  // Canonical encoding: clockwise player always in TanBoard[0] (X),
+  // counterclockwise player always in TanBoard[1] (O).
+  // getHintsFromPositionId expects this layout and handles the
+  // on-roll swap internally based on activePlayerDirection.
+  const clockwisePlayer = game.players.find(
+    (p) => p.direction === 'clockwise'
+  )
+  const counterClockwisePlayer = game.players.find(
+    (p) => p.direction === 'counterclockwise'
+  )
+
+  if (!clockwisePlayer || !counterClockwisePlayer) {
+    throw new Error(
+      'Could not determine clockwise/counterclockwise players for position encoding'
+    )
+  }
+
+  logger.debug('[GnuPositionId] Encoding position (canonical)', {
     gameStateKind: game.stateKind,
     activePlayerColor: game.activePlayer?.color,
     activePlayerDirection: (game.activePlayer as any)?.direction,
-    playerOnRollColor: playerOnRoll.color,
-    playerOnRollDirection: playerOnRoll.direction,
-    opponentColor: opponent.color,
-    opponentDirection: opponent.direction,
+    clockwiseColor: clockwisePlayer.color,
+    counterClockwiseColor: counterClockwisePlayer.color,
   })
 
   let bitString = ''
 
-  // 1. Player on roll's points (GNU positions 1-24 from player's perspective)
+  // 1. Clockwise player's points — TanBoard[0] (X) in canonical encoding
   // GOLDEN RULE: Use position[direction] to find points, not array indices
   for (let gnuPos = 1; gnuPos <= 24; gnuPos++) {
     const checkers = getCheckersOnPointByPosition(
       board,
-      playerOnRoll.color,
-      playerOnRoll.direction,
+      clockwisePlayer.color,
+      clockwisePlayer.direction,
       gnuPos
     )
     bitString += '1'.repeat(checkers)
     bitString += '0'
   }
-  const playerBarCheckers = getCheckersOnBar(board, playerOnRoll)
-  bitString += '1'.repeat(playerBarCheckers)
+  const cwBarCheckers = getCheckersOnBar(board, clockwisePlayer)
+  bitString += '1'.repeat(cwBarCheckers)
   bitString += '0'
 
-  // 2. Opponent's points (GNU positions 1-24 from opponent's perspective)
+  // 2. Counterclockwise player's points — TanBoard[1] (O) in canonical encoding
   // GOLDEN RULE: Use position[direction] to find points, not array indices
   for (let gnuPos = 1; gnuPos <= 24; gnuPos++) {
     const checkers = getCheckersOnPointByPosition(
       board,
-      opponent.color,
-      opponent.direction,
+      counterClockwisePlayer.color,
+      counterClockwisePlayer.direction,
       gnuPos
     )
     bitString += '1'.repeat(checkers)
     bitString += '0'
   }
-  const opponentBarCheckers = getCheckersOnBar(board, opponent)
-  bitString += '1'.repeat(opponentBarCheckers)
+  const ccwBarCheckers = getCheckersOnBar(board, counterClockwisePlayer)
+  bitString += '1'.repeat(ccwBarCheckers)
   bitString += '0'
 
   // 3. Pad to 80 bits
