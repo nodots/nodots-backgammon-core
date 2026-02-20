@@ -1392,20 +1392,8 @@ export class Game {
       )
     }
 
-    // Push a pre-move snapshot
-    try {
-      const ap: any = (game as any).activePlay
-      if (ap) {
-        if (!ap.undo) ap.undo = { frames: [] }
-        const snapshot =
-          typeof structuredClone === 'function'
-            ? structuredClone(game)
-            : (JSON.parse(JSON.stringify(game)) as any)
-        ap.undo.frames.push(snapshot)
-      }
-    } catch (e) {
-      logger?.warn?.('Failed to push undo snapshot before move', e)
-    }
+    // Note: undo snapshot is pushed inside Game.move() — do NOT push here
+    // to avoid double-snapshot per move (see issue #95)
 
     const gameAfterMove = Game.move(game, checkerInOrigin.id, undefined, options)
 
