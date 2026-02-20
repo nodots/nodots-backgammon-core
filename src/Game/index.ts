@@ -1245,20 +1245,20 @@ export class Game {
     const finalMoves = Array.from(updatedActivePlay.moves || [])
     if (process.env.NODOTS_DEBUG_DICE === '1') {
       // Optional dice/move state debug
-      console.log('🎲 [DICE DEBUG] Game.move result:')
-      console.log(
+      debug('🎲 [DICE DEBUG] Game.move result:')
+      debug(
         '  game.activePlayer.dice:',
         game.activePlayer.dice?.currentRoll
       )
-      console.log(
+      debug(
         '  finalActivePlayer.dice:',
         finalActivePlayer?.dice?.currentRoll
       )
-      console.log(
+      debug(
         '  finalMoves.dieValues:',
         finalMoves.map((m: any) => m.dieValue)
       )
-      console.log(
+      debug(
         '  finalMoves.states:',
         finalMoves.map((m: any) => m.stateKind)
       )
@@ -1354,15 +1354,14 @@ export class Game {
    */
   public static executeAndRecalculate = function executeAndRecalculate(
     game: BackgammonGameMoving,
-    originId: string
+    originId: string,
+    moveOptions?: { desiredDestinationId?: string; expectedDieValue?: number }
   ): BackgammonGameMoving | BackgammonGame {
-    // First, execute the move using the existing move method
-    console.log(
-      '[DEBUG] Game.executeAndRecalculate: About to execute move from origin:',
+    debug(
+      'Game.executeAndRecalculate: About to execute move from origin:',
       originId
     )
 
-    // DEBUG: Check if game is defined and has required properties
     if (!game) {
       console.error('[DEBUG] CRITICAL: game parameter is undefined/null!')
       throw new Error('Game parameter is undefined - cannot execute move')
@@ -1376,6 +1375,23 @@ export class Game {
         hasActivePlayer: !!game.activePlayer,
       })
       throw new Error('Game.board is undefined - cannot execute move')
+    }
+
+    // When expectedDieValue is specified, reorder ready moves so the
+    // matching die comes first. planMoveExecution picks firstDieValue
+    // from readyMoves[0], so placing the desired die first ensures it
+    // gets consumed instead of the other die.
+    if (moveOptions?.expectedDieValue != null && game.activePlay) {
+      const ap = game.activePlay as any
+      if (Array.isArray(ap.moves)) {
+        const expectedDie = moveOptions.expectedDieValue
+        const reordered = [...ap.moves].sort((a: any, b: any) => {
+          const aReady = a.stateKind === 'ready' && a.dieValue === expectedDie ? 0 : 1
+          const bReady = b.stateKind === 'ready' && b.dieValue === expectedDie ? 0 : 1
+          return aReady - bReady
+        })
+        ap.moves = reordered
+      }
     }
 
     // Find a checker in the specified origin container to execute the move
@@ -1408,8 +1424,8 @@ export class Game {
 
     const gameAfterMove = Game.move(game, checkerInOrigin.id)
 
-    console.log(
-      '[DEBUG] Game.executeAndRecalculate: Move executed, game state:',
+    debug(
+      'Game.executeAndRecalculate: Move executed, game state:',
       {
         stateKind: gameAfterMove.stateKind,
         hasActivePlay: !!(gameAfterMove as any).activePlay,
@@ -1426,7 +1442,7 @@ export class Game {
 
     // Check if the game is already in 'moved' state after the move
     if (gameAfterMove.stateKind === 'moved') {
-      console.log('[DEBUG] 🎯 Game is already in moved state, returning as-is')
+      debug('Game is already in moved state, returning as-is')
       return gameAfterMove
     }
 
@@ -1441,13 +1457,13 @@ export class Game {
       movingGame.activePlayer.isRobot &&
       gameAfterTurnCheck.stateKind === 'moved'
     ) {
-      console.log('[DEBUG] 🤖 Robot turn completed, auto-confirming turn')
+      debug('Robot turn completed, auto-confirming turn')
       return Game.confirmTurn(gameAfterTurnCheck as BackgammonGameMoved)
     }
 
     // Return the game (either still 'moving' or transitioned to 'moved')
     if (gameAfterTurnCheck.stateKind === 'moved') {
-      console.log('[DEBUG] Turn completed, transitioned to moved state')
+      debug('Turn completed, transitioned to moved state')
       return gameAfterTurnCheck
     }
 
@@ -1455,8 +1471,8 @@ export class Game {
     // for all remaining ready moves thanks to the fix in Play.move()
     // The movingGame already has the updated board state and refreshed activePlay
 
-    console.log(
-      '[DEBUG] Game.executeAndRecalculate: Move executed successfully, returning updated game with fresh activePlay'
+    debug(
+      'Game.executeAndRecalculate: Move executed successfully, returning updated game with fresh activePlay'
     )
 
     // Turn continues, return the game with fresh board state and updated activePlay
@@ -1680,7 +1696,7 @@ export class Game {
   ): BackgammonGame {
     // Only handle games in 'moved' state with robot active player
     if (game.stateKind === 'moved' && game.activePlayer.isRobot) {
-      console.log('[DEBUG] 🤖 Robot in moved state, auto-confirming turn')
+      debug('Robot in moved state, auto-confirming turn')
       return Game.confirmTurn(game as BackgammonGameMoved)
     }
     return game
@@ -1991,6 +2007,68 @@ export class Game {
       stateKind: 'completed',
       winner: winner.id,
       players: updatedPlayers,
+    } as BackgammonGameCompleted)
+  }
+
+  public static resign(
+    game: BackgammonGame,
+    resigningPlayer: BackgammonPlayer,
+    points: 1 | 2 | 3 = 1
+  ): BackgammonGameCompleted {
+    if (game.stateKind === 'completed') {
+      throw new Error('Cannot resign a completed game')
+    }
+
+    if (game.settings?.allowResign === false) {
+      throw new Error('Resignation is not allowed for this game')
+    }
+
+    const resigningId = resigningPlayer.id
+    const opponent = game.players.find((p) => p.id !== resigningId)
+    if (!opponent) {
+      throw new Error('Opponent not found for resignation')
+    }
+
+    const winner = {
+      ...opponent,
+      stateKind: 'winner',
+    } as BackgammonPlayerWinner
+
+    const updatedPlayers = game.players.map((p) =>
+      p.id === winner.id ? winner : p
+    ) as BackgammonPlayers
+
+    const cubeValue = game.cube?.value ?? 1
+    let outcome: 'normal' | 'gammon' | 'backgammon' = 'normal'
+    let basePoints = 1
+    if (points === 2) {
+      outcome = 'gammon'
+      basePoints = 2
+    } else if (points === 3) {
+      outcome = 'backgammon'
+      basePoints = 3
+    }
+
+    if (game.rules?.useJacobyRule && game.cube?.value === undefined && outcome !== 'normal') {
+      outcome = 'normal'
+      basePoints = 1
+    }
+
+    const finalScore = basePoints * cubeValue
+
+    logger.info(
+      `[Game] Resignation - Winner: ${winner.id}, Final score: ${finalScore} (${basePoints}x base * ${cubeValue} cube)`
+    )
+
+    return Game.incrementStateVersion({
+      ...game,
+      stateKind: 'completed',
+      winner: winner.id,
+      outcome,
+      basePoints,
+      finalScore,
+      players: updatedPlayers,
+      endTime: new Date(),
     } as BackgammonGameCompleted)
   }
 
