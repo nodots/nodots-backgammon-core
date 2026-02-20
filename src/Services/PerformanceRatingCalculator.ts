@@ -173,31 +173,40 @@ export class PerformanceRatingCalculator {
         }
         playerStats[head.player].totalMoves++
 
-        // Turn actions are grouped by contiguous entries for the same player; dice must come from game state
+        // Group contiguous actions for the same player into one turn.
+        // Turn boundaries are detected by:
+        // 1. Dice change (sorted to ignore order swaps like [3,6] vs [6,3])
+        // 2. Move count exceeds what the dice allow (non-doubles: 2, doubles: 4)
+        const headDiceKey = this.sortedDiceKey(head.dice)
+        const isDoubles = Array.isArray(head.dice) && head.dice.length >= 2 && head.dice[0] === head.dice[1]
+        const maxMovesForDice = isDoubles ? 4 : 2
         let j = i
-        while (
-          j + 1 < moveActions.length &&
-          moveActions[j + 1].player === head.player
-        ) {
+        while (j + 1 < moveActions.length && moveActions[j + 1].player === head.player) {
+          const nextDiceKey = this.sortedDiceKey(moveActions[j + 1].dice)
+          if (headDiceKey !== null && nextDiceKey !== null && headDiceKey !== nextDiceKey) {
+            break
+          }
+          // A single turn can't have more moves than the dice allow
+          if (j + 1 - start >= maxMovesForDice) {
+            break
+          }
           j += 1
         }
 
+        // Resolve dice for this turn. The dice come from extractStatesAndMoves
+        // which uses lastDiceByPlayer (populated from roll-dice history actions).
+        // With the engine fix for rolling->moved transitions, every turn has a
+        // properly recorded roll-dice action.
         let diceTuple: [number, number]
-        // Use dice passed from moveActions first (extracted from history snapshot)
-        // Fall back to resolving from game state only if not available
         if (Array.isArray(head.dice) && head.dice.length >= 2) {
           diceTuple = [head.dice[0], head.dice[1]]
         } else {
           try {
             diceTuple = this.resolveDiceOrThrow(startState, head.player)
           } catch (err) {
-            logger.error(
+            throw new Error(
               `PR: missing dice for player ${head.player} at turn ${turnIndex + 1}: ${String(err)}`
             )
-            // Skip this turn; advance the window
-            i = j + 1
-            turnIndex += 1
-            continue
           }
         }
 
@@ -468,26 +477,27 @@ export class PerformanceRatingCalculator {
         activePlayerDirection: executingPlayer.direction,
       })
 
-      // Prefer board-based (with active player context) then PID fallback, using executed die order
+      // Use snapshot dice directly. Do NOT use inferDiceFromActions -- the dieValue
+      // fields in action payloads are corrupt in some game histories (see issue #275).
+      // The snapshot dice are the authoritative source, proven reliable by diagnostics.
       let hints: MoveHint[] = []
-      const inferred = this.inferDiceFromActions(actions, dice)
       const posId = exportToGnuPositionId(gameState)
-      try { hints = await ai.gnubgHints.getMoveHints({ ...request, dice: inferred }, 64) } catch {}
+      const reversed: [number, number] = [dice[1], dice[0]]
+      try { hints = await ai.gnubgHints.getMoveHints({ ...request, dice }, 64) } catch {}
       if (!Array.isArray(hints) || hints.length === 0) {
-        try { hints = await ai.gnubgHints.getMoveHints({ ...request, dice }, 64) } catch {}
+        try { hints = await ai.gnubgHints.getMoveHints({ ...request, dice: reversed }, 64) } catch {}
       }
       if (!Array.isArray(hints) || hints.length === 0) {
         try {
           if (typeof ai.gnubgHints.getHintsFromPositionId === 'function') {
-            hints = await ai.gnubgHints.getHintsFromPositionId(posId, inferred, 64)
+            hints = await ai.gnubgHints.getHintsFromPositionId(posId, dice, 64)
           }
         } catch {}
       }
       if (!Array.isArray(hints) || hints.length === 0) {
         try {
           if (typeof ai.gnubgHints.getHintsFromPositionId === 'function') {
-            const rev: [number, number] = [inferred?.[1] ?? 0, inferred?.[0] ?? 0]
-            hints = await ai.gnubgHints.getHintsFromPositionId(posId, rev, 64)
+            hints = await ai.gnubgHints.getHintsFromPositionId(posId, reversed, 64)
           }
         } catch {}
       }
@@ -511,7 +521,7 @@ export class PerformanceRatingCalculator {
       // Lightweight secondary pass: try reversed dice order if ordered match fails
       if (!matched) {
         try {
-          const swapped: [number, number] = [inferred?.[1] ?? 0, inferred?.[0] ?? 0]
+          const swapped: [number, number] = [dice[1], dice[0]]
           const altHints = await ai.gnubgHints.getMoveHints({ ...request, dice: swapped }, 64)
           if (Array.isArray(altHints) && altHints.length > 0) {
             altHintsCache = altHints
@@ -979,19 +989,11 @@ export class PerformanceRatingCalculator {
     return idx >= 0 ? idx + 1 : null
   }
 
-  private inferDiceFromActions(
-    actions: Array<{ player: string; move: any }>,
-    fallback: [number, number],
-  ): [number, number] {
-    const vals: number[] = []
-    for (const a of actions) {
-      const payload = a.move?.makeMove ?? a.move
-      const v = Number(payload?.dieValue)
-      if (Number.isFinite(v) && v >= 1 && v <= 6) vals.push(v)
-    }
-    if (vals.length >= 2) return [vals[0] as number, vals[1] as number]
-    if (vals.length === 1) return [vals[0] as number, fallback?.[0] ?? vals[0] as number]
-    return fallback
+  // Produce a canonical string key for a dice pair, sorted to treat [3,6] and [6,3] as identical.
+  // Returns null when dice data is unavailable so callers can fall back to player-only grouping.
+  private sortedDiceKey(dice?: number[]): string | null {
+    if (!Array.isArray(dice) || dice.length < 2) return null
+    return dice[0] <= dice[1] ? `${dice[0]},${dice[1]}` : `${dice[1]},${dice[0]}`
   }
 
   private formatHint(hint: MoveHint): string {
