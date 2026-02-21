@@ -1,4 +1,4 @@
-import { BackgammonGame, BackgammonMoveDirection } from '@nodots-llc/backgammon-types'
+import { BackgammonColor, BackgammonGame, BackgammonMoveDirection } from '@nodots-llc/backgammon-types'
 import type { MoveHint, MoveStep } from '@nodots-llc/gnubg-hints'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
 import { logger } from '../utils/logger'
@@ -14,6 +14,8 @@ export interface AiModuleInterface {
       positionId: string,
       dice: [number, number],
       maxHints?: number,
+      activePlayerDirection?: BackgammonMoveDirection,
+      activePlayerColor?: BackgammonColor,
     ) => Promise<MoveHint[]>
   }
   buildHintContextFromGame: (game: BackgammonGame, overrides?: any) => {
@@ -361,7 +363,7 @@ export class PerformanceRatingCalculator {
       if (!Array.isArray(hints) || hints.length === 0) {
         try {
           if (typeof ai.gnubgHints.getHintsFromPositionId === 'function') {
-            hints = await ai.gnubgHints.getHintsFromPositionId(posId, dice, 64)
+            hints = await ai.gnubgHints.getHintsFromPositionId(posId, dice, 64, executingPlayer.direction, executingPlayer.color)
           }
         } catch {}
       }
@@ -369,7 +371,7 @@ export class PerformanceRatingCalculator {
         try {
           if (typeof ai.gnubgHints.getHintsFromPositionId === 'function') {
             const rev: [number, number] = [dice?.[1] ?? 0, dice?.[0] ?? 0]
-            hints = await ai.gnubgHints.getHintsFromPositionId(posId, rev, 64)
+            hints = await ai.gnubgHints.getHintsFromPositionId(posId, rev, 64, executingPlayer.direction, executingPlayer.color)
           }
         } catch {}
       }
@@ -490,14 +492,14 @@ export class PerformanceRatingCalculator {
       if (!Array.isArray(hints) || hints.length === 0) {
         try {
           if (typeof ai.gnubgHints.getHintsFromPositionId === 'function') {
-            hints = await ai.gnubgHints.getHintsFromPositionId(posId, dice, 64)
+            hints = await ai.gnubgHints.getHintsFromPositionId(posId, dice, 64, executingPlayer.direction, executingPlayer.color)
           }
         } catch {}
       }
       if (!Array.isArray(hints) || hints.length === 0) {
         try {
           if (typeof ai.gnubgHints.getHintsFromPositionId === 'function') {
-            hints = await ai.gnubgHints.getHintsFromPositionId(posId, reversed, 64)
+            hints = await ai.gnubgHints.getHintsFromPositionId(posId, reversed, 64, executingPlayer.direction, executingPlayer.color)
           }
         } catch {}
       }
