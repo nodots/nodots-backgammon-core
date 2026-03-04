@@ -2,3 +2,4 @@
 // MoveComparator excluded from build for same reason.
 // Both are available via direct path import when needed (e.g., API's pr.ts).
 export * from './PositionReconstructor'
+export * from './EloCalculator'
