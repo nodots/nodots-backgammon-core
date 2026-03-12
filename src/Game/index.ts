@@ -70,7 +70,7 @@ export class Game {
    */
   get gnuPositionId(): string {
     try {
-      return exportToGnuPositionId(this as any)
+      return exportToGnuPositionId(this as unknown as BackgammonGame) // as unknown as BackgammonGame: Game class instance conforms to BackgammonGame shape but doesn't extend it
     } catch (error) {
       logger.warn('Failed to generate gnuPositionId:', error)
       return ''
@@ -414,7 +414,7 @@ export class Game {
       | BackgammonGameRolledForStart
       | BackgammonGameRolling
       | BackgammonGameDoubled
-  ): BackgammonGameMoving {
+  ): BackgammonGameMoving | BackgammonGameMoved {
     switch (game.stateKind) {
       case 'rolled-for-start': {
         const { players, activeColor } = game
@@ -483,7 +483,7 @@ export class Game {
             inactivePlayer: unrolledPlayer,
             activePlay,
             board: game.board, // Board unchanged
-          } as any) // Cast to avoid type issues since we're returning moved instead of moving
+          } as BackgammonGameMoved) // as BackgammonGameMoved: no legal moves forces immediate transition to moved
         } else if (allMovesCompleted && actualMoveCount !== expectedMoveCount) {
           // BUG DETECTED: Moves are completed but count doesn't match expected dice
           debug(
@@ -518,14 +518,14 @@ export class Game {
               normalized.push({
                 id: generateId(),
                 player: movingPlayer,
-                dieValue: dieValue as BackgammonDieValue,
+                dieValue: dieValue as BackgammonDieValue, // as BackgammonDieValue: numeric die value from Map key
                 stateKind: 'completed',
                 moveKind: 'no-move',
                 possibleMoves: [],
                 origin: undefined,
                 destination: undefined,
-                isHit: false,
-              } as any)
+                isHit: false as const,
+              })
             }
           }
 
@@ -535,7 +535,7 @@ export class Game {
 
         // Sanitize moves: if any ready move has no possible moves on the current board,
         // convert it to a completed no-move to prevent stuck states
-        for (const move of activePlay.moves) {
+        const sanitizedMoves = activePlay.moves.map((move) => {
           if (move.stateKind === 'ready') {
             const fresh = Board.getPossibleMoves(
               game.board,
@@ -543,17 +543,22 @@ export class Game {
               move.dieValue
             ) as BackgammonMoveSkeleton[]
             if (!fresh || fresh.length === 0) {
-              ;(move as any).stateKind = 'completed'
-              ;(move as any).moveKind = 'no-move'
-              ;(move as any).possibleMoves = []
-              ;(move as any).origin = undefined
-              ;(move as any).destination = undefined
-              ;(move as any).isHit = false
+              return {
+                ...move,
+                stateKind: 'completed' as const,
+                moveKind: 'no-move' as const,
+                possibleMoves: [],
+                origin: undefined,
+                destination: undefined,
+                isHit: false as const,
+              }
             } else {
-              ;(move as any).possibleMoves = fresh
+              return { ...move, possibleMoves: fresh }
             }
           }
-        }
+          return move
+        })
+        activePlay = { ...activePlay, moves: sanitizedMoves }
 
         // Update the board with movable checkers
         let movableContainerIds: string[] = []
@@ -565,8 +570,7 @@ export class Game {
         if (hasOwnOnBar) {
           movableContainerIds = [activeBar.id]
         } else {
-          const movesArray = activePlay.moves
-          for (const move of movesArray) {
+          for (const move of sanitizedMoves) {
             switch (move.stateKind) {
               case 'ready': {
                 if (move.possibleMoves) {
@@ -626,9 +630,10 @@ export class Game {
         const playerRolled = Player.roll({
           ...activePlayerDoubled,
           stateKind: 'rolling',
-        } as any)
+          dice: { ...activePlayerDoubled.dice, stateKind: 'rolling' as const },
+        } as unknown as BackgammonPlayerRolling) // as unknown as BackgammonPlayerRolling: transitioning doubled player to rolling state requires dice stateKind change
         const playerMoving = Player.toMoving(playerRolled)
-        const activePlay = Play.initialize(board, playerMoving)
+        let activePlay = Play.initialize(board, playerMoving)
 
         // Check if all moves were auto-completed (no legal moves available)
         const allMovesCompleted = activePlay.moves.every(
@@ -645,7 +650,7 @@ export class Game {
             inactivePlayer,
             activePlay,
             board,
-          } as any)
+          } as BackgammonGameMoved) // as BackgammonGameMoved: no legal moves forces immediate transition to moved
         }
 
         const movingPlay = {
@@ -656,7 +661,7 @@ export class Game {
 
         // Sanitize moves: if any ready move has no possible moves on the current board,
         // convert it to a completed no-move to prevent stuck states
-        for (const move of activePlay.moves) {
+        const sanitizedMoves2 = activePlay.moves.map((move) => {
           if (move.stateKind === 'ready') {
             const fresh = Board.getPossibleMoves(
               board,
@@ -664,17 +669,22 @@ export class Game {
               move.dieValue
             ) as BackgammonMoveSkeleton[]
             if (!fresh || fresh.length === 0) {
-              ;(move as any).stateKind = 'completed'
-              ;(move as any).moveKind = 'no-move'
-              ;(move as any).possibleMoves = []
-              ;(move as any).origin = undefined
-              ;(move as any).destination = undefined
-              ;(move as any).isHit = false
+              return {
+                ...move,
+                stateKind: 'completed' as const,
+                moveKind: 'no-move' as const,
+                possibleMoves: [],
+                origin: undefined,
+                destination: undefined,
+                isHit: false as const,
+              }
             } else {
-              ;(move as any).possibleMoves = fresh
+              return { ...move, possibleMoves: fresh }
             }
           }
-        }
+          return move
+        })
+        activePlay = { ...activePlay, moves: sanitizedMoves2 }
 
         // Update the board with movable checkers
         let movableContainerIds2: string[] = []
@@ -685,8 +695,7 @@ export class Game {
         if (hasOwnOnBar2) {
           movableContainerIds2 = [activeBar2.id]
         } else {
-          const movesArray = activePlay.moves
-          for (const move of movesArray) {
+          for (const move of sanitizedMoves2) {
             switch (move.stateKind) {
               case 'ready':
                 if (move.possibleMoves) {
@@ -763,7 +772,7 @@ export class Game {
             inactivePlayer,
             activePlay,
             board,
-          } as any)
+          } as BackgammonGameMoved) // as BackgammonGameMoved: no legal moves forces immediate transition to moved
         }
 
         const movingPlay = {
@@ -829,7 +838,7 @@ export class Game {
       default:
         // TypeScript exhaustiveness check - should never reach here
         const _exhaustiveCheck: never = game
-        throw new Error(`Unexpected game state: ${(game as any).stateKind}`)
+        throw new Error(`Unexpected game state: ${(game as unknown as { stateKind: string }).stateKind}`) // runtime guard for unexpected state values
     }
   }
 
@@ -846,11 +855,11 @@ export class Game {
         // Only allowed in moving state if all moves are undone (all moves in 'ready' state)
         const allMovesUndone = game.activePlay?.moves
           ? game.activePlay.moves.every(
-              (move: any) => move.stateKind === 'ready'
+              (move) => move.stateKind === 'ready'
             )
           : false
 
-        const undoStackEmpty = !((game.activePlay as any)?.undo?.frames?.length > 0)
+        const undoStackEmpty = !(game.activePlay?.undo?.frames?.length && game.activePlay.undo.frames.length > 0)
         if (!(allMovesUndone && undoStackEmpty)) {
           throw new Error('Cannot switch dice in moving state unless all moves are undone')
         }
@@ -859,7 +868,7 @@ export class Game {
       default:
         // This should never happen given our union type, but include for completeness
         throw new Error(
-          `Cannot switch dice from ${(game as any).stateKind} state`
+          `Cannot switch dice from ${(game as unknown as { stateKind: string }).stateKind} state`
         )
     }
 
@@ -958,13 +967,13 @@ export class Game {
   ): BackgammonGameMoving | BackgammonGameMoved | BackgammonGameCompleted {
     // Push a pre-move snapshot to the turn-local undo stack
     try {
-      const ap: any = (game as any).activePlay
+      const ap = game.activePlay
       if (ap) {
         if (!ap.undo) ap.undo = { frames: [] }
         const snapshot =
           typeof structuredClone === 'function'
             ? structuredClone(game)
-            : (JSON.parse(JSON.stringify(game)) as any)
+            : JSON.parse(JSON.stringify(game))
         ap.undo.frames.push(snapshot)
       }
     } catch (e) {
@@ -982,7 +991,7 @@ export class Game {
         break
       default:
         throw new Error(
-          `Cannot move from ${(game as any).stateKind} state. Must be in 'moving' state.`
+          `Cannot move from ${(game as unknown as { stateKind: string }).stateKind} state. Must be in 'moving' state.`
         )
     }
     let { activePlay, board } = game
@@ -1023,74 +1032,54 @@ export class Game {
         : game.activePlayer
 
     // Always update activePlay from playResult (fallback to activePlay if undefined)
-    const updatedActivePlay = (playResult as any).play || activePlay
+    let updatedActivePlay = playResult.play || activePlay
 
     // Update the board with movable checkers based on remaining moves
     // IMPORTANT: After a move, we need to recalculate possible moves for remaining ready moves
     // BAR-FIRST RULE: If active player has checkers on the bar, only the bar is movable
     let movableContainerIds: string[] = []
-    const playForTypes = updatedActivePlay as BackgammonPlayMoving
-    const playerDir: 'clockwise' | 'counterclockwise' = playForTypes.player
-      .direction as any
+    const playForTypes = updatedActivePlay as BackgammonPlayMoving // as BackgammonPlayMoving: narrowing play union to moving state
+    const playerDir = playForTypes.player.direction
     const activeBar = board.bar[playerDir]
     const hasOwnOnBar = activeBar.checkers.some(
       (c: BackgammonChecker) => c.color === playForTypes.player.color
     )
     if (hasOwnOnBar) {
       movableContainerIds = [activeBar.id]
-    } else {
-      if (updatedActivePlay.moves) {
-        const movesArray = updatedActivePlay.moves as any[]
-        for (const move of movesArray) {
-          switch (move.stateKind) {
-            case 'ready': {
-              // Recalculate fresh possible moves for this die value on the current board state
-              const freshPossibleMoves = Board.getPossibleMoves(
-                board,
-                updatedActivePlay.player,
-                move.dieValue
-              ) as BackgammonMoveSkeleton[]
+    } else if (updatedActivePlay.moves) {
+      // Recalculate possible moves for remaining ready moves and collect movable containers
+      const recalculatedMoves = updatedActivePlay.moves.map((move) => {
+        if (move.stateKind !== 'ready') return move
+        const freshPossibleMoves = Board.getPossibleMoves(
+          board,
+          updatedActivePlay.player,
+          move.dieValue
+        ) as BackgammonMoveSkeleton[]
 
-              // Handle case where recalculated possibleMoves is empty
-              if (!freshPossibleMoves || freshPossibleMoves.length === 0) {
-                move.stateKind = 'completed'
-                move.moveKind = 'no-move'
-                move.possibleMoves = []
-                move.origin = undefined
-                move.destination = undefined
-                move.isHit = false
-                debug(
-                  'Game.move: Converting move to no-move (no possible moves after recalculation)',
-                  {
-                    moveId: move.id,
-                    dieValue: move.dieValue,
-                    originalMoveKind: move.moveKind,
-                  }
-                )
-              } else {
-                // Update the move with fresh possible moves
-                move.possibleMoves = freshPossibleMoves
-
-                // Add origins to movable containers
-                for (const possibleMove of freshPossibleMoves) {
-                  if (
-                    possibleMove.origin &&
-                    !movableContainerIds.includes(possibleMove.origin.id)
-                  ) {
-                    movableContainerIds.push(possibleMove.origin.id)
-                  }
-                }
-              }
-              break
-            }
-            case 'completed':
-            case 'confirmed':
-            case 'in-progress':
-              // These moves don't have movable checkers
-              break
+        if (!freshPossibleMoves || freshPossibleMoves.length === 0) {
+          debug(
+            'Game.move: Converting move to no-move (no possible moves after recalculation)',
+            { moveId: move.id, dieValue: move.dieValue, originalMoveKind: move.moveKind }
+          )
+          return {
+            ...move,
+            stateKind: 'completed' as const,
+            moveKind: 'no-move' as const,
+            possibleMoves: [],
+            origin: undefined,
+            destination: undefined,
+            isHit: false as const,
           }
         }
-      }
+        // Collect movable container IDs from fresh possible moves
+        for (const possibleMove of freshPossibleMoves) {
+          if (possibleMove.origin && !movableContainerIds.includes(possibleMove.origin.id)) {
+            movableContainerIds.push(possibleMove.origin.id)
+          }
+        }
+        return { ...move, possibleMoves: freshPossibleMoves }
+      })
+      updatedActivePlay = { ...updatedActivePlay, moves: recalculatedMoves }
     }
     board = Checker.updateMovableCheckers(board, movableContainerIds)
 
@@ -1107,9 +1096,11 @@ export class Game {
     const updatedPlayers = Player.recalculatePipCounts(gameWithUpdatedBoard)
 
     // Update movedPlayer with correct pip count
-    movedPlayer =
-      (updatedPlayers.find((p) => p.id === movedPlayer.id) as any) ||
-      movedPlayer
+    const foundPlayer = updatedPlayers.find((p) => p.id === movedPlayer.id)
+    if (foundPlayer) {
+      // Merge recalculated pip counts from foundPlayer into movedPlayer
+      movedPlayer = { ...movedPlayer, pipCount: foundPlayer.pipCount }
+    }
 
     // --- WIN CONDITION CHECK ---
     // Check if the player has won (all checkers off) AFTER the move is processed
@@ -1241,7 +1232,7 @@ export class Game {
     // DICE SWITCHING DEBUG: Check what's happening to dice and moves state
     const finalActivePlayer = updatedPlayers.find(
       (p) => p.id === movedPlayer.id
-    ) as any
+    )
     const finalMoves = Array.from(updatedActivePlay.moves || [])
     if (process.env.NODOTS_DEBUG_DICE === '1') {
       // Optional dice/move state debug
@@ -1256,11 +1247,11 @@ export class Game {
       )
       debug(
         '  finalMoves.dieValues:',
-        finalMoves.map((m: any) => m.dieValue)
+        finalMoves.map((m) => m.dieValue)
       )
       debug(
         '  finalMoves.states:',
-        finalMoves.map((m: any) => m.stateKind)
+        finalMoves.map((m) => m.stateKind)
       )
     }
 
@@ -1269,9 +1260,10 @@ export class Game {
       updatedActivePlay.stateKind === 'moved' ? 'moved' : 'moving'
 
     // Set activePlayer stateKind based on activePlay stateKind
+    const resolvedPlayer = finalActivePlayer || movedPlayer
     const finalActivePlayerWithState = {
-      ...finalActivePlayer,
-      stateKind: updatedActivePlay.stateKind === 'moved' ? 'moved' : 'moving',
+      ...resolvedPlayer,
+      stateKind: updatedActivePlay.stateKind === 'moved' ? ('moved' as const) : ('moving' as const),
     }
 
     return Game.incrementStateVersion({
@@ -1316,7 +1308,7 @@ export class Game {
     if (game.stateKind !== 'moving') {
       throw new Error(
         `Cannot transition to moved from ${
-          (game as any).stateKind
+          (game as unknown as { stateKind: string }).stateKind
         } state. Must be in 'moving' state.`
       )
     }
@@ -1382,16 +1374,13 @@ export class Game {
     // from readyMoves[0], so placing the desired die first ensures it
     // gets consumed instead of the other die.
     if (options?.expectedDieValue != null && game.activePlay) {
-      const ap = game.activePlay as any
-      if (Array.isArray(ap.moves)) {
-        const expectedDie = options.expectedDieValue
-        const reordered = [...ap.moves].sort((a: any, b: any) => {
-          const aReady = a.stateKind === 'ready' && a.dieValue === expectedDie ? 0 : 1
-          const bReady = b.stateKind === 'ready' && b.dieValue === expectedDie ? 0 : 1
-          return aReady - bReady
-        })
-        ap.moves = reordered
-      }
+      const expectedDie = options.expectedDieValue
+      const reordered = [...game.activePlay.moves].sort((a, b) => {
+        const aReady = a.stateKind === 'ready' && a.dieValue === expectedDie ? 0 : 1
+        const bReady = b.stateKind === 'ready' && b.dieValue === expectedDie ? 0 : 1
+        return aReady - bReady
+      })
+      game = { ...game, activePlay: { ...game.activePlay, moves: reordered } }
     }
 
     // Find a checker in the specified origin container to execute the move
@@ -1409,13 +1398,13 @@ export class Game {
 
     // Push a pre-move snapshot
     try {
-      const ap: any = (game as any).activePlay
+      const ap = game.activePlay
       if (ap) {
         if (!ap.undo) ap.undo = { frames: [] }
         const snapshot =
           typeof structuredClone === 'function'
             ? structuredClone(game)
-            : (JSON.parse(JSON.stringify(game)) as any)
+            : JSON.parse(JSON.stringify(game))
         ap.undo.frames.push(snapshot)
       }
     } catch (e) {
@@ -1428,9 +1417,9 @@ export class Game {
       'Game.executeAndRecalculate: Move executed, game state:',
       {
         stateKind: gameAfterMove.stateKind,
-        hasActivePlay: !!(gameAfterMove as any).activePlay,
-        activePlayMoves: (gameAfterMove as any).activePlay?.moves
-          ? Array.from((gameAfterMove as any).activePlay.moves).length
+        hasActivePlay: !!gameAfterMove.activePlay,
+        activePlayMoves: gameAfterMove.activePlay?.moves
+          ? Array.from(gameAfterMove.activePlay.moves).length
           : 0,
       }
     )
@@ -1671,7 +1660,7 @@ export class Game {
     // Return game with next player's turn
     return Game.incrementStateVersion({
       ...game,
-      cube: { ...(game.cube as any), offeredThisTurnBy: undefined } as any,
+      cube: { ...game.cube, offeredThisTurnBy: undefined } as BackgammonCube, // as BackgammonCube: spread loses discriminated union narrowing
       stateKind: 'rolling',
       players: [
         newActivePlayerWithPips as BackgammonPlayerRolling,
@@ -1822,7 +1811,7 @@ export class Game {
       game.cube.stateKind !== 'offered' &&
       (!game.cube.owner || game.cube.owner.id === player.id) &&
       // Disallow repeat doubles in same turn unless Beaver is implemented
-      (game.cube as any).offeredThisTurnBy?.id !== player.id
+      game.cube.offeredThisTurnBy?.id !== player.id
     )
   }
 
@@ -1939,7 +1928,7 @@ export class Game {
           value: 64,
           offeredBy: undefined,
         },
-      } as any) // TODO: type as BackgammonGameCompleted
+      } as BackgammonGameCompleted) // as BackgammonGameCompleted: spread object doesn't satisfy discriminated union narrowing
     }
     // Transition back to 'rolling' state for the original offering player to roll
     const updatedCube = {
@@ -1954,13 +1943,13 @@ export class Game {
       ...offeringPlayer,
       stateKind: 'rolling',
       dice: Dice.initialize(offeringPlayer.color, 'rolling'),
-      rollForStartValue: (offeringPlayer as any).rollForStartValue,
+      rollForStartValue: offeringPlayer.rollForStartValue! as BackgammonDieValue, // as BackgammonDieValue: rollForStartValue is always set by game start, optional only on base type
     }
     const updatedInactivePlayer: BackgammonPlayerInactive = {
       ...player,
       stateKind: 'inactive',
       dice: Dice.initialize(player.color, 'inactive'),
-      rollForStartValue: (player as any).rollForStartValue,
+      rollForStartValue: player.rollForStartValue! as BackgammonDieValue, // as BackgammonDieValue: rollForStartValue is always set by game start, optional only on base type
     }
 
     const updatedPlayers = game.players.map((p) => {
@@ -1977,8 +1966,8 @@ export class Game {
       activePlayer: updatedActivePlayer,
       inactivePlayer: updatedInactivePlayer,
       activeColor: updatedActivePlayer.color,
-      activePlay: undefined as any,
-    } as any)
+      activePlay: undefined,
+    } as BackgammonGameRolling) // as BackgammonGameRolling: constructing rolling state from spread after double acceptance
   }
 
   public static canRefuseDouble(
@@ -2215,13 +2204,14 @@ export class Game {
     if (game.stateKind !== 'moving' && game.stateKind !== 'moved') {
       throw new Error(`Cannot undo in ${game.stateKind} state. Must be in 'moving' or 'moved'`)
     }
-    const ap: any = (game as any).activePlay
+    // After narrowing stateKind to 'moving' | 'moved', activePlay is BackgammonPlayMoving
+    const ap = game.activePlay
     if (!ap) throw new Error('No active play found for undo')
-    const frames: any[] | undefined = ap.undo?.frames
+    const frames = ap.undo?.frames
     if (!frames || frames.length === 0) throw new Error('No moves to undo for current player')
     const previous = frames.pop()
     if (!previous || previous.stateKind !== 'moving') throw new Error('Undo snapshot is invalid or not a moving state')
-    return previous as BackgammonGameMoving
+    return previous as BackgammonGameMoving // as BackgammonGameMoving: undo frame is a serialized game snapshot stored as any
   }
 
   /**
@@ -2230,9 +2220,10 @@ export class Game {
   public static canUndoActivePlay = function canUndoActivePlay(game: BackgammonGame): boolean {
     if (!game) return false
     if (game.stateKind !== 'moving' && game.stateKind !== 'moved') return false
-    const ap: any = (game as any).activePlay
+    // After narrowing stateKind to 'moving' | 'moved', activePlay is BackgammonPlayMoving
+    const ap = game.activePlay
     if (!ap || !ap.undo) return false
-    const frames: any[] | undefined = ap.undo.frames
+    const frames = ap.undo.frames
     return Array.isArray(frames) && frames.length > 0
   }
 }

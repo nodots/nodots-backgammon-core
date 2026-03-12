@@ -1,5 +1,6 @@
 import {
   BackgammonGame,
+  BackgammonGameMoved,
   BackgammonGameMoving,
   BackgammonGameRolledForStart,
   BackgammonGameRollingForStart,
@@ -39,7 +40,7 @@ export class EngineRunner {
     return Game.rollForStart(state)
   }
 
-  rollToMoving(state: BackgammonGameRolledForStart): BackgammonGameMoving {
+  rollToMoving(state: BackgammonGameRolledForStart): BackgammonGameMoving | BackgammonGameMoved {
     return Game.roll(state)
   }
 
