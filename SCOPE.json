@@ -1,0 +1,30 @@
+{
+  "feature": "chore: Eliminate `as any` casts in Game/index.ts with proper type definitions",
+  "project": "nodots-backgammon",
+  "branch": "feat/chore-eliminate-as-any-casts-in-game-index-ts-with-proper-type-definitions",
+  "createdAt": "2026-03-12",
+  "package": "",
+  "featureGroup": "",
+  "allowedPaths": [
+    "src/**",
+    "__tests__/**",
+    "test/**",
+    "docs/**"
+  ],
+  "forbiddenPaths": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "tsconfig.*.json",
+    ".github/**",
+    ".env*",
+    "jest.config.*",
+    "vite.config.*",
+    "eslint.config.*",
+    "binding.gyp",
+    "drizzle.config.ts"
+  ],
+  "dependsOn": [],
+  "blockedBy": [],
+  "estimatedScope": ""
+}
