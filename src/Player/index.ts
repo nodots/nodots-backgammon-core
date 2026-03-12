@@ -8,6 +8,7 @@ import {
   BackgammonMoveDirection,
   BackgammonDieValue,
   BackgammonMoveResult,
+  BackgammonPlayResult,
   BackgammonPlayer,
   BackgammonPlayerDoubled,
   BackgammonPlayerMoved,
@@ -279,8 +280,8 @@ export class Player {
     originId: string,
     preferredDieValue?: BackgammonDieValue,
     options?: MoveExecutionOptions
-  ): BackgammonMoveResult {
-    let moveResults: BackgammonMoveResult | undefined = undefined
+  ): BackgammonPlayResult {
+    let moveResults: BackgammonPlayResult | undefined = undefined
     const origin = Board.getCheckerContainer(board, originId)
     switch (origin.kind) {
       case 'bar': {
