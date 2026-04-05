@@ -533,12 +533,45 @@ export class Game {
           // Continue to board update below
         }
 
-        // Sanitize moves: if any ready move has no possible moves on the current board,
-        // convert it to a completed no-move to prevent stuck states
+        // Sanitize moves: if any ready move has no possible moves,
+        // convert it to a completed no-move to prevent stuck states.
+        // For bar reentry scenarios, non-reentry moves must be evaluated
+        // on a simulated board (after reentry) since getPossibleMoves
+        // only returns bar moves when checkers are on the bar.
+        const barForSanitize = game.board.bar[movingPlayer.direction]
+        const hasCheckerOnBar = barForSanitize.checkers.some(
+          (c) => c.color === movingPlayer.color
+        )
+
+        let sanitizationBoard = game.board
+        if (hasCheckerOnBar) {
+          // Simulate reentry moves to get the board state for evaluating
+          // non-reentry dice (e.g., die 4 when only die 3 can reenter)
+          const reentryMoves = activePlay.moves.filter(
+            (m) => m.stateKind === 'ready' && m.moveKind === 'reenter'
+          )
+          for (const reentryMove of reentryMoves) {
+            if (reentryMove.possibleMoves.length > 0) {
+              const firstOption = reentryMove.possibleMoves[0]
+              sanitizationBoard = Board.moveChecker(
+                sanitizationBoard,
+                firstOption.origin,
+                firstOption.destination,
+                movingPlayer.direction
+              )
+            }
+          }
+        }
+
         for (const move of activePlay.moves) {
           if (move.stateKind === 'ready') {
+            // Skip reentry moves - Play.initialize() already validated them
+            // and their possibleMoves may contain options from multiple dice.
+            // Re-evaluating with a single dieValue would strip those options.
+            if (move.moveKind === 'reenter') continue
+
             const fresh = Board.getPossibleMoves(
-              game.board,
+              sanitizationBoard,
               movingPlayer,
               move.dieValue
             ) as BackgammonMoveSkeleton[]
@@ -553,6 +586,25 @@ export class Game {
               ;(move as any).possibleMoves = fresh
             }
           }
+        }
+
+        // Re-check after sanitization: if all moves are now completed,
+        // transition to 'moved' state instead of 'moving'
+        const allCompletedAfterSanitize = activePlay.moves.every(
+          (m) => m.stateKind === 'completed'
+        )
+        if (allCompletedAfterSanitize) {
+          debug(
+            'Game.roll: All moves completed after sanitization, transitioning to moved state'
+          )
+          return Game.incrementStateVersion({
+            ...game,
+            stateKind: 'moved',
+            activePlayer: movingPlayer,
+            inactivePlayer: unrolledPlayer,
+            activePlay,
+            board: game.board,
+          } as any) // Cast: returning moved instead of moving
         }
 
         // Update the board with movable checkers
@@ -654,26 +706,73 @@ export class Game {
           player: playerMoving,
         } as BackgammonPlayMoving
 
-        // Sanitize moves: if any ready move has no possible moves on the current board,
-        // convert it to a completed no-move to prevent stuck states
-        for (const move of activePlay.moves) {
-          if (move.stateKind === 'ready') {
-            const fresh = Board.getPossibleMoves(
-              board,
-              playerMoving,
-              move.dieValue
-            ) as BackgammonMoveSkeleton[]
-            if (!fresh || fresh.length === 0) {
-              ;(move as any).stateKind = 'completed'
-              ;(move as any).moveKind = 'no-move'
-              ;(move as any).possibleMoves = []
-              ;(move as any).origin = undefined
-              ;(move as any).destination = undefined
-              ;(move as any).isHit = false
-            } else {
-              ;(move as any).possibleMoves = fresh
+        // Sanitize moves: if any ready move has no possible moves,
+        // convert it to a completed no-move to prevent stuck states.
+        // For bar reentry scenarios, non-reentry moves must be evaluated
+        // on a simulated board (after reentry).
+        {
+          const barForSanitize3 = board.bar[playerMoving.direction]
+          const hasCheckerOnBar3 = barForSanitize3.checkers.some(
+            (c) => c.color === playerMoving.color
+          )
+
+          let sanitizationBoard3 = board
+          if (hasCheckerOnBar3) {
+            const reentryMoves3 = activePlay.moves.filter(
+              (m) => m.stateKind === 'ready' && m.moveKind === 'reenter'
+            )
+            for (const reentryMove of reentryMoves3) {
+              if (reentryMove.possibleMoves.length > 0) {
+                const firstOption = reentryMove.possibleMoves[0]
+                sanitizationBoard3 = Board.moveChecker(
+                  sanitizationBoard3,
+                  firstOption.origin,
+                  firstOption.destination,
+                  playerMoving.direction
+                )
+              }
             }
           }
+
+          for (const move of activePlay.moves) {
+            if (move.stateKind === 'ready') {
+              if (move.moveKind === 'reenter') continue
+              const fresh = Board.getPossibleMoves(
+                sanitizationBoard3,
+                playerMoving,
+                move.dieValue
+              ) as BackgammonMoveSkeleton[]
+              if (!fresh || fresh.length === 0) {
+                ;(move as any).stateKind = 'completed'
+                ;(move as any).moveKind = 'no-move'
+                ;(move as any).possibleMoves = []
+                ;(move as any).origin = undefined
+                ;(move as any).destination = undefined
+                ;(move as any).isHit = false
+              } else {
+                ;(move as any).possibleMoves = fresh
+              }
+            }
+          }
+        }
+
+        // Re-check after sanitization: if all moves are now completed,
+        // transition to 'moved' state instead of 'moving'
+        const allCompletedAfterSanitize = activePlay.moves.every(
+          (m) => m.stateKind === 'completed'
+        )
+        if (allCompletedAfterSanitize) {
+          debug(
+            'Game.roll: All moves completed after sanitization (doubled case), transitioning to moved state'
+          )
+          return Game.incrementStateVersion({
+            ...game,
+            stateKind: 'moved',
+            activePlayer: playerMoving,
+            inactivePlayer,
+            activePlay,
+            board,
+          } as any) // Cast: returning moved instead of moving
         }
 
         // Update the board with movable checkers
@@ -764,6 +863,76 @@ export class Game {
             activePlay,
             board,
           } as any)
+        }
+
+        // Sanitize moves: if any ready move has no possible moves,
+        // convert it to a completed no-move to prevent stuck states.
+        // For bar reentry scenarios, non-reentry moves must be evaluated
+        // on a simulated board (after reentry) since getPossibleMoves
+        // only returns bar moves when checkers are on the bar.
+        {
+          const barForSanitize2 = board.bar[playerMoving.direction]
+          const hasCheckerOnBar2 = barForSanitize2.checkers.some(
+            (c) => c.color === playerMoving.color
+          )
+
+          let sanitizationBoard2 = board
+          if (hasCheckerOnBar2) {
+            const reentryMoves2 = activePlay.moves.filter(
+              (m) => m.stateKind === 'ready' && m.moveKind === 'reenter'
+            )
+            for (const reentryMove of reentryMoves2) {
+              if (reentryMove.possibleMoves.length > 0) {
+                const firstOption = reentryMove.possibleMoves[0]
+                sanitizationBoard2 = Board.moveChecker(
+                  sanitizationBoard2,
+                  firstOption.origin,
+                  firstOption.destination,
+                  playerMoving.direction
+                )
+              }
+            }
+          }
+
+          for (const move of activePlay.moves) {
+            if (move.stateKind === 'ready') {
+              if (move.moveKind === 'reenter') continue
+              const fresh = Board.getPossibleMoves(
+                sanitizationBoard2,
+                playerMoving,
+                move.dieValue
+              ) as BackgammonMoveSkeleton[]
+              if (!fresh || fresh.length === 0) {
+                ;(move as any).stateKind = 'completed'
+                ;(move as any).moveKind = 'no-move'
+                ;(move as any).possibleMoves = []
+                ;(move as any).origin = undefined
+                ;(move as any).destination = undefined
+                ;(move as any).isHit = false
+              } else {
+                ;(move as any).possibleMoves = fresh
+              }
+            }
+          }
+        }
+
+        // Re-check after sanitization: if all moves are now completed,
+        // transition to 'moved' state instead of 'moving'
+        const allCompletedAfterSanitize = activePlay.moves.every(
+          (m) => m.stateKind === 'completed'
+        )
+        if (allCompletedAfterSanitize) {
+          debug(
+            'Game.roll: All moves completed after sanitization (rolling case), transitioning to moved state'
+          )
+          return Game.incrementStateVersion({
+            ...game,
+            stateKind: 'moved',
+            activePlayer: playerMoving,
+            inactivePlayer,
+            activePlay,
+            board,
+          } as any) // Cast: returning moved instead of moving
         }
 
         const movingPlay = {
@@ -1516,6 +1685,33 @@ export class Game {
       }
 
       const movesArray = activePlay.moves
+
+      // Auto-complete ready moves that have no possible moves on
+      // the current board. This handles the case where a player's
+      // remaining moves are blocked after executing earlier moves.
+      // Always verify against current board state since possibleMoves
+      // may be stale from before earlier moves in the turn.
+      for (const move of movesArray) {
+        if (move.stateKind === 'ready') {
+          const fresh = Board.getPossibleMoves(
+            game.board,
+            game.activePlayer,
+            move.dieValue
+          ) as BackgammonMoveSkeleton[]
+          if (!fresh || fresh.length === 0) {
+            ;(move as any).stateKind = 'completed'
+            ;(move as any).moveKind = 'no-move'
+            ;(move as any).possibleMoves = []
+            ;(move as any).origin = undefined
+            ;(move as any).destination = undefined
+            ;(move as any).isHit = false
+            logger.info(
+              `Auto-completed blocked move (die ${move.dieValue}) as no-move`
+            )
+          }
+        }
+      }
+
       const completedMoves = movesArray.filter(
         (move) => move.stateKind === 'completed'
       )

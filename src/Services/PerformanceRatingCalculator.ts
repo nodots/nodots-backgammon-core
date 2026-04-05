@@ -59,7 +59,7 @@ export interface PRMoveAnalysis {
   equityLoss: number
   errorType: 'none' | 'doubtful' | 'error' | 'blunder' | 'very_bad'
   matchedRank?: number | null
-  matchStrategy?: 'ordered' | 'unordered' | 'alt-ordered' | 'alt-unordered' | 'final-board' | 'prefix' | 'worst'
+  matchStrategy?: 'ordered' | 'unordered' | 'alt-ordered' | 'alt-unordered' | 'final-board' | 'prefix' | 'subset' | 'worst'
 }
 
 export interface PlayerPR {
@@ -289,8 +289,9 @@ export class PerformanceRatingCalculator {
             }
           }
         } catch (error) {
-          logger.error(`Failed to analyze turn ${turnIndex + 1}: ${error}`)
-          throw error
+          // Log and skip rather than killing the entire PR calculation.
+          // A single unanalyzable turn should not void the whole game.
+          logger.warn(`Skipping turn ${turnIndex + 1} (analysis failed): ${error}`)
         }
 
         i = j + 1
@@ -424,7 +425,7 @@ export class PerformanceRatingCalculator {
       let equityLoss: number
       if (typeof diffRaw === 'number' && Number.isFinite(diffRaw)) {
         // difference = actualEquity - bestEquity, so it's <= 0; take absolute value
-        equityLoss = Math.max(0, Math.min(2, Math.abs(diffRaw)))
+        equityLoss = Math.max(0, Math.min(0.5, Math.abs(diffRaw)))
       } else {
         const bestEquity = (bestHint?.evaluation?.cubefulEquity ?? bestHint?.equity) as number | null
         const actualEquity = (actualHint?.evaluation?.cubefulEquity ?? actualHint?.equity) as number | null
@@ -433,7 +434,7 @@ export class PerformanceRatingCalculator {
           logger.warn(`Unable to determine equities for move ${moveNumber}: best=${bestEquity}, actual=${actualEquity}`)
           return null
         }
-        equityLoss = Math.max(0, Math.min(2, (bestEquity as number) - (actualEquity as number)))
+        equityLoss = Math.max(0, Math.min(0.5, (bestEquity as number) - (actualEquity as number)))
       }
       const errorType = this.classifyError(equityLoss)
 
@@ -519,7 +520,7 @@ export class PerformanceRatingCalculator {
       let altHintsCache: MoveHint[] | null = null
       let bestHint = hintsUsed[0]
       let matched = this.findHintForSequence(hintsUsed, sequence)
-      let matchStrategy: 'ordered' | 'unordered' | 'alt-ordered' | 'alt-unordered' | 'final-board' | 'prefix' | 'worst' = 'ordered'
+      let matchStrategy: 'ordered' | 'unordered' | 'alt-ordered' | 'alt-unordered' | 'final-board' | 'prefix' | 'subset' | 'worst' = 'ordered'
       // Lightweight secondary pass: try reversed dice order if ordered match fails
       if (!matched) {
         try {
@@ -641,16 +642,37 @@ export class PerformanceRatingCalculator {
           matchStrategy = 'prefix'
         }
       }
+      // Subset matching for partial plays (e.g., 3 of 4 doubles when 4th blocked)
+      if (!matched) {
+        const bySubset = this.findHintForSequenceSubset(hintsUsed, sequence)
+        if (!bySubset && altHintsCache && altHintsCache.length > 0) {
+          const bySubsetAlt = this.findHintForSequenceSubset(altHintsCache, sequence)
+          if (bySubsetAlt) {
+            matched = bySubsetAlt
+            hintsUsed = altHintsCache
+            bestHint = altHintsCache[0]
+            matchStrategy = 'subset'
+          }
+        } else if (bySubset) {
+          matched = bySubset
+          matchStrategy = 'subset'
+        }
+      }
+      // Fallback: no strategy matched. Use worst hint with capped equity loss
+      // instead of throwing, so the turn is still counted rather than killing
+      // the entire PR calculation.
       if (!matched) {
         const posId = exportToGnuPositionId(gameState)
-        throw new Error(
+        logger.warn(
           `analyzeTurnWithGnuBG: no hint matched player's move sequence. ` +
           `Turn ${turnNumber}, positionId=${posId}, dice=${JSON.stringify(dice)}, ` +
           `sequence=${JSON.stringify(sequence.map(s => ({ from: s.from, to: s.to, kind: s.moveKind, fromC: s.fromContainer, toC: s.toContainer })))}, ` +
           `hintsCount=${hintsUsed.length}, ` +
-          `topHintMoves=${JSON.stringify(bestHint?.moves?.map((m: MoveStep) => ({ from: m.from, to: m.to, kind: m.moveKind, fromC: m.fromContainer, toC: m.toContainer })))}, ` +
-          `strategies_tried=[ordered,unordered,alt-ordered,alt-unordered,final-board,prefix]`
+          `strategies_tried=[ordered,unordered,alt-ordered,alt-unordered,final-board,prefix,subset]. ` +
+          `Falling back to worst hint.`
         )
+        matched = hintsUsed[hintsUsed.length - 1]
+        matchStrategy = 'worst'
       }
       const actualHint = matched
 
@@ -666,7 +688,7 @@ export class PerformanceRatingCalculator {
       let equityLoss: number
       if (typeof diffRaw === 'number' && Number.isFinite(diffRaw)) {
         // difference = actualEquity - bestEquity, so it's <= 0; take absolute value
-        equityLoss = Math.max(0, Math.min(2, Math.abs(diffRaw)))
+        equityLoss = Math.max(0, Math.min(0.5, Math.abs(diffRaw)))
       } else {
         const bestEquity = (bestHint?.evaluation?.cubefulEquity ?? bestHint?.equity) as number | null
         const actualEquity = (actualHint?.evaluation?.cubefulEquity ?? actualHint?.equity) as number | null
@@ -675,7 +697,7 @@ export class PerformanceRatingCalculator {
           logger.warn(`Unable to determine equities for turn ${turnNumber}: best=${bestEquity}, actual=${actualEquity}`)
           return null
         }
-        equityLoss = Math.max(0, Math.min(2, (bestEquity as number) - (actualEquity as number)))
+        equityLoss = Math.max(0, Math.min(0.5, (bestEquity as number) - (actualEquity as number)))
       }
       const errorType = this.classifyError(equityLoss)
 
@@ -827,6 +849,42 @@ export class PerformanceRatingCalculator {
       }
       if (ok) return hint
     }
+    return undefined
+  }
+
+  // Multiset subset matching for partial plays. When a player could only use
+  // N of M dice (e.g., 3 of 4 doubles because 4th was blocked), their N moves
+  // should be a subset of the hint's M-move play (in any order).
+  private findHintForSequenceSubset(
+    hints: MoveHint[],
+    sequence: MoveStep[],
+  ): MoveHint | undefined {
+    if (!sequence || sequence.length === 0) return undefined
+
+    const key = (s: MoveStep) => `${s.moveKind}:${s.fromContainer}:${s.from}->${s.toContainer}:${s.to}`
+
+    const need = new Map<string, number>()
+    for (const s of sequence) {
+      const k = key(s)
+      need.set(k, (need.get(k) ?? 0) + 1)
+    }
+
+    for (const hint of hints) {
+      if (!Array.isArray(hint.moves) || hint.moves.length <= sequence.length) continue
+
+      const have = new Map<string, number>()
+      for (const m of hint.moves) {
+        const k = key(m)
+        have.set(k, (have.get(k) ?? 0) + 1)
+      }
+
+      let ok = true
+      for (const [k, cnt] of need) {
+        if ((have.get(k) ?? 0) < cnt) { ok = false; break }
+      }
+      if (ok) return hint
+    }
+
     return undefined
   }
 
