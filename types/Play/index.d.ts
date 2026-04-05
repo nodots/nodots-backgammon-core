@@ -1,5 +1,9 @@
 import { BackgammonBoard, BackgammonCheckerContainer, BackgammonCube, BackgammonMoveOrigin, BackgammonMoves, BackgammonPlayerMoving, BackgammonPlayerRolling, BackgammonPlayMoving, BackgammonPlayResult, BackgammonPlayStateKind } from '@nodots-llc/backgammon-types';
 export * from '../index';
+export interface MoveExecutionOptions {
+    readonly desiredDestinationId?: string;
+    readonly expectedDieValue?: import("@nodots-llc/backgammon-types").BackgammonDieValue;
+}
 export declare class Play {
     id?: string;
     cube?: BackgammonCube;
@@ -9,8 +13,8 @@ export declare class Play {
     player: BackgammonPlayerRolling | BackgammonPlayerMoving;
     private static planMoveExecution;
     private static executePlannedMove;
-    static pureMove: (board: BackgammonBoard, play: BackgammonPlayMoving, origin: BackgammonMoveOrigin) => BackgammonPlayResult;
-    static move: (board: BackgammonBoard, play: BackgammonPlayMoving, origin: BackgammonMoveOrigin) => BackgammonPlayResult;
+    static pureMove: (board: BackgammonBoard, play: BackgammonPlayMoving, origin: BackgammonMoveOrigin, preferredDieValue?: import("@nodots-llc/backgammon-types").BackgammonDieValue | undefined, options?: MoveExecutionOptions | undefined) => BackgammonPlayResult;
+    static move: (board: BackgammonBoard, play: BackgammonPlayMoving, origin: BackgammonMoveOrigin, preferredDieValue?: import("@nodots-llc/backgammon-types").BackgammonDieValue | undefined, options?: MoveExecutionOptions | undefined) => BackgammonPlayResult;
     private static partitionMovesForBarReentry;
     private static simulateMoves;
     private static createMovesForDiceValues;

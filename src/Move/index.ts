@@ -130,7 +130,7 @@ export class Move {
         }
       }
 
-      console.log('[DEBUG] Active play found:', {
+      debug('Active play found:', {
         activePlayId: activePlay.id,
         movesCount: activePlay.moves?.length || 0,
       })
@@ -148,7 +148,7 @@ export class Move {
           (move) =>
             move.stateKind === 'completed' || move.stateKind === 'confirmed'
         )
-        console.log('[DEBUG] ActivePlay.moves state assessment:', {
+        debug(' ActivePlay.moves state assessment:', {
           totalMoves: movesArray.length,
           readyMoves: readyMoves.length,
           completedMoves: completedMoves.length,
@@ -189,7 +189,7 @@ export class Move {
       const checkerContainer = checkerInfo.container
 
       // Enhanced debug logging to understand the mismatch
-      console.log('[DEBUG] Container comparison details:', {
+      debug(' Container comparison details:', {
         checkerContainerId: checkerContainer.id,
         checkerContainerKind: checkerContainer.kind,
         checkerContainerPosition:
@@ -210,7 +210,7 @@ export class Move {
         (pm) => pm.origin.id === checkerContainer.id
       )
 
-      console.log('[DEBUG] Moves from this container:', {
+      debug(' Moves from this container:', {
         checkerId,
         containerID: checkerContainer.id,
         containerKind: checkerContainer.kind,
@@ -230,8 +230,8 @@ export class Move {
       // Multiple checkers from the same point can make the same move
       const moveToExecute = movesFromThisContainer[0]
 
-      console.log(
-        `[DEBUG] Executing move: die ${moveToExecute.dieValue}, origin ${
+      debug(
+        `Executing move: die ${moveToExecute.dieValue}, origin ${
           moveToExecute.origin.kind === 'point'
             ? 'point-' + moveToExecute.origin.position.clockwise
             : moveToExecute.origin.kind
@@ -261,21 +261,21 @@ export class Move {
         }
 
         // Execute the move using executeAndRecalculate to handle automatic state transitions
-        console.log('🚨 MOVE CHECKER: About to call Game.executeAndRecalculate with dice:', workingGame.activePlayer.dice?.currentRoll)
+        debug('MOVE CHECKER: About to call Game.executeAndRecalculate with dice:', workingGame.activePlayer.dice?.currentRoll)
         const finalGame = Game.executeAndRecalculate(
           workingGame as any,
           moveToExecute.origin.id
         )
-        console.log('🚨 MOVE CHECKER: Game.executeAndRecalculate returned with dice:', (finalGame as any).activePlayer?.dice?.currentRoll)
+        debug('MOVE CHECKER: Game.executeAndRecalculate returned with dice:', (finalGame as any).activePlayer?.dice?.currentRoll)
 
-        console.log('[DEBUG] Human move completed successfully')
+        debug(' Human move completed successfully')
         return {
           success: true,
           game: finalGame as any,
         }
       } catch (moveError: unknown) {
-        console.log(
-          '[DEBUG] Human move failed:',
+        debug(
+          'Human move failed:',
           moveError instanceof Error ? moveError.message : 'Unknown error'
         )
         return {
@@ -302,7 +302,7 @@ export class Move {
       // Import Game class to use proper game state management
       const { Game } = await import('..')
 
-      console.log('[DEBUG] Robot executing move:', {
+      debug(' Robot executing move:', {
         gameState: game.stateKind,
         activePlayState: game.activePlay?.stateKind,
         originId,
@@ -310,7 +310,7 @@ export class Move {
 
       // Ensure we have a valid game state
       if (!game.activePlay) {
-        console.log('[DEBUG] Robot move failed: No active play found')
+        debug(' Robot move failed: No active play found')
         throw new Error('No active play found for robot move')
       }
 
@@ -322,16 +322,16 @@ export class Move {
       ): BackgammonGameMoving => {
         switch (game.stateKind) {
           case 'moving': {
-            console.log(
-              '[DEBUG] Robot: Game already in moving state, no transition needed'
+            debug(
+              'Robot: Game already in moving state, no transition needed'
             )
             // Already in moving state for subsequent moves in the same turn
             return game as BackgammonGameMoving
           }
 
           default: {
-            console.log(
-              '[DEBUG] Robot move failed: Invalid initial game state:',
+            debug(
+              'Robot move failed: Invalid initial game state:',
               (game as any).stateKind
             )
             throw new Error(
@@ -347,15 +347,15 @@ export class Move {
 
       // Validate we're now in moving state
       if (workingGame.stateKind !== 'moving') {
-        console.log(
-          '[DEBUG] Robot move failed: Invalid game state after transition:',
+        debug(
+          'Robot move failed: Invalid game state after transition:',
           JSON.stringify(workingGame)
         )
         throw new Error(JSON.stringify(workingGame))
       }
 
       // Execute the move (now requires moving state)
-      console.log('[DEBUG] Robot calling Game.move with:', {
+      debug(' Robot calling Game.move with:', {
         gameState: workingGame.stateKind,
         originId,
       })
@@ -374,8 +374,8 @@ export class Move {
           )
 
           if (!doubleCheckHasValidChecker) {
-            console.log(
-              '[DEBUG] Move double validation failed: Board state changed between validation and execution:',
+            debug(
+              'Move double validation failed: Board state changed between validation and execution:',
               {
                 originId: originId,
                 checkerCount: doubleCheckContainer.checkers.length,
@@ -394,8 +394,8 @@ export class Move {
             }
           }
         } catch (doubleValidationError) {
-          console.log(
-            '[DEBUG] Move double validation error:',
+          debug(
+            'Move double validation error:',
             doubleValidationError
           )
           // If double validation fails, return success but indicate turn should be completed
@@ -407,16 +407,16 @@ export class Move {
         }
 
         const finalGame = Game.move(workingGame as any, originId)
-        console.log('[DEBUG] Robot move completed successfully')
+        debug(' Robot move completed successfully')
 
-        console.log('[DEBUG] Robot move SUCCESS - returning game result')
+        debug(' Robot move SUCCESS - returning game result')
         return {
           success: true,
           game: finalGame as any,
         }
       } catch (gameError: unknown) {
-        console.log(
-          '[DEBUG] Robot Game.move failed:',
+        debug(
+          'Robot Game.move failed:',
           gameError instanceof Error ? gameError.message : 'Unknown error'
         )
         throw new Error(
@@ -427,8 +427,8 @@ export class Move {
       }
     } catch (moveError: unknown) {
       // Core should barf on illegal input - throw the error up
-      console.log(
-        '[DEBUG] Robot move EXCEPTION caught:',
+      debug(
+        'Robot move EXCEPTION caught:',
         moveError instanceof Error ? moveError.message : 'Unknown error'
       )
       throw new Error(

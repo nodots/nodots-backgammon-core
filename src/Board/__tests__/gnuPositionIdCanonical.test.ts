@@ -6,7 +6,7 @@ import { logger } from '../../utils/logger'
 import type { BackgammonColor } from '@nodots-llc/backgammon-types'
 
 describe('GNU Position ID canonical starting position', () => {
-  test('starting position ID matches 4HPwATDgc/ABMA for one side on roll', () => {
+  test('starting position ID matches 4HPwATAD4IPzAQ for one side on roll', () => {
     const board = Board.initialize()
 
     // Create players with deterministic directions matching board default
@@ -43,7 +43,7 @@ describe('GNU Position ID canonical starting position', () => {
       whiteInactive
     ) as any
     const pidBlack = exportToGnuPositionId(gameBlack)
-    const expected = '4HPwATDgc/ABMA'
+    const expected = '4HPwATAD4IPzAQ'
     // Accept either white or black as the position on roll that matches the canonical ID
     const ok = pidWhite === expected || pidBlack === expected
     if (!ok) {

@@ -32,15 +32,20 @@ function findOriginByCCPos(play: BackgammonPlayMoving, board: any, ccPos: number
 
 describe('Constrained doubles [2,2] yields exactly 3 legal moves (remaining becomes no-move)', () => {
   it('converts the final unusable double to a completed no-move', () => {
-    // Board: Black (counterclockwise) has checkers at CC 24, 23, 21
-    // Blocks: White has heavy points at CC 20 and 17 to prevent further 2-steps after 24->22, 21->19
+    // Board: Black (counterclockwise) has 3 checkers at CC 8, 6, 4
+    // White blocks CC 2 to constrain the 4th move after 8->6, 6->4, 6->4
+    //
+    // Sequence with [2,2]:
+    // - Move 1: 8->6 (stack on 6)
+    // - Move 2: 6->4 (stack on 4)
+    // - Move 3: 6->4 (move remaining checker from 6)
+    // - Move 4: 4->2 BLOCKED (white at 2) -> should become no-move
     const boardImport: BackgammonCheckerContainerImport[] = [
-      pointCC(24, 1, 'black'),
-      pointCC(23, 1, 'black'),
-      pointCC(21, 1, 'black'),
-      // White blocks to constrain further 2-moves after the three legal plays
-      pointCC(20, 2, 'white'),
-      pointCC(17, 2, 'white'),
+      pointCC(8, 1, 'black'),
+      pointCC(6, 1, 'black'),
+      pointCC(4, 1, 'black'),
+      // White blocks position 2 to prevent bearing off approach
+      pointCC(2, 2, 'white'),
     ]
 
     const board = Board.initialize(boardImport)
@@ -55,8 +60,12 @@ describe('Constrained doubles [2,2] yields exactly 3 legal moves (remaining beco
     let play = Play.initialize(board, moving)
     let currentBoard = board
 
-    // Execute the three legal moves in sequence by explicit origins
-    const seq = [24, 23, 21] // counterclockwise positions
+    // Execute moves: 8->6, then 6->4 twice (using the stacked checkers)
+    // After move 1 (8->6): 6 has 2 black, 4 has 1 black
+    // After move 2 (6->4): 6 has 1 black, 4 has 2 black
+    // After move 3 (6->4): 4 has 3 black, 6 is empty
+    // Move 4: only option is 4->2 which is blocked
+    const seq = [8, 6, 6] // counterclockwise positions to move from
     for (const ccPos of seq) {
       const origin = findOriginByCCPos(play as BackgammonPlayMoving, currentBoard, ccPos)
       expect(origin).toBeTruthy()
@@ -76,6 +85,6 @@ describe('Constrained doubles [2,2] yields exactly 3 legal moves (remaining beco
     expect(noMoves.length).toBeGreaterThanOrEqual(1)
     // If any ready moves remain here, they should be the only ones and must be executable
     // (sanitization ensures non-executable ready moves become no-move)
-    expect(ready.length).toBeLessThanOrEqual(1)
+    expect(ready.length).toBeLessThanOrEqual(0)
   })
 })
