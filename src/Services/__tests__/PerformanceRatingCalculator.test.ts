@@ -90,38 +90,38 @@ describe('PerformanceRatingCalculator', () => {
   })
 
   describe('Skill Level Assignment', () => {
-    test('getSkillLevel should return "World Class" for PR <= 2.5', () => {
+    test('getSkillLevel should return "World Class" for PR <= 3.0', () => {
       expect(PerformanceRatingCalculator.getSkillLevel(0)).toBe('World Class')
       expect(PerformanceRatingCalculator.getSkillLevel(1.0)).toBe('World Class')
-      expect(PerformanceRatingCalculator.getSkillLevel(2.5)).toBe('World Class')
+      expect(PerformanceRatingCalculator.getSkillLevel(3.0)).toBe('World Class')
     })
 
-    test('getSkillLevel should return "Expert" for PR 2.5-5.0', () => {
-      expect(PerformanceRatingCalculator.getSkillLevel(2.6)).toBe('Expert')
+    test('getSkillLevel should return "Expert" for PR 3.0-5.0', () => {
+      expect(PerformanceRatingCalculator.getSkillLevel(3.1)).toBe('Expert')
       expect(PerformanceRatingCalculator.getSkillLevel(4.0)).toBe('Expert')
       expect(PerformanceRatingCalculator.getSkillLevel(5.0)).toBe('Expert')
     })
 
-    test('getSkillLevel should return "Advanced" for PR 5.0-7.5', () => {
+    test('getSkillLevel should return "Advanced" for PR 5.0-7.0', () => {
       expect(PerformanceRatingCalculator.getSkillLevel(5.1)).toBe('Advanced')
       expect(PerformanceRatingCalculator.getSkillLevel(6.0)).toBe('Advanced')
-      expect(PerformanceRatingCalculator.getSkillLevel(7.5)).toBe('Advanced')
+      expect(PerformanceRatingCalculator.getSkillLevel(7.0)).toBe('Advanced')
     })
 
-    test('getSkillLevel should return "Intermediate" for PR 7.5-12.5', () => {
-      expect(PerformanceRatingCalculator.getSkillLevel(7.6)).toBe('Intermediate')
-      expect(PerformanceRatingCalculator.getSkillLevel(10.0)).toBe('Intermediate')
-      expect(PerformanceRatingCalculator.getSkillLevel(12.5)).toBe('Intermediate')
+    test('getSkillLevel should return "Intermediate" for PR 7.0-11.0', () => {
+      expect(PerformanceRatingCalculator.getSkillLevel(7.1)).toBe('Intermediate')
+      expect(PerformanceRatingCalculator.getSkillLevel(9.0)).toBe('Intermediate')
+      expect(PerformanceRatingCalculator.getSkillLevel(11.0)).toBe('Intermediate')
     })
 
-    test('getSkillLevel should return "Casual" for PR 12.5-17.5', () => {
-      expect(PerformanceRatingCalculator.getSkillLevel(12.6)).toBe('Casual')
+    test('getSkillLevel should return "Casual" for PR 11.0-15.0', () => {
+      expect(PerformanceRatingCalculator.getSkillLevel(11.1)).toBe('Casual')
+      expect(PerformanceRatingCalculator.getSkillLevel(13.0)).toBe('Casual')
       expect(PerformanceRatingCalculator.getSkillLevel(15.0)).toBe('Casual')
-      expect(PerformanceRatingCalculator.getSkillLevel(17.5)).toBe('Casual')
     })
 
-    test('getSkillLevel should return "Beginner" for PR > 17.5', () => {
-      expect(PerformanceRatingCalculator.getSkillLevel(17.6)).toBe('Beginner')
+    test('getSkillLevel should return "Beginner" for PR > 15.0', () => {
+      expect(PerformanceRatingCalculator.getSkillLevel(15.1)).toBe('Beginner')
       expect(PerformanceRatingCalculator.getSkillLevel(20.0)).toBe('Beginner')
       expect(PerformanceRatingCalculator.getSkillLevel(50.0)).toBe('Beginner')
     })
@@ -247,11 +247,11 @@ describe('Error Type Distribution', () => {
 
   test('skill levels should cover the full PR range', () => {
     const skillLevelCoverage = [
-      { maxPR: 2.5, level: 'World Class' },
+      { maxPR: 3.0, level: 'World Class' },
       { maxPR: 5.0, level: 'Expert' },
-      { maxPR: 7.5, level: 'Advanced' },
-      { maxPR: 12.5, level: 'Intermediate' },
-      { maxPR: 17.5, level: 'Casual' },
+      { maxPR: 7.0, level: 'Advanced' },
+      { maxPR: 11.0, level: 'Intermediate' },
+      { maxPR: 15.0, level: 'Casual' },
       { maxPR: Infinity, level: 'Beginner' },
     ]
 

@@ -1,78 +1,147 @@
 import {
+  BackgammonBoard,
   BackgammonColor,
   BackgammonGame,
-  BackgammonGameMoving,
-  BackgammonMoveDirection,
   BackgammonPlayer,
 } from '@nodots-llc/backgammon-types'
-import { GnuBgHints } from '@nodots-llc/gnubg-hints'
 import { logger } from '../utils/logger'
 
-/**
- * Determine which player is on roll for the current game state.
- */
-function getPlayerOnRoll(game: BackgammonGame): BackgammonPlayer {
-  let playerOnRoll: BackgammonPlayer | undefined
+// GNU BG base64 alphabet
+const GNU_BASE64 =
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
-  switch (game.stateKind) {
-    case 'moving':
-      playerOnRoll = (game as BackgammonGameMoving).activePlayer
-      break
-    case 'rolled-for-start':
-    case 'rolling':
-    case 'doubled':
-    case 'moved':
-      playerOnRoll = game.activePlayer
-      break
-    case 'rolling-for-start':
-      playerOnRoll = game.activePlayer ?? game.players[0]
-      logger.info(
-        `Using ${playerOnRoll?.color ?? 'unknown'} as player on roll for rolling-for-start state`
-      )
-      break
-    case 'completed':
-      // Cast to access winner property which may exist on completed games
-      const completedGame = game as BackgammonGame & {
-        winner?: BackgammonPlayer
-      }
-      if (completedGame.winner) {
-        playerOnRoll = game.players.find(
-          (p) => p.id === completedGame.winner?.id
-        )
-      }
-      playerOnRoll ??= game.players[0]
-      break
-  }
-
-  if (!playerOnRoll) {
-    throw new Error('Could not determine player on roll.')
-  }
-
-  return playerOnRoll
+// Helper to get checker count on a specific point for a given player
+// GOLDEN RULE: Always look up points by position[direction], never by array index
+function getCheckersOnPointByPosition(
+  board: BackgammonBoard,
+  playerColor: BackgammonColor,
+  playerDirection: 'clockwise' | 'counterclockwise',
+  gnuPosition: number // 1-24, GNU position from player's perspective
+): number {
+  if (gnuPosition < 1 || gnuPosition > 24) return 0
+  // Find the point where position[direction] equals the GNU position
+  const point = board.points.find(
+    (p) => p.position[playerDirection] === gnuPosition
+  )
+  if (!point) return 0
+  return point.checkers.filter((c) => c.color === playerColor).length
 }
 
-/**
- * Export game position to GNU Backgammon position ID format.
- * Uses the original GNU Backgammon encoding algorithm via native addon.
- *
- * @param game The backgammon game to encode
- * @returns 14-character position ID string valid in GNU Backgammon
- */
+// Helper to get checker count on the bar for a given player
+function getCheckersOnBar(
+  board: BackgammonBoard,
+  player: BackgammonPlayer
+): number {
+  const barForPlayer = board.bar[player.direction]
+  return barForPlayer.checkers.filter((c) => c.color === player.color).length
+}
+
 export function exportToGnuPositionId(game: BackgammonGame): string {
   const { board } = game
 
-  const playerOnRoll = getPlayerOnRoll(game)
-  const activeColor: BackgammonColor = playerOnRoll.color ?? 'white'
-  const activeDirection = playerOnRoll.direction as BackgammonMoveDirection | undefined
-  if (!activeDirection) {
-    throw new Error('Player on roll is missing direction.')
+  // Canonical encoding: clockwise player always in TanBoard[0] (X),
+  // counterclockwise player always in TanBoard[1] (O).
+  // getHintsFromPositionId expects this layout and handles the
+  // on-roll swap internally based on activePlayerDirection.
+  const clockwisePlayer = game.players.find(
+    (p) => p.direction === 'clockwise'
+  )
+  const counterClockwisePlayer = game.players.find(
+    (p) => p.direction === 'counterclockwise'
+  )
+
+  if (!clockwisePlayer || !counterClockwisePlayer) {
+    throw new Error(
+      'Could not determine clockwise/counterclockwise players for position encoding'
+    )
   }
 
-  logger.debug('[GnuPositionId] Encoding position via native addon', {
+  logger.debug('[GnuPositionId] Encoding position (canonical)', {
     gameStateKind: game.stateKind,
-    activeColor,
-    activeDirection,
+    activePlayerColor: game.activePlayer?.color,
+    activePlayerDirection: (game.activePlayer as any)?.direction,
+    clockwiseColor: clockwisePlayer.color,
+    counterClockwiseColor: counterClockwisePlayer.color,
   })
 
-  return GnuBgHints.getPositionId(board, activeColor, activeDirection)
+  let bitString = ''
+
+  // 1. Clockwise player's points — TanBoard[0] (X) in canonical encoding
+  // GOLDEN RULE: Use position[direction] to find points, not array indices
+  for (let gnuPos = 1; gnuPos <= 24; gnuPos++) {
+    const checkers = getCheckersOnPointByPosition(
+      board,
+      clockwisePlayer.color,
+      clockwisePlayer.direction,
+      gnuPos
+    )
+    bitString += '1'.repeat(checkers)
+    bitString += '0'
+  }
+  const cwBarCheckers = getCheckersOnBar(board, clockwisePlayer)
+  bitString += '1'.repeat(cwBarCheckers)
+  bitString += '0'
+
+  // 2. Counterclockwise player's points — TanBoard[1] (O) in canonical encoding
+  // GOLDEN RULE: Use position[direction] to find points, not array indices
+  for (let gnuPos = 1; gnuPos <= 24; gnuPos++) {
+    const checkers = getCheckersOnPointByPosition(
+      board,
+      counterClockwisePlayer.color,
+      counterClockwisePlayer.direction,
+      gnuPos
+    )
+    bitString += '1'.repeat(checkers)
+    bitString += '0'
+  }
+  const ccwBarCheckers = getCheckersOnBar(board, counterClockwisePlayer)
+  bitString += '1'.repeat(ccwBarCheckers)
+  bitString += '0'
+
+  // 3. Pad to 80 bits
+  if (bitString.length > 80) {
+    logger.warn('[GnuPositionId] Bit string too long, truncating:', {
+      originalLength: bitString.length,
+      maxLength: 80,
+      truncatedLength: 80,
+    })
+    bitString = bitString.substring(0, 80)
+  } else {
+    bitString = bitString.padEnd(80, '0')
+  }
+
+  // 4. Convert bit string to 10 bytes (little-endian)
+  const bytes: number[] = []
+  for (let i = 0; i < 10; i++) {
+    const byteBits = bitString.substring(i * 8, (i + 1) * 8)
+    let byteValue = 0
+    for (let j = 0; j < 8; j++) {
+      if (byteBits[j] === '1') {
+        byteValue |= 1 << j
+      }
+    }
+    bytes.push(byteValue)
+  }
+
+  // 5. Base64 encode the 10 bytes
+  let base64Chars = ''
+  let numBuffer = 0
+  let numBits = 0
+
+  for (let i = 0; i < bytes.length; ++i) {
+    numBuffer = (numBuffer << 8) | bytes[i]
+    numBits += 8
+    while (numBits >= 6) {
+      numBits -= 6
+      const chunk = (numBuffer >> numBits) & 0x3f
+      base64Chars += GNU_BASE64[chunk]
+    }
+  }
+
+  if (numBits > 0) {
+    const chunk = (numBuffer << (6 - numBits)) & 0x3f
+    base64Chars += GNU_BASE64[chunk]
+  }
+
+  return base64Chars.substring(0, 14)
 }

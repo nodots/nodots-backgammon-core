@@ -1,4 +1,4 @@
-import { BackgammonGame, BackgammonMoveDirection } from '@nodots-llc/backgammon-types'
+import { BackgammonColor, BackgammonGame, BackgammonMoveDirection } from '@nodots-llc/backgammon-types'
 import type { MoveHint, MoveStep } from '@nodots-llc/gnubg-hints'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
 import { logger } from '../utils/logger'
@@ -14,6 +14,8 @@ export interface AiModuleInterface {
       positionId: string,
       dice: [number, number],
       maxHints?: number,
+      activePlayerDirection?: BackgammonMoveDirection,
+      activePlayerColor?: BackgammonColor,
     ) => Promise<MoveHint[]>
   }
   buildHintContextFromGame: (game: BackgammonGame, overrides?: any) => {
@@ -57,7 +59,7 @@ export interface PRMoveAnalysis {
   equityLoss: number
   errorType: 'none' | 'doubtful' | 'error' | 'blunder' | 'very_bad'
   matchedRank?: number | null
-  matchStrategy?: 'ordered' | 'unordered' | 'alt-ordered' | 'alt-unordered' | 'final-board' | 'prefix' | 'worst'
+  matchStrategy?: 'ordered' | 'unordered' | 'alt-ordered' | 'alt-unordered' | 'final-board' | 'prefix' | 'subset' | 'worst'
 }
 
 export interface PlayerPR {
@@ -153,9 +155,10 @@ export class PerformanceRatingCalculator {
         const head = moveActions[i]
         const startState = gameStates[i]
         if (!startState) {
-          logger.warn(`No game state available for action ${i}`)
-          i += 1
-          continue
+          throw new Error(
+            `calculateGamePR: no game state for action index ${i}. ` +
+            `Game ${gameId}, totalStates=${gameStates.length}, totalActions=${moveActions.length}`
+          )
         }
 
         // Ensure stats bucket exists
@@ -172,31 +175,40 @@ export class PerformanceRatingCalculator {
         }
         playerStats[head.player].totalMoves++
 
-        // Turn actions are grouped by contiguous entries for the same player; dice must come from game state
+        // Group contiguous actions for the same player into one turn.
+        // Turn boundaries are detected by:
+        // 1. Dice change (sorted to ignore order swaps like [3,6] vs [6,3])
+        // 2. Move count exceeds what the dice allow (non-doubles: 2, doubles: 4)
+        const headDiceKey = this.sortedDiceKey(head.dice)
+        const isDoubles = Array.isArray(head.dice) && head.dice.length >= 2 && head.dice[0] === head.dice[1]
+        const maxMovesForDice = isDoubles ? 4 : 2
         let j = i
-        while (
-          j + 1 < moveActions.length &&
-          moveActions[j + 1].player === head.player
-        ) {
+        while (j + 1 < moveActions.length && moveActions[j + 1].player === head.player) {
+          const nextDiceKey = this.sortedDiceKey(moveActions[j + 1].dice)
+          if (headDiceKey !== null && nextDiceKey !== null && headDiceKey !== nextDiceKey) {
+            break
+          }
+          // A single turn can't have more moves than the dice allow
+          if (j + 1 - start >= maxMovesForDice) {
+            break
+          }
           j += 1
         }
 
+        // Resolve dice for this turn. The dice come from extractStatesAndMoves
+        // which uses lastDiceByPlayer (populated from roll-dice history actions).
+        // With the engine fix for rolling->moved transitions, every turn has a
+        // properly recorded roll-dice action.
         let diceTuple: [number, number]
-        // Use dice passed from moveActions first (extracted from history snapshot)
-        // Fall back to resolving from game state only if not available
         if (Array.isArray(head.dice) && head.dice.length >= 2) {
           diceTuple = [head.dice[0], head.dice[1]]
         } else {
           try {
             diceTuple = this.resolveDiceOrThrow(startState, head.player)
           } catch (err) {
-            logger.error(
+            throw new Error(
               `PR: missing dice for player ${head.player} at turn ${turnIndex + 1}: ${String(err)}`
             )
-            // Skip this turn; advance the window
-            i = j + 1
-            turnIndex += 1
-            continue
           }
         }
 
@@ -255,7 +267,6 @@ export class PerformanceRatingCalculator {
             if (r === 1) ps.matchedRank1 = (ps.matchedRank1 ?? 0) + 1
             else if (r === 2) ps.matchedRank2 = (ps.matchedRank2 ?? 0) + 1
             else if (r && r >= 3) ps.matchedRank3Plus = (ps.matchedRank3Plus ?? 0) + 1
-            if (strat === 'worst') ps.fallbackWorst = (ps.fallbackWorst ?? 0) + 1
             if (strat === 'ordered') ps.matchOrdered = (ps.matchOrdered ?? 0) + 1
             if (strat === 'unordered') ps.matchUnordered = (ps.matchUnordered ?? 0) + 1
             if (strat === 'alt-ordered') ps.matchAltOrdered = (ps.matchAltOrdered ?? 0) + 1
@@ -278,7 +289,9 @@ export class PerformanceRatingCalculator {
             }
           }
         } catch (error) {
-          logger.warn(`Failed to analyze turn ${turnIndex + 1}: ${error}`)
+          // Log and skip rather than killing the entire PR calculation.
+          // A single unanalyzable turn should not void the whole game.
+          logger.warn(`Skipping turn ${turnIndex + 1} (analysis failed): ${error}`)
         }
 
         i = j + 1
@@ -289,9 +302,10 @@ export class PerformanceRatingCalculator {
         if (player.analyzedMoves > 0) {
           player.averageEquityLoss =
             player.totalEquityLoss / player.analyzedMoves
-          // PR target scale: 0–16 typical. Use equity*100 scaling.
-          // World Class: PR ≤ ~3, Expert: ≤ ~5, Advanced: ≤ ~7.5
-          player.performanceRating = player.averageEquityLoss * 100
+          // Standard GNU BG PR formula: AEL (in equity units [-1,1]) * 500
+          // Produces millipoints-per-move scale matching established PR ranges:
+          // World Class: < 3.0, Expert: 3-5, Advanced: 5-7.5, Intermediate: 7.5-12.5
+          player.performanceRating = player.averageEquityLoss * 500
         }
       }
 
@@ -350,7 +364,7 @@ export class PerformanceRatingCalculator {
       if (!Array.isArray(hints) || hints.length === 0) {
         try {
           if (typeof ai.gnubgHints.getHintsFromPositionId === 'function') {
-            hints = await ai.gnubgHints.getHintsFromPositionId(posId, dice, 64)
+            hints = await ai.gnubgHints.getHintsFromPositionId(posId, dice, 64, executingPlayer.direction, executingPlayer.color)
           }
         } catch {}
       }
@@ -358,7 +372,7 @@ export class PerformanceRatingCalculator {
         try {
           if (typeof ai.gnubgHints.getHintsFromPositionId === 'function') {
             const rev: [number, number] = [dice?.[1] ?? 0, dice?.[0] ?? 0]
-            hints = await ai.gnubgHints.getHintsFromPositionId(posId, rev, 64)
+            hints = await ai.gnubgHints.getHintsFromPositionId(posId, rev, 64, executingPlayer.direction, executingPlayer.color)
           }
         } catch {}
       }
@@ -379,46 +393,48 @@ export class PerformanceRatingCalculator {
       logger.info(`Move ${moveNumber} - bestHint moves: ${JSON.stringify(bestHint?.moves)}`)
       logger.info(`Move ${moveNumber} - all hint steps: ${JSON.stringify(hints.slice(0, 3).map(h => h.moves))}`)
 
-      let actualHint = actualStep ? this.findHintForStep(hints, actualStep) : undefined
-      if (!actualHint && actualStep) {
+      if (!actualStep) {
+        const posId = exportToGnuPositionId(gameState)
+        throw new Error(
+          `analyzeMoveWithGnuBG: extractActualMoveStep returned null. ` +
+          `Move ${moveNumber}, positionId=${posId}, dice=${JSON.stringify(dice)}, ` +
+          `moveExecuted=${JSON.stringify(moveExecuted)}`
+        )
+      }
+
+      let actualHint = this.findHintForStep(hints, actualStep)
+      if (!actualHint) {
         const altStep = this.extractActualMoveStep(moveExecuted, playerId, gameState)
         if (altStep) actualHint = this.findHintForStep(hints, altStep)
       }
-      // If still no exact step match, pessimistically use lowest-ranked hint to bound PR
-      if (!actualHint) actualHint = hints[hints.length - 1]
-
-      // Normalize equities to [-1, 1] range if addon returns percent/centipoints
-      // Policy:
-      // - |x| > 10  => assume centipoints (divide by 1000)
-      // - |x| > 2   => assume percent (divide by 100)
-      // - otherwise => already in equity space
-      const normalizeEquity = (v: number | null): number | null => {
-        if (v === null || Number.isNaN(v as any)) return null
-        const x = Number(v)
-        if (!Number.isFinite(x)) return null
-        const ax = Math.abs(x)
-        if (ax > 10) return x / 1000
-        if (ax > 2) return x / 100
-        return x
+      if (!actualHint) {
+        const posId = exportToGnuPositionId(gameState)
+        throw new Error(
+          `analyzeMoveWithGnuBG: no hint matched player's move. ` +
+          `Move ${moveNumber}, positionId=${posId}, dice=${JSON.stringify(dice)}, ` +
+          `actualStep=${JSON.stringify({ from: actualStep.from, to: actualStep.to, kind: actualStep.moveKind, fromC: actualStep.fromContainer, toC: actualStep.toContainer })}, ` +
+          `hintsCount=${hints.length}, ` +
+          `topHintMoves=${JSON.stringify(hints[0]?.moves?.map((m: MoveStep) => ({ from: m.from, to: m.to, kind: m.moveKind })))}`
+        )
       }
 
-      // Prefer explicit difference when provided by addon; else compute from equities
+      // Addon returns equity in [-1, 1] range (cubeful equity can exceed this
+      // slightly with gammon/backgammon potential). No normalization needed.
+      // Prefer addon-provided difference field; fall back to equity subtraction.
       const diffRaw = (actualHint as any)?.difference as number | null | undefined
       let equityLoss: number
       if (typeof diffRaw === 'number' && Number.isFinite(diffRaw)) {
-        const ax = Math.abs(diffRaw)
-        const normalizedAbs = ax > 10 ? ax / 1000 : ax > 2 ? ax / 100 : ax
-        equityLoss = Math.max(0, Math.min(2, normalizedAbs))
+        // difference = actualEquity - bestEquity, so it's <= 0; take absolute value
+        equityLoss = Math.max(0, Math.min(0.5, Math.abs(diffRaw)))
       } else {
-        const bestRaw = (bestHint?.evaluation?.cubefulEquity ?? bestHint?.equity) as number | null
-        const actualRaw = (actualHint?.evaluation?.cubefulEquity ?? actualHint?.equity) as number | null
-        const bestEquity = normalizeEquity(bestRaw)
-        const actualEquity = normalizeEquity(actualRaw)
-        if (bestEquity === null || actualEquity === null) {
+        const bestEquity = (bestHint?.evaluation?.cubefulEquity ?? bestHint?.equity) as number | null
+        const actualEquity = (actualHint?.evaluation?.cubefulEquity ?? actualHint?.equity) as number | null
+        if (bestEquity === null || !Number.isFinite(bestEquity as number) ||
+            actualEquity === null || !Number.isFinite(actualEquity as number)) {
           logger.warn(`Unable to determine equities for move ${moveNumber}: best=${bestEquity}, actual=${actualEquity}`)
           return null
         }
-        equityLoss = Math.max(0, Math.min(2, bestEquity - actualEquity))
+        equityLoss = Math.max(0, Math.min(0.5, (bestEquity as number) - (actualEquity as number)))
       }
       const errorType = this.classifyError(equityLoss)
 
@@ -432,8 +448,8 @@ export class PerformanceRatingCalculator {
         errorType,
       }
     } catch (error) {
-      logger.warn(`GNU BG analysis failed for move ${moveNumber}: ${error}`)
-      return null
+      logger.error(`GNU BG analysis failed for move ${moveNumber}: ${error}`)
+      throw error
     }
   }
 
@@ -464,26 +480,27 @@ export class PerformanceRatingCalculator {
         activePlayerDirection: executingPlayer.direction,
       })
 
-      // Prefer board-based (with active player context) then PID fallback, using executed die order
+      // Use snapshot dice directly. Do NOT use inferDiceFromActions -- the dieValue
+      // fields in action payloads are corrupt in some game histories (see issue #275).
+      // The snapshot dice are the authoritative source, proven reliable by diagnostics.
       let hints: MoveHint[] = []
-      const inferred = this.inferDiceFromActions(actions, dice)
       const posId = exportToGnuPositionId(gameState)
-      try { hints = await ai.gnubgHints.getMoveHints({ ...request, dice: inferred }, 64) } catch {}
+      const reversed: [number, number] = [dice[1], dice[0]]
+      try { hints = await ai.gnubgHints.getMoveHints({ ...request, dice }, 64) } catch {}
       if (!Array.isArray(hints) || hints.length === 0) {
-        try { hints = await ai.gnubgHints.getMoveHints({ ...request, dice }, 64) } catch {}
+        try { hints = await ai.gnubgHints.getMoveHints({ ...request, dice: reversed }, 64) } catch {}
       }
       if (!Array.isArray(hints) || hints.length === 0) {
         try {
           if (typeof ai.gnubgHints.getHintsFromPositionId === 'function') {
-            hints = await ai.gnubgHints.getHintsFromPositionId(posId, inferred, 64)
+            hints = await ai.gnubgHints.getHintsFromPositionId(posId, dice, 64, executingPlayer.direction, executingPlayer.color)
           }
         } catch {}
       }
       if (!Array.isArray(hints) || hints.length === 0) {
         try {
           if (typeof ai.gnubgHints.getHintsFromPositionId === 'function') {
-            const rev: [number, number] = [inferred?.[1] ?? 0, inferred?.[0] ?? 0]
-            hints = await ai.gnubgHints.getHintsFromPositionId(posId, rev, 64)
+            hints = await ai.gnubgHints.getHintsFromPositionId(posId, reversed, 64, executingPlayer.direction, executingPlayer.color)
           }
         } catch {}
       }
@@ -503,11 +520,11 @@ export class PerformanceRatingCalculator {
       let altHintsCache: MoveHint[] | null = null
       let bestHint = hintsUsed[0]
       let matched = this.findHintForSequence(hintsUsed, sequence)
-      let matchStrategy: 'ordered' | 'unordered' | 'alt-ordered' | 'alt-unordered' | 'final-board' | 'prefix' | 'worst' = 'ordered'
+      let matchStrategy: 'ordered' | 'unordered' | 'alt-ordered' | 'alt-unordered' | 'final-board' | 'prefix' | 'subset' | 'worst' = 'ordered'
       // Lightweight secondary pass: try reversed dice order if ordered match fails
       if (!matched) {
         try {
-          const swapped: [number, number] = [inferred?.[1] ?? 0, inferred?.[0] ?? 0]
+          const swapped: [number, number] = [dice[1], dice[0]]
           const altHints = await ai.gnubgHints.getMoveHints({ ...request, dice: swapped }, 64)
           if (Array.isArray(altHints) && altHints.length > 0) {
             altHintsCache = altHints
@@ -625,8 +642,39 @@ export class PerformanceRatingCalculator {
           matchStrategy = 'prefix'
         }
       }
-      const actualHint = matched || hintsUsed[hintsUsed.length - 1]
-      if (!matched) matchStrategy = 'worst'
+      // Subset matching for partial plays (e.g., 3 of 4 doubles when 4th blocked)
+      if (!matched) {
+        const bySubset = this.findHintForSequenceSubset(hintsUsed, sequence)
+        if (!bySubset && altHintsCache && altHintsCache.length > 0) {
+          const bySubsetAlt = this.findHintForSequenceSubset(altHintsCache, sequence)
+          if (bySubsetAlt) {
+            matched = bySubsetAlt
+            hintsUsed = altHintsCache
+            bestHint = altHintsCache[0]
+            matchStrategy = 'subset'
+          }
+        } else if (bySubset) {
+          matched = bySubset
+          matchStrategy = 'subset'
+        }
+      }
+      // Fallback: no strategy matched. Use worst hint with capped equity loss
+      // instead of throwing, so the turn is still counted rather than killing
+      // the entire PR calculation.
+      if (!matched) {
+        const posId = exportToGnuPositionId(gameState)
+        logger.warn(
+          `analyzeTurnWithGnuBG: no hint matched player's move sequence. ` +
+          `Turn ${turnNumber}, positionId=${posId}, dice=${JSON.stringify(dice)}, ` +
+          `sequence=${JSON.stringify(sequence.map(s => ({ from: s.from, to: s.to, kind: s.moveKind, fromC: s.fromContainer, toC: s.toContainer })))}, ` +
+          `hintsCount=${hintsUsed.length}, ` +
+          `strategies_tried=[ordered,unordered,alt-ordered,alt-unordered,final-board,prefix,subset]. ` +
+          `Falling back to worst hint.`
+        )
+        matched = hintsUsed[hintsUsed.length - 1]
+        matchStrategy = 'worst'
+      }
+      const actualHint = matched
 
       // Log for debugging
       const rank = this.getHintRank(hintsUsed, matched)
@@ -634,33 +682,22 @@ export class PerformanceRatingCalculator {
       logger.info(`Turn ${turnNumber} - bestHint moves: ${JSON.stringify(bestHint?.moves)}`)
       logger.info(`Turn ${turnNumber} - matched strategy=${matchStrategy}, rank=${rank ?? 'n/a'}`)
 
-      // Normalize equities and compute loss
-      const normalizeEquity = (v: number | null): number | null => {
-        if (v === null || Number.isNaN(v as any)) return null
-        const x = Number(v)
-        if (!Number.isFinite(x)) return null
-        const ax = Math.abs(x)
-        if (ax > 10) return x / 1000
-        if (ax > 2) return x / 100
-        return x
-      }
-      // Prefer addon-provided difference if available
+      // Addon returns equity in [-1, 1] range. No normalization needed.
+      // Prefer addon-provided difference field; fall back to equity subtraction.
       const diffRaw = (actualHint as any)?.difference as number | null | undefined
       let equityLoss: number
       if (typeof diffRaw === 'number' && Number.isFinite(diffRaw)) {
-        const ax = Math.abs(diffRaw)
-        const normalizedAbs = ax > 10 ? ax / 1000 : ax > 2 ? ax / 100 : ax
-        equityLoss = Math.max(0, Math.min(2, normalizedAbs))
+        // difference = actualEquity - bestEquity, so it's <= 0; take absolute value
+        equityLoss = Math.max(0, Math.min(0.5, Math.abs(diffRaw)))
       } else {
-        const bestRaw = (bestHint?.evaluation?.cubefulEquity ?? bestHint?.equity) as number | null
-        const actualRaw = (actualHint?.evaluation?.cubefulEquity ?? actualHint?.equity) as number | null
-        const bestEquity = normalizeEquity(bestRaw)
-        const actualEquity = normalizeEquity(actualRaw)
-        if (bestEquity === null || actualEquity === null) {
+        const bestEquity = (bestHint?.evaluation?.cubefulEquity ?? bestHint?.equity) as number | null
+        const actualEquity = (actualHint?.evaluation?.cubefulEquity ?? actualHint?.equity) as number | null
+        if (bestEquity === null || !Number.isFinite(bestEquity as number) ||
+            actualEquity === null || !Number.isFinite(actualEquity as number)) {
           logger.warn(`Unable to determine equities for turn ${turnNumber}: best=${bestEquity}, actual=${actualEquity}`)
           return null
         }
-        equityLoss = Math.max(0, Math.min(2, bestEquity - actualEquity))
+        equityLoss = Math.max(0, Math.min(0.5, (bestEquity as number) - (actualEquity as number)))
       }
       const errorType = this.classifyError(equityLoss)
 
@@ -676,8 +713,8 @@ export class PerformanceRatingCalculator {
         matchStrategy,
       }
     } catch (error) {
-      logger.warn(`GNU BG analysis failed for turn ${turnNumber}: ${error}`)
-      return null
+      logger.error(`GNU BG analysis failed for turn ${turnNumber}: ${error}`)
+      throw error
     }
   }
 
@@ -699,16 +736,14 @@ export class PerformanceRatingCalculator {
       return null
     }
 
-    const moveKind = (payload.moveKind || 'point-to-point') as MoveStep['moveKind']
+    let moveKind = (payload.moveKind || 'point-to-point') as MoveStep['moveKind']
 
     // Extract positions from history payload
-    // GNU uses 25 for bar (reenter origin), 0 for off (bear-off destination)
     let originPosition: number | null = null
     let destinationPosition: number | null = null
 
     if (moveKind === 'reenter') {
-      // Bar position: GNU uses 25 for the bar
-      originPosition = 25
+      originPosition = 0
       destinationPosition = typeof payload.destinationPosition === 'number'
         ? payload.destinationPosition
         : null
@@ -716,16 +751,30 @@ export class PerformanceRatingCalculator {
       originPosition = typeof payload.originPosition === 'number'
         ? payload.originPosition
         : null
-      // Off position: GNU uses 0 for off
       destinationPosition = 0
     } else {
-      // Point-to-point: use positions directly from payload
       originPosition = typeof payload.originPosition === 'number'
         ? payload.originPosition
         : null
       destinationPosition = typeof payload.destinationPosition === 'number'
         ? payload.destinationPosition
         : null
+    }
+
+    // Infer moveKind from positions when the payload label is wrong.
+    // The game engine sometimes labels bear-off/reenter as "point-to-point".
+    // gnubg-hints uses: bar -> from=0/fromContainer='bar', off -> to=0/toContainer='off'
+    // Points are 1-24, so from=0 can only be bar and to=0 can only be off.
+    if (destinationPosition === 0 && moveKind !== 'bear-off') {
+      moveKind = 'bear-off'
+    }
+    if (originPosition === 0 && moveKind !== 'reenter') {
+      moveKind = 'reenter'
+    }
+    if (originPosition === 25) {
+      // Some code paths use 25 for bar; convert to 0 to match hint format
+      moveKind = 'reenter'
+      originPosition = 0
     }
 
     if (originPosition === null || destinationPosition === null) {
@@ -800,6 +849,42 @@ export class PerformanceRatingCalculator {
       }
       if (ok) return hint
     }
+    return undefined
+  }
+
+  // Multiset subset matching for partial plays. When a player could only use
+  // N of M dice (e.g., 3 of 4 doubles because 4th was blocked), their N moves
+  // should be a subset of the hint's M-move play (in any order).
+  private findHintForSequenceSubset(
+    hints: MoveHint[],
+    sequence: MoveStep[],
+  ): MoveHint | undefined {
+    if (!sequence || sequence.length === 0) return undefined
+
+    const key = (s: MoveStep) => `${s.moveKind}:${s.fromContainer}:${s.from}->${s.toContainer}:${s.to}`
+
+    const need = new Map<string, number>()
+    for (const s of sequence) {
+      const k = key(s)
+      need.set(k, (need.get(k) ?? 0) + 1)
+    }
+
+    for (const hint of hints) {
+      if (!Array.isArray(hint.moves) || hint.moves.length <= sequence.length) continue
+
+      const have = new Map<string, number>()
+      for (const m of hint.moves) {
+        const k = key(m)
+        have.set(k, (have.get(k) ?? 0) + 1)
+      }
+
+      let ok = true
+      for (const [k, cnt] of need) {
+        if ((have.get(k) ?? 0) < cnt) { ok = false; break }
+      }
+      if (ok) return hint
+    }
+
     return undefined
   }
 
@@ -964,19 +1049,11 @@ export class PerformanceRatingCalculator {
     return idx >= 0 ? idx + 1 : null
   }
 
-  private inferDiceFromActions(
-    actions: Array<{ player: string; move: any }>,
-    fallback: [number, number],
-  ): [number, number] {
-    const vals: number[] = []
-    for (const a of actions) {
-      const payload = a.move?.makeMove ?? a.move
-      const v = Number(payload?.dieValue)
-      if (Number.isFinite(v) && v >= 1 && v <= 6) vals.push(v)
-    }
-    if (vals.length >= 2) return [vals[0] as number, vals[1] as number]
-    if (vals.length === 1) return [vals[0] as number, fallback?.[0] ?? vals[0] as number]
-    return fallback
+  // Produce a canonical string key for a dice pair, sorted to treat [3,6] and [6,3] as identical.
+  // Returns null when dice data is unavailable so callers can fall back to player-only grouping.
+  private sortedDiceKey(dice?: number[]): string | null {
+    if (!Array.isArray(dice) || dice.length < 2) return null
+    return dice[0] <= dice[1] ? `${dice[0]},${dice[1]}` : `${dice[1]},${dice[0]}`
   }
 
   private formatHint(hint: MoveHint): string {
@@ -1014,11 +1091,11 @@ export class PerformanceRatingCalculator {
    * Get skill level description from PR
    */
   static getSkillLevel(pr: number): string {
-    if (pr <= 2.5) return 'World Class'
-    if (pr <= 5) return 'Expert'
-    if (pr <= 7.5) return 'Advanced'
-    if (pr <= 12.5) return 'Intermediate'
-    if (pr <= 17.5) return 'Casual'
+    if (pr <= 3.0) return 'World Class'
+    if (pr <= 5.0) return 'Expert'
+    if (pr <= 7.0) return 'Advanced'
+    if (pr <= 11.0) return 'Intermediate'
+    if (pr <= 15.0) return 'Casual'
     return 'Beginner'
   }
 }

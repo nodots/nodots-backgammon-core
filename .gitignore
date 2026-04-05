@@ -16,3 +16,5 @@ src/**/*.d.ts.map
 
 game-logs
 tsconfig.tsbuildinfo
+
+.claude/

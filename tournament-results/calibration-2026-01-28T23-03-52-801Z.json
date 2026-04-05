@@ -1,0 +1,67 @@
+{
+  "tournamentId": "calibration-2026-01-28T23-03-52-801Z",
+  "timestamp": "2026-01-28T23:06:40.050Z",
+  "config": {
+    "games": 10,
+    "matchupsCount": 2
+  },
+  "officialThresholds": {
+    "supernatural": 2,
+    "worldClass": 5,
+    "expert": 8,
+    "advanced": 12,
+    "intermediate": 18,
+    "casual": 26,
+    "beginner": 35
+  },
+  "matchups": [
+    {
+      "robot1": {
+        "name": "GNU Novice",
+        "evalPlies": 0,
+        "expectedPR": 15
+      },
+      "robot2": {
+        "name": "GNU Beginner",
+        "evalPlies": 1,
+        "expectedPR": 12
+      },
+      "robot1Stats": {
+        "wins": 5,
+        "meanPR": 2.553359564073417,
+        "medianPR": 1.6989438697540513,
+        "stdDevPR": 2.3064761863878918
+      },
+      "robot2Stats": {
+        "wins": 5,
+        "meanPR": 2.561775065023651,
+        "medianPR": 2.4402445510906343,
+        "stdDevPR": 1.4688405068939347
+      }
+    },
+    {
+      "robot1": {
+        "name": "GNU Beginner",
+        "evalPlies": 1,
+        "expectedPR": 12
+      },
+      "robot2": {
+        "name": "GNU Intermediate",
+        "evalPlies": 2,
+        "expectedPR": 8
+      },
+      "robot1Stats": {
+        "wins": 5,
+        "meanPR": 1.5846975401632153,
+        "medianPR": 1.0490679686161353,
+        "stdDevPR": 1.633202531385203
+      },
+      "robot2Stats": {
+        "wins": 5,
+        "meanPR": 0.6373875697327397,
+        "medianPR": 0.0059337451540190595,
+        "stdDevPR": 1.423036547566382
+      }
+    }
+  ]
+}

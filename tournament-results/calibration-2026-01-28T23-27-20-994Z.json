@@ -1,0 +1,91 @@
+{
+  "tournamentId": "calibration-2026-01-28T23-27-20-994Z",
+  "timestamp": "2026-01-29T00:09:11.795Z",
+  "config": {
+    "games": 100,
+    "matchupsCount": 3
+  },
+  "officialThresholds": {
+    "supernatural": 2,
+    "worldClass": 5,
+    "expert": 8,
+    "advanced": 12,
+    "intermediate": 18,
+    "casual": 26,
+    "beginner": 35
+  },
+  "matchups": [
+    {
+      "robot1": {
+        "name": "GNU Novice",
+        "evalPlies": 0,
+        "expectedPR": 15
+      },
+      "robot2": {
+        "name": "GNU Beginner",
+        "evalPlies": 1,
+        "expectedPR": 12
+      },
+      "robot1Stats": {
+        "wins": 53,
+        "meanPR": 3.915463714740154,
+        "medianPR": 2.6695382518646045,
+        "stdDevPR": 3.6758174992142703
+      },
+      "robot2Stats": {
+        "wins": 47,
+        "meanPR": 1.8978493705140118,
+        "medianPR": 1.4193018375251325,
+        "stdDevPR": 1.9751073307432827
+      }
+    },
+    {
+      "robot1": {
+        "name": "GNU Beginner",
+        "evalPlies": 1,
+        "expectedPR": 12
+      },
+      "robot2": {
+        "name": "GNU Intermediate",
+        "evalPlies": 2,
+        "expectedPR": 8
+      },
+      "robot1Stats": {
+        "wins": 51,
+        "meanPR": 1.8813486465396552,
+        "medianPR": 1.1953518123311153,
+        "stdDevPR": 2.221227567325857
+      },
+      "robot2Stats": {
+        "wins": 49,
+        "meanPR": 1.1593137071413084,
+        "medianPR": 0.45527196136014214,
+        "stdDevPR": 1.7333189239266311
+      }
+    },
+    {
+      "robot1": {
+        "name": "GNU Intermediate",
+        "evalPlies": 2,
+        "expectedPR": 8
+      },
+      "robot2": {
+        "name": "GNU Expert",
+        "evalPlies": 2,
+        "expectedPR": 2
+      },
+      "robot1Stats": {
+        "wins": 54,
+        "meanPR": 1.5472222940671725,
+        "medianPR": 0.5164064902165919,
+        "stdDevPR": 2.332808982482857
+      },
+      "robot2Stats": {
+        "wins": 46,
+        "meanPR": 1.2020720763234023,
+        "medianPR": 0.5681459550504331,
+        "stdDevPR": 1.7254660922574991
+      }
+    }
+  ]
+}

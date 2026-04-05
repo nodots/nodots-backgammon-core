@@ -125,7 +125,8 @@ export function areSimplifiedMovesIndependent(moves: SimplifiedMove[]): boolean 
 
 /**
  * Find a hint that matches the player's moves, trying ordered match first,
- * then unordered match for independent moves.
+ * then unordered match for independent moves, then subset matching for
+ * partial plays (when dice were blocked and not all could be used).
  *
  * This is the main entry point for move comparison.
  */
@@ -139,10 +140,13 @@ export function findMatchingHint(
 
   // Try unordered match only if moves are independent
   if (areSimplifiedMovesIndependent(playerMoves)) {
-    return findMatchingHintUnordered(hints, playerMoves)
+    const unordered = findMatchingHintUnordered(hints, playerMoves)
+    if (unordered) return unordered
   }
 
-  return undefined
+  // Try subset matching for partial plays (player used fewer dice than hint)
+  // This handles doubles where some dice were blocked
+  return findMatchingHintSubset(hints, playerMoves)
 }
 
 /**
@@ -201,6 +205,55 @@ export function findMatchingHintUnordered(
     let ok = true
     for (const [k, cnt] of need) {
       if ((have.get(k) ?? 0) !== cnt) {
+        ok = false
+        break
+      }
+    }
+    if (ok) return hint
+  }
+
+  return undefined
+}
+
+/**
+ * Find a hint where the player's moves are a multiset subset of the hint's moves.
+ * Handles partial plays: when a player could only use N of M dice (e.g., 3 of 4
+ * doubles because the 4th was blocked), their N moves should be a subset of
+ * the hint's M-move play.
+ *
+ * Only activates when playerMoves.length < hint.moves.length (partial play).
+ * Returns the best (highest equity) hint whose moves contain all player moves.
+ */
+export function findMatchingHintSubset(
+  hints: MoveHint[],
+  playerMoves: SimplifiedMove[]
+): MoveHint | undefined {
+  if (playerMoves.length === 0) return undefined
+
+  const key = (m: SimplifiedMove) => `${m.from}->${m.to}`
+
+  // Build frequency map of player moves
+  const need = new Map<string, number>()
+  for (const m of playerMoves) {
+    const k = key(m)
+    need.set(k, (need.get(k) ?? 0) + 1)
+  }
+
+  for (const hint of hints) {
+    // Only consider hints with more moves than player (partial play scenario)
+    if (hint.moves.length <= playerMoves.length) continue
+
+    // Build frequency map of ALL hint moves
+    const have = new Map<string, number>()
+    for (const m of hint.moves) {
+      const k = key(m)
+      have.set(k, (have.get(k) ?? 0) + 1)
+    }
+
+    // Check that every player move appears in the hint at least as many times
+    let ok = true
+    for (const [k, cnt] of need) {
+      if ((have.get(k) ?? 0) < cnt) {
         ok = false
         break
       }

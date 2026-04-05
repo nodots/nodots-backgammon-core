@@ -1,0 +1,91 @@
+{
+  "tournamentId": "calibration-2026-01-29T00-20-27-545Z",
+  "timestamp": "2026-01-29T00:40:38.787Z",
+  "config": {
+    "games": 50,
+    "matchupsCount": 3
+  },
+  "officialThresholds": {
+    "supernatural": 2,
+    "worldClass": 5,
+    "expert": 8,
+    "advanced": 12,
+    "intermediate": 18,
+    "casual": 26,
+    "beginner": 35
+  },
+  "matchups": [
+    {
+      "robot1": {
+        "name": "GNU Novice",
+        "evalPlies": 0,
+        "expectedPR": 15
+      },
+      "robot2": {
+        "name": "GNU Beginner",
+        "evalPlies": 1,
+        "expectedPR": 12
+      },
+      "robot1Stats": {
+        "wins": 18,
+        "meanPR": 14.945730535727657,
+        "medianPR": 4.818571682431196,
+        "stdDevPR": 19.495127318778117
+      },
+      "robot2Stats": {
+        "wins": 32,
+        "meanPR": 16.780105283677184,
+        "medianPR": 5.056069718430871,
+        "stdDevPR": 24.47025408624685
+      }
+    },
+    {
+      "robot1": {
+        "name": "GNU Beginner",
+        "evalPlies": 1,
+        "expectedPR": 12
+      },
+      "robot2": {
+        "name": "GNU Intermediate",
+        "evalPlies": 2,
+        "expectedPR": 8
+      },
+      "robot1Stats": {
+        "wins": 21,
+        "meanPR": 14.381967883849141,
+        "medianPR": 7.20733151329347,
+        "stdDevPR": 16.28538942024071
+      },
+      "robot2Stats": {
+        "wins": 29,
+        "meanPR": 11.95819399794272,
+        "medianPR": 1.1043655770746144,
+        "stdDevPR": 19.199358576577282
+      }
+    },
+    {
+      "robot1": {
+        "name": "GNU Intermediate",
+        "evalPlies": 2,
+        "expectedPR": 8
+      },
+      "robot2": {
+        "name": "GNU Expert",
+        "evalPlies": 2,
+        "expectedPR": 2
+      },
+      "robot1Stats": {
+        "wins": 26,
+        "meanPR": 16.07608820645253,
+        "medianPR": 3.192757734737919,
+        "stdDevPR": 23.694891620173586
+      },
+      "robot2Stats": {
+        "wins": 24,
+        "meanPR": 14.192410815158949,
+        "medianPR": 1.3266726971813365,
+        "stdDevPR": 24.99358791497321
+      }
+    }
+  ]
+}

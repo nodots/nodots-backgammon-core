@@ -1,0 +1,91 @@
+{
+  "tournamentId": "calibration-2026-01-28T21-31-39-630Z",
+  "timestamp": "2026-01-28T22:06:43.526Z",
+  "config": {
+    "games": 100,
+    "matchupsCount": 3
+  },
+  "officialThresholds": {
+    "supernatural": 2,
+    "worldClass": 5,
+    "expert": 8,
+    "advanced": 12,
+    "intermediate": 18,
+    "casual": 26,
+    "beginner": 35
+  },
+  "matchups": [
+    {
+      "robot1": {
+        "name": "GNU Expert",
+        "evalPlies": 2,
+        "expectedPR": 2
+      },
+      "robot2": {
+        "name": "GNU Expert",
+        "evalPlies": 2,
+        "expectedPR": 2
+      },
+      "robot1Stats": {
+        "wins": 44,
+        "meanPR": 0.3320553704647843,
+        "medianPR": 0,
+        "stdDevPR": 0.6829913551928889
+      },
+      "robot2Stats": {
+        "wins": 56,
+        "meanPR": 0.4754447106923208,
+        "medianPR": 0,
+        "stdDevPR": 1.0271385139912201
+      }
+    },
+    {
+      "robot1": {
+        "name": "GNU Expert",
+        "evalPlies": 2,
+        "expectedPR": 2
+      },
+      "robot2": {
+        "name": "GNU Advanced",
+        "evalPlies": 2,
+        "expectedPR": 5
+      },
+      "robot1Stats": {
+        "wins": 50,
+        "meanPR": 0.3711902899310398,
+        "medianPR": 0,
+        "stdDevPR": 0.8825336258793013
+      },
+      "robot2Stats": {
+        "wins": 50,
+        "meanPR": 0.539706519960735,
+        "medianPR": 0,
+        "stdDevPR": 1.0535196952262702
+      }
+    },
+    {
+      "robot1": {
+        "name": "GNU Advanced",
+        "evalPlies": 2,
+        "expectedPR": 5
+      },
+      "robot2": {
+        "name": "GNU Intermediate",
+        "evalPlies": 2,
+        "expectedPR": 8
+      },
+      "robot1Stats": {
+        "wins": 41,
+        "meanPR": 0.3286995943143661,
+        "medianPR": 0,
+        "stdDevPR": 0.7231360346691694
+      },
+      "robot2Stats": {
+        "wins": 59,
+        "meanPR": 0.4728077166092482,
+        "medianPR": 0,
+        "stdDevPR": 1.0897076691713043
+      }
+    }
+  ]
+}

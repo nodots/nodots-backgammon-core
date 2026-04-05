@@ -2,6 +2,7 @@ import {
   findMatchingHint,
   findMatchingHintOrdered,
   findMatchingHintUnordered,
+  findMatchingHintSubset,
   areSimplifiedMovesIndependent,
   SimplifiedMove,
 } from '../MoveComparator'
@@ -303,6 +304,196 @@ describe('MoveComparator', () => {
       // Should match - identical moves just reordered
       expect(result).toBeDefined()
       expect(result?.equity).toBe(0.362)
+    })
+  })
+
+  describe('findMatchingHintSubset (partial plays)', () => {
+    const createHint = (moves: SimplifiedMove[], equity: number): MoveHint => ({
+      moves: moves.map(m => ({
+        from: m.from,
+        to: m.to,
+        player: 'white',
+        moveKind: 'point-to-point',
+        fromContainer: 'point',
+        toContainer: 'point',
+        isHit: false,
+      })),
+      equity,
+      rank: 1,
+      difference: 0,
+    })
+
+    it('should match 3 of 4 doubles moves as subset', () => {
+      // Hint returns 4-move play for doubles [5,5]
+      // Player only used 3 dice (4th was blocked)
+      const hints = [
+        createHint([
+          { from: 0, to: 20 },
+          { from: 13, to: 8 },
+          { from: 8, to: 3 },
+          { from: 8, to: 3 },
+        ], 0.45),
+      ]
+
+      const playerMoves = [
+        { from: 0, to: 20 },
+        { from: 0, to: 20 },
+        { from: 8, to: 3 },
+      ]
+      const result = findMatchingHintSubset(hints, playerMoves)
+
+      // Player's 3 moves should NOT match: 0->20 appears twice in player
+      // but only once in hint
+      expect(result).toBeUndefined()
+    })
+
+    it('should match when player moves are true subset of hint', () => {
+      const hints = [
+        createHint([
+          { from: 0, to: 20 },
+          { from: 13, to: 8 },
+          { from: 8, to: 3 },
+          { from: 8, to: 3 },
+        ], 0.45),
+      ]
+
+      // Player used 3 of 4 dice with moves that ARE a subset
+      const playerMoves = [
+        { from: 0, to: 20 },
+        { from: 13, to: 8 },
+        { from: 8, to: 3 },
+      ]
+      const result = findMatchingHintSubset(hints, playerMoves)
+
+      expect(result).toBeDefined()
+      expect(result?.equity).toBe(0.45)
+    })
+
+    it('should not match when player has moves not in hint', () => {
+      const hints = [
+        createHint([
+          { from: 13, to: 8 },
+          { from: 13, to: 8 },
+          { from: 8, to: 3 },
+          { from: 8, to: 3 },
+        ], 0.45),
+      ]
+
+      const playerMoves = [
+        { from: 13, to: 8 },
+        { from: 6, to: 1 },  // Not in hint
+        { from: 8, to: 3 },
+      ]
+      const result = findMatchingHintSubset(hints, playerMoves)
+
+      expect(result).toBeUndefined()
+    })
+
+    it('should not activate for same-length hints', () => {
+      const hints = [
+        createHint([{ from: 6, to: 3 }, { from: 8, to: 5 }], 0.5),
+      ]
+
+      const playerMoves = [{ from: 6, to: 3 }, { from: 8, to: 5 }]
+      const result = findMatchingHintSubset(hints, playerMoves)
+
+      // Same length - subset matching should not apply
+      expect(result).toBeUndefined()
+    })
+
+    it('should return best (first) matching hint', () => {
+      const hints = [
+        createHint([
+          { from: 13, to: 8 },
+          { from: 13, to: 8 },
+          { from: 8, to: 3 },
+          { from: 6, to: 1 },
+        ], 0.60),  // Best hint
+        createHint([
+          { from: 13, to: 8 },
+          { from: 8, to: 3 },
+          { from: 8, to: 3 },
+          { from: 6, to: 1 },
+        ], 0.55),  // Second best
+      ]
+
+      // Player's 3 moves are subset of both hints
+      const playerMoves = [
+        { from: 13, to: 8 },
+        { from: 8, to: 3 },
+        { from: 6, to: 1 },
+      ]
+      const result = findMatchingHintSubset(hints, playerMoves)
+
+      expect(result).toBeDefined()
+      expect(result?.equity).toBe(0.60)
+    })
+  })
+
+  describe('findMatchingHint with partial plays', () => {
+    const createHint = (moves: SimplifiedMove[], equity: number): MoveHint => ({
+      moves: moves.map(m => ({
+        from: m.from,
+        to: m.to,
+        player: 'white',
+        moveKind: 'point-to-point',
+        fromContainer: 'point',
+        toContainer: 'point',
+        isHit: false,
+      })),
+      equity,
+      rank: 1,
+      difference: 0,
+    })
+
+    it('should match partial play via findMatchingHint main entry', () => {
+      // Issue scenario: doubles [5,5], 4-move hints, player used 3 dice
+      const hints = [
+        createHint([
+          { from: 0, to: 20 },
+          { from: 13, to: 8 },
+          { from: 8, to: 3 },
+          { from: 8, to: 3 },
+        ], 0.45),
+      ]
+
+      const playerMoves = [
+        { from: 0, to: 20 },
+        { from: 13, to: 8 },
+        { from: 8, to: 3 },
+      ]
+      const result = findMatchingHint(hints, playerMoves)
+
+      // Should fall through ordered and unordered, then match via subset
+      expect(result).toBeDefined()
+      expect(result?.equity).toBe(0.45)
+    })
+
+    it('should prefer exact match over subset match', () => {
+      const hints = [
+        createHint([
+          { from: 13, to: 8 },
+          { from: 8, to: 3 },
+          { from: 8, to: 3 },
+          { from: 6, to: 1 },
+        ], 0.60),  // 4-move hint
+        createHint([
+          { from: 13, to: 8 },
+          { from: 8, to: 3 },
+          { from: 6, to: 1 },
+        ], 0.40),  // 3-move exact match
+      ]
+
+      const playerMoves = [
+        { from: 13, to: 8 },
+        { from: 8, to: 3 },
+        { from: 6, to: 1 },
+      ]
+      const result = findMatchingHint(hints, playerMoves)
+
+      // Should match the exact 3-move hint, not the 4-move subset
+      expect(result).toBeDefined()
+      expect(result?.equity).toBe(0.40)
     })
   })
 })

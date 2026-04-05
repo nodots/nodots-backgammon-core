@@ -78,8 +78,17 @@ async function simulateOne(gameIndex: number): Promise<{
       ? await getGnuMoveHints(altReq, 1)
       : await getGnuMoveHints(altReq, 1).catch(() => [])
 
-    // Record pre-turn state once (deep clone) so indices align for the first action
-    const turnStartState = JSON.parse(JSON.stringify(rolled)) as BackgammonGame
+    // Clone only the fields PR analysis needs (board, players, activeColor, stateKind).
+    // Deep-cloning the full game state causes OOM over many turns.
+    const turnStartState = {
+      id: (rolled as any).id,
+      stateKind: (rolled as any).stateKind || 'moving',
+      board: JSON.parse(JSON.stringify((rolled as any).board)),
+      players: (rolled as any).players,
+      activeColor: (rolled as any).activeColor,
+      activePlayer: (rolled as any).activePlayer,
+      inactivePlayer: (rolled as any).inactivePlayer,
+    } as BackgammonGame
     const activePlayerId: string = (rolled as any).activePlayer?.id || (rolled as any).activePlayer?.userId
 
     // Execute steps until turn completes
