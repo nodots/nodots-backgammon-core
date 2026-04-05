@@ -3,89 +3,98 @@ import type { RobotAIProvider } from './RobotAIProvider'
 /**
  * RobotAIRegistry
  *
- * Singleton registry for managing AI providers. This registry uses dependency
- * injection to allow external packages (like @nodots-llc/backgammon-ai) to
- * provide AI implementations without CORE having direct dependencies on them.
+ * Multi-provider registry for AI implementations. Each provider registers
+ * with an email pattern that matches the robot users it handles. At runtime,
+ * the registry resolves the correct provider for a given robot email.
  *
- * The registry supports self-registration where AI packages automatically
- * register themselves when imported, eliminating the need for explicit
- * initialization code in consuming applications.
+ * Patterns use simple glob matching:
+ * - 'gnu-*@nodots.com' matches all GNU skill-level robots
+ * - 'gbg-bot@nodots.com' matches exact email
+ * - '*' is the fallback catch-all
  *
  * Architecture:
  * 1. CORE defines the interface and registry (this file)
- * 2. AI package implements the interface and self-registers on import
- * 3. CORE's executeRobotTurn() retrieves provider from registry
- * 4. No explicit registration needed in API or application code
+ * 2. AI package registers providers with email patterns
+ * 3. CORE's executeRobotTurn() resolves provider by robot email
+ * 4. Provider executes the turn with its own AI engine
  *
- * @example Self-registration in AI package:
+ * @example
  * ```typescript
- * // In @nodots-llc/backgammon-ai/src/index.ts
  * import { RobotAIRegistry } from '@nodots-llc/backgammon-core'
- * import { GNUAIProvider } from './GNUAIProvider'
+ * import { GNUProvider } from './GNUProvider'
+ * import { NodotsProvider } from './NodotsProvider'
  *
- * // Auto-register when package is imported
- * RobotAIRegistry.register(new GNUAIProvider())
- * ```
- *
- * @example Using in CORE:
- * ```typescript
- * // In CORE's executeRobotTurn()
- * const provider = RobotAIRegistry.getProvider()
- * return provider.executeRobotTurn(game)
+ * RobotAIRegistry.register('gnu-*', new GNUProvider())
+ * RobotAIRegistry.register('nbg-*', new NodotsProvider())
+ * RobotAIRegistry.register('*', new NodotsProvider()) // fallback
  * ```
  */
+
+interface ProviderEntry {
+  pattern: string
+  provider: RobotAIProvider
+}
+
+function matchPattern(pattern: string, email: string): boolean {
+  if (pattern === '*') return true
+  // Convert glob pattern to regex: escape dots, replace * with .*
+  const regex = new RegExp(
+    '^' + pattern.replace(/\./g, '\\.').replace(/\*/g, '.*') + '$'
+  )
+  return regex.test(email)
+}
+
 export class RobotAIRegistry {
-  private static provider: RobotAIProvider | null = null
+  private static providers: ProviderEntry[] = []
 
   /**
-   * Register an AI provider
-   *
-   * This method is typically called by AI packages during their initialization
-   * to make their AI implementation available to CORE.
-   *
-   * @param provider - The AI provider implementation
-   * @throws Error if a provider is already registered (prevents accidental overwrites)
+   * Register a provider for robots matching the given email pattern.
+   * More specific patterns should be registered before the '*' fallback.
    */
-  static register(provider: RobotAIProvider): void {
-    if (this.provider !== null) {
-      throw new Error(
-        'RobotAIProvider already registered. Only one provider can be active at a time.'
-      )
+  static register(pattern: string, provider: RobotAIProvider): void {
+    // Replace existing entry for same pattern
+    const idx = this.providers.findIndex((e) => e.pattern === pattern)
+    if (idx >= 0) {
+      this.providers[idx] = { pattern, provider }
+    } else {
+      this.providers.push({ pattern, provider })
     }
-    this.provider = provider
   }
 
   /**
-   * Get the registered AI provider
-   *
-   * @returns The registered AI provider
-   * @throws Error if no provider is registered (indicates missing AI package dependency)
+   * Resolve the provider for a given robot email.
+   * Checks patterns in registration order; first match wins.
    */
-  static getProvider(): RobotAIProvider {
-    if (this.provider === null) {
-      throw new Error(
-        'No RobotAIProvider registered. Ensure @nodots-llc/backgammon-ai is installed and imported before executing robot turns.'
-      )
+  static getProvider(robotEmail?: string): RobotAIProvider {
+    if (robotEmail) {
+      for (const entry of this.providers) {
+        if (matchPattern(entry.pattern, robotEmail)) {
+          return entry.provider
+        }
+      }
     }
-    return this.provider
+
+    // Try fallback '*' pattern
+    const fallback = this.providers.find((e) => e.pattern === '*')
+    if (fallback) return fallback.provider
+
+    throw new Error(
+      `No RobotAIProvider registered for robot email "${robotEmail || 'unknown'}". ` +
+      'Ensure @nodots-llc/backgammon-ai is installed and imported before executing robot turns.'
+    )
   }
 
   /**
-   * Check if a provider is registered
-   *
-   * @returns true if a provider is registered, false otherwise
+   * Check if any provider is registered.
    */
   static hasProvider(): boolean {
-    return this.provider !== null
+    return this.providers.length > 0
   }
 
   /**
-   * Clear the registered provider (primarily for testing)
-   *
-   * This method allows tests to reset the registry state between test cases.
-   * Should not be used in production code.
+   * Clear all registered providers (for testing).
    */
   static clear(): void {
-    this.provider = null
+    this.providers = []
   }
 }
