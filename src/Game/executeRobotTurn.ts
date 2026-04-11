@@ -1,14 +1,13 @@
 /**
  * Robot Turn Execution
  *
- * This module delegates robot turn execution to the registered AI provider.
- * The actual AI implementation is provided by external packages (like
- * @nodots-llc/backgammon-ai) through the RobotAIProvider interface.
- *
- * Architecture:
- * - CORE defines the interface and delegates execution
- * - AI packages implement the interface with specific strategies
- * - No direct GNU Backgammon dependencies in CORE
+ * Delegates robot turn execution to the registered AI provider matched
+ * by the robot's email. Callers MUST attach `robotProfile` to
+ * `game.activePlayer` before invoking this; otherwise the registry can
+ * only resolve via the `*` catch-all and may route a GNU robot to a
+ * Nodots provider (or vice versa). The previous silent fallback caused
+ * stuck robot turns and "No legal moves available from origin" errors
+ * because NodotsAIProvider was being used to execute GNU robots.
  */
 
 import type {
@@ -16,32 +15,24 @@ import type {
   BackgammonGameRolling,
 } from '@nodots-llc/backgammon-types'
 import { RobotAIRegistry } from '../AI/RobotAIRegistry'
+import { logger } from '../utils/logger'
 
-/**
- * Execute a complete robot turn
- *
- * Delegates to the registered AI provider to analyze the position,
- * select moves, and execute them. The AI provider is typically registered
- * automatically when the AI package is imported.
- *
- * @param game - Game in moving state with robot as active player
- * @returns Promise resolving to game in rolling state for next player
- * @throws Error if no AI provider is registered
- * @throws Error if the active player is not a robot
- * @throws Error if move execution fails
- *
- * @example
- * ```typescript
- * // Ensure AI package is imported (typically done at app startup)
- * import '@nodots-llc/backgammon-ai'
- *
- * // Execute robot turn
- * const updatedGame = await Game.executeRobotTurn(movingGame)
- * ```
- */
 export const executeRobotTurn = async (
   game: BackgammonGameMoving
 ): Promise<BackgammonGameRolling> => {
-  const provider = RobotAIRegistry.getProvider()
+  // robotProfile is attached by the API layer (REST endpoint and queue worker)
+  // before calling this. CORE doesn't have DB access to look it up itself.
+  const robotEmail = (game.activePlayer as Record<string, any>)
+    .robotProfile?.email as string | undefined // cast: robotProfile is not in the type system
+
+  if (!robotEmail) {
+    logger.error(
+      `[executeRobotTurn] No robotProfile.email on activePlayer for game ${game.id}. ` +
+        `Caller forgot to attach the robot profile, AI provider routing will fall back ` +
+        `to '*' which may pick the wrong provider for this robot.`
+    )
+  }
+
+  const provider = RobotAIRegistry.getProvider(robotEmail)
   return provider.executeRobotTurn(game)
 }
