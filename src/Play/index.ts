@@ -775,7 +775,7 @@ export class Play {
             ? 'reenter'
             : 'point-to-point'
 
-      return {
+      const move = {
         id: generateId(),
         player,
         dieValue,
@@ -783,6 +783,10 @@ export class Play {
         moveKind,
         possibleMoves,
       } as BackgammonMoveReady
+      if (keepAsReady) {
+        (move as any)._sequenceDependent = true
+      }
+      return move
     })
   }
 
