@@ -569,6 +569,7 @@ export class Game {
             // and their possibleMoves may contain options from multiple dice.
             // Re-evaluating with a single dieValue would strip those options.
             if (move.moveKind === 'reenter') continue
+            if ((move as any)._sequenceDependent) continue
 
             const fresh = Board.getPossibleMoves(
               sanitizationBoard,
@@ -737,6 +738,7 @@ export class Game {
           for (const move of activePlay.moves) {
             if (move.stateKind === 'ready') {
               if (move.moveKind === 'reenter') continue
+              if ((move as any)._sequenceDependent) continue
               const fresh = Board.getPossibleMoves(
                 sanitizationBoard3,
                 playerMoving,
@@ -897,6 +899,7 @@ export class Game {
           for (const move of activePlay.moves) {
             if (move.stateKind === 'ready') {
               if (move.moveKind === 'reenter') continue
+              if ((move as any)._sequenceDependent) continue
               const fresh = Board.getPossibleMoves(
                 sanitizationBoard2,
                 playerMoving,
