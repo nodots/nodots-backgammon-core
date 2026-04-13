@@ -39,63 +39,58 @@ function getCheckersOnBar(
 export function exportToGnuPositionId(game: BackgammonGame): string {
   const { board } = game
 
-  // Canonical encoding: clockwise player always in TanBoard[0] (X),
-  // counterclockwise player always in TanBoard[1] (O).
-  // getHintsFromPositionId expects this layout and handles the
-  // on-roll swap internally based on activePlayerDirection.
-  const clockwisePlayer = game.players.find(
-    (p) => p.direction === 'clockwise'
-  )
-  const counterClockwisePlayer = game.players.find(
-    (p) => p.direction === 'counterclockwise'
-  )
+  // GNU BG position ID: TanBoard[0] = player on roll, TanBoard[1] = opponent.
+  // Each player's points are numbered 1-24 from their own perspective.
+  // Before roll-for-start completes, there is no active player — fall back
+  // to clockwise first (the position is symmetric at the start anyway).
+  const onRollPlayer = game.activePlayer ??
+    game.players.find((p) => p.direction === 'clockwise')
+  const opponent = game.inactivePlayer ??
+    game.players.find((p) => p.direction !== (onRollPlayer as any)?.direction)
 
-  if (!clockwisePlayer || !counterClockwisePlayer) {
+  if (!onRollPlayer || !opponent) {
     throw new Error(
-      'Could not determine clockwise/counterclockwise players for position encoding'
+      'Could not determine players for position encoding'
     )
   }
 
-  logger.debug('[GnuPositionId] Encoding position (canonical)', {
-    gameStateKind: game.stateKind,
-    activePlayerColor: game.activePlayer?.color,
-    activePlayerDirection: (game.activePlayer as any)?.direction,
-    clockwiseColor: clockwisePlayer.color,
-    counterClockwiseColor: counterClockwisePlayer.color,
+  logger.debug('[GnuPositionId] Encoding position', {
+    onRollColor: onRollPlayer.color,
+    onRollDirection: (onRollPlayer as any)?.direction,
+    opponentColor: opponent.color,
+    opponentDirection: (opponent as any)?.direction,
   })
 
   let bitString = ''
 
-  // 1. Clockwise player's points — TanBoard[0] (X) in canonical encoding
-  // GOLDEN RULE: Use position[direction] to find points, not array indices
+  // TanBoard[0]: player on roll, points 1-24 from their perspective, then bar
   for (let gnuPos = 1; gnuPos <= 24; gnuPos++) {
     const checkers = getCheckersOnPointByPosition(
       board,
-      clockwisePlayer.color,
-      clockwisePlayer.direction,
+      onRollPlayer.color,
+      (onRollPlayer as any).direction,
       gnuPos
     )
     bitString += '1'.repeat(checkers)
     bitString += '0'
   }
-  const cwBarCheckers = getCheckersOnBar(board, clockwisePlayer)
-  bitString += '1'.repeat(cwBarCheckers)
+  const onRollBarCheckers = getCheckersOnBar(board, onRollPlayer)
+  bitString += '1'.repeat(onRollBarCheckers)
   bitString += '0'
 
-  // 2. Counterclockwise player's points — TanBoard[1] (O) in canonical encoding
-  // GOLDEN RULE: Use position[direction] to find points, not array indices
+  // TanBoard[1]: opponent, points 1-24 from their perspective, then bar
   for (let gnuPos = 1; gnuPos <= 24; gnuPos++) {
     const checkers = getCheckersOnPointByPosition(
       board,
-      counterClockwisePlayer.color,
-      counterClockwisePlayer.direction,
+      opponent.color,
+      (opponent as any).direction,
       gnuPos
     )
     bitString += '1'.repeat(checkers)
     bitString += '0'
   }
-  const ccwBarCheckers = getCheckersOnBar(board, counterClockwisePlayer)
-  bitString += '1'.repeat(ccwBarCheckers)
+  const opponentBarCheckers = getCheckersOnBar(board, opponent)
+  bitString += '1'.repeat(opponentBarCheckers)
   bitString += '0'
 
   // 3. Pad to 80 bits
