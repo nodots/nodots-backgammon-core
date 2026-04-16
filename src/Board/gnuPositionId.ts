@@ -63,22 +63,12 @@ export function exportToGnuPositionId(game: BackgammonGame): string {
 
   let bitString = ''
 
-  // TanBoard[0]: player on roll, points 1-24 from their perspective, then bar
-  for (let gnuPos = 1; gnuPos <= 24; gnuPos++) {
-    const checkers = getCheckersOnPointByPosition(
-      board,
-      onRollPlayer.color,
-      (onRollPlayer as any).direction,
-      gnuPos
-    )
-    bitString += '1'.repeat(checkers)
-    bitString += '0'
-  }
-  const onRollBarCheckers = getCheckersOnBar(board, onRollPlayer)
-  bitString += '1'.repeat(onRollBarCheckers)
-  bitString += '0'
+  // GNU BG's move generator reads TanBoard[1] as the player on roll and
+  // TanBoard[0] as the opponent. Encoding in the opposite order causes GNU
+  // to return optimal moves for the wrong player.
+  // Position-ID bitstream order: TanBoard[0] first, TanBoard[1] second.
 
-  // TanBoard[1]: opponent, points 1-24 from their perspective, then bar
+  // TanBoard[0]: opponent, points 1-24 from their perspective, then bar
   for (let gnuPos = 1; gnuPos <= 24; gnuPos++) {
     const checkers = getCheckersOnPointByPosition(
       board,
@@ -91,6 +81,21 @@ export function exportToGnuPositionId(game: BackgammonGame): string {
   }
   const opponentBarCheckers = getCheckersOnBar(board, opponent)
   bitString += '1'.repeat(opponentBarCheckers)
+  bitString += '0'
+
+  // TanBoard[1]: player on roll, points 1-24 from their perspective, then bar
+  for (let gnuPos = 1; gnuPos <= 24; gnuPos++) {
+    const checkers = getCheckersOnPointByPosition(
+      board,
+      onRollPlayer.color,
+      (onRollPlayer as any).direction,
+      gnuPos
+    )
+    bitString += '1'.repeat(checkers)
+    bitString += '0'
+  }
+  const onRollBarCheckers = getCheckersOnBar(board, onRollPlayer)
+  bitString += '1'.repeat(onRollBarCheckers)
   bitString += '0'
 
   // 3. Pad to 80 bits

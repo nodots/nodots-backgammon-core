@@ -33,7 +33,7 @@ describe('GNU Position ID', () => {
     expect(pid).toBe('4HPwATDgc/ABMA')
   })
 
-  test('TanBoard[0] is the player on roll', () => {
+  test('starting position PID is invariant to who is on roll (symmetric board)', () => {
     const white = Player.initialize('white', 'clockwise', 'rolling-for-start', false)
     const black = Player.initialize('black', 'counterclockwise', 'rolling-for-start', false)
     const game = Game.initialize([white, black]) as any

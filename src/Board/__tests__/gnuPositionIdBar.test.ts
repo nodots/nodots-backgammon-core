@@ -69,7 +69,7 @@ describe('GNU Position ID bar encoding', () => {
     GnuBgHints.configure({ evalPlies: 0, moveFilter: 0, usePruning: true })
   })
 
-  test('on-roll player bar checker is in TanBoard[0]', () => {
+  test('on-roll player bar checker is in TanBoard[1]', () => {
     const board = Board.initialize()
     const white = Player.initialize('white', 'clockwise', 'rolling', true, 'w1')
     const black = Player.initialize('black', 'counterclockwise', 'inactive', true, 'b1')
@@ -84,9 +84,9 @@ describe('GNU Position ID bar encoding', () => {
     const pid = exportToGnuPositionId(game)
     const bits = decodePidToBits(pid)
 
-    // TanBoard[0] = on-roll player (white), TanBoard[1] = opponent (black)
-    const onRollSlots = parseSlots(bits.substring(0, 40))
-    const opponentSlots = parseSlots(bits.substring(40, 80))
+    // Bitstream order: TanBoard[0] (opponent) first, TanBoard[1] (on-roll) second
+    const opponentSlots = parseSlots(bits.substring(0, 40))
+    const onRollSlots = parseSlots(bits.substring(40, 80))
 
     expect(onRollSlots.bar).toBe(1)
     expect(opponentSlots.bar).toBe(0)
@@ -94,7 +94,7 @@ describe('GNU Position ID bar encoding', () => {
     expect(opponentSlots.points.reduce((a, b) => a + b, 0) + opponentSlots.bar).toBe(15)
   })
 
-  test('opponent bar checker is in TanBoard[1]', () => {
+  test('opponent bar checker is in TanBoard[0]', () => {
     const board = Board.initialize()
     const white = Player.initialize('white', 'clockwise', 'rolling', true, 'w1')
     const black = Player.initialize('black', 'counterclockwise', 'inactive', true, 'b1')
@@ -109,8 +109,8 @@ describe('GNU Position ID bar encoding', () => {
     const pid = exportToGnuPositionId(game)
     const bits = decodePidToBits(pid)
 
-    const onRollSlots = parseSlots(bits.substring(0, 40))
-    const opponentSlots = parseSlots(bits.substring(40, 80))
+    const opponentSlots = parseSlots(bits.substring(0, 40))
+    const onRollSlots = parseSlots(bits.substring(40, 80))
 
     expect(onRollSlots.bar).toBe(0)
     expect(opponentSlots.bar).toBe(1)
