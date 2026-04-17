@@ -2212,6 +2212,32 @@ export class Game {
     const currentCubeValue = game.cube?.value
     const pointsWon = currentCubeValue !== undefined ? currentCubeValue / 2 : 1
 
+    // Reset cube to its pre-offer state. Without this, cube.stateKind
+    // remains 'offered' after the game ends, which confuses the client
+    // into thinking there's still an outstanding double offer.
+    // - If the cube was centered before the offer (value=2, typical first
+    //   double), revert to 'initialized' (value=undefined, no owner).
+    // - Otherwise revert to 'doubled' at half the offered value, owned by
+    //   the same player as before the offer.
+    const wasFirstDouble = currentCubeValue === 2
+    const resetCube = wasFirstDouble
+      ? {
+          ...game.cube,
+          stateKind: 'initialized' as const,
+          value: undefined,
+          owner: undefined,
+          offeredBy: undefined,
+        }
+      : {
+          ...game.cube,
+          stateKind: 'doubled' as const,
+          value: (currentCubeValue !== undefined
+            ? currentCubeValue / 2
+            : undefined) as typeof game.cube.value,
+          owner: game.cube.owner,
+          offeredBy: undefined,
+        }
+
     logger.info(
       `🏆 [Game] Double refused - Winner: ${winner.id}, Points won: ${pointsWon}`
     )
@@ -2223,6 +2249,7 @@ export class Game {
       winType: 'simple', // Cube drops are always simple wins
       pointsWon,
       players: updatedPlayers,
+      cube: resetCube,
     } as BackgammonGameCompleted)
   }
 
