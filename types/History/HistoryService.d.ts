@@ -1,5 +1,5 @@
-import { BackgammonGame } from '@nodots-llc/backgammon-types';
-import { GameActionData, GameActionMetadata, GameActionType, GameHistory, GameHistoryAction, GameReconstructionOptions } from '@nodots-llc/backgammon-types';
+import { BackgammonGame } from '@nodots/backgammon-types';
+import { GameActionData, GameActionMetadata, GameActionType, GameHistory, GameHistoryAction, GameReconstructionOptions } from '@nodots/backgammon-types';
 /**
  * Result types for discriminated unions
  */

@@ -8,7 +8,7 @@ import {
   BackgammonCheckerContainerImport,
   BackgammonPlayerRolling,
   BackgammonPlayResult
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 describe('Comprehensive Auto-Switch Testing', () => {
   it('should handle [5,2] robot reentry scenario correctly', () => {

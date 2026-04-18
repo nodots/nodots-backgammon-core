@@ -2,7 +2,7 @@ import {
   BackgammonGameRolledForStart,
   BackgammonGameRollingForStart,
   BackgammonPlayers,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { Player } from '../../Player'
 import { Game } from '../index'
 

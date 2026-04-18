@@ -1,4 +1,4 @@
-import { BackgammonGame, BackgammonGameMoving, BackgammonGameRolledForStart, BackgammonGameRollingForStart } from '@nodots-llc/backgammon-types';
+import { BackgammonGame, BackgammonGameMoving, BackgammonGameRolledForStart, BackgammonGameRollingForStart } from '@nodots/backgammon-types';
 export interface EngineOptions {
     seed?: number;
     fast?: boolean;

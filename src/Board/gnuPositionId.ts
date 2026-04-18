@@ -3,7 +3,7 @@ import {
   BackgammonColor,
   BackgammonGame,
   BackgammonPlayer,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { logger } from '../utils/logger'
 
 // GNU BG base64 alphabet

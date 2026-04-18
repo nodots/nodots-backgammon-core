@@ -6,7 +6,7 @@ import {
   areSimplifiedMovesIndependent,
   SimplifiedMove,
 } from '../MoveComparator'
-import type { MoveHint } from '@nodots-llc/gnubg-hints'
+import type { MoveHint } from '@nodots/gnubg-hints'
 
 describe('MoveComparator', () => {
   describe('areSimplifiedMovesIndependent', () => {

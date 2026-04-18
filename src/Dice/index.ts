@@ -10,7 +10,7 @@ import {
   BackgammonDieValue,
   BackgammonRoll,
   BackgammonRollForStart,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { generateId } from '..'
 
 export class Dice {

@@ -8,10 +8,10 @@
  */
 
 import { describe, expect, it } from '@jest/globals'
-import { GnuBgHints } from '@nodots-llc/gnubg-hints'
+import { GnuBgHints } from '@nodots/gnubg-hints'
 import { Board } from '../Board'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
-import type { BackgammonMoveDirection } from '@nodots-llc/backgammon-types'
+import type { BackgammonMoveDirection } from '@nodots/backgammon-types'
 import fs from 'fs'
 import path from 'path'
 

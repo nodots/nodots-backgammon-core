@@ -27,7 +27,7 @@ import {
   BackgammonPlayerWinner,
   BackgammonPlayMoving,
   BackgammonRoll,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { generateId, Player } from '..'
 import { Board } from '../Board'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
@@ -49,8 +49,8 @@ import type {
   BackgammonPlayersRolledForStartTuple,
   BackgammonPlayersRollingForStartTuple,
   BackgammonPlayersRollingTuple,
-} from '@nodots-llc/backgammon-types'
-import { RESTORABLE_GAME_STATE_KINDS } from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
+import { RESTORABLE_GAME_STATE_KINDS } from '@nodots/backgammon-types'
 import { executeRobotTurn } from './executeRobotTurn'
 
 export class Game {
@@ -1274,7 +1274,7 @@ export class Game {
       board,
       players: game.players.map((p) =>
         p.id === movedPlayer.id ? movedPlayer : p
-      ) as import('@nodots-llc/backgammon-types').BackgammonPlayers,
+      ) as import('@nodots/backgammon-types').BackgammonPlayers,
     }
     const updatedPlayers = Player.recalculatePipCounts(gameWithUpdatedBoard)
 
@@ -2332,7 +2332,7 @@ export class Game {
       if (confirmedGame.activePlayer?.isRobot) {
         try {
           // Dynamic import to avoid circular dependencies
-          // Robot automation moved to @nodots-llc/backgammon-robots package
+          // Robot automation moved to @nodots/backgammon-robots package
 
           // Robot automation is now external - return game as-is
           logger.info('🤖 Robot automation is now handled externally')
@@ -2350,7 +2350,7 @@ export class Game {
       return confirmedGame
     }
 
-  // processRobotTurn method removed - now handled by @nodots-llc/backgammon-robots package
+  // processRobotTurn method removed - now handled by @nodots/backgammon-robots package
 
   // undoLastMove removed - use database-driven state restoration via API endpoints instead
 

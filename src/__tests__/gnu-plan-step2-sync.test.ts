@@ -6,13 +6,13 @@
  */
 
 import { describe, expect, it } from '@jest/globals'
-import { GnuBgHints } from '@nodots-llc/gnubg-hints'
+import { GnuBgHints } from '@nodots/gnubg-hints'
 import { Board } from '../Board'
 import { Game } from '../Game'
 import { Play } from '../Play'
 import { Player } from '../Player'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
-import type { BackgammonMoveDirection } from '@nodots-llc/backgammon-types'
+import type { BackgammonMoveDirection } from '@nodots/backgammon-types'
 
 const RUN = process.env.RUN_GNUBG_HINTS === '1'
 const itfn = RUN ? it : it.skip

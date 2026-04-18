@@ -1,4 +1,4 @@
-import { BackgammonGame, BackgammonGameStateKind } from '@nodots-llc/backgammon-types';
+import { BackgammonGame, BackgammonGameStateKind } from '@nodots/backgammon-types';
 import { Game } from '..';
 /**
  * Default game rules following standard backgammon conventions

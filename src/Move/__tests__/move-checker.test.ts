@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals'
-import { BackgammonPlayer } from '@nodots-llc/backgammon-types'
+import { BackgammonPlayer } from '@nodots/backgammon-types'
 import { Board, Game, Player } from '../../index'
 import { Move, type GameLookupFunction } from '../index'
 

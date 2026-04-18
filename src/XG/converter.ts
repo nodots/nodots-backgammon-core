@@ -8,7 +8,7 @@ import {
   XGMove,
   XGMoveRecord,
   XGMatchHeader
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 // Import directly from modules to avoid circular dependency through Game/index.ts
 import { Game } from '../Game'
 import { Player } from '../Player'

@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals'
-import { BackgammonGame } from '@nodots-llc/backgammon-types'
+import { BackgammonGame } from '@nodots/backgammon-types'
 import { Game } from '../index'
 
 describe('Crawford and Jacoby Rules', () => {

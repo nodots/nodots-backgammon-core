@@ -4,7 +4,7 @@ import {
   BackgammonGameRolling,
   BackgammonGameRollingForStart,
   BackgammonMoveSkeleton,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { Board, Game, Player } from '..'
 import {
   buildHintContextFromGame,
@@ -15,8 +15,8 @@ import {
   getContainerKind,
   getTakeHint,
   initializeGnubgHints,
-} from '@nodots-llc/backgammon-ai'
-import { MoveFilterSetting } from '@nodots-llc/gnubg-hints'
+} from '@nodots/backgammon-ai'
+import { MoveFilterSetting } from '@nodots/gnubg-hints'
 
 type SkillConfig = { name: string; evalPlies: number; moveFilter: MoveFilterSetting }
 

@@ -1,4 +1,4 @@
-import { BackgammonGame } from '@nodots-llc/backgammon-types'
+import { BackgammonGame } from '@nodots/backgammon-types'
 import { Game } from '../Game'
 import { logger } from '../utils/logger'
 

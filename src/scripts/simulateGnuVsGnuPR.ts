@@ -5,7 +5,7 @@ import type {
   BackgammonMoveSkeleton,
   BackgammonCheckerContainer,
   BackgammonGame,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { Game, Board, Player } from '..'
 import {
   initializeGnubgHints,
@@ -15,8 +15,8 @@ import {
   getNormalizedPosition,
   getContainerKind,
   shutdownGnubgHints,
-} from '@nodots-llc/backgammon-ai'
-import { MoveFilterSetting } from '@nodots-llc/gnubg-hints'
+} from '@nodots/backgammon-ai'
+import { MoveFilterSetting } from '@nodots/gnubg-hints'
 import { PerformanceRatingCalculator } from '../Services/PerformanceRatingCalculator'
 
 const SIMPLE_REPLAY = process.env.NODOTS_PR_REPLAY_SIMPLE === '1'

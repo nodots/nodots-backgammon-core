@@ -5,7 +5,7 @@ import {
   BackgammonMoveCompletedWithMove,
   BackgammonPlayerRolling,
   BackgammonPoint,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { Play } from '..'
 import { Board, Dice, Player } from '../..'
 

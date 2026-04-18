@@ -11,7 +11,7 @@ import {
   XGMatch,
   XGParseResult,
   XGMatchHeader
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 export class XGService {
   /**

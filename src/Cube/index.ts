@@ -8,10 +8,10 @@ import {
   BackgammonPlayer,
   BackgammonPlayers,
   CubeProps,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { generateId } from '..'
 
-// CubeProps is now imported from @nodots-llc/backgammon-types
+// CubeProps is now imported from @nodots/backgammon-types
 
 export class Cube {
   id!: string

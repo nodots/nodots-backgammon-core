@@ -25,7 +25,7 @@ import type {
   BackgammonGameRollingForStart,
   BackgammonMoveSkeleton,
   BackgammonGame,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { Board, Game, Player } from '..'
 import {
   initializeGnubgHints,
@@ -36,8 +36,8 @@ import {
   getContainerKind,
   selectBestMove,
   shutdownGnubgHints,
-} from '@nodots-llc/backgammon-ai'
-import { MoveFilterSetting } from '@nodots-llc/gnubg-hints'
+} from '@nodots/backgammon-ai'
+import { MoveFilterSetting } from '@nodots/gnubg-hints'
 import { PerformanceRatingCalculator } from '../Services/PerformanceRatingCalculator'
 import * as fs from 'fs'
 

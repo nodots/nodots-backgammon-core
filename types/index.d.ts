@@ -22,6 +22,6 @@ export * from './Play';
 export * from './Player';
 export * from './Services';
 export { debug, error, info, logger, setConsoleEnabled, setIncludeCallerInfo, setLogLevel, warn, type LogLevel, } from './utils/logger';
-export type * from '@nodots-llc/backgammon-types';
+export type * from '@nodots/backgammon-types';
 export { GameEventEmitter } from './events/GameEventEmitter';
 //# sourceMappingURL=index.d.ts.map

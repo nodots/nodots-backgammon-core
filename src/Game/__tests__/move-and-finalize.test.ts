@@ -9,7 +9,7 @@ import type {
   BackgammonGameMoving,
   BackgammonPlayerInactive,
   BackgammonPlayerRolling,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 // Helper to define a point by counterclockwise position
 const pointCC = (posCC: number, qty: number, color: 'black' | 'white'): BackgammonCheckerContainerImport => ({

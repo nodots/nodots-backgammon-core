@@ -1,5 +1,5 @@
 import { XGSerializer } from '../serializer'
-import { XGMatch, XGMatchHeader, XGGameRecord } from '@nodots-llc/backgammon-types'
+import { XGMatch, XGMatchHeader, XGGameRecord } from '@nodots/backgammon-types'
 
 describe('XGSerializer', () => {
   const sampleHeader: XGMatchHeader = {

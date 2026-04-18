@@ -1,4 +1,4 @@
-import type { HintRequest, MoveHint } from '@nodots-llc/gnubg-hints'
+import type { HintRequest, MoveHint } from '@nodots/gnubg-hints'
 import { jest } from '@jest/globals'
 
 

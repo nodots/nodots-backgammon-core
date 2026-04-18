@@ -2,7 +2,7 @@ import {
   BackgammonBoard,
   BackgammonChecker,
   BackgammonColor,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { Board, generateId } from '..'
 
 export class Checker {
