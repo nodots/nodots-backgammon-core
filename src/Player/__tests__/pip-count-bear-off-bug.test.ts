@@ -1,6 +1,6 @@
 import { Player } from '../index'
 import { Board } from '../../Board'
-import { BackgammonGame, BackgammonBoard, BackgammonPlayers } from '@nodots-llc/backgammon-types'
+import { BackgammonGame, BackgammonBoard, BackgammonPlayers } from '@nodots/backgammon-types'
 
 describe('Pip Count Bear Off Bug', () => {
   it('should return 0 pip count when all checkers are borne off', () => {

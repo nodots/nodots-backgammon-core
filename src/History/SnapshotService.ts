@@ -4,7 +4,7 @@ import {
   BackgammonPlayer,
   BackgammonDieValue,
   BackgammonGameStateKind,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import {
   GameStateSnapshot,
   BoardPositionSnapshot,
@@ -12,7 +12,7 @@ import {
   DiceStateSnapshot,
   CubeStateSnapshot,
   PlayerStatesSnapshot,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { logger } from '../utils/logger'
 
 /**

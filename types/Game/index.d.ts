@@ -1,8 +1,8 @@
-import { BackgammonBoard, BackgammonChecker, BackgammonColor, BackgammonCube, BackgammonGame, BackgammonGameDoubled, BackgammonGameMoved, BackgammonGameMoving, BackgammonGameRolledForStart, BackgammonGameRolling, BackgammonGameRollingForStart, BackgammonGameStateKind, BackgammonPlay, BackgammonPlayer, BackgammonPlayerActive, BackgammonPlayerInactive, BackgammonPlayerMoving, BackgammonPlayerRolledForStart, BackgammonPlayerRolling, BackgammonPlayers, BackgammonPlayMoving } from '@nodots-llc/backgammon-types';
+import { BackgammonBoard, BackgammonChecker, BackgammonColor, BackgammonCube, BackgammonGame, BackgammonGameDoubled, BackgammonGameMoved, BackgammonGameMoving, BackgammonGameRolledForStart, BackgammonGameRolling, BackgammonGameRollingForStart, BackgammonGameStateKind, BackgammonPlay, BackgammonPlayer, BackgammonPlayerActive, BackgammonPlayerInactive, BackgammonPlayerMoving, BackgammonPlayerRolledForStart, BackgammonPlayerRolling, BackgammonPlayers, BackgammonPlayMoving } from '@nodots/backgammon-types';
 import { Board } from '../Board';
 import { Cube } from '../Cube';
 export * from '../index';
-import type { BackgammonGameCompleted, BackgammonPlayersRolledForStartTuple } from '@nodots-llc/backgammon-types';
+import type { BackgammonGameCompleted, BackgammonPlayersRolledForStartTuple } from '@nodots/backgammon-types';
 export declare class Game {
     id: string;
     stateKind: BackgammonGameStateKind;

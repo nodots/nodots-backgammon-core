@@ -1,5 +1,5 @@
-import { BackgammonColor, BackgammonGame, BackgammonMoveDirection } from '@nodots-llc/backgammon-types'
-import type { MoveHint, MoveStep } from '@nodots-llc/gnubg-hints'
+import { BackgammonColor, BackgammonGame, BackgammonMoveDirection } from '@nodots/backgammon-types'
+import type { MoveHint, MoveStep } from '@nodots/gnubg-hints'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
 import { logger } from '../utils/logger'
 
@@ -29,7 +29,7 @@ let aiModule: AiModuleInterface | null = null
 async function getAiModule(): Promise<AiModuleInterface> {
   if (!aiModule) {
     // Dynamic import with string indirection to prevent TypeScript from resolving at compile time
-    const moduleName = '@nodots-llc/backgammon-ai'
+    const moduleName = '@nodots/backgammon-ai'
     const ai = await (Function('m', 'return import(m)')(moduleName) as Promise<any>)
     // Ensure shared config is initialized once
     try {

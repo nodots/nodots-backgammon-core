@@ -16,7 +16,7 @@ import type {
   BackgammonPlayerMoving,
   BackgammonColor,
   BackgammonMoveDirection,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 describe('Blocked Die Investigation', () => {
   it('should show dice.currentRoll differs from ready moves when one die is blocked', () => {

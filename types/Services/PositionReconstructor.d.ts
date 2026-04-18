@@ -1,4 +1,4 @@
-import { BackgammonGame } from '@nodots-llc/backgammon-types';
+import { BackgammonGame } from '@nodots/backgammon-types';
 export interface GameAction {
     type: 'roll' | 'move' | 'pass' | 'double' | 'accept' | 'reject';
     player: string;

@@ -2,8 +2,8 @@ import { Board } from '../../Board'
 import { Game } from '../../Game'
 import { Player } from '../../Player'
 import { exportToGnuPositionId } from '../gnuPositionId'
-import { GnuBgHints } from '@nodots-llc/gnubg-hints'
-import type { BackgammonBoard, BackgammonGame } from '@nodots-llc/backgammon-types'
+import { GnuBgHints } from '@nodots/gnubg-hints'
+import type { BackgammonBoard, BackgammonGame } from '@nodots/backgammon-types'
 
 const GNU_BASE64 =
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'

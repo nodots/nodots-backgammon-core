@@ -22,7 +22,7 @@ import {
   XGMatchHeader,
   XGMove,
   XGMoveRecord,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { Board, exportToGnuPositionId } from '../../src/Board'
 import { XGConverter, XGParser, XGSerializer } from '../XG'
 import { GameHistoryService, HistoryState } from './GameHistoryService'

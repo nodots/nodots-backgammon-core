@@ -22,7 +22,7 @@ import {
   BackgammonMoveReady,
   BackgammonPlayerDirection,
   BackgammonPlayerMoving,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 describe('Sequence-dependent moves', () => {
   // Helper to create a board with specific checker positions

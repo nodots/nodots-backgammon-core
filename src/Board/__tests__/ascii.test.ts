@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals'
 import {
   BackgammonCheckerContainerImport,
   BackgammonPointValue,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { Board } from '..'
 import { ascii } from '../ascii'
 

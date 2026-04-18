@@ -1,5 +1,5 @@
 import { XGParser } from '../parser'
-import { XGParseResult } from '@nodots-llc/backgammon-types'
+import { XGParseResult } from '@nodots/backgammon-types'
 
 describe('XGParser', () => {
   const sampleXGContent = `; [Site "XG Mobile"]

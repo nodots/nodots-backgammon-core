@@ -20,7 +20,7 @@ import type { RobotAIProvider } from './RobotAIProvider'
  *
  * @example
  * ```typescript
- * import { RobotAIRegistry } from '@nodots-llc/backgammon-core'
+ * import { RobotAIRegistry } from '@nodots/backgammon-core'
  * import { GNUProvider } from './GNUProvider'
  * import { NodotsProvider } from './NodotsProvider'
  *
@@ -80,7 +80,7 @@ export class RobotAIRegistry {
 
     throw new Error(
       `No RobotAIProvider registered for robot email "${robotEmail || 'unknown'}". ` +
-      'Ensure @nodots-llc/backgammon-ai is installed and imported before executing robot turns.'
+      'Ensure @nodots/backgammon-ai is installed and imported before executing robot turns.'
     )
   }
 

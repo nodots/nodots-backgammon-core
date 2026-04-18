@@ -4,7 +4,7 @@ import {
   BackgammonMoveDirection,
   BackgammonMoveReady,
   BackgammonPlayerMoving,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { PointToPoint } from '..'
 import { generateId } from '../../../../'
 import { Board } from '../../../../Board'

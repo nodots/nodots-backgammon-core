@@ -3,7 +3,7 @@ import type {
   BackgammonGame,
   BackgammonGameMoving,
   BackgammonMoveSkeleton,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { exportToGnuPositionId } from '../Board/gnuPositionId'
 import { spawnSync } from 'child_process'
 

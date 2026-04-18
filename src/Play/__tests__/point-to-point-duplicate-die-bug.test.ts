@@ -6,7 +6,7 @@ import {
   BackgammonMoveReady,
   BackgammonCheckerContainerImport,
   BackgammonPlayerRolling
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 describe('Point-to-Point Duplicate Die Bug', () => {
   it('should create distinct die values [4,3] for normal point-to-point moves', () => {

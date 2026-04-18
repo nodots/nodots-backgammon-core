@@ -5,7 +5,7 @@ import {
   XGMoveRecord,
   XGMove,
   XGCubeAction
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 export class XGSerializer {
   public static serialize(match: XGMatch): string {

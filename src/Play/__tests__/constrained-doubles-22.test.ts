@@ -7,7 +7,7 @@ import type {
   BackgammonMoveOrigin,
   BackgammonPlayMoving,
   BackgammonPlayerRolling,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 // Helper to build a point with a given counterclockwise position
 function pointCC(posCC: number, qty: number, color: 'black' | 'white'): BackgammonCheckerContainerImport {

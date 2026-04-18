@@ -15,7 +15,7 @@ import {
   BackgammonMoveReady,
   BackgammonPlayResult,
   BackgammonPlayMoving
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 describe('Play.initialize - Bar Reentry Mixed Roll Bug', () => {
   it('should execute bar reentry and then generate second move correctly', () => {

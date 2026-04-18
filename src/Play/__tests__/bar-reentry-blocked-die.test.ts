@@ -18,7 +18,7 @@ import {
   BackgammonCheckerContainerImport,
   BackgammonPlayerRolling,
   BackgammonMoveReady,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 describe('Play.initialize - Blocked Bar Reentry Should Allow Regular Move', () => {
   it('should allow die 1 for regular move after die 3 reentry when die 1 cannot reenter', () => {

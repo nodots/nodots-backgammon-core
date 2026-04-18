@@ -10,7 +10,7 @@ import {
   BackgammonPlayerRolling,
   BackgammonPlayMoving,
   BackgammonPlayResult,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 describe('Debug - Auto-Switch Behavior', () => {
   it('should show what happens during auto-switch', () => {

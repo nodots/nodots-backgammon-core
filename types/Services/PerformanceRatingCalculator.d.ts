@@ -1,4 +1,4 @@
-import { BackgammonGame } from '@nodots-llc/backgammon-types';
+import { BackgammonGame } from '@nodots/backgammon-types';
 export interface PRMoveAnalysis {
     player: string;
     moveNumber: number;

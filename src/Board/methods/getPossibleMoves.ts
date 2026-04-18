@@ -5,7 +5,7 @@ import {
   BackgammonMoveSkeleton,
   BackgammonPlayer,
   BackgammonPoint,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { debug } from '../../utils/logger'
 import { Board } from '../index'
 

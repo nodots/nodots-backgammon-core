@@ -7,7 +7,7 @@ import {
   XGMoveRecord,
   XGParseResult,
   XGParserError,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 export class XGParser {
   private static readonly HEADER_PATTERN = /^; \[([^"]+) "([^"]+)"\]$/

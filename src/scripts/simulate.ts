@@ -5,8 +5,8 @@ import {
   getMoveHints as getGnuMoveHints,
   getNormalizedPosition,
   initializeGnubgHints,
-} from '@nodots-llc/backgammon-ai'
-import { MoveFilterSetting } from '@nodots-llc/gnubg-hints'
+} from '@nodots/backgammon-ai'
+import { MoveFilterSetting } from '@nodots/gnubg-hints'
 import {
   BackgammonGameMoved,
   BackgammonGameMoving,
@@ -15,7 +15,7 @@ import {
   BackgammonGameRollingForStart,
   BackgammonMoveOrigin,
   BackgammonMoveSkeleton,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import * as fs from 'fs'
 import * as path from 'path'
 import { Board, Game, Player } from '..'
@@ -521,7 +521,7 @@ export async function runSimulation(maxTurns: number = 100): Promise<void | {
           if (FAST) {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
-            const aiModule = await import('@nodots-llc/backgammon-ai')
+            const aiModule = await import('@nodots/backgammon-ai')
             const best = await aiModule.getBestMove(request)
             if (best) hints = [best]
           } else {
@@ -542,7 +542,7 @@ export async function runSimulation(maxTurns: number = 100): Promise<void | {
             if (FAST) {
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              const aiModule = await import('@nodots-llc/backgammon-ai')
+              const aiModule = await import('@nodots/backgammon-ai')
               const best2 = await aiModule.getBestMove(request)
               if (best2) retry = [best2]
             } else {
@@ -574,7 +574,7 @@ export async function runSimulation(maxTurns: number = 100): Promise<void | {
               if (!chosenDie) {
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
-                const aiModule = await import('@nodots-llc/backgammon-ai')
+                const aiModule = await import('@nodots/backgammon-ai')
                 const best = await aiModule.selectBestMove(
                   gameMoved.activePlay,
                   'nodots'
@@ -733,7 +733,7 @@ export async function runSimulation(maxTurns: number = 100): Promise<void | {
           // Strictly require Nodots AI; no fallback allowed
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          const aiModule = await import('@nodots-llc/backgammon-ai')
+          const aiModule = await import('@nodots/backgammon-ai')
           const best = await aiModule.selectBestMove(
             gameMoved.activePlay,
             'nodots'

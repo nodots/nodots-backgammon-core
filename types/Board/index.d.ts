@@ -1,4 +1,4 @@
-import { BackgammonBar, BackgammonBoard, BackgammonChecker, BackgammonCheckerContainer, BackgammonCheckerContainerImport, BackgammonColor, BackgammonGame, BackgammonMoveDirection, BackgammonOff, BackgammonPlayer, BackgammonPlayers, BackgammonPoint, BackgammonPoints } from '@nodots-llc/backgammon-types';
+import { BackgammonBar, BackgammonBoard, BackgammonChecker, BackgammonCheckerContainer, BackgammonCheckerContainerImport, BackgammonColor, BackgammonGame, BackgammonMoveDirection, BackgammonOff, BackgammonPlayer, BackgammonPlayers, BackgammonPoint, BackgammonPoints } from '@nodots/backgammon-types';
 export { exportToGnuPositionId } from './gnuPositionId';
 export declare const BOARD_POINT_COUNT = 24;
 export interface RandomGameSetup {
@@ -27,25 +27,25 @@ export declare class Board implements BackgammonBoard {
     static getCheckerContainers: (board: BackgammonBoard) => BackgammonCheckerContainer[];
     private static cloneBoard;
     static getCheckerContainer: (board: BackgammonBoard, id: string) => BackgammonCheckerContainer;
-    static getPossibleMoves: (board: BackgammonBoard, player: BackgammonPlayer, dieValue: import("@nodots-llc/backgammon-types").BackgammonDieValue, otherDieValue?: import("@nodots-llc/backgammon-types").BackgammonDieValue, origin?: import("@nodots-llc/backgammon-types").BackgammonMoveOrigin) => import("@nodots-llc/backgammon-types").BackgammonMoveSkeleton[] | {
-        moves: import("@nodots-llc/backgammon-types").BackgammonMoveSkeleton[];
-        usedDieValue: import("@nodots-llc/backgammon-types").BackgammonDieValue;
+    static getPossibleMoves: (board: BackgammonBoard, player: BackgammonPlayer, dieValue: import("@nodots/backgammon-types").BackgammonDieValue, otherDieValue?: import("@nodots/backgammon-types").BackgammonDieValue, origin?: import("@nodots/backgammon-types").BackgammonMoveOrigin) => import("@nodots/backgammon-types").BackgammonMoveSkeleton[] | {
+        moves: import("@nodots/backgammon-types").BackgammonMoveSkeleton[];
+        usedDieValue: import("@nodots/backgammon-types").BackgammonDieValue;
         autoSwitched: boolean;
-        originalDieValue: import("@nodots-llc/backgammon-types").BackgammonDieValue;
+        originalDieValue: import("@nodots/backgammon-types").BackgammonDieValue;
     };
     /** @deprecated Use getPossibleMoves with otherDieValue parameter instead */
-    static getPossibleMovesWithIntelligentDiceSwitching: (board: BackgammonBoard, player: BackgammonPlayer, dieValue: import("@nodots-llc/backgammon-types").BackgammonDieValue, otherDieValue: import("@nodots-llc/backgammon-types").BackgammonDieValue) => {
-        moves: import("@nodots-llc/backgammon-types").BackgammonMoveSkeleton[];
-        usedDieValue: import("@nodots-llc/backgammon-types").BackgammonDieValue;
+    static getPossibleMovesWithIntelligentDiceSwitching: (board: BackgammonBoard, player: BackgammonPlayer, dieValue: import("@nodots/backgammon-types").BackgammonDieValue, otherDieValue: import("@nodots/backgammon-types").BackgammonDieValue) => {
+        moves: import("@nodots/backgammon-types").BackgammonMoveSkeleton[];
+        usedDieValue: import("@nodots/backgammon-types").BackgammonDieValue;
         autoSwitched: boolean;
-        originalDieValue: import("@nodots-llc/backgammon-types").BackgammonDieValue;
+        originalDieValue: import("@nodots/backgammon-types").BackgammonDieValue;
     };
     /** @deprecated Use getPossibleMoves with otherDieValue and origin parameters instead */
-    static getPossibleMovesWithPositionSpecificAutoSwitch: (board: BackgammonBoard, player: BackgammonPlayer, origin: import("@nodots-llc/backgammon-types").BackgammonMoveOrigin, dieValue: import("@nodots-llc/backgammon-types").BackgammonDieValue, otherDieValue: import("@nodots-llc/backgammon-types").BackgammonDieValue) => {
-        moves: import("@nodots-llc/backgammon-types").BackgammonMoveSkeleton[];
-        usedDieValue: import("@nodots-llc/backgammon-types").BackgammonDieValue;
+    static getPossibleMovesWithPositionSpecificAutoSwitch: (board: BackgammonBoard, player: BackgammonPlayer, origin: import("@nodots/backgammon-types").BackgammonMoveOrigin, dieValue: import("@nodots/backgammon-types").BackgammonDieValue, otherDieValue: import("@nodots/backgammon-types").BackgammonDieValue) => {
+        moves: import("@nodots/backgammon-types").BackgammonMoveSkeleton[];
+        usedDieValue: import("@nodots/backgammon-types").BackgammonDieValue;
         autoSwitched: boolean;
-        originalDieValue: import("@nodots-llc/backgammon-types").BackgammonDieValue;
+        originalDieValue: import("@nodots/backgammon-types").BackgammonDieValue;
     };
     static getPipCounts: (game: BackgammonGame) => {
         black: number;

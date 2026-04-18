@@ -14,7 +14,7 @@ import {
   BackgammonPlayMoving,
   BackgammonPlayResult,
   BackgammonPlayStateKind,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { Board, generateId } from '..'
 import { debug, logger } from '../utils/logger'
 import {
@@ -53,7 +53,7 @@ interface ExecutionResult {
   readonly executionPlan: MoveExecutionPlan
 }
 
-// PlayProps is now imported from @nodots-llc/backgammon-types
+// PlayProps is now imported from @nodots/backgammon-types
 
 export class Play {
   id?: string = generateId()

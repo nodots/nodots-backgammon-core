@@ -8,7 +8,7 @@ import {
   BackgammonCheckerContainerImport,
   BackgammonPlayerRolling,
   BackgammonPlayResult
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 describe('Robot Dice Bug - [6,2] Roll', () => {
   it('should not have duplicate die values after executing one move from [6,2] roll', () => {
