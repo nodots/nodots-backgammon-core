@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals'
-import { BackgammonGameRollingForStart } from '@nodots-llc/backgammon-types'
+import { BackgammonGameRollingForStart } from '@nodots/backgammon-types'
 import { Game } from '../index'
 
 describe('isMovable E2E Tests', () => {

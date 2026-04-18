@@ -1,4 +1,4 @@
-import type { HintRequest, MoveHint } from '@nodots-llc/gnubg-hints';
+import type { HintRequest, MoveHint } from '@nodots/gnubg-hints';
 export declare const gnubgHints: {
     initialize: import("jest-mock").Mock<import("jest-mock").UnknownFunction>;
     configure: import("jest-mock").Mock<import("jest-mock").UnknownFunction>;

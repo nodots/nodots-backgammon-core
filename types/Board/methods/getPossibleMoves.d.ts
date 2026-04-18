@@ -1,4 +1,4 @@
-import { BackgammonBoard, BackgammonDieValue, BackgammonMoveOrigin, BackgammonMoveSkeleton, BackgammonPlayer } from '@nodots-llc/backgammon-types';
+import { BackgammonBoard, BackgammonDieValue, BackgammonMoveOrigin, BackgammonMoveSkeleton, BackgammonPlayer } from '@nodots/backgammon-types';
 /**
  * Enhanced getPossibleMoves that consolidates all three previous functions
  * Always uses intelligent dice switching when possible for optimal move selection

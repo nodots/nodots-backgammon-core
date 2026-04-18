@@ -62,8 +62,8 @@ export {
   type LogLevel,
 } from './utils/logger'
 
-// Re-export all types from @nodots-llc/backgammon-types for convenience
-export type * from '@nodots-llc/backgammon-types'
+// Re-export all types from @nodots/backgammon-types for convenience
+export type * from '@nodots/backgammon-types'
 export { GameEventEmitter } from './events/GameEventEmitter'
 export * from './XG' // Re-enabled for Issue #213 fix - XG import with proper board state tracking
 export * from './MET'

@@ -1,4 +1,4 @@
-import type { MoveHint, MoveStep } from '@nodots-llc/gnubg-hints'
+import type { MoveHint, MoveStep } from '@nodots/gnubg-hints'
 
 /**
  * MoveComparator - Pure functions for comparing player moves against GNU BG hints.

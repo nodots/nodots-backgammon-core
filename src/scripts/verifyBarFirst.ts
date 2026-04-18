@@ -8,7 +8,7 @@ import type {
   BackgammonGameRolling,
   BackgammonPlayerRolling,
   BackgammonPlayerInactive,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 // Build a board where the active player has a checker on the bar and
 // also has other checkers on points. Re-entry is always legal because

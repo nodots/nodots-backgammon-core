@@ -15,7 +15,7 @@ import {
   BackgammonPlayerRolling,
   BackgammonPlayMoving,
   BackgammonPlayResult,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 describe('Play - Dice Auto-Switch Remaining Move Bug', () => {
   it('should preserve remaining die value after auto-switch on first move', () => {

@@ -19,7 +19,7 @@ import {
   BackgammonPlayerWinner,
   BackgammonPlayMoving,
   BackgammonPoint,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { Board, Dice, generateId } from '..'
 import { Play } from '../Play'
 import type { MoveExecutionOptions } from '../Play'
@@ -342,8 +342,8 @@ export class Player {
    * @returns Updated players array with recalculated pip counts
    */
   public static recalculatePipCounts = function recalculatePipCounts(
-    game: import('@nodots-llc/backgammon-types').BackgammonGame
-  ): import('@nodots-llc/backgammon-types').BackgammonPlayers {
+    game: import('@nodots/backgammon-types').BackgammonGame
+  ): import('@nodots/backgammon-types').BackgammonPlayers {
     return game.players.map((player) => {
       const newPipCount = Player.calculatePipCount(game, player.color)
       logger.info(
@@ -353,7 +353,7 @@ export class Player {
         ...player,
         pipCount: newPipCount,
       }
-    }) as import('@nodots-llc/backgammon-types').BackgammonPlayers
+    }) as import('@nodots/backgammon-types').BackgammonPlayers
   }
 
   /**
@@ -363,8 +363,8 @@ export class Player {
    * @returns The pip count for the specified player
    */
   public static calculatePipCount = function calculatePipCount(
-    game: import('@nodots-llc/backgammon-types').BackgammonGame,
-    color: import('@nodots-llc/backgammon-types').BackgammonColor
+    game: import('@nodots/backgammon-types').BackgammonGame,
+    color: import('@nodots/backgammon-types').BackgammonColor
   ): number {
     let pipCount = 0
 

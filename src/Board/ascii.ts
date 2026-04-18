@@ -3,7 +3,7 @@ import {
   BackgammonPlayer,
   BackgammonPlayers,
   BackgammonPoint,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 const MAX_VISIBLE_CHECKERS = 5
 

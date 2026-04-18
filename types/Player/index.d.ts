@@ -1,4 +1,4 @@
-import { BackgammonBoard, BackgammonColor, BackgammonDice, BackgammonMoveDirection, BackgammonMoveResult, BackgammonPlayer, BackgammonPlayerMoving, BackgammonPlayerRolledForStart, BackgammonPlayerRolling, BackgammonPlayerRollingForStart, BackgammonPlayerStateKind, BackgammonPlayerWinner, BackgammonPlayMoving, BackgammonPoint } from '@nodots-llc/backgammon-types';
+import { BackgammonBoard, BackgammonColor, BackgammonDice, BackgammonMoveDirection, BackgammonMoveResult, BackgammonPlayer, BackgammonPlayerMoving, BackgammonPlayerRolledForStart, BackgammonPlayerRolling, BackgammonPlayerRollingForStart, BackgammonPlayerStateKind, BackgammonPlayerWinner, BackgammonPlayMoving, BackgammonPoint } from '@nodots/backgammon-types';
 import { Board } from '..';
 export * from '../index';
 /**
@@ -29,19 +29,19 @@ export declare class Player {
      * @param game - The game state to recalculate pip counts for
      * @returns Updated players array with recalculated pip counts
      */
-    static recalculatePipCounts: (game: import("@nodots-llc/backgammon-types").BackgammonGame) => import("@nodots-llc/backgammon-types").BackgammonPlayers;
+    static recalculatePipCounts: (game: import("@nodots/backgammon-types").BackgammonGame) => import("@nodots/backgammon-types").BackgammonPlayers;
     /**
      * Calculates the pip count for a specific player color in a game.
      * @param game - The game to calculate pip count for
      * @param color - The color of the player to calculate pip count for
      * @returns The pip count for the specified player
      */
-    static calculatePipCount: (game: import("@nodots-llc/backgammon-types").BackgammonGame, color: import("@nodots-llc/backgammon-types").BackgammonColor) => number;
+    static calculatePipCount: (game: import("@nodots/backgammon-types").BackgammonGame, color: import("@nodots/backgammon-types").BackgammonColor) => number;
     /**
      * Selects the best move from possible moves using GNU Backgammon AI.
      * @param play BackgammonPlayMoving containing possible moves
      * @returns A selected BackgammonMoveReady, or undefined if no moves
      */
-    static getBestMove: (play: BackgammonPlayMoving, playerUserId?: string) => Promise<import("@nodots-llc/backgammon-types").BackgammonMoveReady | undefined>;
+    static getBestMove: (play: BackgammonPlayMoving, playerUserId?: string) => Promise<import("@nodots/backgammon-types").BackgammonMoveReady | undefined>;
 }
 //# sourceMappingURL=index.d.ts.map

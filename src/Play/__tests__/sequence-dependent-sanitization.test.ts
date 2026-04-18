@@ -23,7 +23,7 @@ import type {
   BackgammonMoveReady,
   BackgammonPlayerDirection,
   BackgammonPlayerMoving,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 function emptyBoard(): BackgammonBoard {
   const board = Board.initialize()

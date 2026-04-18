@@ -1,7 +1,7 @@
 import { Board } from '../../Board'
 import { Game } from '../../Game'
 import { exportToGnuPositionId } from '../gnuPositionId'
-import { GnuBgHints, MoveFilterSetting } from '@nodots-llc/gnubg-hints'
+import { GnuBgHints, MoveFilterSetting } from '@nodots/gnubg-hints'
 
 describe('GNU Position ID orientation and mapping', () => {
   test('first suggested GNU move maps to a valid origin for active player', async () => {

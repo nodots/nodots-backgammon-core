@@ -4,7 +4,7 @@ import {
   BackgammonGameRollingForStart,
   BackgammonMove,
   BackgammonMoveSkeleton,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { Board, Game, Player } from '..'
 import { logger } from '../utils/logger'
 

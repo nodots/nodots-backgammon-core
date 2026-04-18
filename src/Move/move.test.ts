@@ -6,7 +6,7 @@ import {
   BackgammonPlayerMoving,
   BackgammonPoint,
   BackgammonRoll,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { Move } from '.'
 import { generateId } from '..'
 import { Board } from '../Board'

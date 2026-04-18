@@ -1,4 +1,4 @@
-import { BackgammonColor, BackgammonDice, BackgammonDiceInactive, BackgammonDiceRolled, BackgammonDiceRolledForStart, BackgammonDiceRolling, BackgammonDiceRollingForStart, BackgammonDiceStateKind, BackgammonDieValue, BackgammonRoll, BackgammonRollForStart } from '@nodots-llc/backgammon-types';
+import { BackgammonColor, BackgammonDice, BackgammonDiceInactive, BackgammonDiceRolled, BackgammonDiceRolledForStart, BackgammonDiceRolling, BackgammonDiceRollingForStart, BackgammonDiceStateKind, BackgammonDieValue, BackgammonRoll, BackgammonRollForStart } from '@nodots/backgammon-types';
 export declare class Dice {
     static initialize(color: BackgammonColor): BackgammonDiceInactive;
     static initialize(color: BackgammonColor, stateKind: 'inactive', id?: string, currentRoll?: undefined): BackgammonDiceInactive;

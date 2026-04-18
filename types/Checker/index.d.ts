@@ -1,4 +1,4 @@
-import { BackgammonBoard, BackgammonChecker, BackgammonColor } from '@nodots-llc/backgammon-types';
+import { BackgammonBoard, BackgammonChecker, BackgammonColor } from '@nodots/backgammon-types';
 export declare class Checker {
     static getCheckers: (board: BackgammonBoard) => BackgammonChecker[];
     static initialize: (color: BackgammonColor, checkercontainerId: string) => BackgammonChecker;

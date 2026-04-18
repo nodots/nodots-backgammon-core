@@ -1,4 +1,4 @@
-import { BackgammonBoard, BackgammonMoveOrigin, BackgammonMoveReady, BackgammonMoveResult, BackgammonPlayerMoving } from '@nodots-llc/backgammon-types';
+import { BackgammonBoard, BackgammonMoveOrigin, BackgammonMoveReady, BackgammonMoveResult, BackgammonPlayerMoving } from '@nodots/backgammon-types';
 export declare class BearOff {
     private static hasCheckersOutsideHomeBoard;
     static isA: (board: BackgammonBoard, player: BackgammonPlayerMoving) => boolean;

@@ -4,7 +4,7 @@ import { Player } from '../../Player'
 import { Dice } from '../../Dice'
 import { Play } from '../../Play'
 import { exportToGnuPositionId } from '../gnuPositionId'
-import { GnuBgHints, MoveStep, MoveHint } from '@nodots-llc/gnubg-hints'
+import { GnuBgHints, MoveStep, MoveHint } from '@nodots/gnubg-hints'
 import { generateId } from '../../'
 import type {
   BackgammonBoard,
@@ -14,7 +14,7 @@ import type {
   BackgammonMoveDirection,
   BackgammonDieValue,
   BackgammonMoveSkeleton,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 // Helper: modify a board to put a checker on the bar for a specific player
 // Copied from gnuPositionIdBar.test.ts

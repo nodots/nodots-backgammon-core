@@ -1,4 +1,4 @@
-import { BackgammonCube, BackgammonCubeDoubled, BackgammonCubeInitialized, BackgammonCubeMaxxed, BackgammonCubeStateKind, BackgammonCubeValue, BackgammonPlayer, BackgammonPlayers, CubeProps } from '@nodots-llc/backgammon-types';
+import { BackgammonCube, BackgammonCubeDoubled, BackgammonCubeInitialized, BackgammonCubeMaxxed, BackgammonCubeStateKind, BackgammonCubeValue, BackgammonPlayer, BackgammonPlayers, CubeProps } from '@nodots/backgammon-types';
 export declare class Cube {
     id: string;
     stateKind: BackgammonCubeStateKind;

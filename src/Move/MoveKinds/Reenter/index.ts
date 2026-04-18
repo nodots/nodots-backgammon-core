@@ -6,7 +6,7 @@ import {
   BackgammonMoveReady,
   BackgammonMoveResult,
   BackgammonPoint,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { Board } from '../../..'
 
 export class Reenter {

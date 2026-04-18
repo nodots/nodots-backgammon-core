@@ -1,4 +1,4 @@
-import { BackgammonBoard, BackgammonCheckerContainer, BackgammonDieValue, BackgammonGame, BackgammonMove, BackgammonMoveKind, BackgammonMoveOrigin, BackgammonMoveReady, BackgammonMoveResult, BackgammonMoveStateKind, BackgammonPlayer, BackgammonPlayerMoving, BackgammonPoint, MoveProps } from '@nodots-llc/backgammon-types';
+import { BackgammonBoard, BackgammonCheckerContainer, BackgammonDieValue, BackgammonGame, BackgammonMove, BackgammonMoveKind, BackgammonMoveOrigin, BackgammonMoveReady, BackgammonMoveResult, BackgammonMoveStateKind, BackgammonPlayer, BackgammonPlayerMoving, BackgammonPoint, MoveProps } from '@nodots/backgammon-types';
 export interface SimpleMoveResult {
     success: boolean;
     game?: BackgammonGame;

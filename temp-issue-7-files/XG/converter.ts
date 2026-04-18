@@ -8,7 +8,7 @@ import {
   XGMove,
   XGMoveRecord,
   XGMatchHeader
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { Game, Player } from '../Game'
 
 export class XGConverter {

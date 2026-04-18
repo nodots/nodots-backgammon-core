@@ -13,7 +13,7 @@
 import type {
   BackgammonGameMoving,
   BackgammonGameRolling,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { RobotAIRegistry } from '../AI/RobotAIRegistry'
 import { logger } from '../utils/logger'
 

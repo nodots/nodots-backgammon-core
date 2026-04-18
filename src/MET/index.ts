@@ -11,7 +11,7 @@ import type {
   MatchScoreContext,
   CubeDecisionAnalysis,
   GammonValues,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 /**
  * Kazaross-XG2 25-point Match Equity Table

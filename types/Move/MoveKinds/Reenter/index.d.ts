@@ -1,4 +1,4 @@
-import { BackgammonBoard, BackgammonMoveOrigin, BackgammonMoveReady, BackgammonMoveResult, BackgammonPoint } from '@nodots-llc/backgammon-types';
+import { BackgammonBoard, BackgammonMoveOrigin, BackgammonMoveReady, BackgammonMoveResult, BackgammonPoint } from '@nodots/backgammon-types';
 export declare class Reenter {
     static isA: (move: any, origin: BackgammonMoveOrigin) => boolean;
     static getDestination: (board: BackgammonBoard, move: BackgammonMoveReady, origin: BackgammonMoveOrigin) => BackgammonPoint;

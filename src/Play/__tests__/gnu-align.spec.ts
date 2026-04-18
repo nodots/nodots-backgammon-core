@@ -2,7 +2,7 @@ import { describe, test, expect } from '@jest/globals'
 import { Board } from '../../Board'
 import { Player } from '../../Player'
 import { Play } from '..'
-import type { BackgammonDieValue, BackgammonPlayerMoving } from '@nodots-llc/backgammon-types'
+import type { BackgammonDieValue, BackgammonPlayerMoving } from '@nodots/backgammon-types'
 
 function setupPlayerWithDice(direction: 'clockwise'|'counterclockwise', roll: [BackgammonDieValue, BackgammonDieValue]): BackgammonPlayerMoving {
   const p = Player.initialize('white', direction, 'rolling', true) as any

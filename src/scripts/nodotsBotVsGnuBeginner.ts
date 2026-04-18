@@ -10,7 +10,7 @@ import type {
   BackgammonGameMoved,
   BackgammonGameRollingForStart,
   BackgammonMoveSkeleton,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { Board, Game, Player } from '../index.js'
 import {
   initializeGnubgHints,
@@ -19,8 +19,8 @@ import {
   buildHintContextFromGame,
   getNormalizedPosition,
   getContainerKind,
-} from '@nodots-llc/backgammon-ai'
-import { MoveFilterSetting } from '@nodots-llc/gnubg-hints'
+} from '@nodots/backgammon-ai'
+import { MoveFilterSetting } from '@nodots/gnubg-hints'
 import { PerformanceRatingCalculator } from '../Services/PerformanceRatingCalculator.js'
 
 // Skill configs from the database

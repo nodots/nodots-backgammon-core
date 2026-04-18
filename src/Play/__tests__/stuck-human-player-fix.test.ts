@@ -17,7 +17,7 @@ import {
   BackgammonGameMoving,
   BackgammonPlayResult,
   BackgammonPlayMoving
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 describe('Stuck Human Player Bug Fix - GitHub Issue #46', () => {
 

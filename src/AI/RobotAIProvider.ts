@@ -3,7 +3,7 @@ import type {
   BackgammonGameRolling,
   BackgammonPlayMoving,
   BackgammonMoveReady,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 
 /**
  * RobotAIProvider Interface

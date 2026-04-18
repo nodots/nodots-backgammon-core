@@ -3,7 +3,7 @@ import {
   BackgammonDieValue,
   BackgammonGame,
   BackgammonPlayer,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import {
   BoardPositionSnapshot,
   CubeStateSnapshot,
@@ -17,7 +17,7 @@ import {
   GameReconstructionOptions,
   GameStateSnapshot,
   PlayerStatesSnapshot,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { generateId } from '../'
 import { logger } from '../utils/logger'
 

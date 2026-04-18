@@ -13,9 +13,9 @@ import {
   BackgammonPoint,
   BackgammonPoints,
   BackgammonPointValue,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { Checker, generateId, Player, randomBackgammonColor } from '..'
-// PositionAnalyzer moved to @nodots-llc/backgammon-robots package
+// PositionAnalyzer moved to @nodots/backgammon-robots package
 import { debug, logger } from '../utils/logger'
 import { ascii } from './ascii'
 import { BOARD_IMPORT_DEFAULT } from './imports'

@@ -55,8 +55,8 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@nodots/backgammon-types": "file:../types",
-    "@nodots/gnubg-hints": "file:../gnubg-hints/gnubg-node-addon",
+    "@nodots/backgammon-types": "^1.0.0-rc.1",
+    "@nodots/gnubg-hints": "^1.0.0-rc.1",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

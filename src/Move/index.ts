@@ -20,14 +20,14 @@ import {
   BackgammonPlayerMoving,
   BackgammonPoint,
   MoveProps,
-} from '@nodots-llc/backgammon-types'
+} from '@nodots/backgammon-types'
 import { generateId } from '..'
 import { debug } from '../utils/logger'
 import { BearOff } from './MoveKinds/BearOff'
 import { PointToPoint } from './MoveKinds/PointToPoint'
 import { Reenter } from './MoveKinds/Reenter'
 
-// MoveProps is now imported from @nodots-llc/backgammon-types
+// MoveProps is now imported from @nodots/backgammon-types
 
 export interface SimpleMoveResult {
   success: boolean
